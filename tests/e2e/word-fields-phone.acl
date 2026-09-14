@@ -91,11 +91,11 @@ suite "office-word-fields-phone" {
         }
 
         click "open-first-field-menu" {
-            target = role("combobox", "插入页码、日期或统计域")
+            target = role("button", "插入页码、日期或统计域")
         }
 
         click "insert-first-page-field" {
-            target = role("option", "页码")
+            target = role("menuitem", "页码")
         }
 
         expect "first-page-field-is-live" {
@@ -103,19 +103,19 @@ suite "office-word-fields-phone" {
         }
 
         click "open-statistics-field-menu" {
-            target = role("combobox", "插入页码、日期或统计域")
+            target = role("button", "插入页码、日期或统计域")
         }
 
         click "insert-word-count-field" {
-            target = role("option", "字数")
+            target = role("menuitem", "字数")
         }
 
         click "open-character-field-menu" {
-            target = role("combobox", "插入页码、日期或统计域")
+            target = role("button", "插入页码、日期或统计域")
         }
 
         click "insert-character-count-field" {
-            target = role("option", "字符数")
+            target = role("menuitem", "字符数")
         }
 
         expect "statistics-fields-are-live" {
@@ -131,19 +131,19 @@ suite "office-word-fields-phone" {
         }
 
         click "open-second-field-menu" {
-            target = role("combobox", "插入页码、日期或统计域")
+            target = role("button", "插入页码、日期或统计域")
         }
 
         click "insert-second-page-field" {
-            target = role("option", "页码")
+            target = role("menuitem", "页码")
         }
 
         click "open-total-pages-menu" {
-            target = role("combobox", "插入页码、日期或统计域")
+            target = role("button", "插入页码、日期或统计域")
         }
 
         click "insert-total-pages-field" {
-            target = role("option", "总页数")
+            target = role("menuitem", "总页数")
         }
 
         wait "physical-pagination-drives-field-results" {

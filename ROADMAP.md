@@ -77,7 +77,9 @@ These are already the default contract. Do not trade them away for breadth:
    `0.213.0`, Presentation object alignment is a command menu (`Popover` +
    `menuitem`) instead of an `OfficeSelect` with a disabled `none` closed
    value. Through `0.214.0`, single-object align-to-slide stays executable
-   (`canAlignElement` requires one or more selection units). Through `0.210.0`, Document table layout/border-target, Presentation
+   (`canAlignElement` requires one or more selection units). Through `0.215.0`,
+   Document field insert is a command menu (`Popover` + `menuitem`) instead of an
+   `OfficeSelect` with a disabled empty closed value. Through `0.210.0`, Document table layout/border-target, Presentation
    animation trigger, and Spreadsheet number-format / date-time closed labels
    fit Chinese chrome; orphaned Custom Sort native `select` CSS is removed.
    Through `0.209.0`, Document ribbon Chinese closed labels get wider triggers,

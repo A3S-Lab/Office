@@ -146,15 +146,16 @@ test('wires every Insert and Page Layout action to document state or its owner',
     expect(nodeCount(editor as Editor, 'documentBookmarkBoundary')).toBe(2),
   );
 
-  const fieldSelect = screen.getByRole('combobox', {
+  const fieldMenu = screen.getByRole('button', {
     name: '插入页码、日期或统计域',
   });
-  fireEvent.click(fieldSelect);
-  expect(screen.getByRole('option', { name: '插入域…' })).toBeDisabled();
+  fireEvent.click(fieldMenu);
+  expect(screen.queryByRole('option', { name: '插入域…' })).toBeNull();
+  expect(screen.queryByRole('listbox')).toBeNull();
   await waitFor(() =>
-    expect(screen.getByRole('option', { name: '页码' })).toHaveFocus(),
+    expect(screen.getByRole('menuitem', { name: '页码' })).toHaveFocus(),
   );
-  fireEvent.click(screen.getByRole('option', { name: '当前日期' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: '当前日期' }));
   expect(calls.fields).toEqual(['date']);
   fireEvent.click(screen.getByRole('button', { name: '字段设置' }));
   expect(calls.fieldSettings).toBe(1);

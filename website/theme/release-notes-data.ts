@@ -1,5 +1,67 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.215.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['document', 'documentation'],
+    title: {
+      en: 'Document field insert is a command menu',
+      zh: '文档插入域改为命令菜单',
+    },
+    summary: {
+      en: 'Document: Insert-ribbon field insert uses a Popover command menu instead of an OfficeSelect with a disabled empty closed value, so the closed label stays 插入域 while actions run without fake select state.',
+      zh: '文档：插入功能区字段入口改为 Popover 命令菜单，不再使用禁用空闭合值的 OfficeSelect；闭合标签保持「插入域」，动作不再依赖假选择状态。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Command launcher, not select',
+          zh: '命令启动器，不是选择器',
+        },
+        detail: {
+          en: 'Field insert uses Popover + menuitem instead of OfficeSelect value="".',
+          zh: '插入域使用 Popover + menuitem，不再使用 value="" 的 OfficeSelect。',
+        },
+      },
+      {
+        title: {
+          en: 'Closed label stays 插入域',
+          zh: '闭合标签保持「插入域」',
+        },
+        detail: {
+          en: 'Choosing a field kind inserts immediately and does not persist a selected option.',
+          zh: '选择字段类型后立即插入，不会把选项保留为闭合值。',
+        },
+      },
+      {
+        title: {
+          en: 'a3s-test and Playwright contracts',
+          zh: 'a3s-test 与 Playwright 契约',
+        },
+        detail: {
+          en: 'word-fields-phone.acl, document toolbar unit tests, and Playwright target the command button and menuitems.',
+          zh: 'word-fields-phone.acl、文档工具条单元测试与 Playwright 以命令按钮和 menuitem 为目标。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/document.html',
+          zh: './components/document.html',
+        },
+        label: { en: 'Document editor', zh: '文档编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.215.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.215.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.214.0',
     date: '2026-09-14',
     kind: 'fixed',

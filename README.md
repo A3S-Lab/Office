@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.214.0` keeps Presentation align-to-slide executable for one object:
+Version `0.215.0` turns Document field insert into a command menu:
 
-- **Single-unit align** — `canAlignElement` allows one selection unit so
-  align-to-slide matches the ribbon label and ArrangementController path.
-- **Coverage** — Source and Playwright contracts assert the align menu opens
-  after selecting one title. The command-menu closed label `对象对齐` from
-  `0.213.0` remains.
+- **Command launcher, not select** — Insert-ribbon field insert is `Popover` +
+  `menuitem` instead of an `OfficeSelect` stuck on a disabled empty closed
+  value, so the closed label stays `插入域` while choosing a field kind inserts
+  immediately.
+- **Coverage** — Unit, Playwright, and a3s-test (`word-fields-phone.acl`)
+  contracts target the command button and menuitems.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

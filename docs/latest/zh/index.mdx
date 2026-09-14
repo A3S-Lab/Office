@@ -42,13 +42,14 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.214.0）
+## `main` 更新内容（0.215.0）
 
-演示单对象对齐到幻灯片保持可执行：
+文档插入域改为命令菜单：
 
-- `canAlignElement` 允许一个选中单元，对齐命令菜单可打开并对齐到幻灯片。
-- 源码与 Playwright 契约覆盖选中一个标题后触发器可用。`0.213.0` 的命令菜单
-  闭合标签「对象对齐」仍然保留。
+- 插入功能区字段入口使用 `Popover` + `menuitem`，不再使用禁用空闭合值的
+  `OfficeSelect`。
+- 闭合标签保持「插入域」。单元测试、Playwright 与 a3s-test 以命令按钮和
+  menuitem 为目标。
 
 
 ## 按表面探索

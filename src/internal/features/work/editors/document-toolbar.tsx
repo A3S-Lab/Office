@@ -1,7 +1,8 @@
 import type { Editor } from '@tiptap/core';
 import {
-  Bookmark as BookmarkIcon,
   ArrowUpRight,
+  Bookmark as BookmarkIcon,
+  Braces,
   Check,
   CheckCheck,
   ChevronDown,
@@ -26,17 +27,17 @@ import {
   Redo2,
   Ruler,
   Scan,
-  StretchHorizontal,
   SlidersHorizontal,
+  StretchHorizontal,
   TextCursorInput,
   TextSelect,
   Undo2,
-  Braces,
   XCircle,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { Popover } from '../../../design-system/primitives';
 import {
   activeDocumentBookmark,
   DOCUMENT_BOOKMARK_DUPLICATE_MESSAGE,
@@ -59,14 +60,15 @@ import type { WorkDocumentNoteKind } from '../work-document-notes';
 import type { WorkDocumentSectionLayout } from '../work-types';
 import {
   type DocumentRibbonTabId,
+  documentConnectorRibbonTab,
   documentPageChromeRibbonTab,
   documentPictureRibbonTab,
   documentRibbonTabs,
   documentTableRibbonTabs,
-  documentConnectorRibbonTab,
   documentTextBoxRibbonTab,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
+import { DocumentConnectorRibbon } from './document-connector-ribbon';
 import { synchronizeDocumentEditorSelectionFromDom } from './document-dom-selection';
 import { documentHasRefreshableFields } from './document-editor-support';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
@@ -101,14 +103,14 @@ import {
   DocumentTableLayoutRibbon,
 } from './document-table-ribbon';
 import { DocumentTextBoxRibbon } from './document-text-box-ribbon';
-import { DocumentConnectorRibbon } from './document-connector-ribbon';
 import { runDocumentWpsShortcut } from './document-wps-shortcuts';
 import {
   type DocumentZoomFit,
   MAX_DOCUMENT_ZOOM,
   MIN_DOCUMENT_ZOOM,
 } from './document-zoom';
-import { OfficeSelect, useOfficeDialog } from './office-controls';
+import { useOfficeDialog } from './office-controls';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,
@@ -827,7 +829,7 @@ export function DocumentToolbar({
                 >
                   <TextSelect size={19} />
                 </ToolbarButton>
-                <DocumentFieldSelect onInsertField={onInsertField} />
+                <DocumentFieldInsertMenu onInsertField={onInsertField} />
                 <ToolbarButton
                   label="字段设置"
                   title="插入或编辑字段格式"
@@ -1289,30 +1291,63 @@ function ToolbarButton({
 
 const RibbonGroup = WorkOfficeRibbonGroup;
 
-function DocumentFieldSelect({
+const documentFieldInsertActions = [
+  { value: 'page', label: '页码' },
+  { value: 'numPages', label: '总页数' },
+  { value: 'section', label: '当前节号' },
+  { value: 'sectionPages', label: '本节页数' },
+  { value: 'date', label: '当前日期' },
+  { value: 'time', label: '当前时间' },
+  { value: 'wordCount', label: '字数' },
+  { value: 'characterCount', label: '字符数' },
+] as const satisfies readonly {
+  value: WorkDocumentFieldKind;
+  label: string;
+}[];
+
+function DocumentFieldInsertMenu({
   onInsertField,
 }: {
   onInsertField: (kind: WorkDocumentFieldKind) => void;
 }) {
   return (
-    <OfficeSelect
-      className="work-document-field-insert-select"
-      ariaLabel="插入页码、日期或统计域"
-      value=""
-      options={[
-        { value: '', label: '插入域…', disabled: true },
-        { value: 'page', label: '页码' },
-        { value: 'numPages', label: '总页数' },
-        { value: 'section', label: '当前节号' },
-        { value: 'sectionPages', label: '本节页数' },
-        { value: 'date', label: '当前日期' },
-        { value: 'time', label: '当前时间' },
-        { value: 'wordCount', label: '字数' },
-        { value: 'characterCount', label: '字符数' },
-      ]}
-      onValueChange={(kind) => {
-        if (kind) onInsertField(kind);
-      }}
-    />
+    <Popover
+      label="插入页码、日期或统计域"
+      panelLabel="插入页码、日期或统计域"
+      panelRole="menu"
+      portal
+      className="work-document-field-insert-menu"
+      panelClassName="work-office-context-menu work-document-field-insert-menu-panel"
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          type="button"
+          className={`work-document-field-insert-trigger${open ? ' open' : ''}`}
+          title="插入页码、日期或统计域"
+        >
+          <span>插入域</span>
+          <ChevronDown size={14} aria-hidden="true" />
+        </button>
+      )}
+    >
+      {(close) =>
+        documentFieldInsertActions.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            onClick={() => {
+              close();
+              onInsertField(value);
+            }}
+          >
+            <span>{label}</span>
+          </button>
+        ))
+      }
+    </Popover>
   );
 }

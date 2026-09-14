@@ -1127,6 +1127,10 @@ installed WPS field instructions for a local compatibility review. The
 installed Writer shell and native field command IDs as UI/UX reference JSON;
 it is isolated evidence rather than a product runtime dependency.
 
+The Insert ribbon field launcher is a command menu (`Popover` + `menuitem`),
+not an `OfficeSelect`: the closed label stays `插入域` while choosing a field
+kind inserts immediately without fake select state.
+
 The **Field settings** button beside the quick field menu opens the same
 bounded model for insertion and editing. Page and section fields offer Arabic,
 upper/lower Roman, upper/lower alphabetic, and Ordinal formats. Date and time

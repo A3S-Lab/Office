@@ -44,14 +44,14 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.214.0)
+## What's new on `main` (0.215.0)
 
-Presentation single-object align-to-slide stays enabled:
+Document field insert is a command menu:
 
-- `canAlignElement` allows one selection unit so the align command menu opens
-  for align-to-slide.
-- Source and Playwright contracts cover the enabled trigger after selecting one
-  title. The `0.213.0` command-menu closed label `对象对齐` remains.
+- Insert-ribbon field insert uses `Popover` + `menuitem` instead of an
+  `OfficeSelect` stuck on a disabled empty closed value.
+- The closed label stays `插入域`. Unit, Playwright, and a3s-test contracts
+  target the command button and menuitems.
 
 ## Explore by surface
 

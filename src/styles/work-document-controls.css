@@ -578,8 +578,56 @@
   width: 118px;
 }
 
-.work-document-ribbon .work-document-field-insert-select {
-  width: 112px;
+.work-document-ribbon .work-document-field-insert-menu {
+  width: 96px;
+  flex: 0 0 96px;
+}
+
+.work-document-field-insert-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 96px;
+  min-width: 0;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 6px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.work-document-field-insert-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-field-insert-trigger:hover:not(:disabled),
+.work-document-field-insert-trigger.open,
+.work-document-field-insert-trigger[aria-expanded="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--a3s-accent, #2563eb) 45%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--a3s-accent, #2563eb) 6%,
+    var(--a3s-panel)
+  );
+}
+
+.work-document-field-insert-trigger:focus-visible {
+  outline: 2px solid var(--a3s-accent, #2563eb);
+  outline-offset: 1px;
 }
 
 .work-document-ribbon

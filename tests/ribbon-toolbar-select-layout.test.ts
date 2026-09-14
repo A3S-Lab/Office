@@ -39,6 +39,23 @@ test('Presentation align-to-slide stays executable for a single selection unit',
   expect(source).not.toContain('canAlignElement: selectionUnits.length >= 2');
 });
 
+test('Document field insert is a command menu instead of a fake OfficeSelect', () => {
+  const source = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../src/internal/features/work/editors/document-toolbar.tsx',
+    ),
+    'utf8',
+  );
+  expect(source).toContain('function DocumentFieldInsertMenu');
+  expect(source).toContain('panelRole="menu"');
+  expect(source).toContain('role="menuitem"');
+  expect(source).toContain('className="work-document-field-insert-menu"');
+  expect(source).not.toContain('className="work-document-field-insert-select"');
+  expect(source).not.toContain("value: '', label: '插入域…'");
+  expect(source).not.toContain('function DocumentFieldSelect');
+});
+
 test('shared ribbon chrome sizes OfficeSelect triggers without native select leftovers', () => {
   const css = readFileSync(join(stylesRoot, 'work-office-chrome.css'), 'utf8');
   expect(css).toContain(
@@ -121,7 +138,9 @@ test('Document contextual ribbon selects keep fixed widths and 24px table combob
     'utf8',
   );
   expect(css).toContain('.work-document-connector-kind-select');
-  expect(css).toContain('.work-document-field-insert-select');
+  expect(css).toContain('.work-document-field-insert-menu');
+  expect(css).toContain('.work-document-field-insert-trigger');
+  expect(css).not.toContain('.work-document-field-insert-select');
   expect(css).toContain('.work-document-picture-wrap-distance-select');
   expect(css).toMatch(
     /\.work-document-ribbon\s+\.work-document-connector-width-select\s*\{[^}]*width:\s*118px/s,

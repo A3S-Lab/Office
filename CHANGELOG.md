@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.215.0 - 2026-09-14
+
+### Document
+
+- Field insert on the Insert ribbon is a command menu (`Popover` + `menuitem`)
+  instead of an `OfficeSelect` stuck on a disabled empty closed value, so the
+  closed label stays `插入域` while choosing a field kind inserts immediately.
+- Unit, Playwright, and a3s-test (`word-fields-phone.acl`) contracts target the
+  command button and menuitems.
+
 ## 0.214.0 - 2026-09-14
 
 ### Presentation

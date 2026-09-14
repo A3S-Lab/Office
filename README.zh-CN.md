@@ -370,12 +370,13 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.214.0` 保持单对象「对齐到幻灯片」可执行：
+版本 `0.215.0` 将文档插入域改为命令菜单：
 
-- **单单元对齐** — `canAlignElement` 允许一个选中单元，使对齐到幻灯片与工具条
-  文案及 ArrangementController 路径一致。
-- **覆盖** — 源码与 Playwright 契约断言选中一个标题后即可打开对齐菜单。
-  `0.213.0` 的命令菜单闭合标签「对象对齐」仍然保留。
+- **命令启动器，不是选择器** — 插入功能区字段入口是 `Popover` + `menuitem`，
+  不再使用禁用空闭合值的 `OfficeSelect`；闭合标签保持「插入域」，选择字段类型后
+  立即插入。
+- **覆盖** — 单元测试、Playwright 与 a3s-test（`word-fields-phone.acl`）以命令
+  按钮和 menuitem 为目标。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程
