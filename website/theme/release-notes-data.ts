@@ -33,6 +33,16 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
           zh: 'Playwright 断言字体与对齐触发器上的中文闭合标签不溢出。',
         },
       },
+      {
+        title: {
+          en: 'Unit coverage for align actions',
+          zh: '对齐动作单元覆盖',
+        },
+        detail: {
+          en: 'Presentation toolbar tests open the menu and assert alignElement receives the chosen alignment.',
+          zh: '演示工具条测试会打开菜单并断言 alignElement 收到所选对齐值。',
+        },
+      },
     ],
     links: [
       {
