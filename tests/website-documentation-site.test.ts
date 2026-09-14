@@ -409,9 +409,7 @@ test('routes the concise README and documentation homes to the current release s
 
   expect(readme).toContain('## Current release');
   expect(readme).toContain('Version `0.210.0`');
-  expect(readme).toContain(
-    'continues Chinese ribbon closed-label width fixes',
-  );
+  expect(readme).toContain('continues Chinese ribbon closed-label width fixes');
   expect(readme).toContain('Document table');
   expect(readme).toContain('Presentation animation');
   expect(readme).toContain('Spreadsheet number');
@@ -421,9 +419,7 @@ test('routes the concise README and documentation homes to the current release s
     'More Chinese closed-label width fixes on ribbon / panel selects',
   );
   expect(chineseHome).toContain('## `main` 更新内容（0.210.0）');
-  expect(chineseHome).toContain(
-    '继续修复功能区 / 面板下拉闭合标签的中文宽度',
-  );
+  expect(chineseHome).toContain('继续修复功能区 / 面板下拉闭合标签的中文宽度');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
