@@ -371,12 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.221.0` keeps Spreadsheet **字号** honest for unformatted cells:
+Version `0.222.0` keeps Document heading **字号** and **行距** honest:
 
-- **Closed label matches paint** — Ribbon and Format Cells show `11` when the
-  cell has no explicit `fs`, matching FortuneSheet `defaultFontSize`.
-- **Single default** — Grow/shrink stepping uses the same
-  `DEFAULT_SPREADSHEET_FONT_SIZE` constant as the canvas.
+- **Closed label matches paint** — Unmarked h1–h3 show effective CSS sizes
+  (18 / 15 / 12.75 pt) instead of body `10.5`.
+- **Line spacing** — Unmarked h1–h2 show `1.32` / `1.4` instead of **默认行距**.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.222.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Document heading font size and line spacing closed labels match paint',
+      zh: '文档标题字号与行距关闭标签与绘制一致',
+    },
+    summary: {
+      en: 'Document: unmarked heading 字号 and 行距 closed labels follow CSS paint for h1–h3 / h1–h2 instead of dishonest body defaults.',
+      zh: '文档：未设置标记的标题「字号」与「行距」关闭标签跟随 h1–h3 / h1–h2 的 CSS 绘制，而不再错误显示正文默认值。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Effective font size',
+          zh: '有效字号',
+        },
+        detail: {
+          en: 'h1–h3 without textStyle.fontSize report 18 / 15 / 12.75 pt from CSS px.',
+          zh: '未设置 textStyle.fontSize 的标题 1–3 按 CSS px 报告 18 / 15 / 12.75 pt。',
+        },
+      },
+      {
+        title: {
+          en: 'Line height honesty',
+          zh: '行距诚实',
+        },
+        detail: {
+          en: 'h1–h2 without node lineHeight report 1.32 / 1.4 instead of 默认行距.',
+          zh: '未设置节点行距的标题 1–2 报告 1.32 / 1.4，而不再显示「默认行距」。',
+        },
+      },
+      {
+        title: {
+          en: 'Grow from paint',
+          zh: '从绘制步进',
+        },
+        detail: {
+          en: '增大/减小字号 steps from the effective heading size, not silent 10.5.',
+          zh: '增大/减小字号从有效标题字号步进，而不再静默按 10.5。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.222.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.222.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.221.0',
     date: '2026-09-14',
     kind: 'fixed',

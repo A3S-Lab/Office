@@ -133,13 +133,56 @@ function cssFontFamilyValue(family: string): string {
     : trimmed;
 }
 
+/**
+ * CSS `font-size` for headings when `textStyle.fontSize` is unset
+ * (`work-document-page.css`). Converted to pt via the same 0.75 factor as
+ * `parseFontSizePoints` so closed labels match painted size.
+ */
+export const DOCUMENT_HEADING_CSS_FONT_SIZE_PX: Readonly<
+  Partial<Record<1 | 2 | 3 | 4 | 5 | 6, number>>
+> = {
+  1: 24,
+  2: 20,
+  3: 17,
+};
+
+/** CSS `line-height` for headings when the node has no explicit lineHeight. */
+export const DOCUMENT_HEADING_CSS_LINE_HEIGHT: Readonly<
+  Partial<Record<1 | 2 | 3 | 4 | 5 | 6, string>>
+> = {
+  1: '1.32',
+  2: '1.4',
+};
+
 export function documentFontSizeValue(editor: Editor): string {
   const value = editor.getAttributes('textStyle').fontSize;
-  if (value === '10.5pt' || !value) return 'default';
-  if (documentFontSizeOptions.some((option) => option.value === value)) {
-    return value;
+  if (value && value !== '10.5pt') {
+    if (documentFontSizeOptions.some((option) => option.value === value)) {
+      return value;
+    }
+    return parseFontSizePoints(value) === null ? 'default' : value;
   }
-  return parseFontSizePoints(value) === null ? 'default' : value;
+  const headingPoints = documentHeadingCssFontSizePoints(editor);
+  if (headingPoints !== null) {
+    return pointsToDocumentFontSizeValue(headingPoints);
+  }
+  return 'default';
+}
+
+export function documentLineHeightValue(editor: Editor): string {
+  const attributes = editor.isActive('heading')
+    ? editor.getAttributes('heading')
+    : editor.getAttributes('paragraph');
+  const value = attributes.lineHeight;
+  if (typeof value === 'string' && value.trim() && value !== 'normal') {
+    return value.trim();
+  }
+  const level = activeDocumentHeadingLevel(editor);
+  if (level !== null) {
+    const css = DOCUMENT_HEADING_CSS_LINE_HEIGHT[level];
+    if (css) return css;
+  }
+  return 'default';
 }
 
 export function documentFontSizeOptionsForValue(value: string) {
@@ -161,7 +204,7 @@ export function changeDocumentFontSize(
   editor: Editor,
   direction: -1 | 1,
 ): boolean {
-  const current = fontSizePoints(editor.getAttributes('textStyle').fontSize);
+  const current = effectiveDocumentFontSizePoints(editor);
   const next = nextDocumentFontSize(current, direction);
   if (next === null) return false;
   return editor.chain().focus().setFontSize(`${next}pt`).run();
@@ -172,10 +215,8 @@ export function canChangeDocumentFontSize(
   direction: -1 | 1,
 ): boolean {
   return (
-    nextDocumentFontSize(
-      fontSizePoints(editor.getAttributes('textStyle').fontSize),
-      direction,
-    ) !== null
+    nextDocumentFontSize(effectiveDocumentFontSizePoints(editor), direction) !==
+    null
   );
 }
 
@@ -189,8 +230,30 @@ function nextDocumentFontSize(
         null);
 }
 
-function fontSizePoints(value: unknown): number {
-  return parseFontSizePoints(value) ?? 10.5;
+function effectiveDocumentFontSizePoints(editor: Editor): number {
+  const mark = parseFontSizePoints(editor.getAttributes('textStyle').fontSize);
+  if (mark !== null) return mark;
+  return documentHeadingCssFontSizePoints(editor) ?? 10.5;
+}
+
+function documentHeadingCssFontSizePoints(editor: Editor): number | null {
+  const level = activeDocumentHeadingLevel(editor);
+  if (level === null) return null;
+  const px = DOCUMENT_HEADING_CSS_FONT_SIZE_PX[level];
+  return px === undefined ? null : px * 0.75;
+}
+
+function activeDocumentHeadingLevel(
+  editor: Editor,
+): 1 | 2 | 3 | 4 | 5 | 6 | null {
+  for (const level of [1, 2, 3, 4, 5, 6] as const) {
+    if (editor.isActive('heading', { level })) return level;
+  }
+  return null;
+}
+
+function pointsToDocumentFontSizeValue(points: number): string {
+  return `${formatFontSizePoints(points)}pt`;
 }
 
 function parseFontSizePoints(value: unknown): number | null {

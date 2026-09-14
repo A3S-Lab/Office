@@ -1,4 +1,3 @@
-import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
 import {
   fireEvent,
@@ -7,18 +6,19 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { Editor } from '@tiptap/core';
+import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
 import {
   changeDocumentFontSize,
   documentFontFamilyOptions,
 } from '../src/internal/features/work/editors/document-formatting-options';
-import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
 import { DocumentHomeRibbon } from '../src/internal/features/work/editors/document-home-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
-import { MAX_DOCUMENT_INDENT_LEVEL } from '../src/internal/features/work/work-document-paragraph-formatting';
 import {
   OFFICE_DOCUMENT_LAYOUT_FONT_FAMILY,
   OFFICE_DOCUMENT_LAYOUT_FONT_ID,
 } from '../src/internal/features/work/work-document-fonts';
+import { MAX_DOCUMENT_INDENT_LEVEL } from '../src/internal/features/work/work-document-paragraph-formatting';
 
 let editor: Editor | null = null;
 
@@ -649,6 +649,73 @@ test('keeps heading 4–6 paragraph-style closed labels honest', () => {
   ).toBeChecked();
   expect(screen.getByRole('combobox', { name: '段落样式' })).toHaveTextContent(
     '标题 6',
+  );
+});
+
+test('keeps heading 字号 and 行距 closed labels honest with CSS defaults', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<h1>Heading size</h1>',
+  });
+  const view = render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '字号' })).toHaveTextContent(
+    '18',
+  );
+  expect(screen.getByRole('combobox', { name: '字号' })).not.toHaveTextContent(
+    '10.5',
+  );
+  expect(screen.getByRole('combobox', { name: '行距' })).toHaveTextContent(
+    '1.32',
+  );
+  expect(screen.getByRole('combobox', { name: '行距' })).not.toHaveTextContent(
+    '默认行距',
+  );
+
+  fireEvent.click(
+    within(screen.getByRole('radiogroup', { name: '段落样式库' })).getByRole(
+      'radio',
+      { name: '应用样式：标题 2' },
+    ),
+  );
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  expect(screen.getByRole('combobox', { name: '字号' })).toHaveTextContent(
+    '15',
+  );
+  expect(screen.getByRole('combobox', { name: '行距' })).toHaveTextContent(
+    '1.4',
+  );
+
+  fireEvent.click(
+    within(screen.getByRole('radiogroup', { name: '段落样式库' })).getByRole(
+      'radio',
+      { name: '应用样式：标题 3' },
+    ),
+  );
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  expect(screen.getByRole('combobox', { name: '字号' })).toHaveTextContent(
+    '12.75',
+  );
+  expect(screen.getByRole('combobox', { name: '行距' })).toHaveTextContent(
+    '默认行距',
   );
 });
 

@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.222.0 - 2026-09-14
+
+### Document
+
+- Heading **字号** and **行距** closed labels match CSS paint when marks are
+  unset: h1–h3 show effective point sizes (18 / 15 / 12.75) instead of body
+  `10.5`, and h1–h2 show line-height `1.32` / `1.4` instead of **默认行距**.
+  Grow/shrink steps from the effective size.
+
 ## 0.221.0 - 2026-09-14
 
 ### Spreadsheet

@@ -94,6 +94,8 @@ These are already the default contract. Do not trade them away for breadth:
    Through `0.221.0`, Spreadsheet **字号** closed label and Format Cells default
    use `11` for unformatted cells so they match FortuneSheet canvas paint
    instead of showing `10`.
+   Through `0.222.0`, Document heading **字号** / **行距** closed labels match
+   CSS paint for unmarked h1–h3 / h1–h2 instead of body defaults.
    Through `0.216.0`, curated
    What's new notes use the `writer` surface for Document work and reject unknown
    changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation

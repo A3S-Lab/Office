@@ -22,11 +22,21 @@ import {
   Superscript as SuperscriptIcon,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   canChangeDocumentIndent,
   documentParagraphDirection,
 } from '../work-document-paragraph-formatting';
-import type { WorkDocumentLayoutFont } from '../work-document-fonts';
+import {
+  documentRunBorderIsVisible,
+  parseDocumentRunBorder,
+} from '../work-document-run-border';
+import {
+  type DocumentCommandId,
+  getDocumentCommandDefinition,
+} from './document-command-catalog';
+import type { DocumentFindReplaceMode } from './document-find-replace-panel';
+import { DocumentFormatTools } from './document-format-tools';
 import {
   canChangeDocumentFontSize,
   changeDocumentFontSize,
@@ -34,27 +44,18 @@ import {
   documentFontFamilyValue,
   documentFontSizeOptionsForValue,
   documentFontSizeValue,
+  documentLineHeightValue,
 } from './document-formatting-options';
-import {
-  type DocumentCommandId,
-  getDocumentCommandDefinition,
-} from './document-command-catalog';
-import { DocumentFormatTools } from './document-format-tools';
+import { DocumentListGallery } from './document-list-gallery';
+import { DocumentStrikeRibbon } from './document-strike-ribbon';
+import { DocumentStyleGallery } from './document-style-gallery';
+import { DocumentTextCaseRibbon } from './document-text-case-ribbon';
+import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
-import type { DocumentFindReplaceMode } from './document-find-replace-panel';
-import { DocumentListGallery } from './document-list-gallery';
-import { DocumentStyleGallery } from './document-style-gallery';
-import { DocumentTextCaseRibbon } from './document-text-case-ribbon';
-import { DocumentStrikeRibbon } from './document-strike-ribbon';
-import { DocumentUnderlineRibbon } from './document-underline-ribbon';
-import {
-  documentRunBorderIsVisible,
-  parseDocumentRunBorder,
-} from '../work-document-run-border';
 
 const documentLineHeightOptions = [
   { value: 'default', label: '默认行距' },
@@ -423,17 +424,6 @@ function commandShortcut(commandId: DocumentCommandId): {
 }
 
 const RibbonGroup = WorkOfficeRibbonGroup;
-
-function documentLineHeightValue(editor: Editor): string {
-  const attributes = editor.isActive('heading')
-    ? editor.getAttributes('heading')
-    : editor.getAttributes('paragraph');
-  const value = attributes.lineHeight;
-  if (typeof value !== 'string' || !value.trim() || value === 'normal') {
-    return 'default';
-  }
-  return value.trim();
-}
 
 function documentLineHeightOptionsForValue(value: string) {
   if (documentLineHeightOptions.some((option) => option.value === value)) {

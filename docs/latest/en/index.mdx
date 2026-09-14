@@ -44,12 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.221.0)
+## What's new on `main` (0.222.0)
 
-Spreadsheet **字号** stays honest for unformatted cells:
+Document heading **字号** and **行距** stay honest with CSS paint:
 
-- Ribbon and Format Cells show `11` when `fs` is unset, matching canvas paint.
-- Grow/shrink stepping shares `DEFAULT_SPREADSHEET_FONT_SIZE` with the workbook.
+- Unmarked h1–h3 show effective point sizes instead of body `10.5`.
+- Unmarked h1–h2 show line-height `1.32` / `1.4` instead of **默认行距**.
 
 ## Explore by surface
 
