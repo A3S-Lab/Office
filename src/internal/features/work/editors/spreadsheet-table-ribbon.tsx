@@ -283,7 +283,7 @@ function SpreadsheetTableTotalsMenu({
                       }}
                     />
                   </div>
-                  <label>
+                  <div className="work-office-field">
                     <span>标签</span>
                     <CommittedOfficeTextField
                       aria-label={`${column.name} 汇总标签`}
@@ -298,8 +298,8 @@ function SpreadsheetTableTotalsMenu({
                         });
                       }}
                     />
-                  </label>
-                  <label>
+                  </div>
+                  <div className="work-office-field">
                     <span>自定义公式</span>
                     <CommittedOfficeTextField
                       aria-label={`${column.name} 汇总公式`}
@@ -316,7 +316,7 @@ function SpreadsheetTableTotalsMenu({
                         });
                       }}
                     />
-                  </label>
+                  </div>
                 </div>
               );
             })}
