@@ -44,15 +44,15 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.212.0)
+## What's new on `main` (0.213.0)
 
-Dialog-hosted `OfficeSelect` / `Popover` menus stay unclipped:
+Presentation object alignment is a command menu:
 
-- `.ds-dialog` keeps `overflow: visible` so portaled listboxes inside the modal
-  focus scope are not cut by the rounded dialog surface.
-- `.ds-dialog-body` remains the scroll container; layout contracts lock the
-  split. Escape still closes the listbox before the parent dialog (`0.211.0`).
-
+- Align actions use a `Popover` with `menuitem` entries instead of an
+  `OfficeSelect` stuck on a disabled `none` closed value.
+- The closed label stays `对象对齐`; unit and Playwright checks cover actions,
+  Escape dismissal, and Chinese closed-label fit. Dialog Escape ownership
+  (`0.211.0`) and unclipped dialog menus (`0.212.0`) remain.
 
 ## Explore by surface
 

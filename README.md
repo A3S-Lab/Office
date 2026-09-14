@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.212.0` keeps dialog-hosted dropdown menus fully visible:
+Version `0.213.0` turns Presentation object alignment into a command menu:
 
-- **Dialog overflow** — `.ds-dialog` stays `overflow: visible` so portaled
-  `OfficeSelect` / `Popover` menus inside the modal focus scope are not clipped
-  by the rounded dialog surface; scrolling stays on `.ds-dialog-body`.
-- **Coverage** — Layout contracts lock the overflow split; Escape ownership
-  from `0.211.0` still closes the listbox before the parent dialog.
+- **Align launcher** — Object alignment uses a `Popover` menu with `menuitem`
+  actions instead of an `OfficeSelect` stuck on a disabled `none` closed value,
+  so the closed label stays `对象对齐` without fake select state.
+- **Coverage** — Unit and Playwright checks cover menu actions, Escape
+  dismissal, and Chinese closed-label fit on font/align triggers. Dialog Escape
+  ownership (`0.211.0`) and unclipped dialog menus (`0.212.0`) remain in force.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

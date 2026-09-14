@@ -74,12 +74,14 @@ These are already the default contract. Do not trade them away for breadth:
    `OfficeSelect` / `Popover` menus are not clipped while `.ds-dialog-body`
    scrolls. Through `0.211.0`, Dialog Escape defers to an open `OfficeSelect` /
    `Popover` so nested listboxes close before parent dialogs. Through
-   `0.210.0`, Document table layout/border-target, Presentation animation
-   trigger, and Spreadsheet number-format / date-time closed labels fit Chinese
-   chrome; orphaned Custom Sort native `select` CSS is removed. Through
-   `0.209.0`, Document ribbon Chinese closed labels get wider triggers, the
-   Spreadsheet ribbon drops the 62px crush default, and dead native `select`
-   ribbon CSS is removed.
+   `0.213.0`, Presentation object alignment is a command menu (`Popover` +
+   `menuitem`) instead of an `OfficeSelect` with a disabled `none` closed
+   value. Through `0.210.0`, Document table layout/border-target, Presentation
+   animation trigger, and Spreadsheet number-format / date-time closed labels
+   fit Chinese chrome; orphaned Custom Sort native `select` CSS is removed.
+   Through `0.209.0`, Document ribbon Chinese closed labels get wider triggers,
+   the Spreadsheet ribbon drops the 62px crush default, and dead native
+   `select` ribbon CSS is removed.
 4. Typed host ports for Yjs, presence, and agents—without shipping cloud
    accounts, storage, or model providers inside this package.
 
