@@ -15,11 +15,12 @@ export async function chooseOfficeSelectOption(
     return;
   }
   const byValue = page.locator(`[role="option"][data-value="${choice}"]`);
-  if ((await byValue.count()) > 0) {
+  try {
+    await byValue.first().waitFor({ state: 'visible', timeout: 2_000 });
     await byValue.first().click();
-    return;
+  } catch {
+    await page.getByRole('option', { name: choice }).click();
   }
-  await page.getByRole('option', { name: choice }).click();
 }
 
 export async function expectOfficeSelectValue(
@@ -27,6 +28,32 @@ export async function expectOfficeSelectValue(
   value: string,
 ): Promise<void> {
   await expect(combobox).toHaveAttribute('data-selected-value', value);
+}
+
+/** Close an open OfficeSelect listbox by toggling its trigger (avoids Escape closing dialogs). */
+export async function closeOfficeSelect(combobox: Locator): Promise<void> {
+  if ((await combobox.getAttribute('aria-expanded')) === 'true') {
+    await combobox.click();
+  }
+}
+
+/** Set an OfficeColorPicker value through the custom hex field. */
+export async function chooseOfficeColor(
+  page: Page,
+  trigger: Locator,
+  color: string,
+): Promise<void> {
+  await trigger.click();
+  const custom = page.getByRole('textbox', { name: '自定义颜色值' });
+  await custom.fill(color);
+  await page.getByRole('button', { name: '应用自定义颜色' }).click();
+}
+
+export async function expectOfficeColorValue(
+  trigger: Locator,
+  value: string,
+): Promise<void> {
+  await expect(trigger).toHaveAttribute('data-selected-value', value);
 }
 
 export async function openDocumentFixture(page: Page): Promise<void> {

@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { expectOfficeSelectValue } from './visual-test-support';
+import {
+  closeOfficeSelect,
+  expectOfficeSelectValue,
+} from './visual-test-support';
 
 test('Spreadsheet hyperlinks stay atomic and accessible at every layout', async ({
   page,
@@ -55,7 +58,8 @@ test('Spreadsheet hyperlinks stay atomic and accessible at every layout', async 
   await expect(
     page.getByRole('option', { name: 'Hidden Archive' }),
   ).toHaveCount(0);
-  await page.keyboard.press('Escape');
+  await closeOfficeSelect(sheet);
+  await expect(dialog).toBeVisible();
 
   await dialog.getByRole('radio', { name: '网页' }).click();
   const address = dialog.getByRole('textbox', { name: '地址' });

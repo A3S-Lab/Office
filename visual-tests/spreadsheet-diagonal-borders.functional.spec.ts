@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import {
+  chooseOfficeColor,
   chooseOfficeSelectOption,
   openSpreadsheetFixture,
 } from './visual-test-support';
@@ -33,7 +34,11 @@ test('Spreadsheet preserves both diagonal border directions through WPS editing 
     borderDialog.getByRole('combobox', { name: '框线样式' }),
     'thick',
   );
-  await borderDialog.getByLabel('框线颜色').fill(BORDER_COLOR);
+  await chooseOfficeColor(
+    page,
+    borderDialog.getByLabel('框线颜色'),
+    BORDER_COLOR,
+  );
   await borderDialog.getByRole('menuitemradio', { name: '斜下框线' }).click();
   await expect(borderDialog).toHaveCount(0);
   await expect(grid).toBeFocused();

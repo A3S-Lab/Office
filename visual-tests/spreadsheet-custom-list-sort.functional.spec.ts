@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   chooseOfficeSelectOption,
+  closeOfficeSelect,
   expectOfficeSelectValue,
   openSpreadsheetFixture,
 } from './visual-test-support';
@@ -61,7 +62,7 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
       hasText: '已保存的序列',
     }),
   ).toBeVisible();
-  await page.keyboard.press('Escape');
+  await closeOfficeSelect(order);
   await dialog.getByRole('button', { name: '添加条件' }).click();
   await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 2 列' }),
@@ -80,11 +81,12 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   const reopenedOrder = dialog.getByRole('combobox', {
     name: '排序条件 1 次序',
   });
+  await expectOfficeSelectValue(reopenedOrder, 'ascending');
+  await reopenedOrder.click();
   await expect(
-    reopenedOrder.getByRole('option', {
-      name: '有风险 → 进行中 → 正常 → …',
-    }),
-  ).toBeAttached();
+    page.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
+  ).toBeVisible();
+  await closeOfficeSelect(reopenedOrder);
   const managerButton = dialog.getByRole('button', {
     name: '管理自定义序列',
   });
@@ -133,9 +135,19 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   await manager.getByRole('button', { name: '确定' }).click();
   await expect(manager).toHaveCount(0);
   await expect(managerButton).toBeFocused();
+  await reopenedOrder.click();
   await expect(
-    reopenedOrder.locator('optgroup[label="已保存的序列"] option'),
-  ).toHaveText(['北区 → 中区 → 南区', '紧急 → 普通']);
+    page.locator('.work-office-select-group-label', {
+      hasText: '已保存的序列',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('option', { name: '北区 → 中区 → 南区' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('option', { name: '紧急 → 普通' }),
+  ).toBeVisible();
+  await closeOfficeSelect(reopenedOrder);
   if (usesNarrowManagerLayout) {
     await page.setViewportSize({ width: 768, height: 800 });
   }
@@ -181,17 +193,22 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   const remountedOrder = dialog.getByRole('combobox', {
     name: '排序条件 1 次序',
   });
+  await remountedOrder.click();
   await expect(
-    remountedOrder.locator('optgroup[label="已保存的序列"]'),
-  ).toBeAttached();
-  await expect(
-    remountedOrder.locator('optgroup[label="已保存的序列"] option'),
-  ).toHaveText(['北区 → 中区 → 南区', '紧急 → 普通']);
-  await expect(
-    remountedOrder.getByRole('option', {
-      name: '有风险 → 进行中 → 正常 → …',
+    page.locator('.work-office-select-group-label', {
+      hasText: '已保存的序列',
     }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('option', { name: '北区 → 中区 → 南区' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('option', { name: '紧急 → 普通' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
   ).toHaveCount(0);
+  await closeOfficeSelect(remountedOrder);
   await dialog.getByRole('button', { name: '取消' }).click();
   await expect(customSort).toBeFocused();
   expect(browserErrors).toEqual([]);

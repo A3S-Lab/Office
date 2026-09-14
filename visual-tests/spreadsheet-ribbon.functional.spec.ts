@@ -1,6 +1,9 @@
 import { expect, type Page, test } from '@playwright/test';
 import {
+  chooseOfficeColor,
   chooseOfficeSelectOption,
+  closeOfficeSelect,
+  expectOfficeColorValue,
   expectOfficeSelectValue,
   openSpreadsheetFixture,
 } from './visual-test-support';
@@ -453,8 +456,8 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
     'thick',
   );
   const borderColor = dialog.getByLabel('框线颜色');
-  await borderColor.fill('#b42318');
-  await expect(borderColor).toHaveValue('#b42318');
+  await chooseOfficeColor(page, borderColor, '#b42318');
+  await expectOfficeColorValue(borderColor, '#b42318');
   await expect(borderColor).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(
@@ -1284,18 +1287,14 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   const averageDialog = canvas.getByRole('dialog', { name: '一月 筛选' });
   await expect(averageDialog).toBeVisible();
   await averageDialog.getByRole('button', { name: '按条件过滤' }).click();
-  await chooseOfficeSelectOption(
-    page,
-    conditionDialog.getByRole('combobox', { name: '筛选条件' }),
-    'above-average',
-  );
-  await conditionDialog.getByRole('combobox', { name: '筛选条件' }).click();
+  const filterCondition = conditionDialog.getByRole('combobox', {
+    name: '筛选条件',
+  });
+  await chooseOfficeSelectOption(page, filterCondition, 'above-average');
+  await filterCondition.click();
   await expect(page.getByRole('option', { name: '低于平均值' })).toHaveCount(1);
-  await page.keyboard.press('Escape');
-  await expectOfficeSelectValue(
-    conditionDialog.getByRole('combobox', { name: '筛选条件' }),
-    'above-average',
-  );
+  await closeOfficeSelect(filterCondition);
+  await expectOfficeSelectValue(filterCondition, 'above-average');
   await expect(conditionDialog.getByRole('textbox')).toHaveCount(0);
   await conditionDialog.screenshot({
     path: testInfo.outputPath('spreadsheet-auto-filter-average-dialog.png'),
