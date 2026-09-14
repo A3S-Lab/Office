@@ -419,9 +419,7 @@ test('routes the concise README and documentation homes to the current release s
     'Document page-layout **分栏** closed labels stay honest',
   );
   expect(chineseHome).toContain('## `main` 更新内容（0.217.0）');
-  expect(chineseHome).toContain(
-    '文档页面布局「分栏」关闭标签如实表示状态',
-  );
+  expect(chineseHome).toContain('文档页面布局「分栏」关闭标签如实表示状态');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
