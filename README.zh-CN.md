@@ -370,13 +370,12 @@ Codex 编辑器操作可在所有五个表面上键入和重现。
 
 ## 当前版本
 
-版本 `0.215.0` 将文档插入域改为命令菜单：
+版本 `0.216.0` 避免更新日志 SSG 因未知 changelog 表面而崩溃：
 
-- **命令启动器，不是选择器** — 插入功能区字段入口是 `Popover` + `menuitem`，
-  不再使用禁用空闭合值的 `OfficeSelect`；闭合标签保持「插入域」，选择字段类型后
-  立即插入。
-- **覆盖** — 单元测试、Playwright 与 a3s-test（`word-fields-phone.acl`）以命令
-  按钮和 menuitem 为目标。
+- **用 Writer 表面，不用 `document`** — 文档插入域发布说明使用 `ReleaseCard`
+  可标注的 `writer` 键，SSG 不再读取未定义表面文案的 `.en`。
+- **契约** — `OfficeReleaseSurface` 为显式联合类型，单元测试在文档站点构建前
+  拒绝未知表面键。
 
 更早的版本请查看产品向
 [更新日志](https://a3s-lab.github.io/Office/docs/changelog.html) 时间线，以及完整工程

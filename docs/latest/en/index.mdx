@@ -44,14 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.215.0)
+## What's new on `main` (0.216.0)
 
-Document field insert is a command menu:
+What's new SSG stays up when Document notes use the Writer surface:
 
-- Insert-ribbon field insert uses `Popover` + `menuitem` instead of an
-  `OfficeSelect` stuck on a disabled empty closed value.
-- The closed label stays `插入域`. Unit, Playwright, and a3s-test contracts
-  target the command button and menuitems.
+- Curated changelog cards only label known surfaces (`writer`, not
+  `document`).
+- `OfficeReleaseSurface` is typed, and unit coverage rejects unknown keys.
 
 ## Explore by surface
 

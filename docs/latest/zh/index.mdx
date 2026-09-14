@@ -42,14 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.215.0）
+## `main` 更新内容（0.216.0）
 
-文档插入域改为命令菜单：
+文档发布说明使用 Writer 表面后，更新日志 SSG 可继续构建：
 
-- 插入功能区字段入口使用 `Popover` + `menuitem`，不再使用禁用空闭合值的
-  `OfficeSelect`。
-- 闭合标签保持「插入域」。单元测试、Playwright 与 a3s-test 以命令按钮和
-  menuitem 为目标。
+- changelog 卡片只标注已知表面（`writer`，不是 `document`）。
+- `OfficeReleaseSurface` 已类型化，单元测试拒绝未知键。
 
 
 ## 按表面探索

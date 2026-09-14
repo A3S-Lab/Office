@@ -79,7 +79,9 @@ These are already the default contract. Do not trade them away for breadth:
    value. Through `0.214.0`, single-object align-to-slide stays executable
    (`canAlignElement` requires one or more selection units). Through `0.215.0`,
    Document field insert is a command menu (`Popover` + `menuitem`) instead of an
-   `OfficeSelect` with a disabled empty closed value. Through `0.210.0`, Document table layout/border-target, Presentation
+   `OfficeSelect` with a disabled empty closed value. Through `0.216.0`, curated
+   What's new notes use the `writer` surface for Document work and reject unknown
+   changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation
    animation trigger, and Spreadsheet number-format / date-time closed labels
    fit Chinese chrome; orphaned Custom Sort native `select` CSS is removed.
    Through `0.209.0`, Document ribbon Chinese closed labels get wider triggers,

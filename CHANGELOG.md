@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.216.0 - 2026-09-14
+
+### Documentation
+
+- Curated What's new notes use the `writer` surface for Document work, so
+  changelog SSG no longer crashes on an unknown `document` key.
+- `OfficeReleaseSurface` is an explicit union, and release-note unit coverage
+  rejects unknown surface keys before docs SSG.
+
 ## 0.215.0 - 2026-09-14
 
 ### Document

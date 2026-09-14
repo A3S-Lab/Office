@@ -7,6 +7,7 @@ import {
 } from '../website/documentation-site';
 import {
   OFFICE_RELEASE_NOTES,
+  OFFICE_RELEASE_SURFACES,
   officeReleaseNotesThroughVersion,
 } from '../website/theme/release-notes-data';
 
@@ -15,6 +16,7 @@ const repositoryRoot = path.resolve(import.meta.dirname, '..');
 
 test('keeps curated release notes unique, localized, and newest first', () => {
   expect(OFFICE_RELEASE_NOTES.map(({ version }) => version)).toEqual([
+    '0.216.0',
     '0.215.0',
     '0.214.0',
     '0.213.0',
@@ -220,6 +222,9 @@ test('keeps curated release notes unique, localized, and newest first', () => {
   for (const release of OFFICE_RELEASE_NOTES) {
     expect(release.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(release.surfaces.length).toBeGreaterThan(0);
+    for (const surface of release.surfaces) {
+      expect(OFFICE_RELEASE_SURFACES).toContain(surface);
+    }
     expect(release.highlights).toHaveLength(3);
     expect(release.links.length).toBeGreaterThan(0);
 

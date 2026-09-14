@@ -1,9 +1,108 @@
+export type OfficeLocalizedReleaseText = {
+  readonly en: string;
+  readonly zh: string;
+};
+
+export type OfficeReleaseNoteKind = 'new' | 'improved' | 'fixed';
+
+export const OFFICE_RELEASE_SURFACES = [
+  'documentation',
+  'shared',
+  'writer',
+  'markdown',
+  'spreadsheet',
+  'presentation',
+  'pdf',
+  'playground',
+] as const;
+
+export type OfficeReleaseSurface = (typeof OFFICE_RELEASE_SURFACES)[number];
+
+export type OfficeReleaseNote = {
+  readonly version: string;
+  readonly date: string;
+  readonly kind: OfficeReleaseNoteKind;
+  readonly surfaces: readonly OfficeReleaseSurface[];
+  readonly title: OfficeLocalizedReleaseText;
+  readonly summary: OfficeLocalizedReleaseText;
+  readonly highlights: readonly {
+    readonly title: OfficeLocalizedReleaseText;
+    readonly detail: OfficeLocalizedReleaseText;
+  }[];
+  readonly links: readonly {
+    readonly href: OfficeLocalizedReleaseText;
+    readonly label: OfficeLocalizedReleaseText;
+  }[];
+};
+
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
+  {
+    version: '0.216.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['documentation'],
+    title: {
+      en: "What's new SSG rejects unknown surfaces",
+      zh: '更新日志 SSG 拒绝未知表面',
+    },
+    summary: {
+      en: 'Documentation: Document field-insert notes use the Writer surface the changelog cards can label, and curated notes reject unknown keys so SSG no longer reads .en of an undefined surface label.',
+      zh: '文档：文档插入域发布说明使用 changelog 卡片可标注的 Writer 表面；未知表面键会被拒绝，SSG 不再读取未定义表面文案的 .en。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Writer, not document',
+          zh: '用 writer，不用 document',
+        },
+        detail: {
+          en: 'The 0.215.0 Document field-insert note uses surfaces: writer, matching ReleaseCard labels.',
+          zh: '0.215.0 文档插入域说明使用 surfaces: writer，与 ReleaseCard 标签一致。',
+        },
+      },
+      {
+        title: {
+          en: 'Typed surface union',
+          zh: '类型化表面联合',
+        },
+        detail: {
+          en: 'OfficeReleaseSurface is an explicit union so a typo cannot compile as a changelog surface.',
+          zh: 'OfficeReleaseSurface 为显式联合类型，拼写错误不能作为 changelog 表面通过编译。',
+        },
+      },
+      {
+        title: {
+          en: 'Unit contract',
+          zh: '单元契约',
+        },
+        detail: {
+          en: 'Release-note tests reject unknown surface keys before docs SSG.',
+          zh: '发布说明测试在文档 SSG 之前拒绝未知表面键。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.216.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.216.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
   {
     version: '0.215.0',
     date: '2026-09-14',
     kind: 'fixed',
-    surfaces: ['document', 'documentation'],
+    surfaces: ['writer', 'documentation'],
     title: {
       en: 'Document field insert is a command menu',
       zh: '文档插入域改为命令菜单',

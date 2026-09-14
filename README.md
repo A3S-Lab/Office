@@ -371,14 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.215.0` turns Document field insert into a command menu:
+Version `0.216.0` keeps What's new SSG from crashing on unknown changelog
+surfaces:
 
-- **Command launcher, not select** — Insert-ribbon field insert is `Popover` +
-  `menuitem` instead of an `OfficeSelect` stuck on a disabled empty closed
-  value, so the closed label stays `插入域` while choosing a field kind inserts
-  immediately.
-- **Coverage** — Unit, Playwright, and a3s-test (`word-fields-phone.acl`)
-  contracts target the command button and menuitems.
+- **Writer surface, not `document`** — Document field-insert notes use the
+  `writer` key `ReleaseCard` can label, so SSG no longer reads `.en` of an
+  undefined surface.
+- **Contract** — `OfficeReleaseSurface` is an explicit union, and unit coverage
+  rejects unknown surface keys before the docs site builds.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
