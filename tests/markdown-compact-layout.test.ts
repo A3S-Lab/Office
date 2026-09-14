@@ -39,6 +39,9 @@ test('markdown compact layout follows the editor container and fills preview', (
       '[data-compact-pane="preview"]\n    .work-markdown-canvas',
     );
     expect(block).toContain('min-height: 100%;');
+    expect(block).toContain(
+      '.work-markdown-workspace.split .work-markdown-pane.source textarea {\n    min-height: 0;',
+    );
     expect(block).toContain('margin: 0;');
     expect(block).toContain(
       'background: color-mix(in srgb, var(--a3s-bg) 82%, var(--a3s-panel));',
