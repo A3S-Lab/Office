@@ -1,4 +1,8 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
+import {
+  chooseOfficeSelectOption,
+  expectOfficeSelectValue,
+} from './visual-test-support';
 
 test('Spreadsheet applies and undoes WPS left-to-right sorting', async ({
   page,
@@ -43,16 +47,20 @@ test('Spreadsheet applies and undoes WPS left-to-right sorting', async ({
   const header = dialog.getByRole('checkbox', { name: '数据包含标题' });
   await expect(header).not.toBeChecked();
   await expect(header).toBeDisabled();
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 1 行' }),
-  ).toHaveValue('0');
+    '0',
+  );
   await dialog.getByRole('button', { name: '添加条件' }).click();
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 2 行' }),
-  ).toHaveValue('1');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 2 次序' })
-    .selectOption('descending');
+    '1',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 2 次序' }),
+    'descending',
+  );
   await expectDialogInsideViewport(page, dialog);
   await dialog.screenshot({
     path: testInfo.outputPath(

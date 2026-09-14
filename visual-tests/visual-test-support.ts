@@ -1,7 +1,33 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 const visualDifferenceProbe =
   process.env.A3S_OFFICE_VISUAL_DIFFERENCE_PROBE === '1';
+
+/** Choose an OfficeSelect option by `data-value` or accessible name. */
+export async function chooseOfficeSelectOption(
+  page: Page,
+  combobox: Locator,
+  choice: string | { label: string | RegExp },
+): Promise<void> {
+  await combobox.click();
+  if (typeof choice === 'object') {
+    await page.getByRole('option', { name: choice.label }).click();
+    return;
+  }
+  const byValue = page.locator(`[role="option"][data-value="${choice}"]`);
+  if ((await byValue.count()) > 0) {
+    await byValue.first().click();
+    return;
+  }
+  await page.getByRole('option', { name: choice }).click();
+}
+
+export async function expectOfficeSelectValue(
+  combobox: Locator,
+  value: string,
+): Promise<void> {
+  await expect(combobox).toHaveAttribute('data-selected-value', value);
+}
 
 export async function openDocumentFixture(page: Page): Promise<void> {
   await page

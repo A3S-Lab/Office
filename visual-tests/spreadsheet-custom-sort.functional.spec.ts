@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { openSpreadsheetFixture } from './visual-test-support';
+import {
+  chooseOfficeSelectOption,
+  openSpreadsheetFixture,
+} from './visual-test-support';
 
 test('Spreadsheet applies and undoes a formula-safe multi-key sort', async ({
   page,
@@ -34,16 +37,22 @@ test('Spreadsheet applies and undoes a formula-safe multi-key sort', async ({
   await expect(
     dialog.getByRole('checkbox', { name: '数据包含标题' }),
   ).toBeChecked();
-  await dialog
-    .getByRole('combobox', { name: '排序条件 1 列' })
-    .selectOption('5');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 1 次序' })
-    .selectOption('descending');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 1 列' }),
+    '5',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 1 次序' }),
+    'descending',
+  );
   await dialog.getByRole('button', { name: '添加条件' }).click();
-  await dialog
-    .getByRole('combobox', { name: '排序条件 2 列' })
-    .selectOption('1');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 2 列' }),
+    '1',
+  );
   await dialog.screenshot({
     path: testInfo.outputPath('spreadsheet-custom-sort-dialog.png'),
     animations: 'disabled',

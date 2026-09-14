@@ -1,5 +1,9 @@
 import { expect, type Page, test } from '@playwright/test';
-import { openSpreadsheetFixture } from './visual-test-support';
+import {
+  chooseOfficeSelectOption,
+  expectOfficeSelectValue,
+  openSpreadsheetFixture,
+} from './visual-test-support';
 
 test('Spreadsheet follows the WPS ribbon information architecture', async ({
   page,
@@ -443,9 +447,11 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
     (dialogBounds?.y ?? 0) + (dialogBounds?.height ?? 0),
   ).toBeLessThanOrEqual(viewport?.height ?? 0);
 
-  await dialog
-    .getByRole('combobox', { name: '框线样式' })
-    .selectOption('thick');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '框线样式' }),
+    'thick',
+  );
   const borderColor = dialog.getByLabel('框线颜色');
   await borderColor.fill('#b42318');
   await expect(borderColor).toHaveValue('#b42318');
@@ -1199,17 +1205,21 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
     name: '自定义自动筛选',
   });
   await expect(conditionDialog).toContainText('执行看板!状态');
-  await conditionDialog
-    .getByRole('combobox', { name: '筛选条件' })
-    .selectOption('matches-wildcard');
+  await chooseOfficeSelectOption(
+    page,
+    conditionDialog.getByRole('combobox', { name: '筛选条件' }),
+    'matches-wildcard',
+  );
   await conditionDialog
     .getByRole('textbox', { name: '通配符表达式' })
     .fill('*风?');
   await conditionDialog.getByRole('button', { name: '添加第二个条件' }).click();
   await conditionDialog.getByRole('radio', { name: '并且' }).click();
-  await conditionDialog
-    .getByRole('combobox', { name: '第二个筛选条件' })
-    .selectOption('does-not-match-wildcard');
+  await chooseOfficeSelectOption(
+    page,
+    conditionDialog.getByRole('combobox', { name: '第二个筛选条件' }),
+    'does-not-match-wildcard',
+  );
   await conditionDialog
     .getByRole('textbox', { name: '第二个筛选值' })
     .fill('*完成');
@@ -1242,15 +1252,18 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   await expect(numericDialog).toBeVisible();
   await numericDialog.getByRole('button', { name: '前 10 项' }).click();
   await expect(conditionDialog).toContainText('执行看板!一月');
-  await expect(
+  await expectOfficeSelectValue(
     conditionDialog.getByRole('combobox', { name: '筛选条件' }),
-  ).toHaveValue('top');
+    'top',
+  );
   await expect(
     conditionDialog.getByRole('textbox', { name: '项目数' }),
   ).toHaveValue('10');
-  await conditionDialog
-    .getByRole('combobox', { name: '筛选条件' })
-    .selectOption('bottom-percent');
+  await chooseOfficeSelectOption(
+    page,
+    conditionDialog.getByRole('combobox', { name: '筛选条件' }),
+    'bottom-percent',
+  );
   await conditionDialog.getByRole('textbox', { name: '百分比' }).fill('50');
   await conditionDialog.screenshot({
     path: testInfo.outputPath('spreadsheet-auto-filter-rank-dialog.png'),
@@ -1271,15 +1284,18 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   const averageDialog = canvas.getByRole('dialog', { name: '一月 筛选' });
   await expect(averageDialog).toBeVisible();
   await averageDialog.getByRole('button', { name: '按条件过滤' }).click();
-  await conditionDialog
-    .getByRole('combobox', { name: '筛选条件' })
-    .selectOption('above-average');
-  await expect(
-    conditionDialog.getByRole('option', { name: '低于平均值' }),
-  ).toHaveCount(1);
-  await expect(
+  await chooseOfficeSelectOption(
+    page,
     conditionDialog.getByRole('combobox', { name: '筛选条件' }),
-  ).toHaveValue('above-average');
+    'above-average',
+  );
+  await conditionDialog.getByRole('combobox', { name: '筛选条件' }).click();
+  await expect(page.getByRole('option', { name: '低于平均值' })).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expectOfficeSelectValue(
+    conditionDialog.getByRole('combobox', { name: '筛选条件' }),
+    'above-average',
+  );
   await expect(conditionDialog.getByRole('textbox')).toHaveCount(0);
   await conditionDialog.screenshot({
     path: testInfo.outputPath('spreadsheet-auto-filter-average-dialog.png'),

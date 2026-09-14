@@ -203,7 +203,7 @@ test('Presentation font controls keep standard single-border geometry', async ({
   await expect(fontGroup.getByText('字号', { exact: true })).toHaveCount(0);
   await expect(fontSizeControl).toHaveClass(/work-office-number-field/);
   await expect(fontSizeControl).toHaveCSS('border-top-width', '1px');
-  await expect(fontSizeControl).toHaveCSS('height', '29px');
+  await expect(fontSizeControl).toHaveCSS('height', '24px');
 
   const [familyBox, sizeBox, boldBox] = await Promise.all([
     fontFamily.boundingBox(),

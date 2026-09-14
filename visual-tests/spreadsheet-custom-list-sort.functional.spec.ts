@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { openSpreadsheetFixture } from './visual-test-support';
+import {
+  chooseOfficeSelectOption,
+  expectOfficeSelectValue,
+  openSpreadsheetFixture,
+} from './visual-test-support';
 
 test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   page,
@@ -36,24 +40,33 @@ test('Spreadsheet persists, applies, and undoes a custom-list sort', async ({
   await customSort.click();
   let dialog = page.getByRole('dialog', { name: '自定义排序' });
   await expect(dialog).toContainText('执行看板!A3:G7');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 1 列' })
-    .selectOption('6');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 1 列' }),
+    '6',
+  );
   const order = dialog.getByRole('combobox', { name: '排序条件 1 次序' });
-  await order.selectOption({ label: '新建自定义序列…' });
+  await chooseOfficeSelectOption(page, order, { label: '新建自定义序列…' });
   await dialog
     .getByRole('textbox', { name: '排序条件 1 自定义序列' })
     .fill('有风险\n进行中\n正常\n已完成');
   await dialog.getByRole('button', { name: '使用序列' }).click();
-  await expect(order).toHaveValue('custom-list:7');
+  await expectOfficeSelectValue(order, 'custom-list:7');
+  await order.click();
   await expect(
-    order.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
-  ).toBeAttached();
-  await expect(order.locator('optgroup[label="已保存的序列"]')).toBeAttached();
+    page.getByRole('option', { name: '有风险 → 进行中 → 正常 → …' }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.work-office-select-group-label', {
+      hasText: '已保存的序列',
+    }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
   await dialog.getByRole('button', { name: '添加条件' }).click();
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 2 列' }),
-  ).toHaveValue('0');
+    '0',
+  );
   await dialog.screenshot({
     path: testInfo.outputPath('spreadsheet-custom-list-sort-dialog.png'),
     animations: 'disabled',

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { OFFICE_RELEASE_NOTES } from '../website/theme/release-notes-data';
 
 test('documentation changelog stays scannable, localized, and version-aware', async ({
   page,
@@ -9,9 +10,10 @@ test('documentation changelog stays scannable, localized, and version-aware', as
     page.getByRole('heading', { level: 1, name: '更新日志' }),
   ).toBeVisible();
   const cards = page.locator('.office-release-card');
-  await expect(cards).toHaveCount(167);
-  await expect(cards.first()).toHaveAttribute('data-version', '0.186.0');
-  await expect(cards.first()).toContainText('项目符号 numberingChange 可审阅');
+  const newest = OFFICE_RELEASE_NOTES[0];
+  await expect(cards).toHaveCount(OFFICE_RELEASE_NOTES.length);
+  await expect(cards.first()).toHaveAttribute('data-version', newest.version);
+  await expect(cards.first()).toContainText(newest.title.zh);
   const releaseCard = (version: string) =>
     page.locator(`.office-release-card[data-version="${version}"]`);
   await expect(releaseCard('0.182.0')).toContainText('Document /Alt 来自标题');

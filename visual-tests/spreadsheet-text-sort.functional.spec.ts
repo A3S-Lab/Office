@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
+import { expectOfficeSelectValue } from './visual-test-support';
 
 test('Spreadsheet applies and undoes WPS Chinese text sorting', async ({
   page,
@@ -45,9 +46,10 @@ test('Spreadsheet applies and undoes WPS Chinese text sorting', async ({
   await expect(options).toHaveCount(0);
 
   await dialog.getByRole('button', { name: '添加条件' }).click();
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 2 列' }),
-  ).toHaveValue('1');
+    '1',
+  );
   await expectDialogInsideViewport(page, dialog);
   await dialog.screenshot({
     path: testInfo.outputPath(

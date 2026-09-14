@@ -1,5 +1,9 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { openSpreadsheetFixture } from './visual-test-support';
+import {
+  chooseOfficeSelectOption,
+  expectOfficeSelectValue,
+  openSpreadsheetFixture,
+} from './visual-test-support';
 
 test('Spreadsheet sorts the complete table-owned range with structural controls locked', async ({
   page,
@@ -56,12 +60,15 @@ test('Spreadsheet sorts the complete table-owned range with structural controls 
   await expect(header).toBeChecked();
   await expect(header).toBeDisabled();
   await assertStructuralSortOptions(page, dialog);
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 1 列' }),
-  ).toHaveValue('5');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 1 次序' })
-    .selectOption('descending');
+    '5',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 1 次序' }),
+    'descending',
+  );
   await expectInsideViewport(page, dialog);
   await dialog.screenshot({
     path: testInfo.outputPath(
@@ -146,12 +153,15 @@ test('Spreadsheet reapplies AutoFilter criteria after an owned-range sort and un
   await expect(header).toBeChecked();
   await expect(header).toBeDisabled();
   await assertStructuralSortOptions(page, dialog);
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 1 列' }),
-  ).toHaveValue('5');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 1 次序' })
-    .selectOption('descending');
+    '5',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 1 次序' }),
+    'descending',
+  );
   await dialog.screenshot({
     path: testInfo.outputPath(
       `spreadsheet-auto-filter-owned-sort-${testInfo.project.name}.png`,

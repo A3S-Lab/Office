@@ -1,4 +1,8 @@
 import { expect, test } from '@playwright/test';
+import {
+  chooseOfficeSelectOption,
+  expectOfficeSelectValue,
+} from './visual-test-support';
 
 test('Spreadsheet data validation is discoverable from the public Playground', async ({
   page,
@@ -38,9 +42,10 @@ test('Spreadsheet data validation is discoverable from the public Playground', a
   await expect(
     dialog.getByRole('textbox', { name: '输入信息标题' }),
   ).toHaveValue('Workflow state');
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '错误警告样式' }),
-  ).toHaveValue('stop');
+    'stop',
+  );
   await expect(
     dialog.getByRole('textbox', { name: '错误警告标题' }),
   ).toHaveValue('Invalid state');
@@ -58,9 +63,10 @@ test('Spreadsheet data validation is discoverable from the public Playground', a
 
   const customDialog = page.getByRole('dialog', { name: '数据验证' });
   await expect(customDialog).toContainText('Inputs!E2');
-  await expect(
+  await expectOfficeSelectValue(
     customDialog.getByRole('combobox', { name: '允许' }),
-  ).toHaveValue('custom');
+    'custom',
+  );
   await expect(customDialog.getByRole('textbox', { name: '公式' })).toHaveValue(
     'LEN(E2)>0',
   );
@@ -197,9 +203,11 @@ test('Spreadsheet data validation stays atomic and accessible at every layout', 
   await dialog
     .getByRole('checkbox', { name: '在单元格内显示下拉箭头' })
     .click();
-  await dialog
-    .getByRole('combobox', { name: '错误警告样式' })
-    .selectOption('warning');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '错误警告样式' }),
+    'warning',
+  );
   await dialog
     .getByRole('textbox', { name: '错误警告标题' })
     .fill('Invalid state');
@@ -236,9 +244,10 @@ test('Spreadsheet data validation stays atomic and accessible at every layout', 
   await expect(
     dialog.getByRole('textbox', { name: '输入信息', exact: true }),
   ).toHaveValue('Choose a workflow state.');
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '错误警告样式' }),
-  ).toHaveValue('warning');
+    'warning',
+  );
   await expect(
     dialog.getByRole('textbox', { name: '错误警告标题' }),
   ).toHaveValue('Invalid state');

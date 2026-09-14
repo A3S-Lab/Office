@@ -1,4 +1,8 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
+import {
+  chooseOfficeSelectOption,
+  expectOfficeSelectValue,
+} from './visual-test-support';
 
 test('Spreadsheet applies and undoes effective appearance sorting', async ({
   page,
@@ -25,49 +29,69 @@ test('Spreadsheet applies and undoes effective appearance sorting', async ({
   await expect(
     dialog.getByRole('checkbox', { name: '数据包含标题' }),
   ).toBeChecked();
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 1 列' }),
-  ).toHaveValue('1');
+    '1',
+  );
 
-  await dialog
-    .getByRole('combobox', { name: '排序条件 1 排序依据' })
-    .selectOption('cell-color');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 1 目标外观' })
-    .selectOption('cell-color:#fce8e6');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 1 排序依据' }),
+    'cell-color',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 1 目标外观' }),
+    'cell-color:#fce8e6',
+  );
   await expect(dialog).toContainText('单元格颜色 #FCE8E6，置于顶端');
 
   await dialog.getByRole('button', { name: '添加条件' }).click();
-  await dialog
-    .getByRole('combobox', { name: '排序条件 2 列' })
-    .selectOption('1');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 2 排序依据' })
-    .selectOption('cell-color');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 2 目标外观' })
-    .selectOption('cell-color:#fff2cc');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 2 列' }),
+    '1',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 2 排序依据' }),
+    'cell-color',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 2 目标外观' }),
+    'cell-color:#fff2cc',
+  );
   await expect(dialog).toContainText('单元格颜色 #FFF2CC，置于顶端');
 
   await dialog.getByRole('button', { name: '添加条件' }).click();
-  await dialog
-    .getByRole('combobox', { name: '排序条件 3 排序依据' })
-    .selectOption('font-color');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 3 目标外观' })
-    .selectOption('font-color:#d84b4f');
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 3 排序依据' }),
+    'font-color',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 3 目标外观' }),
+    'font-color:#d84b4f',
+  );
   await expect(dialog).toContainText('字体颜色 #D84B4F，置于顶端');
 
   await dialog.getByRole('button', { name: '添加条件' }).click();
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: '排序条件 4 列' }),
-  ).toHaveValue('2');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 4 排序依据' })
-    .selectOption('icon');
-  await dialog
-    .getByRole('combobox', { name: '排序条件 4 目标外观' })
-    .selectOption('icon:3TrafficLights1:2');
+    '2',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 4 排序依据' }),
+    'icon',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    dialog.getByRole('combobox', { name: '排序条件 4 目标外观' }),
+    'icon:3TrafficLights1:2',
+  );
   await expect(dialog).toContainText('三色交通灯（实心） 3/3，置于顶端');
   await expectDialogInsideViewport(page, dialog);
   await dialog.screenshot({

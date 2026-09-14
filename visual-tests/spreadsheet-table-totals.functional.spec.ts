@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { expectOfficeSelectValue } from './visual-test-support';
 
 test('Spreadsheet totals-row controls stay discoverable and usable', async ({
   page,
@@ -36,9 +37,10 @@ test('Spreadsheet totals-row controls stay discoverable and usable', async ({
   await expect(
     dialog.getByRole('checkbox', { name: '启用汇总行' }),
   ).toBeChecked();
-  await expect(
+  await expectOfficeSelectValue(
     dialog.getByRole('combobox', { name: 'Units 汇总函数' }),
-  ).toHaveValue('sum');
+    'sum',
+  );
   await dialog.screenshot({
     path: testInfo.outputPath('spreadsheet-table-totals-dialog.png'),
     animations: 'disabled',

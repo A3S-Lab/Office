@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { openSpreadsheetFixture } from './visual-test-support';
+import {
+  chooseOfficeSelectOption,
+  expectOfficeSelectValue,
+  openSpreadsheetFixture,
+} from './visual-test-support';
 
 test('Spreadsheet expands a partial WPS sort range without breaking rows', async ({
   page,
@@ -64,12 +68,15 @@ test('Spreadsheet expands a partial WPS sort range without breaking rows', async
   await expect(
     sortDialog.getByRole('checkbox', { name: '数据包含标题' }),
   ).toBeChecked();
-  await expect(
+  await expectOfficeSelectValue(
     sortDialog.getByRole('combobox', { name: '排序条件 1 列' }),
-  ).toHaveValue('5');
-  await sortDialog
-    .getByRole('combobox', { name: '排序条件 1 次序' })
-    .selectOption('descending');
+    '5',
+  );
+  await chooseOfficeSelectOption(
+    page,
+    sortDialog.getByRole('combobox', { name: '排序条件 1 次序' }),
+    'descending',
+  );
   await sortDialog.getByRole('button', { name: '确定' }).click();
   await expect(customSort).toBeFocused();
 
