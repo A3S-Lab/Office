@@ -371,15 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.210.0` continues Chinese ribbon closed-label width fixes:
+Version `0.211.0` fixes nested Escape ownership for dialog dropdowns:
 
-- **Document table** — Layout and border-target `OfficeSelect` triggers widen
-  for labels like `固定列宽` and `内部横框线`.
-- **Presentation animation** — Trigger field widens for `与上一动画同时` /
-  `上一动画之后`.
-- **Spreadsheet number** — Number-format stack and date-time trigger widen for
-  `会计专用` / `科学计数` / `日期和时间`; orphaned Custom Sort `select` CSS is
-  removed.
+- **Dialog Escape** — An open `OfficeSelect` / `Popover` consumes Escape first
+  so Sort, AutoFilter, hyperlink, data validation, and other parent dialogs
+  stay open until the listbox closes.
+- **Coverage** — Unit tests assert Escape closes the select, then a second
+  Escape closes the dialog.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

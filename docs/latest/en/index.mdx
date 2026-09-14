@@ -44,14 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.210.0)
+## What's new on `main` (0.211.0)
 
-More Chinese closed-label width fixes on ribbon / panel selects:
+Dialog Escape now defers to an open `OfficeSelect` / `Popover`:
 
-- Document table layout and border-target `OfficeSelect` triggers widen.
-- Presentation animation trigger field fits `与上一动画同时` / `上一动画之后`.
-- Spreadsheet number-format stack and date-time trigger widen; orphaned Custom
-  Sort native `select` CSS is removed.
+- Escape closes the listbox first inside Sort, AutoFilter, hyperlink, data
+  validation, and other parent dialogs.
+- A second Escape then dismisses the dialog; unit coverage locks the order.
 
 
 ## Explore by surface

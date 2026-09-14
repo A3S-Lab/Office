@@ -138,6 +138,55 @@ test('keeps portal select menus inside the active modal focus scope', async () =
   expect(trigger).toHaveFocus();
 });
 
+test('Escape closes an open OfficeSelect before dismissing its parent dialog', async () => {
+  function Fixture() {
+    const [open, setOpen] = useState(true);
+    const [value, setValue] = useState<'minimum' | 'exact'>('minimum');
+    if (!open) {
+      return (
+        <section data-a3s-office>
+          <p>对话框已关闭</p>
+        </section>
+      );
+    }
+    return (
+      <section data-a3s-office>
+        <Dialog title="行高" onClose={() => setOpen(false)}>
+          <OfficeSelect
+            ariaLabel="行高规则"
+            value={value}
+            options={[
+              { value: 'minimum', label: '最小值' },
+              { value: 'exact', label: '固定值' },
+            ]}
+            onValueChange={setValue}
+          />
+        </Dialog>
+      </section>
+    );
+  }
+
+  render(<Fixture />);
+  const trigger = screen.getByRole('combobox', { name: '行高规则' });
+  fireEvent.click(trigger);
+  await waitFor(() =>
+    expect(screen.getByRole('listbox', { name: '行高规则' })).toBeVisible(),
+  );
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+
+  await waitFor(() =>
+    expect(screen.queryByRole('listbox', { name: '行高规则' })).toBeNull(),
+  );
+  expect(screen.getByRole('dialog', { name: '行高' })).toBeVisible();
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '行高' })).toBeNull(),
+  );
+  expect(screen.getByText('对话框已关闭')).toBeInTheDocument();
+});
+
 test('recovers focus when the focused dialog control is removed', async () => {
   function Fixture() {
     const [showAction, setShowAction] = useState(true);

@@ -7,17 +7,21 @@ export { StateView } from './feedback/state-view';
 export { Field, type FieldControlProps } from './form/field';
 export { SplitHandle } from './layout/split-handle';
 export {
-  type TabNavigationItem,
-  useTabNavigation,
-} from './navigation/tab-navigation';
-export {
   SegmentedControl,
   type SegmentedControlItem,
 } from './navigation/segmented-control';
+export {
+  type TabNavigationItem,
+  useTabNavigation,
+} from './navigation/tab-navigation';
 export { type TabItem, Tabs } from './navigation/tabs';
 export {
   type DialogFocusScopeOptions,
   useDialogFocusScope,
 } from './overlay/dialog-focus-scope';
-export { Popover, type PopoverTriggerProps } from './overlay/popover';
+export {
+  hasOpenOfficePopover,
+  Popover,
+  type PopoverTriggerProps,
+} from './overlay/popover';
 export { StatusBadge } from './status/status-badge';

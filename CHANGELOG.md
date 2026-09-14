@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.211.0 - 2026-09-14
+
+### Chrome
+
+- Dialog Escape defers to an open `OfficeSelect` / `Popover` first, so Escape
+  closes the listbox without dismissing Sort, AutoFilter, hyperlink, data
+  validation, and other parent dialogs.
+- Unit coverage asserts Escape closes the select, then a second Escape closes
+  the dialog.
+
 ## 0.210.0 - 2026-09-14
 
 ### Chrome

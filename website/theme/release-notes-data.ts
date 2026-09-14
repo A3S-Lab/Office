@@ -1,5 +1,73 @@
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.211.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: [
+      'writer',
+      'spreadsheet',
+      'presentation',
+      'markdown',
+      'documentation',
+    ],
+    title: {
+      en: 'Escape closes OfficeSelect before parent dialogs',
+      zh: 'Escape 先关闭 OfficeSelect 再关闭父对话框',
+    },
+    summary: {
+      en: 'Shared shell: Dialog Escape defers to an open OfficeSelect/Popover layer so Sort, AutoFilter, hyperlink, data validation, and other dialogs stay open until the listbox is dismissed.',
+      zh: '共享壳层：对话框 Escape 优先交给已打开的 OfficeSelect/Popover，使排序、自动筛选、超链接、数据验证等对话框在列表关闭前保持打开。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Nested Escape ownership',
+          zh: '嵌套 Escape 归属',
+        },
+        detail: {
+          en: 'Capture-phase dialog focus scopes skip Escape while openPopoverLayers is non-empty; native dialog cancel is guarded the same way.',
+          zh: '对话框捕获阶段焦点范围在 openPopoverLayers 非空时跳过 Escape；原生 dialog cancel 同样受保护。',
+        },
+      },
+      {
+        title: {
+          en: 'OfficeSelect and color menus',
+          zh: 'OfficeSelect 与颜色菜单',
+        },
+        detail: {
+          en: 'Shared Popover layers own Escape first for listboxes and nested portal menus inside modal dialogs.',
+          zh: '共享 Popover 层级优先消费 Escape，覆盖模态对话框内的列表与嵌套门户菜单。',
+        },
+      },
+      {
+        title: {
+          en: 'Regression coverage',
+          zh: '回归覆盖',
+        },
+        detail: {
+          en: 'Unit tests assert Escape closes the select first, then a second Escape closes the parent dialog.',
+          zh: '单元测试断言 Escape 先关闭下拉，第二次 Escape 再关闭父对话框。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/spreadsheet.html',
+          zh: './components/spreadsheet.html',
+        },
+        label: { en: 'Spreadsheet editor', zh: '表格编辑器' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.211.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.211.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.210.0',
     date: '2026-09-14',
     kind: 'fixed',

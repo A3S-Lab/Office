@@ -49,6 +49,10 @@ type OpenPopoverLayer = {
 
 const openPopoverLayers: OpenPopoverLayer[] = [];
 
+export function hasOpenOfficePopover(): boolean {
+  return openPopoverLayers.length > 0;
+}
+
 function pushOpenPopover(layer: OpenPopoverLayer) {
   const existing = openPopoverLayers.findIndex(
     (entry) => entry.token === layer.token,

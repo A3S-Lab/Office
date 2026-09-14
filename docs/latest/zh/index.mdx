@@ -42,13 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.210.0）
+## `main` 更新内容（0.211.0）
 
-继续修复功能区 / 面板下拉闭合标签的中文宽度：
+对话框 Escape 现在优先交给已打开的 `OfficeSelect` / `Popover`：
 
-- 文档表格布局与边框目标 `OfficeSelect` 触发器加宽。
-- 演示文稿动画触发字段适配 `与上一动画同时` / `上一动画之后`。
-- 表格数字格式栈与日期时间触发器加宽；删除自定义排序残留原生 `select` 样式。
+- 在排序、自动筛选、超链接、数据验证等父对话框内，Escape 先关闭列表。
+- 第二次 Escape 再关闭对话框；单元测试锁定该顺序。
 
 
 ## 按表面探索

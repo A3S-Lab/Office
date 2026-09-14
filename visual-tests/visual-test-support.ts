@@ -30,7 +30,7 @@ export async function expectOfficeSelectValue(
   await expect(combobox).toHaveAttribute('data-selected-value', value);
 }
 
-/** Close an open OfficeSelect listbox by toggling its trigger (avoids Escape closing dialogs). */
+/** Close an open OfficeSelect listbox by toggling its trigger (Escape also works since 0.211). */
 export async function closeOfficeSelect(combobox: Locator): Promise<void> {
   if ((await combobox.getAttribute('aria-expanded')) === 'true') {
     await combobox.click();

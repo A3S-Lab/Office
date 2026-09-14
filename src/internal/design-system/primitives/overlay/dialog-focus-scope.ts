@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
 } from 'react';
+import { hasOpenOfficePopover } from './popover';
 
 const focusableSelector = [
   'button:not(:disabled)',
@@ -203,6 +204,9 @@ function handleScopedKeyDown(
   options: DialogFocusScopeOptions,
 ): void {
   if (event.key === 'Escape' && options.onEscape && !options.escapeDisabled) {
+    // Open Popover / OfficeSelect layers own Escape first (bubble handlers).
+    // Capture-phase dialog scopes must not stopPropagation or the menu never closes.
+    if (hasOpenOfficePopover()) return;
     event.preventDefault();
     event.stopPropagation();
     options.onEscape();

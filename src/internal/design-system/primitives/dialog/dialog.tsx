@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from '../button/icon-button';
 import { useDialogFocusScope } from '../overlay/dialog-focus-scope';
+import { hasOpenOfficePopover } from '../overlay/popover';
 import { officeOverlayPortalRoot } from '../overlay/portal-root';
 
 export function Dialog({
@@ -50,7 +51,8 @@ export function Dialog({
       role="presentation"
       onCancel={(event) => {
         event.preventDefault();
-        if (!closeDisabled) onClose();
+        if (closeDisabled || hasOpenOfficePopover()) return;
+        onClose();
       }}
     >
       <section
