@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.219.0 - 2026-09-14
+
+### Document
+
+- Paragraph style gallery and **段落样式** `OfficeSelect` cover heading levels
+  1–6. Closed labels for imported or pasted **标题 4** / **标题 5** / **标题 6**
+  stay honest instead of falling through to **正文**.
+
+### Markdown
+
+- Visual and source **段落样式** options cover heading levels 1–6, with matching
+  `heading-4` / `heading-5` / `heading-6` source commands so closed labels match
+  real heading state.
+
 ## 0.218.0 - 2026-09-14
 
 ### Spreadsheet

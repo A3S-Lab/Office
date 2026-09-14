@@ -28,6 +28,24 @@ const documentParagraphStyles = [
     level: 3,
     shortcut: getDocumentCommandDefinition('heading3').shortcut,
   },
+  {
+    value: 'h4',
+    label: '标题 4',
+    level: 4,
+    shortcut: undefined,
+  },
+  {
+    value: 'h5',
+    label: '标题 5',
+    level: 5,
+    shortcut: undefined,
+  },
+  {
+    value: 'h6',
+    label: '标题 6',
+    level: 6,
+    shortcut: undefined,
+  },
 ] as const;
 
 const documentParagraphStyleAriaKeyShortcuts = documentParagraphStyles
@@ -131,9 +149,11 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
 function documentParagraphStyleValue(
   editor: Editor,
 ): DocumentParagraphStyleValue {
-  if (editor.isActive('heading', { level: 1 })) return 'h1';
-  if (editor.isActive('heading', { level: 2 })) return 'h2';
-  if (editor.isActive('heading', { level: 3 })) return 'h3';
+  for (const level of [1, 2, 3, 4, 5, 6] as const) {
+    if (editor.isActive('heading', { level })) {
+      return `h${level}` as DocumentParagraphStyleValue;
+    }
+  }
   return 'paragraph';
 }
 

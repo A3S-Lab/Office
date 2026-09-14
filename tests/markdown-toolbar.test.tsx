@@ -94,6 +94,33 @@ test('does not leak hidden visual heading or link state into source menus', () =
   expect(screen.getByRole('button', { name: '移除链接' })).toBeDisabled();
 });
 
+test('keeps heading 4–6 paragraph-style closed labels honest in visual mode', () => {
+  editor = new Editor({
+    extensions: createWorkMarkdownExtensions(),
+    content: '<h5>Deep heading</h5>',
+  });
+  render(
+    <MarkdownToolbar
+      editor={editor}
+      sourceEditing={false}
+      canSourceRedo={false}
+      canSourceUndo={false}
+      viewMode="visual"
+      getSourceFocusTarget={() => null}
+      getSourceSelection={() => null}
+      onSourceCommand={() => false}
+      onSourceRedo={() => false}
+      onSourceReplace={() => false}
+      onSourceUndo={() => false}
+      onViewModeChange={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '段落样式' })).toHaveTextContent(
+    '标题 5',
+  );
+});
+
 test('edits and removes the exact source link targeted by the current selection', () => {
   editor = new Editor({
     extensions: createWorkMarkdownExtensions(),

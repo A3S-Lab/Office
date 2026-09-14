@@ -159,21 +159,11 @@ export function MarkdownToolbar({
           command,
         )
       : false;
-  const paragraphStyle = sourceEditing
-    ? commandIsActive('heading-1')
-      ? 'h1'
-      : commandIsActive('heading-2')
-        ? 'h2'
-        : commandIsActive('heading-3')
-          ? 'h3'
-          : 'paragraph'
-    : editor.isActive('heading', { level: 1 })
-      ? 'h1'
-      : editor.isActive('heading', { level: 2 })
-        ? 'h2'
-        : editor.isActive('heading', { level: 3 })
-          ? 'h3'
-          : 'paragraph';
+  const paragraphStyle = markdownParagraphStyleValue(
+    sourceEditing,
+    commandIsActive,
+    editor,
+  );
   const linkActive = sourceEditing
     ? Boolean(sourceLink)
     : editor.isActive('link');
@@ -426,6 +416,9 @@ export function MarkdownToolbar({
                     { value: 'h1', label: '标题 1' },
                     { value: 'h2', label: '标题 2' },
                     { value: 'h3', label: '标题 3' },
+                    { value: 'h4', label: '标题 4' },
+                    { value: 'h5', label: '标题 5' },
+                    { value: 'h6', label: '标题 6' },
                   ]}
                   onValueChange={(value) => {
                     if (value === 'paragraph') {
@@ -433,7 +426,13 @@ export function MarkdownToolbar({
                         editor.chain().focus().setParagraph().run();
                       });
                     } else {
-                      const level = Number(value.slice(1)) as 1 | 2 | 3;
+                      const level = Number(value.slice(1)) as
+                        | 1
+                        | 2
+                        | 3
+                        | 4
+                        | 5
+                        | 6;
                       runCommand(`heading-${level}`, () => {
                         editor.chain().focus().toggleHeading({ level }).run();
                       });
@@ -694,6 +693,20 @@ export function MarkdownToolbar({
       )}
     </>
   );
+}
+
+function markdownParagraphStyleValue(
+  sourceEditing: boolean,
+  commandIsActive: (command: MarkdownSourceCommand) => boolean,
+  editor: Editor,
+): 'paragraph' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' {
+  for (const level of [1, 2, 3, 4, 5, 6] as const) {
+    const active = sourceEditing
+      ? commandIsActive(`heading-${level}`)
+      : editor.isActive('heading', { level });
+    if (active) return `h${level}`;
+  }
+  return 'paragraph';
 }
 
 function canRunVisualEditorCommand(

@@ -606,6 +606,52 @@ test('shows paragraph styles and applies the active style idempotently', () => {
   expect(editor.getHTML()).not.toContain('<h1>');
 });
 
+test('keeps heading 4–6 paragraph-style closed labels honest', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<h4>Imported outline</h4>',
+  });
+  const view = render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  const gallery = screen.getByRole('radiogroup', { name: '段落样式库' });
+
+  expect(
+    within(gallery).getByRole('radio', { name: '应用样式：标题 4' }),
+  ).toBeChecked();
+  expect(
+    within(gallery).getByRole('radio', { name: '应用样式：正文' }),
+  ).not.toBeChecked();
+  expect(screen.getByRole('combobox', { name: '段落样式' })).toHaveTextContent(
+    '标题 4',
+  );
+
+  fireEvent.click(
+    within(gallery).getByRole('radio', { name: '应用样式：标题 6' }),
+  );
+  expect(editor.getHTML()).toContain('<h6>Imported outline</h6>');
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  expect(
+    within(screen.getByRole('radiogroup', { name: '段落样式库' })).getByRole(
+      'radio',
+      { name: '应用样式：标题 6' },
+    ),
+  ).toBeChecked();
+  expect(screen.getByRole('combobox', { name: '段落样式' })).toHaveTextContent(
+    '标题 6',
+  );
+});
+
 test('supports arrow-key selection in the paragraph style gallery', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

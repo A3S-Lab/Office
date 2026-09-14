@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.218.0` keeps Spreadsheet Custom Sort **次序** closed labels honest:
+Version `0.219.0` keeps Document and Markdown **段落样式** closed labels honest
+for heading levels 4–6:
 
-- **Closed label is state** — When the active key still uses a custom list that
-  is no longer in `customLists`, the combobox shows `自定义序列`, not the
-  command name `新建自定义序列…`.
-- **新建自定义序列… stays a command** — Choosing it opens list editing and never
-  becomes the closed value.
+- **Closed label is state** — An active `h4` / `h5` / `h6` shows `标题 4` /
+  `标题 5` / `标题 6`, not `正文`.
+- **Apply covers 1–6** — Gallery and combobox options match the TipTap heading
+  schema used for DOCX / Markdown import.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

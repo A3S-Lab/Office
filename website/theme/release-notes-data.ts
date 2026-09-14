@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.219.0',
+    date: '2026-09-14',
+    kind: 'fixed',
+    surfaces: ['writer', 'markdown'],
+    title: {
+      en: 'Heading 4–6 paragraph-style closed labels stay honest',
+      zh: '标题 4–6 段落样式关闭标签如实表示状态',
+    },
+    summary: {
+      en: 'Document and Markdown: paragraph-style gallery and 段落样式 OfficeSelect cover heading levels 1–6 so active h4–h6 show 标题 4 / 标题 5 / 标题 6 instead of falling through to 正文.',
+      zh: '文档与 Markdown：段落样式库与「段落样式」OfficeSelect 覆盖标题 1–6，活动 h4–h6 显示「标题 4」/「标题 5」/「标题 6」，而不再回落到「正文」。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Closed label is state',
+          zh: '关闭标签即状态',
+        },
+        detail: {
+          en: 'Imported or pasted heading levels 4–6 keep 标题 4 / 标题 5 / 标题 6 on the closed combobox and gallery radio.',
+          zh: '导入或粘贴的标题 4–6 在关闭组合框与样式库单选上保持「标题 4」/「标题 5」/「标题 6」。',
+        },
+      },
+      {
+        title: {
+          en: 'Apply covers 1–6',
+          zh: '应用覆盖 1–6',
+        },
+        detail: {
+          en: 'Options match the TipTap heading schema used for DOCX and Markdown import.',
+          zh: '选项与 DOCX、Markdown 导入使用的 TipTap 标题模型一致。',
+        },
+      },
+      {
+        title: {
+          en: 'Contracts',
+          zh: '契约',
+        },
+        detail: {
+          en: 'Unit coverage pins heading 4–6 closed labels on DocumentHomeRibbon and MarkdownToolbar.',
+          zh: '单元覆盖将标题 4–6 关闭标签钉在 DocumentHomeRibbon 与 MarkdownToolbar 上。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.219.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.219.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.218.0',
     date: '2026-09-14',
     kind: 'fixed',
