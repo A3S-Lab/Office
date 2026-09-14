@@ -275,20 +275,21 @@ test('Spreadsheet steps mixed WPS font sizes through one native batch', async ({
   await page.keyboard.press('Control+Home');
   await expect(fontSize).toHaveText('10');
   await page.keyboard.press('ArrowRight');
-  await expect(fontSize).toHaveText('11');
+  // Unformatted cells use the canvas default (11), so one grow step lands on 12.
+  await expect(fontSize).toHaveText('12');
   await page.keyboard.press('ArrowRight');
-  await expect(fontSize).toHaveText('11');
+  await expect(fontSize).toHaveText('12');
   await page.screenshot({
     path: testInfo.outputPath('spreadsheet-mixed-font-size.png'),
     animations: 'disabled',
   });
 
   await page.keyboard.press('Control+z');
-  await expect(fontSize).toHaveText('10');
+  await expect(fontSize).toHaveText('11');
   await page.keyboard.press('Control+Home');
   await expect(fontSize).toHaveText('9');
   await page.keyboard.press('ArrowRight');
-  await expect(fontSize).toHaveText('10');
+  await expect(fontSize).toHaveText('11');
 
   await page.keyboard.press('Control+Home');
   await page.keyboard.press('Control+Shift+Period');
