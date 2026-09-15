@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.240.0 - 2026-09-15
+
+### Document
+
+- Home and selection-toolbar **突出显示** no longer call TipTap `chain().focus()`
+  on toggle. Focus stays on the ribbon/toolbar trigger so L2 formatting loops
+  keep working (TipTap's deferred focus otherwise steals into the editor).
+
 ## 0.239.0 - 2026-09-15
 
 ### Document

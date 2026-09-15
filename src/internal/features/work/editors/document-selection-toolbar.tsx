@@ -17,9 +17,9 @@ import {
   documentFontSizeOptionsForValue,
   documentFontSizeValue,
 } from './document-formatting-options';
-import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
+import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
 
 const bubbleMenuOptions = {
@@ -177,9 +177,11 @@ export function DocumentSelectionToolbar({
           <SelectionToolbarButton
             label="突出显示"
             active={editor.isActive('highlight')}
-            onClick={() =>
-              editor.chain().focus().toggleHighlight({ color: '#fff0a6' }).run()
-            }
+            onClick={() => {
+              // Keep toolbar focus on the highlight trigger.
+              // chain().focus() schedules into the editor and breaks L2 loops.
+              editor.commands.toggleHighlight({ color: '#fff0a6' });
+            }}
           >
             <Highlighter size={15} />
           </SelectionToolbarButton>

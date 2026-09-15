@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.239.0` keeps Document color-picker L2 focus on the ribbon trigger after a swatch pick:
+Version `0.240.0` keeps Document highlight focus on the ribbon trigger after toggle:
 
-- Home font color, table cell fill, selection-toolbar color, and page-chrome color apply without TipTap `chain().focus()`, so Popover restore is not stolen by TipTap's deferred editor focus.
+- Home and selection-toolbar **突出显示** apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 formatting loop off the trigger.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -226,13 +226,11 @@ export function DocumentHomeRibbon({
             <ToolbarButton
               label="突出显示"
               active={editor.isActive('highlight')}
-              onClick={() =>
-                editor
-                  .chain()
-                  .focus()
-                  .toggleHighlight({ color: '#fff0a6' })
-                  .run()
-              }
+              onClick={() => {
+                // Keep ribbon focus on the highlight trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.toggleHighlight({ color: '#fff0a6' });
+              }}
             >
               <Highlighter size={16} />
             </ToolbarButton>

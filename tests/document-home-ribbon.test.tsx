@@ -226,6 +226,35 @@ test('keeps font color picker focus on the ribbon trigger after a swatch pick', 
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps highlight focus on the ribbon trigger after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Highlight me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Highlight me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '突出显示' });
+  trigger.focus();
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('highlight')).toBe(true);
+  // TipTap chain().focus() schedules DOM focus on a later animation frame;
+  // stay on the ribbon trigger after that frame so L2 loops keep working.
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('applies italic formatting without replacing the selected text', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

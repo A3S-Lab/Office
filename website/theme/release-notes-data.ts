@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.240.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Highlight toggle keeps ribbon trigger focus',
+      zh: '突出显示切换保留功能区触发焦点',
+    },
+    summary: {
+      en: 'Document Home and selection-toolbar highlight toggles apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 formatting loop off the trigger.',
+      zh: '文档主页与选择工具栏的突出显示切换不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走触发按钮上的 L2 格式循环。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the ribbon or toolbar button.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在功能区或工具栏按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Home and selection toolbar',
+          zh: '主页与选择工具栏',
+        },
+        detail: {
+          en: 'Same focus contract as color pickers and underline/strike style menus.',
+          zh: '与颜色选择器和下划线/删除线样式菜单相同的焦点契约。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 formatting loops stay on the trigger',
+          zh: 'L2 格式循环留在触发按钮',
+        },
+        detail: {
+          en: 'After toggling highlight, keyboard users can continue from the same ribbon control.',
+          zh: '切换突出显示后，键盘用户可从同一功能区控件继续操作。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.239.0',
     date: '2026-09-15',
     kind: 'fixed',
