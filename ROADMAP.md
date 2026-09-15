@@ -117,6 +117,9 @@ These are already the default contract. Do not trade them away for breadth:
    Through `0.231.0`, Document list galleries and Spreadsheet **更多框线** keep
    dialog panels for mixed controls but use `radiogroup` / `radio` option
    grids instead of nesting `menu` / `menuitemradio`.
+   Through `0.232.0`, Document underline / strike L2 style picks (and underline
+   color) stop calling `chain().focus()` so Popover restores the ribbon
+   disclosure.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

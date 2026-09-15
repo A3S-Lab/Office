@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.231.0` fixes L2 dialog option semantics:
+Version `0.232.0` keeps underline / strike ribbon focus on the disclosure:
 
-- Document bullet / numbering libraries and Spreadsheet **更多框线** keep dialog panels for mixed controls, but option grids use `radiogroup` / `radio` instead of nested `menu` / `menuitemradio`.
+- Document **更多下划线** / **更多删除线** style picks and underline color no longer steal focus into the editor via `chain().focus()`; Popover restores the ribbon trigger for L2 keyboard loops.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

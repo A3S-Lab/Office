@@ -167,6 +167,7 @@ test('authors every native underline style and color from an accessible split co
   expect(
     within(menu).getByRole('menuitemradio', { name: '仅字下划线' }),
   ).toHaveAttribute('aria-keyshortcuts', 'Control+Shift+W Meta+Shift+W');
+  const disclosure = screen.getByRole('button', { name: '更多下划线' });
   fireEvent.click(
     within(menu).getByRole('menuitemradio', { name: '粗波浪线' }),
   );
@@ -174,13 +175,20 @@ test('authors every native underline style and color from an accessible split co
   expect(editor.getAttributes('underline').underlineStyle).toBe('wavyHeavy');
   expect(editor.getHTML()).toContain('text-decoration-style: wavy');
   expect(underline).toHaveAttribute('aria-pressed', 'true');
+  await waitFor(() => expect(disclosure).toHaveFocus());
+  await Promise.resolve();
+  expect(disclosure).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
 
   fireEvent.click(screen.getByRole('button', { name: '下划线颜色' }));
+  const colorTrigger = screen.getByRole('button', { name: '下划线颜色' });
   fireEvent.click(await screen.findByRole('option', { name: '颜色 #c00000' }));
   await waitFor(() =>
     expect(editor.getAttributes('underline').underlineColor).toBe('#c00000'),
   );
   expect(editor.getHTML()).toContain('text-decoration-color: #c00000');
+  await waitFor(() => expect(colorTrigger).toHaveFocus());
+  expect(editor.isFocused).toBe(false);
 
   fireEvent.click(underline);
   expect(editor.getAttributes('underline').underlineStyle).toBe('none');
@@ -333,7 +341,7 @@ test('keeps imported font family and size visible instead of reporting defaults'
   await waitFor(() => expect(importedFamily).toHaveFocus());
 });
 
-test('wires every direct character-format action to the TipTap selection', () => {
+test('wires every direct character-format action to the TipTap selection', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content: '<p>Format this text</p>',
@@ -352,9 +360,16 @@ test('wires every direct character-format action to the TipTap selection', () =>
     fireEvent.click(within(font).getByRole('button', { name: label }));
   }
   expect(editor.getAttributes('strike').strikeStyle).toBe('single');
-  fireEvent.click(within(font).getByRole('button', { name: '更多删除线' }));
+  const strikeDisclosure = within(font).getByRole('button', {
+    name: '更多删除线',
+  });
+  fireEvent.click(strikeDisclosure);
   fireEvent.click(screen.getByRole('menuitemradio', { name: '双删除线' }));
   expect(editor.getAttributes('strike').strikeStyle).toBe('double');
+  await waitFor(() => expect(strikeDisclosure).toHaveFocus());
+  await Promise.resolve();
+  expect(strikeDisclosure).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
   fireEvent.click(within(font).getByRole('combobox', { name: '字体' }));
   fireEvent.click(screen.getByRole('option', { name: 'Arial' }));
   fireEvent.click(within(font).getByRole('combobox', { name: '字号' }));

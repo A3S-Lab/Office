@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.232.0 - 2026-09-15
+
+### Document
+
+- Underline and strike L2 style picks (and underline color) no longer call
+  `chain().focus()` into the editor. Popover restores focus to the ribbon
+  disclosure so keyboard L2 loops stay usable.
+
 ## 0.231.0 - 2026-09-15
 
 ### Document / Spreadsheet

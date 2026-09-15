@@ -105,8 +105,10 @@ export function DocumentStrikeRibbon({
                 aria-checked={style === option.value}
                 aria-keyshortcuts={optionShortcut?.aria}
                 onClick={() => {
+                  // Keep ribbon focus on the disclosure via Popover restore.
+                  // chain().focus() steals into the editor and breaks L2 loops.
+                  editor.commands.setDocumentStrike(option.value);
                   close();
-                  editor.chain().focus().setDocumentStrike(option.value).run();
                 }}
               >
                 <DocumentStrikeGlyph style={option.value} />

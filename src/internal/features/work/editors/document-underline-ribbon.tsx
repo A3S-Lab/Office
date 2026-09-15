@@ -129,12 +129,10 @@ export function DocumentUnderlineRibbon({
                 aria-checked={style === option.value}
                 aria-keyshortcuts={optionShortcut?.aria}
                 onClick={() => {
+                  // Keep ribbon focus on the disclosure via Popover restore.
+                  // chain().focus() steals into the editor and breaks L2 loops.
+                  editor.commands.setDocumentUnderline(option.value);
                   close();
-                  editor
-                    .chain()
-                    .focus()
-                    .setDocumentUnderline(option.value)
-                    .run();
                 }}
               >
                 <DocumentUnderlineGlyph style={option.value} />
@@ -154,11 +152,10 @@ export function DocumentUnderlineRibbon({
           resetAction={{
             kind: 'automatic',
             label: '自动颜色',
-            onSelect: () =>
-              editor.chain().focus().setDocumentUnderlineColor(null).run(),
+            onSelect: () => editor.commands.setDocumentUnderlineColor(null),
           }}
           onValueChange={(value) =>
-            editor.chain().focus().setDocumentUnderlineColor(value).run()
+            editor.commands.setDocumentUnderlineColor(value)
           }
         />
       )}

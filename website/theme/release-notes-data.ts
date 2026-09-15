@@ -37,6 +37,52 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.232.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Underline and strike keep ribbon focus',
+      zh: '下划线与删除线保持功能区焦点',
+    },
+    summary: {
+      en: 'Document 更多下划线 / 更多删除线 style picks and underline color no longer steal focus into the editor; Popover restores the ribbon disclosure for L2 keyboard loops.',
+      zh: '文档「更多下划线」/「更多删除线」样式选择与下划线颜色不再把焦点抢进编辑器；Popover 还原功能区展开按钮，便于键盘二级循环。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No chain().focus() after L2 pick',
+          zh: '二级选择后不再 chain().focus()',
+        },
+        detail: {
+          en: 'Underline and strike style menus call setDocumentUnderline / setDocumentStrike directly, then close so Popover restore wins.',
+          zh: '下划线与删除线样式菜单直接调用 setDocumentUnderline / setDocumentStrike，再关闭面板，让 Popover 焦点还原生效。',
+        },
+      },
+      {
+        title: { en: 'Underline color too', zh: '下划线颜色同样处理' },
+        detail: {
+          en: 'Underline color swatches and 自动颜色 use setDocumentUnderlineColor without focusing the editor.',
+          zh: '下划线颜色色块与「自动颜色」使用 setDocumentUnderlineColor，不再聚焦编辑器。',
+        },
+      },
+      {
+        title: { en: 'L2 disclosure loops', zh: '二级披露回路' },
+        detail: {
+          en: 'Keyboard users can reopen underline / strike menus without an extra Tab out of the canvas.',
+          zh: '键盘用户无需先从画布 Tab 出来即可再次打开下划线 / 删除线菜单。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.231.0',
     date: '2026-09-15',
     kind: 'fixed',
@@ -45,6 +91,7 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
       en: 'Dialog option grids use radiogroup',
       zh: '对话框选项网格改用 radiogroup',
     },
+
     summary: {
       en: 'Document list galleries and Spreadsheet 更多框线 keep dialog panels for mixed controls, but style pickers inside them use radiogroup/radio instead of nested menu/menuitemradio.',
       zh: '文档列表库与表格「更多框线」仍用 dialog 承载混合控件，但内部样式选择改为 radiogroup/radio，不再嵌套 menu/menuitemradio。',
