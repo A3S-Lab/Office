@@ -868,9 +868,7 @@ test('edits numbering style, start value, and continuation from the ribbon', () 
   const trigger = screen.getByRole('button', { name: '编号库' });
   fireEvent.click(trigger);
   let library = screen.getByRole('dialog', { name: '编号库' });
-  fireEvent.click(
-    within(library).getByRole('radio', { name: '大写罗马数字' }),
-  );
+  fireEvent.click(within(library).getByRole('radio', { name: '大写罗马数字' }));
   expect(editor.getHTML()).toContain('<ol type="I">');
 
   fireEvent.click(trigger);

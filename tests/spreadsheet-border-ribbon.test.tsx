@@ -122,15 +122,9 @@ test('disables only border targets rejected by the command capability', () => {
 
   fireEvent.click(screen.getByRole('button', { name: '更多框线' }));
   const group = screen.getByRole('radiogroup', { name: '框线位置' });
-  expect(
-    within(group).getByRole('radio', { name: '所有框线' }),
-  ).toBeEnabled();
-  expect(
-    within(group).getByRole('radio', { name: '斜下框线' }),
-  ).toBeDisabled();
-  expect(
-    within(group).getByRole('radio', { name: '斜上框线' }),
-  ).toBeDisabled();
+  expect(within(group).getByRole('radio', { name: '所有框线' })).toBeEnabled();
+  expect(within(group).getByRole('radio', { name: '斜下框线' })).toBeDisabled();
+  expect(within(group).getByRole('radio', { name: '斜上框线' })).toBeDisabled();
 });
 
 function borderCan(): SpreadsheetEditorCanCommands {
