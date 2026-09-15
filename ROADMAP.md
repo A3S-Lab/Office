@@ -111,6 +111,9 @@ These are already the default contract. Do not trade them away for breadth:
    menus; Tab exit still leaves focus on the destination control.
    Through `0.228.0`, Spreadsheet **汇总行** focuses the dialog on open and
    insert-table disclosures drop pressed=expanded ARIA conflicts.
+   Through `0.229.0`, Spreadsheet worksheet options / cell-style / table-style
+   L2 menus use `role="group"` (not `fieldset`) under `role="menu"`, and sheet
+   tab color swatches support Left/Right focus.
    Through `0.216.0`, curated
    What's new notes use the `writer` surface for Document work and reject unknown
    changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation

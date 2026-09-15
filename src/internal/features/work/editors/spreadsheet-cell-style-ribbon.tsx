@@ -12,6 +12,7 @@ import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
+import { OfficeMenuGroup } from './office-menu-group';
 import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
 
 const spreadsheetCellStyleGroups = [
@@ -79,15 +80,15 @@ export function SpreadsheetCellStyleRibbon({
     >
       {(close) =>
         spreadsheetCellStyleGroups.map((group) => (
-          <fieldset
+          <OfficeMenuGroup
             key={group}
             className="work-spreadsheet-cell-style-group"
-            aria-label={group}
+            ariaLabel={group}
             data-office-menu-grid
           >
-            <legend className="work-spreadsheet-cell-style-group-label">
+            <span className="work-spreadsheet-cell-style-group-label">
               {group}
-            </legend>
+            </span>
             <div
               className="work-spreadsheet-cell-style-grid"
               role="presentation"
@@ -122,7 +123,7 @@ export function SpreadsheetCellStyleRibbon({
                 ) : null,
               )}
             </div>
-          </fieldset>
+          </OfficeMenuGroup>
         ))
       }
     </Popover>

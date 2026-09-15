@@ -61,6 +61,41 @@ test('uses one accessible worksheet bar for creation, activation, and menus', as
   );
 });
 
+test('sheet options color row uses menu group semantics and Left/Right swatch focus', async () => {
+  render(
+    <SpreadsheetSheetBar
+      activeSheetId="sheet-1"
+      editable
+      sheets={[{ id: 'sheet-1', name: '执行看板', status: 1, color: '#4472C4' }]}
+      onActivate={() => undefined}
+      onCreate={() => undefined}
+      onDelete={() => undefined}
+      onDuplicate={() => undefined}
+      onHide={() => undefined}
+      onMove={() => undefined}
+      onRename={() => undefined}
+      onSetColor={() => undefined}
+      onShow={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '执行看板选项' }));
+  const menu = screen.getByRole('menu', { name: '执行看板工作表操作' });
+  expect(menu.querySelector('fieldset')).toBeNull();
+  expect(screen.getByRole('group', { name: '标签颜色' })).toBeInTheDocument();
+  expect(menu.querySelectorAll('hr[role="separator"]')).toHaveLength(2);
+
+  const blue = screen.getByRole('menuitemradio', { name: '蓝色标签' });
+  blue.focus();
+  expect(blue).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'ArrowRight' });
+  await waitFor(() =>
+    expect(screen.getByRole('menuitemradio', { name: '绿色标签' })).toHaveFocus(),
+  );
+  fireEvent.keyDown(menu, { key: 'ArrowLeft' });
+  await waitFor(() => expect(blue).toHaveFocus());
+});
+
 test('supports inline worksheet rename and compact color controls', () => {
   const calls: string[] = [];
   render(

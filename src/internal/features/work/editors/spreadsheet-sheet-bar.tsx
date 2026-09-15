@@ -16,6 +16,7 @@ import {
 import {
   type CSSProperties,
   Fragment,
+  type KeyboardEvent,
   type ReactNode,
   useEffect,
   useId,
@@ -25,6 +26,7 @@ import {
 import { Popover } from '../../../design-system/primitives';
 import type { WorkSpreadsheetSheet } from '../work-types';
 import { useOfficeDialog } from './office-dialog';
+import { OfficeMenuGroup } from './office-menu-group';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
   isSpreadsheetSheetHidden,
@@ -494,7 +496,7 @@ function SpreadsheetSheetMenu({
       portal
       panelClassName="work-office-context-menu work-spreadsheet-sheet-popover"
       focusFirstOnOpen
-      onPanelKeyDown={moveOfficeMenuFocus}
+      onPanelKeyDown={moveSpreadsheetSheetMenuFocus}
       trigger={(triggerProps, { open }) => (
         <button
           {...triggerProps}
@@ -537,14 +539,14 @@ function SpreadsheetSheetMenu({
               onHide(sheetId);
             }}
           />
-          <fieldset
+          <OfficeMenuGroup
             className="work-spreadsheet-sheet-color-row"
-            aria-label="标签颜色"
+            ariaLabel="标签颜色"
           >
-            <legend>
+            <div className="work-spreadsheet-sheet-color-row-label">
               <Palette size={14} aria-hidden="true" />
               <span>标签颜色</span>
-            </legend>
+            </div>
             <div>
               {spreadsheetSheetColors.map(({ color, label }) => (
                 <button
@@ -577,8 +579,8 @@ function SpreadsheetSheetMenu({
                 }}
               />
             </div>
-          </fieldset>
-          <hr />
+          </OfficeMenuGroup>
+          <hr role="separator" />
           <SheetMenuButton
             icon={<ArrowLeft size={14} />}
             label="向左移动"
@@ -597,7 +599,7 @@ function SpreadsheetSheetMenu({
               onMove(sheetId, 1);
             }}
           />
-          <hr />
+          <hr role="separator" />
           <SheetMenuButton
             icon={<Trash2 size={14} />}
             label="删除工作表"
@@ -612,6 +614,36 @@ function SpreadsheetSheetMenu({
       )}
     </Popover>
   );
+}
+
+function moveSpreadsheetSheetMenuFocus(
+  event: KeyboardEvent<HTMLElement>,
+): boolean {
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    const colorRow = event.currentTarget.querySelector(
+      '.work-spreadsheet-sheet-color-row',
+    );
+    const active = document.activeElement;
+    if (
+      colorRow instanceof HTMLElement &&
+      active instanceof HTMLElement &&
+      colorRow.contains(active)
+    ) {
+      const swatches = [
+        ...colorRow.querySelectorAll<HTMLButtonElement>(
+          'button[role="menuitemradio"]:not(:disabled)',
+        ),
+      ];
+      const current = swatches.indexOf(active as HTMLButtonElement);
+      if (current >= 0 && swatches.length > 0) {
+        event.preventDefault();
+        const delta = event.key === 'ArrowRight' ? 1 : -1;
+        swatches[(current + delta + swatches.length) % swatches.length]?.focus();
+        return true;
+      }
+    }
+  }
+  return moveOfficeMenuFocus(event);
 }
 
 function SheetMenuButton({

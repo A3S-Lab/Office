@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.229.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Spreadsheet L2 menus: role=group + sheet color Left/Right',
+      zh: '表格二级菜单：role=group 与工作表标签色左右键',
+    },
+    summary: {
+      en: 'Worksheet options, cell-style, and table-style galleries use role=group instead of fieldset under role=menu. Sheet tab colors move focus with Left/Right; dividers use role=separator.',
+      zh: '工作表选项、单元格样式与表格样式库在 role=menu 下用 role=group 替代 fieldset。标签颜色支持左右键移动焦点；分隔线使用 role=separator。',
+    },
+    highlights: [
+      {
+        title: { en: 'Valid menu groups', zh: '合法菜单分组' },
+        detail: {
+          en: 'fieldset is not a valid child of role=menu; groups keep menuitemradio sets labeled.',
+          zh: 'fieldset 不是 role=menu 的合法子节点；group 继续给 menuitemradio 组加标签。',
+        },
+      },
+      {
+        title: { en: 'Color row keyboard', zh: '标签色键盘' },
+        detail: {
+          en: 'Left/Right moves among sheet tab color swatches without leaving the row.',
+          zh: '左右键在工作表标签色色块间移动，不离开该行。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.229.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.229.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.228.0',
     date: '2026-09-15',
     kind: 'fixed',

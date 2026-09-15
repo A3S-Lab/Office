@@ -1331,7 +1331,7 @@
   color: var(--a3s-muted);
 }
 
-.work-spreadsheet-sheet-color-row > legend {
+.work-spreadsheet-sheet-color-row-label {
   display: flex;
   align-items: center;
   gap: 8px;

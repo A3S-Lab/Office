@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.228.0` tightens Spreadsheet totals and insert-table L2 keyboard / ARIA hygiene:
+Version `0.229.0` fixes Spreadsheet L2 menu group semantics:
 
-- Table Design **汇总行** moves focus into the dialog on open; disclosure drops conflicting `aria-pressed`.
-- Insert-table triggers keep `aria-expanded` only (no pressed=open mirror).
+- Worksheet options, cell-style, and table-style galleries use `role="group"` (not `fieldset`) under `role="menu"`.
+- Sheet tab color swatches navigate with Left/Right; menu dividers use `role="separator"`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

@@ -167,6 +167,7 @@ test('applies grouped WPS cell styles from a preview gallery', async () => {
   fireEvent.click(trigger);
 
   const menu = screen.getByRole('menu', { name: '单元格样式库' });
+  expect(menu.querySelector('fieldset')).toBeNull();
   expect(within(menu).getByRole('group', { name: '常用' })).toBeInTheDocument();
   expect(
     within(menu).getByRole('group', { name: '数据和模型' }),
@@ -1329,6 +1330,7 @@ test('shows a contextual Table Design ribbon with all 60 built-in styles', () =>
   const tableStyleTrigger = screen.getByRole('button', { name: '表格样式' });
   fireEvent.click(tableStyleTrigger);
   const gallery = screen.getByRole('menu', { name: '表格样式库' });
+  expect(gallery.querySelector('fieldset')).toBeNull();
   expect(within(gallery).getAllByRole('menuitemradio')).toHaveLength(60);
   expect(
     within(gallery).getByRole('group', { name: '浅色' }),

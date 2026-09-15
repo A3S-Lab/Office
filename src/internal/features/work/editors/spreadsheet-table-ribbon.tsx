@@ -11,6 +11,7 @@ import {
   OfficeCheckbox,
   OfficeSelect,
 } from './office-controls';
+import { OfficeMenuGroup } from './office-menu-group';
 import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
 import type {
   SpreadsheetEditorCanCommands,
@@ -442,11 +443,11 @@ function SpreadsheetTableStyleGallery({
       {(close) => (
         <>
           {families.map((family) => (
-            <fieldset
+            <OfficeMenuGroup
               key={family.id}
               className="work-spreadsheet-table-style-family"
               data-office-menu-grid
-              aria-label={family.label}
+              ariaLabel={family.label}
             >
               <span>{family.label}</span>
               <div>
@@ -478,7 +479,7 @@ function SpreadsheetTableStyleGallery({
                     );
                   })}
               </div>
-            </fieldset>
+            </OfficeMenuGroup>
           ))}
         </>
       )}
