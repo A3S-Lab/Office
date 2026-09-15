@@ -38,7 +38,8 @@ test('Word paragraph pagination menu updates live and restores style defaults', 
 
   await page.getByRole('tab', { name: '页面布局' }).click();
   const trigger = page.getByRole('button', { name: '段落分页' });
-  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).not.toHaveClass(/active/);
   await trigger.click();
 
   const dialog = page.getByRole('dialog', { name: '段落分页选项' });
@@ -58,13 +59,16 @@ test('Word paragraph pagination menu updates live and restores style defaults', 
 
   await keepLines.click();
   await expect(keepLines).toBeChecked();
-  await expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).toHaveClass(/active/);
+  await expect(trigger).toHaveAttribute('title', '段落分页（已自定义）');
   await expect(reset).toBeEnabled();
 
   await reset.click();
   await expect(keepLines).not.toBeChecked();
   await expect(widowControl).toBeChecked();
-  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).toHaveAttribute('title', '段落分页');
   await expect(reset).toBeDisabled();
 
   await page.keyboard.press('Escape');
@@ -89,7 +93,7 @@ test('Word paragraph spacing cancels a dirty draft before closing', async ({
   await page.keyboard.press('Escape');
   await expect(dialog).toBeVisible();
   await expect(before).toHaveValue('');
-  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
 
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();

@@ -622,7 +622,8 @@ test('Spreadsheet applies accessible WPS text orientations as one undoable inten
   await page.keyboard.press('ArrowUp');
   await expect(nameBox).toHaveText('A1');
   await expect(trigger).toHaveAttribute('title', '文字方向（当前：横排文字）');
-  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).not.toHaveClass(/active/);
 
   await trigger.click();
   const menu = page.getByRole('menu', { name: '文字方向选项' });
@@ -652,7 +653,8 @@ test('Spreadsheet applies accessible WPS text orientations as one undoable inten
 
   await clockwise.click();
   await expect(grid).toBeFocused();
-  await expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).toHaveClass(/active/);
   await expect(trigger).toHaveAttribute(
     'title',
     '文字方向（当前：顺时针倾斜）',
@@ -671,7 +673,8 @@ test('Spreadsheet applies accessible WPS text orientations as one undoable inten
   await page.keyboard.press('Escape');
   await grid.focus();
   await page.keyboard.press('Control+z');
-  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).not.toHaveClass(/active/);
   await expect(trigger).toHaveAttribute('title', '文字方向（当前：横排文字）');
   await expect(grid).toBeFocused();
   expect(browserErrors).toEqual([]);
@@ -1392,7 +1395,9 @@ test('Spreadsheet freezes panes from the WPS View window group', async ({
 
   await customFreeze.press('Enter');
   await expect(editor).toHaveAttribute('data-freeze-panes', 'active');
-  await expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).toHaveClass(/active/);
+  await expect(trigger).toHaveAttribute('title', '冻结窗格（已启用）');
   await expect(grid).toBeFocused();
   expect(
     await page
@@ -1420,7 +1425,9 @@ test('Spreadsheet freezes panes from the WPS View window group', async ({
   await expect(unfreeze).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(editor).not.toHaveAttribute('data-freeze-panes');
-  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(trigger).not.toHaveAttribute('aria-pressed');
+  await expect(trigger).not.toHaveClass(/active/);
+  await expect(trigger).toHaveAttribute('title', '冻结窗格');
   await expect(grid).toBeFocused();
   expect(browserErrors).toEqual([]);
 });
