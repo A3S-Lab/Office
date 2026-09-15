@@ -414,11 +414,11 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('aria-expanded');
   expect(englishHome).toContain("## What's new on `main` (0.228.0)");
   expect(englishHome).toContain(
-    'Spreadsheet totals and insert-table L2 keyboard / ARIA hygiene',
+    'Spreadsheet, document, and PDF L2/L3 keyboard / ARIA hygiene',
   );
   expect(chineseHome).toContain('## `main` 更新内容（0.228.0）');
   expect(chineseHome).toContain(
-    '表格汇总行与插入表格二级菜单的键盘 / ARIA 卫生',
+    '表格、文档与 PDF 二级 / 三级菜单的键盘 / ARIA 卫生',
   );
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');

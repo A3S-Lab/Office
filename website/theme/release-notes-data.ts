@@ -40,14 +40,14 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     version: '0.228.0',
     date: '2026-09-15',
     kind: 'fixed',
-    surfaces: ['spreadsheet', 'shared', 'writer'],
+    surfaces: ['spreadsheet', 'shared', 'writer', 'pdf'],
     title: {
-      en: 'Totals dialog focus and insert-table ARIA hygiene',
-      zh: '汇总行对话框焦点与插入表格 ARIA 卫生',
+      en: 'Ribbon L2/L3 ARIA hygiene: no pressed+expanded, PDF menu groups',
+      zh: '功能区二级/三级 ARIA 卫生：去掉 pressed+expanded，PDF 菜单分组',
     },
     summary: {
-      en: 'Spreadsheet: 汇总行 opens with focus on the enable checkbox. Shared/Document: insert-table triggers drop aria-pressed that mirrored open state.',
-      zh: '表格：「汇总行」打开时焦点落到启用复选框。共享/文档：插入表格触发器去掉与打开状态重复的 aria-pressed。',
+      en: 'Spreadsheet/Document popover menu triggers drop aria-pressed that conflicted with aria-expanded. Totals opens with focus on enable. PDF more-tools uses role=group for menuitemradio sets.',
+      zh: '表格/文档弹出菜单触发器去掉与 aria-expanded 冲突的 aria-pressed。汇总行打开时焦点落到启用复选框。PDF「更多工具」用 role=group 划分 menuitemradio。',
     },
     highlights: [
       {
@@ -60,15 +60,15 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
       {
         title: { en: 'No pressed+expanded', zh: '去掉 pressed+expanded' },
         detail: {
-          en: 'Totals and insert-table disclosures no longer set both aria-pressed and aria-expanded.',
-          zh: '汇总行与插入表格披露控件不再同时设置 aria-pressed 与 aria-expanded。',
+          en: 'Menu/dialog disclosures (totals, insert-table, freeze, orientation, text case, margins, spacing, pagination, find) no longer set both aria-pressed and aria-expanded.',
+          zh: '菜单/对话框披露控件（汇总行、插入表格、冻结、方向、大小写、边距、间距、分页、查找）不再同时设置 aria-pressed 与 aria-expanded。',
         },
       },
       {
-        title: { en: 'Enabled state in title', zh: '标题表达启用态' },
+        title: { en: 'PDF overflow groups', zh: 'PDF 溢出菜单分组' },
         detail: {
-          en: 'Totals trigger title notes when the totals row is already enabled.',
-          zh: '汇总行触发器标题在已启用时说明状态。',
+          en: 'More-tools menu scopes menuitemradio sets with role=group (valid menu children).',
+          zh: '「更多工具」用合法的 role=group 子节点划分 menuitemradio 组。',
         },
       },
     ],

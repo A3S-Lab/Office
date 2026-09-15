@@ -850,7 +850,7 @@ test('operates the WPS Find and Select menu from the Home ribbon', async () => {
 
   const trigger = screen.getByRole('button', { name: '查找和选择' });
   expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
-  expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  expect(trigger).not.toHaveAttribute('aria-pressed');
   fireEvent.click(trigger);
 
   const menu = screen.getByRole('menu', { name: '查找和选择选项' });
