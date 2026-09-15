@@ -168,9 +168,11 @@ export function DocumentSelectionToolbar({
             className="work-document-selection-color"
             value={editor.getAttributes('textStyle').color ?? '#172033'}
             ariaLabel="快捷文字颜色"
-            onValueChange={(color) =>
-              editor.chain().focus().setColor(color).run()
-            }
+            onValueChange={(color) => {
+              // Keep toolbar focus on the color trigger via Popover restore.
+              // chain().focus() schedules into the editor and breaks L2 loops.
+              editor.commands.setColor(color);
+            }}
           />
           <SelectionToolbarButton
             label="突出显示"

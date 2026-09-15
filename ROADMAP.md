@@ -134,6 +134,9 @@ These are already the default contract. Do not trade them away for breadth:
    drafts on Escape from any focus inside the settings panel.
    Through `0.238.0`, Document paragraph spacing and table cell-margins panels
    restore dirty drafts on Escape from any focus inside each panel fieldset.
+   Through `0.239.0`, Document font/table/selection/page-chrome color pickers
+   stop stealing focus into the editor on swatch apply so Popover restores the
+   ribbon trigger.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

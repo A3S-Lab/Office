@@ -217,9 +217,11 @@ export function DocumentHomeRibbon({
               className="work-color-tool"
               value={editor.getAttributes('textStyle').color ?? '#172033'}
               ariaLabel="文字颜色"
-              onValueChange={(color) =>
-                editor.chain().focus().setColor(color).run()
-              }
+              onValueChange={(color) => {
+                // Keep ribbon focus on the color trigger via Popover restore.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.setColor(color);
+              }}
             />
             <ToolbarButton
               label="突出显示"

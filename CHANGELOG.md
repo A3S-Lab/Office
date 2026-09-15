@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.239.0 - 2026-09-15
+
+### Document
+
+- Font color, table cell fill, selection-toolbar color, and page-chrome color
+  pickers no longer call TipTap `chain().focus()` on swatch apply. Popover
+  restores focus to the ribbon/toolbar trigger so L2 color loops keep working
+  (TipTap's deferred focus otherwise steals into the editor after close).
+
 ## 0.238.0 - 2026-09-15
 
 ### Document

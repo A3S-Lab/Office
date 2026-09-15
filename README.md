@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.238.0` keeps Document paragraph-spacing and cell-margins drafts Escape-safe across each panel:
+Version `0.239.0` keeps Document color-picker L2 focus on the ribbon trigger after a swatch pick:
 
-- Dirty **段前** / **段后** spacing and cell-margin drafts restore on Escape from any focus inside the panel fieldset (`data-office-escape-consumer`); a clean Escape still closes and restores the trigger.
+- Home font color, table cell fill, selection-toolbar color, and page-chrome color apply without TipTap `chain().focus()`, so Popover restore is not stolen by TipTap's deferred editor focus.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

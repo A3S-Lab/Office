@@ -151,13 +151,11 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
           className="work-document-table-color-picker"
           triggerLabel="底纹"
           value={format.backgroundColor}
-          onValueChange={(backgroundColor) =>
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableCellFormat({ backgroundColor })
-              .run()
-          }
+          onValueChange={(backgroundColor) => {
+            // Keep ribbon focus on the color trigger via Popover restore.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.setDocumentTableCellFormat({ backgroundColor });
+          }}
         />
       </RibbonGroup>
       <RibbonGroup label="边框">

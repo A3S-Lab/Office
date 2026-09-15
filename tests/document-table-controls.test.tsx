@@ -355,6 +355,38 @@ test('applies table styles and cell shading as coherent edits', () => {
   );
 });
 
+test('keeps table cell fill picker focus on the ribbon trigger after a swatch pick', async () => {
+  editor = createTableEditor();
+  document.body.append(editor.view.dom);
+  const [firstCell, secondCell] = tableCellPositions(editor);
+  editor.commands.setCellSelection({
+    anchorCell: firstCell,
+    headCell: secondCell,
+  });
+  render(<DocumentTableDesignRibbon editor={editor} />);
+
+  const fillTrigger = screen.getByRole('button', { name: '单元格底纹' });
+  fireEvent.click(fillTrigger);
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: '单元格底纹' })).getByRole(
+      'option',
+      { name: '颜色 #fff2cc' },
+    ),
+  );
+  expect(tableCellAttributes(editor).slice(0, 2)).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ backgroundColor: '#fff2cc' }),
+      expect.objectContaining({ backgroundColor: '#fff2cc' }),
+    ]),
+  );
+  await waitFor(() => expect(fillTrigger).toHaveFocus());
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(fillTrigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('applies per-edge borders with a reusable Word-style border pen', () => {
   editor = createTableEditor();
   editor.commands.setNodeSelection(firstTablePosition(editor));

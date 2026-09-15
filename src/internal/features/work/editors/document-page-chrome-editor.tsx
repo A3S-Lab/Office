@@ -364,9 +364,11 @@ export function DocumentPageChromeRichTextEditor({
                   className="work-document-page-chrome-color"
                   ariaLabel={`${label}文字颜色`}
                   value={pageChromePickerColor(state?.color)}
-                  onValueChange={(color) =>
-                    editor?.chain().focus().setColor(color).run()
-                  }
+                  onValueChange={(color) => {
+                    // Keep chrome focus on the color trigger via Popover restore.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.setColor(color);
+                  }}
                 />
                 <PageChromeButton
                   label={`${label}插入图片`}

@@ -196,6 +196,36 @@ test('authors every native underline style and color from an accessible split co
   expect(underline).toHaveAttribute('aria-pressed', 'false');
 });
 
+test('keeps font color picker focus on the ribbon trigger after a swatch pick', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Color me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Color me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '文字颜色' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('option', { name: '颜色 #0070c0' }));
+
+  expect(editor.getAttributes('textStyle').color).toBe('#0070c0');
+  await waitFor(() => expect(trigger).toHaveFocus());
+  // TipTap chain().focus() schedules DOM focus on a later animation frame;
+  // stay on the ribbon trigger after that frame so L2 loops keep working.
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('applies italic formatting without replacing the selected text', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

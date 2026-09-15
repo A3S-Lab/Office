@@ -229,9 +229,11 @@ export function DocumentPageChromeRibbon({
           className="work-document-page-chrome-ribbon-color"
           ariaLabel="页眉页脚文字颜色"
           value={pickerColor(state.color)}
-          onValueChange={(color) =>
-            editor.chain().focus().setColor(color).run()
-          }
+          onValueChange={(color) => {
+            // Keep ribbon focus on the color trigger via Popover restore.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.setColor(color);
+          }}
         />
         {onOpenProofingDialog && (
           <PageChromeRibbonButton

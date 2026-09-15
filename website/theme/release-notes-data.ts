@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.239.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Color picker L2 focus restore on swatch apply',
+      zh: '颜色选择器选色后还原 L2 焦点',
+    },
+    summary: {
+      en: 'Document font, table fill, selection-toolbar, and page-chrome color pickers apply without TipTap chain().focus(), so Popover restores the ribbon trigger after a swatch pick.',
+      zh: '文档字体、单元格底纹、选择工具栏与页眉页脚颜色选择器在选色时不再调用 TipTap chain().focus()，Popover 可将焦点还原到功能区触发按钮。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps Popover trigger restore.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后 Popover 对触发按钮的焦点还原得以保留。',
+        },
+      },
+      {
+        title: {
+          en: 'Home, table, selection, page chrome',
+          zh: '主页、表格、选择工具栏、页眉页脚',
+        },
+        detail: {
+          en: 'Same L2 contract as underline/strike style menus and list galleries.',
+          zh: '与下划线/删除线样式菜单及列表库相同的 L2 契约。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 color loops stay on the trigger',
+          zh: 'L2 颜色循环留在触发按钮',
+        },
+        detail: {
+          en: 'After picking a swatch, keyboard users can reopen the palette from the same ribbon control.',
+          zh: '选色后，键盘用户可从同一功能区控件再次打开调色板。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.238.0',
     date: '2026-09-15',
     kind: 'fixed',
