@@ -222,8 +222,8 @@ test('Word list galleries restore ribbon trigger focus after a pick', async ({
 
   await bulletTrigger.click();
   let library = page.getByRole('dialog', { name: '项目符号库' });
-  const disc = library.getByRole('menuitemradio', { name: '实心圆点' });
-  const circle = library.getByRole('menuitemradio', { name: '空心圆点' });
+  const disc = library.getByRole('radio', { name: '实心圆点' });
+  const circle = library.getByRole('radio', { name: '空心圆点' });
   await expect(disc).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await expect(circle).toBeFocused();
@@ -237,7 +237,7 @@ test('Word list galleries restore ribbon trigger focus after a pick', async ({
 
   await bulletTrigger.click();
   library = page.getByRole('dialog', { name: '项目符号库' });
-  await library.getByRole('menuitemradio', { name: '空心圆点' }).click();
+  await library.getByRole('radio', { name: '空心圆点' }).click();
   await expect(bulletTrigger).toBeFocused();
 
   await bulletTrigger.click();
@@ -247,7 +247,7 @@ test('Word list galleries restore ribbon trigger focus after a pick', async ({
 
   await numberingTrigger.click();
   const numbering = page.getByRole('dialog', { name: '编号库' });
-  await numbering.getByRole('menuitemradio', { name: '小写字母' }).click();
+  await numbering.getByRole('radio', { name: '小写字母' }).click();
   await expect(numberingTrigger).toBeFocused();
 });
 

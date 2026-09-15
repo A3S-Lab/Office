@@ -140,7 +140,7 @@ export function SpreadsheetBorderRibbon({
           <div className="work-spreadsheet-border-section-label">框线位置</div>
           <div
             className="work-spreadsheet-border-targets"
-            role="menu"
+            role="radiogroup"
             aria-label="框线位置"
             onKeyDown={moveOfficeMenuFocus}
           >
@@ -153,7 +153,7 @@ export function SpreadsheetBorderRibbon({
                   <button
                     key={definition.id}
                     type="button"
-                    role="menuitemradio"
+                    role="radio"
                     tabIndex={index === 0 ? 0 : -1}
                     aria-checked={option === target}
                     aria-label={definition.label}

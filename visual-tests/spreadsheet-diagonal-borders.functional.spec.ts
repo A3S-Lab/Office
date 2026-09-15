@@ -39,7 +39,7 @@ test('Spreadsheet preserves both diagonal border directions through WPS editing 
     borderDialog.getByLabel('框线颜色'),
     BORDER_COLOR,
   );
-  await borderDialog.getByRole('menuitemradio', { name: '斜下框线' }).click();
+  await borderDialog.getByRole('radio', { name: '斜下框线' }).click();
   await expect(borderDialog).toHaveCount(0);
   await expect(grid).toBeFocused();
   await expectDiagonalDirections(page, initialBounds, {

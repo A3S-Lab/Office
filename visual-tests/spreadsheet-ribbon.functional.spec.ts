@@ -418,13 +418,13 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   await moreBorders.click();
   const dialog = page.getByRole('dialog', { name: '框线设置' });
   await expect(dialog).toBeVisible();
-  const borderMenu = dialog.getByRole('menu', { name: '框线位置' });
-  const noBorder = borderMenu.getByRole('menuitemradio', { name: '无框线' });
-  const outsideBorder = borderMenu.getByRole('menuitemradio', {
+  const borderGroup = dialog.getByRole('radiogroup', { name: '框线位置' });
+  const noBorder = borderGroup.getByRole('radio', { name: '无框线' });
+  const outsideBorder = borderGroup.getByRole('radio', {
     name: '外侧框线',
   });
   await expect(
-    borderMenu.getByRole('menuitemradio', {
+    borderGroup.getByRole('radio', {
       name: '上框线',
       exact: true,
     }),
@@ -466,7 +466,7 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   ).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(
-    borderMenu.getByRole('menuitemradio', {
+    borderGroup.getByRole('radio', {
       name: '上框线',
       exact: true,
     }),
@@ -475,7 +475,7 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
     await page.keyboard.press('ArrowDown');
   }
   await expect(
-    borderMenu.getByRole('menuitemradio', { name: '外侧框线' }),
+    borderGroup.getByRole('radio', { name: '外侧框线' }),
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(dialog).toHaveCount(0);

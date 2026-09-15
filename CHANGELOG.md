@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.231.0 - 2026-09-15
+
+### Document / Spreadsheet
+
+- List galleries and Spreadsheet **更多框线** keep `panelRole="dialog"` for
+  mixed form controls, but style pickers inside those dialogs now use
+  `role="radiogroup"` / `role="radio"` instead of nesting `role="menu"` /
+  `menuitemradio` (invalid ARIA when siblings include number fields, selects,
+  or clear actions).
+
 ## 0.230.0 - 2026-09-15
 
 ### Presentation

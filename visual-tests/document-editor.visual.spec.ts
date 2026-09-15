@@ -92,11 +92,11 @@ test('document list libraries keep styles and numbering settings in context', as
   const bulletLibrary = page.getByRole('dialog', { name: '项目符号库' });
   await expect(bulletLibrary).toBeVisible();
   await expect(
-    bulletLibrary.getByRole('menuitemradio', { name: '实心圆点' }),
+    bulletLibrary.getByRole('radio', { name: '实心圆点' }),
   ).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await expect(
-    bulletLibrary.getByRole('menuitemradio', { name: '空心圆点' }),
+    bulletLibrary.getByRole('radio', { name: '空心圆点' }),
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(bulletLibrary).toBeHidden();
@@ -115,7 +115,7 @@ test('document list libraries keep styles and numbering settings in context', as
   await numberingTrigger.click();
   const numberingLibrary = page.getByRole('dialog', { name: '编号库' });
   await expect(numberingLibrary).toBeVisible();
-  await expect(numberingLibrary.getByRole('menuitemradio')).toHaveCount(5);
+  await expect(numberingLibrary.getByRole('radio')).toHaveCount(5);
   await expect(
     numberingLibrary.getByRole('button', { name: '继续前一列表' }),
   ).toBeDisabled();

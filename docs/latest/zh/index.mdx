@@ -42,13 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.230.0）
+## `main` 更新内容（0.231.0）
 
-演示文稿与文档二级工具条焦点：
+文档与表格二级对话框选项语义：
 
-- 演示文稿 **对象对齐** 无障碍名称与可见文案一致；对齐模式保留在 title / description。
-- 文档项目符号与编号库选择后焦点留在功能区触发器（不再抢编辑器焦点）。
-- 编号库 **起始编号** 与其他 `OfficeNumberField` 一致：Escape 还原，blur / Enter 提交。
+- 项目符号 / 编号库与表格 **更多框线** 仍用 dialog 承载混合控件。
+- 对话框内选项网格改为 `radiogroup` / `radio`，不再嵌套 `menu` / `menuitemradio`。
 
 
 ## 按表面探索

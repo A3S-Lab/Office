@@ -49,18 +49,18 @@ test('supports keyboard border selection with persistent line and color settings
   const disclosure = screen.getByRole('button', { name: '更多框线' });
   fireEvent.click(disclosure);
   const dialog = screen.getByRole('dialog', { name: '框线设置' });
-  const menu = within(dialog).getByRole('menu', { name: '框线位置' });
-  const top = within(menu).getByRole('menuitemradio', { name: '上框线' });
-  const diagonalDown = within(menu).getByRole('menuitemradio', {
+  const group = within(dialog).getByRole('radiogroup', { name: '框线位置' });
+  const top = within(group).getByRole('radio', { name: '上框线' });
+  const diagonalDown = within(group).getByRole('radio', {
     name: '斜下框线',
   });
-  const diagonalUp = within(menu).getByRole('menuitemradio', {
+  const diagonalUp = within(group).getByRole('radio', {
     name: '斜上框线',
   });
   await waitFor(() => expect(top).toHaveFocus());
-  const all = within(menu).getByRole('menuitemradio', { name: '所有框线' });
-  const none = within(menu).getByRole('menuitemradio', { name: '无框线' });
-  const outside = within(menu).getByRole('menuitemradio', {
+  const all = within(group).getByRole('radio', { name: '所有框线' });
+  const none = within(group).getByRole('radio', { name: '无框线' });
+  const outside = within(group).getByRole('radio', {
     name: '外侧框线',
   });
   expect(top).toHaveAttribute('tabindex', '0');
@@ -77,11 +77,11 @@ test('supports keyboard border selection with persistent line and color settings
   );
   expect(outside.querySelector('kbd')).toHaveTextContent('Cmd/Ctrl+Shift+&');
 
-  fireEvent.keyDown(menu, { key: 'End' });
+  fireEvent.keyDown(group, { key: 'End' });
   expect(diagonalUp).toHaveFocus();
-  fireEvent.keyDown(menu, { key: 'ArrowUp' });
+  fireEvent.keyDown(group, { key: 'ArrowUp' });
   expect(diagonalDown).toHaveFocus();
-  fireEvent.keyDown(menu, { key: 'Home' });
+  fireEvent.keyDown(group, { key: 'Home' });
   expect(top).toHaveFocus();
 
   fireEvent.click(within(dialog).getByRole('combobox', { name: '框线样式' }));
@@ -121,15 +121,15 @@ test('disables only border targets rejected by the command capability', () => {
   );
 
   fireEvent.click(screen.getByRole('button', { name: '更多框线' }));
-  const menu = screen.getByRole('menu', { name: '框线位置' });
+  const group = screen.getByRole('radiogroup', { name: '框线位置' });
   expect(
-    within(menu).getByRole('menuitemradio', { name: '所有框线' }),
+    within(group).getByRole('radio', { name: '所有框线' }),
   ).toBeEnabled();
   expect(
-    within(menu).getByRole('menuitemradio', { name: '斜下框线' }),
+    within(group).getByRole('radio', { name: '斜下框线' }),
   ).toBeDisabled();
   expect(
-    within(menu).getByRole('menuitemradio', { name: '斜上框线' }),
+    within(group).getByRole('radio', { name: '斜上框线' }),
   ).toBeDisabled();
 });
 

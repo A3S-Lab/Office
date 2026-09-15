@@ -776,10 +776,10 @@ test('uses a keyboard-operated bullet library without toggling the active style 
   const trigger = screen.getByRole('button', { name: '项目符号库' });
   fireEvent.click(trigger);
   let library = screen.getByRole('dialog', { name: '项目符号库' });
-  const disc = within(library).getByRole('menuitemradio', {
+  const disc = within(library).getByRole('radio', {
     name: '实心圆点',
   });
-  const circle = within(library).getByRole('menuitemradio', {
+  const circle = within(library).getByRole('radio', {
     name: '空心圆点',
   });
 
@@ -799,7 +799,7 @@ test('uses a keyboard-operated bullet library without toggling the active style 
 
   fireEvent.click(trigger);
   library = screen.getByRole('dialog', { name: '项目符号库' });
-  const activeCircle = within(library).getByRole('menuitemradio', {
+  const activeCircle = within(library).getByRole('radio', {
     name: '空心圆点',
   });
   expect(activeCircle).toHaveAttribute('aria-checked', 'true');
@@ -823,10 +823,10 @@ test('keeps the list gallery roving tab stop aligned with arrow-key focus', asyn
   const trigger = screen.getByRole('button', { name: '项目符号库' });
   fireEvent.click(trigger);
   const library = screen.getByRole('dialog', { name: '项目符号库' });
-  const disc = within(library).getByRole('menuitemradio', {
+  const disc = within(library).getByRole('radio', {
     name: '实心圆点',
   });
-  const circle = within(library).getByRole('menuitemradio', {
+  const circle = within(library).getByRole('radio', {
     name: '空心圆点',
   });
   await waitFor(() => expect(disc).toHaveFocus());
@@ -869,7 +869,7 @@ test('edits numbering style, start value, and continuation from the ribbon', () 
   fireEvent.click(trigger);
   let library = screen.getByRole('dialog', { name: '编号库' });
   fireEvent.click(
-    within(library).getByRole('menuitemradio', { name: '大写罗马数字' }),
+    within(library).getByRole('radio', { name: '大写罗马数字' }),
   );
   expect(editor.getHTML()).toContain('<ol type="I">');
 

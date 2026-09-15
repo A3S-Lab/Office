@@ -371,11 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.230.0` tightens Presentation and Document L2 toolbar focus:
+Version `0.231.0` fixes L2 dialog option semantics:
 
-- Presentation **对象对齐** uses the visible label as the accessible name; mode hints stay in title / description.
-- Document bullet and numbered list galleries keep focus on the ribbon trigger after a pick (no editor focus steal).
-- Numbering library **起始编号** Escape restores / blur·Enter commits like other `OfficeNumberField` drafts.
+- Document bullet / numbering libraries and Spreadsheet **更多框线** keep dialog panels for mixed controls, but option grids use `radiogroup` / `radio` instead of nested `menu` / `menuitemradio`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

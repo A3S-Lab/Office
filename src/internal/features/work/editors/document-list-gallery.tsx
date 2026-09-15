@@ -155,7 +155,7 @@ function BulletListControl({
             <strong className="work-document-list-panel-title">项目符号</strong>
             <div
               className="work-document-list-options bullet-options"
-              role="menu"
+              role="radiogroup"
               aria-label="项目符号样式"
             >
               {bulletStyles.map((style, index) => (
@@ -165,7 +165,7 @@ function BulletListControl({
                   }}
                   key={style.value}
                   type="button"
-                  role="menuitemradio"
+                  role="radio"
                   aria-label={style.label}
                   aria-checked={style.value === activeStyle}
                   tabIndex={index === focusIndex ? 0 : -1}
@@ -313,7 +313,7 @@ function OrderedListControl({
             <strong className="work-document-list-panel-title">编号</strong>
             <div
               className="work-document-list-options ordered-options"
-              role="menu"
+              role="radiogroup"
               aria-label="编号样式"
             >
               {orderedStyles.map((style, index) => (
@@ -323,7 +323,7 @@ function OrderedListControl({
                   }}
                   key={style.value}
                   type="button"
-                  role="menuitemradio"
+                  role="radio"
                   aria-label={style.label}
                   aria-checked={style.value === activeState?.style}
                   tabIndex={index === focusIndex ? 0 : -1}

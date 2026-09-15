@@ -17,6 +17,8 @@ const OFFICE_MENU_BUTTON_SELECTOR = [
   'button[role="menuitem"]:not(:disabled)',
   'button[role="menuitemradio"]:not(:disabled)',
   'button[role="menuitemcheckbox"]:not(:disabled)',
+  // Dialog panels host radiogroups (not menus) when mixed with form fields.
+  'button[role="radio"]:not(:disabled)',
 ].join(', ');
 
 export function moveOfficeMenuFocus(

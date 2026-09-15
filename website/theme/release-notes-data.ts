@@ -37,6 +37,63 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.231.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer', 'spreadsheet'],
+    title: {
+      en: 'Dialog option grids use radiogroup',
+      zh: '对话框选项网格改用 radiogroup',
+    },
+    summary: {
+      en: 'Document list galleries and Spreadsheet 更多框线 keep dialog panels for mixed controls, but style pickers inside them use radiogroup/radio instead of nested menu/menuitemradio.',
+      zh: '文档列表库与表格「更多框线」仍用 dialog 承载混合控件，但内部样式选择改为 radiogroup/radio，不再嵌套 menu/menuitemradio。',
+    },
+    highlights: [
+      {
+        title: { en: 'Valid dialog children', zh: '合法对话框子树' },
+        detail: {
+          en: 'Menus may only host menuitem* / group / separator. Mixed panels with number fields and selects stay dialogs with radiogroups.',
+          zh: 'menu 只能包含 menuitem* / group / separator。含数字框与下拉的混合面板保持 dialog，并用 radiogroup。',
+        },
+      },
+      {
+        title: { en: 'List gallery radios', zh: '列表库单选' },
+        detail: {
+          en: 'Bullet and numbering style grids expose role=radio under radiogroup while clear / start-number actions stay ordinary buttons.',
+          zh: '项目符号与编号样式网格在 radiogroup 下用 role=radio；清除与起始编号操作仍是普通按钮。',
+        },
+      },
+      {
+        title: { en: 'Border target radios', zh: '框线位置单选' },
+        detail: {
+          en: 'Spreadsheet border position choices are radios; line style and color remain OfficeSelect / OfficeColorPicker L3 controls.',
+          zh: '表格框线位置选项改为 radio；线型与颜色仍是 OfficeSelect / OfficeColorPicker 三级控件。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.231.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.231.0',
+        },
+        label: { en: 'GitHub release', zh: 'GitHub 发布' },
+      },
+      {
+        href: {
+          en: 'https://www.npmjs.com/package/@a3s-lab/office/v/0.231.0',
+          zh: 'https://www.npmjs.com/package/@a3s-lab/office/v/0.231.0',
+        },
+        label: { en: 'npm package', zh: 'npm 包' },
+      },
+    ],
+  },
+  {
     version: '0.230.0',
     date: '2026-09-15',
     kind: 'fixed',
@@ -82,7 +139,14 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
           en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.230.0',
           zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.230.0',
         },
-        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+        label: { en: 'GitHub release', zh: 'GitHub 发布' },
+      },
+      {
+        href: {
+          en: 'https://www.npmjs.com/package/@a3s-lab/office/v/0.230.0',
+          zh: 'https://www.npmjs.com/package/@a3s-lab/office/v/0.230.0',
+        },
+        label: { en: 'npm package', zh: 'npm 包' },
       },
     ],
   },

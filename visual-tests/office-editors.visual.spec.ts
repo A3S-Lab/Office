@@ -474,7 +474,7 @@ test('Word list galleries use touch-sized phone controls and restore ribbon focu
   expect(bulletGeometry.right).toBeLessThanOrEqual(375);
   expect(Math.min(...bulletGeometry.optionHeights)).toBeGreaterThanOrEqual(43);
 
-  await bulletPanel.getByRole('menuitemradio', { name: '方块' }).click();
+  await bulletPanel.getByRole('radio', { name: '方块' }).click();
   await expect(bulletItem.locator('xpath=ancestor::ul[1]')).toHaveAttribute(
     'data-office-bullet-style',
     'square',
@@ -519,7 +519,7 @@ test('Word list galleries use touch-sized phone controls and restore ribbon focu
   expect(numberingGeometry.numberFieldHeight).toBeGreaterThanOrEqual(43);
 
   await numberingPanel
-    .getByRole('menuitemradio', { name: '大写罗马数字' })
+    .getByRole('radio', { name: '大写罗马数字' })
     .click();
   await expect(orderedItem.locator('xpath=ancestor::ol[1]')).toHaveAttribute(
     'type',
