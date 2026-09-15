@@ -210,9 +210,7 @@ function SpreadsheetTableTotalsMenu({
           {...triggerProps}
           className={`with-label work-spreadsheet-table-totals-trigger${open || table.totalsRow ? ' active' : ''}`}
           title={
-            table.totalsRow
-              ? '设置表格汇总行（已启用）'
-              : '设置表格汇总行'
+            table.totalsRow ? '设置表格汇总行（已启用）' : '设置表格汇总行'
           }
         >
           <Calculator size={19} />
