@@ -428,6 +428,21 @@ function sameFloatingPosition(
 
 function firstFocusableElement(panel: HTMLElement | null): HTMLElement | null {
   if (!panel) return null;
+  const tabOrder = radioGroupTabStops(
+    [
+      ...panel.querySelectorAll<HTMLElement>(
+        [
+          'button:not(:disabled):not([tabindex="-1"])',
+          'input:not(:disabled):not([type="hidden"]):not([tabindex="-1"])',
+          'textarea:not(:disabled):not([tabindex="-1"])',
+          'select:not(:disabled):not([tabindex="-1"])',
+          '[tabindex]:not([tabindex="-1"])',
+        ].join(', '),
+      ),
+    ].filter(elementAvailableForFocus),
+  ).at(0);
+  if (tabOrder) return tabOrder;
+  // Menus often mark every menuitem tabindex=-1; still focus the first item.
   return (
     radioGroupTabStops(
       [

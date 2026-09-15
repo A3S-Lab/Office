@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.235.0 - 2026-09-15
+
+### Spreadsheet / Shared
+
+- Spreadsheet **更多框线** open-session drafts for line style and color restore
+  on Escape (dirty-only) with `data-office-escape-consumer`; dismissing without
+  applying also restores the open baseline. The position radiogroup keeps the
+  tab stop on the checked target, and Popover `focusFirstOnOpen` prefers
+  in-tab-order controls before falling back for menus.
+
 ## 0.234.0 - 2026-09-15
 
 ### Shared / Document / Presentation

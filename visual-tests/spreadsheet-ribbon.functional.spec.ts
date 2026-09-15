@@ -425,7 +425,7 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   });
   await expect(
     borderGroup.getByRole('radio', {
-      name: '上框线',
+      name: '所有框线',
       exact: true,
     }),
   ).toBeFocused();
@@ -467,11 +467,18 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
   await page.keyboard.press('Shift+Tab');
   await expect(
     borderGroup.getByRole('radio', {
+      name: '所有框线',
+      exact: true,
+    }),
+  ).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(
+    borderGroup.getByRole('radio', {
       name: '上框线',
       exact: true,
     }),
   ).toBeFocused();
-  // 2-column grid: Down moves by row (index + 2) → left → none → outside
+  // 2-column grid: from top, Down moves by row (index + 2) → left → none → outside
   for (let index = 0; index < 3; index += 1) {
     await page.keyboard.press('ArrowDown');
   }

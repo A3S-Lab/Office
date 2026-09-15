@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
@@ -79,10 +79,27 @@ export function SpreadsheetBorderRibbon({
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
 }) {
+  const [open, setOpen] = useState(false);
   const [target, setTarget] = useState<SpreadsheetCellBorderTarget>('all');
   const [style, setStyle] = useState<SpreadsheetCellBorderStyle>('thin');
   const [color, setColor] = useState('#000000');
+  const [baseline, setBaseline] = useState({
+    target: 'all' as SpreadsheetCellBorderTarget,
+    style: 'thin' as SpreadsheetCellBorderStyle,
+    color: '#000000',
+  });
+  const appliedRef = useRef(false);
   const format = { target, style, color } satisfies SpreadsheetCellBorderFormat;
+  const dirty =
+    target !== baseline.target ||
+    style !== baseline.style ||
+    color !== baseline.color;
+  const focusIndex = Math.max(
+    0,
+    spreadsheetBorderTargetOptions.findIndex(
+      (option) => option.target === target,
+    ),
+  );
   const currentDefinition = spreadsheetBorderTargetOptions.find(
     (option) => option.target === target,
   )?.definition;
@@ -99,6 +116,12 @@ export function SpreadsheetBorderRibbon({
       !can.setSelectedCellBorders({ ...format, target: option.target }),
   );
 
+  const restoreBaseline = () => {
+    setTarget(baseline.target);
+    setStyle(baseline.style);
+    setColor(baseline.color);
+  };
+
   return (
     <Popover
       label="更多框线"
@@ -106,11 +129,25 @@ export function SpreadsheetBorderRibbon({
       panelRole="dialog"
       portal
       placement="bottom-end"
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          appliedRef.current = false;
+          setBaseline({ target, style, color });
+          return;
+        }
+        if (!appliedRef.current) {
+          setTarget(baseline.target);
+          setStyle(baseline.style);
+          setColor(baseline.color);
+        }
+      }}
       className="work-spreadsheet-border-split-root"
       panelClassName="work-spreadsheet-border-panel"
       disabled={menuDisabled}
       focusFirstOnOpen
-      trigger={(triggerProps, { open }) => (
+      trigger={(triggerProps, { open: popoverOpen }) => (
         <>
           <button
             type="button"
@@ -127,7 +164,7 @@ export function SpreadsheetBorderRibbon({
           </button>
           <button
             {...triggerProps}
-            className={`work-spreadsheet-border-disclosure${open ? ' active' : ''}`}
+            className={`work-spreadsheet-border-disclosure${popoverOpen ? ' active' : ''}`}
             title="更多框线"
           >
             <ChevronDown size={12} aria-hidden="true" />
@@ -136,7 +173,15 @@ export function SpreadsheetBorderRibbon({
       )}
     >
       {(close) => (
-        <>
+        <div
+          data-office-escape-consumer={dirty || undefined}
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape' || !dirty) return;
+            event.preventDefault();
+            event.stopPropagation();
+            restoreBaseline();
+          }}
+        >
           <div className="work-spreadsheet-border-section-label">框线位置</div>
           <div
             className="work-spreadsheet-border-targets"
@@ -155,12 +200,13 @@ export function SpreadsheetBorderRibbon({
                     key={definition.id}
                     type="button"
                     role="radio"
-                    tabIndex={index === 0 ? 0 : -1}
+                    tabIndex={index === focusIndex ? 0 : -1}
                     aria-checked={option === target}
                     aria-label={definition.label}
                     aria-keyshortcuts={shortcut?.aria}
                     disabled={!can.setSelectedCellBorders(next)}
                     onClick={() => {
+                      appliedRef.current = true;
                       setTarget(option);
                       close();
                       commands.setSelectedCellBorders(next);
@@ -195,7 +241,7 @@ export function SpreadsheetBorderRibbon({
               />
             </div>
           </div>
-        </>
+        </div>
       )}
     </Popover>
   );

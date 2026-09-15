@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.235.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['spreadsheet', 'shared'],
+    title: {
+      en: 'More-borders Escape draft cancel',
+      zh: '更多框线 Escape 取消草稿',
+    },
+    summary: {
+      en: 'Spreadsheet 更多框线 restores dirty line-style and color session drafts on Escape, keeps the position radiogroup tab stop on the checked target, and Popover focusFirstOnOpen prefers in-tab-order controls.',
+      zh: '表格「更多框线」在脏线型/颜色草稿时 Escape 还原会话基线，位置 radiogroup 的 Tab 落点跟随已选目标，Popover 打开焦点优先可 Tab 控件。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Dirty Escape restores session',
+          zh: '脏 Escape 还原会话',
+        },
+        detail: {
+          en: 'Changing 线型 or 颜色 then Escape returns the open-time values without dismissing the dialog.',
+          zh: '修改线型或颜色后按 Escape 回到打开时的值，不关闭对话框。',
+        },
+      },
+      {
+        title: {
+          en: 'Checked target keeps tab stop',
+          zh: '已选目标保持 Tab 落点',
+        },
+        detail: {
+          en: 'The position radiogroup puts tabindex=0 on the aria-checked radio so reopen focuses the current border target.',
+          zh: '位置 radiogroup 把 tabindex=0 放在 aria-checked 的 radio 上，再次打开时聚焦当前框线目标。',
+        },
+      },
+      {
+        title: {
+          en: 'Open focus respects tabindex',
+          zh: '打开焦点尊重 tabindex',
+        },
+        detail: {
+          en: 'Popover focusFirstOnOpen prefers controls that are in the tab order, then falls back for menus that mark every item tabindex=-1.',
+          zh: 'Popover focusFirstOnOpen 优先可 Tab 控件，再回退到全部 tabindex=-1 的菜单项。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.234.0',
     date: '2026-09-15',
     kind: 'fixed',

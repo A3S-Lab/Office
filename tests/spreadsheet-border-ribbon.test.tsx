@@ -54,14 +54,14 @@ test('supports keyboard border selection with persistent line and color settings
   const diagonalUp = within(group).getByRole('radio', {
     name: '斜上框线',
   });
-  await waitFor(() => expect(top).toHaveFocus());
   const all = within(group).getByRole('radio', { name: '所有框线' });
   const none = within(group).getByRole('radio', { name: '无框线' });
   const outside = within(group).getByRole('radio', {
     name: '外侧框线',
   });
-  expect(top).toHaveAttribute('tabindex', '0');
-  expect(all).toHaveAttribute('tabindex', '-1');
+  await waitFor(() => expect(all).toHaveFocus());
+  expect(all).toHaveAttribute('tabindex', '0');
+  expect(top).toHaveAttribute('tabindex', '-1');
   expect(all).toHaveAttribute('aria-checked', 'true');
   expect(none).toHaveAttribute(
     'aria-keyshortcuts',
@@ -123,6 +123,75 @@ test('supports keyboard border selection with persistent line and color settings
     { target: 'outside', color: '#c00000', style: 'thick' },
     { target: 'outside', color: '#c00000', style: 'thick' },
   ]);
+});
+
+test('restores dirty border style and color drafts on Escape without closing', async () => {
+  const formats: SpreadsheetCellBorderFormat[] = [];
+  render(
+    <SpreadsheetBorderRibbon
+      can={borderCan()}
+      commands={borderCommands((format) => {
+        formats.push(format);
+        return true;
+      })}
+    />,
+  );
+
+  const disclosure = screen.getByRole('button', { name: '更多框线' });
+  fireEvent.click(disclosure);
+  const dialog = screen.getByRole('dialog', { name: '框线设置' });
+  const style = within(dialog).getByRole('combobox', { name: '框线样式' });
+  await waitFor(() =>
+    expect(
+      within(dialog).getByRole('radio', { name: '所有框线' }),
+    ).toHaveFocus(),
+  );
+
+  fireEvent.click(style);
+  fireEvent.click(screen.getByRole('option', { name: '粗实线' }));
+  expect(style).toHaveTextContent('粗实线');
+
+  const escapeRoot = dialog.querySelector(
+    '[data-office-escape-consumer="true"]',
+  );
+  expect(escapeRoot).toBeTruthy();
+  fireEvent.keyDown(escapeRoot as Element, { key: 'Escape' });
+
+  expect(screen.getByRole('dialog', { name: '框线设置' })).toBeTruthy();
+  expect(style).toHaveTextContent('细实线');
+  expect(
+    dialog.querySelector('[data-office-escape-consumer="true"]'),
+  ).toBeNull();
+
+  fireEvent.keyDown(dialog, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '框线设置' })).toBeNull();
+  expect(disclosure).toHaveFocus();
+  expect(formats).toEqual([]);
+});
+
+test('keeps radiogroup tab stop on the checked border target after reopen', async () => {
+  render(
+    <SpreadsheetBorderRibbon
+      can={borderCan()}
+      commands={borderCommands(() => true)}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '更多框线' }));
+  fireEvent.click(screen.getByRole('radio', { name: '外侧框线' }));
+  expect(screen.queryByRole('dialog', { name: '框线设置' })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: '更多框线' }));
+  const dialog = screen.getByRole('dialog', { name: '框线设置' });
+  const group = within(dialog).getByRole('radiogroup', { name: '框线位置' });
+  const outside = within(group).getByRole('radio', { name: '外侧框线' });
+  await waitFor(() => expect(outside).toHaveFocus());
+  expect(outside).toHaveAttribute('tabindex', '0');
+  expect(outside).toHaveAttribute('aria-checked', 'true');
+  expect(within(group).getByRole('radio', { name: '上框线' })).toHaveAttribute(
+    'tabindex',
+    '-1',
+  );
 });
 
 test('disables only border targets rejected by the command capability', () => {

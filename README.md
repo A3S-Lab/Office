@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.234.0` keeps compact insert-table dimension drafts Escape-safe:
+Version `0.235.0` keeps Spreadsheet more-borders drafts Escape-safe and focus-correct:
 
-- Dirty **行数** / **列数** spinbuttons restore the focus baseline on Escape and mark `data-office-escape-consumer` so the first Escape cancels without closing the picker; a clean Escape still dismisses. Stepper mousedown uses `preventDefault` so focus stays in the field.
+- Dirty **线型** / **颜色** drafts in **更多框线** restore the open-session baseline on Escape without closing (`data-office-escape-consumer`); outside dismiss without applying restores too. The position radiogroup tab stop follows the checked target, and Popover open-focus prefers tabindex>=0 controls.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
