@@ -382,7 +382,7 @@ function resolveChromeExecutable(): string | undefined {
   const home = os.homedir();
   const candidates = [
     path.join(
-      process.env['ProgramFiles'] ?? 'C:\\Program Files',
+      process.env.ProgramFiles ?? 'C:\\Program Files',
       'Google',
       'Chrome',
       'Application',
@@ -405,7 +405,7 @@ function resolveChromeExecutable(): string | undefined {
       'chrome.exe',
     ),
     path.join(
-      process.env['ProgramFiles'] ?? 'C:\\Program Files',
+      process.env.ProgramFiles ?? 'C:\\Program Files',
       'Microsoft',
       'Edge',
       'Application',

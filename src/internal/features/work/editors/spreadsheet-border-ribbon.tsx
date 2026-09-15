@@ -173,7 +173,7 @@ export function SpreadsheetBorderRibbon({
       )}
     >
       {(close) => (
-        <div
+        <fieldset
           data-office-escape-consumer={dirty || undefined}
           onKeyDown={(event) => {
             if (event.key !== 'Escape' || !dirty) return;
@@ -182,6 +182,7 @@ export function SpreadsheetBorderRibbon({
             restoreBaseline();
           }}
         >
+          <legend className="sr-only">更多框线</legend>
           <div className="work-spreadsheet-border-section-label">框线位置</div>
           <div
             className="work-spreadsheet-border-targets"
@@ -241,7 +242,7 @@ export function SpreadsheetBorderRibbon({
               />
             </div>
           </div>
-        </div>
+        </fieldset>
       )}
     </Popover>
   );
