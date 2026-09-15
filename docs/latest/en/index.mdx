@@ -44,12 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.226.0)
+## What's new on `main` (0.227.0)
 
-PDF page-number and Spreadsheet sheet-rename Escape ownership:
+Shared Popover L2/L3 outside dismiss restores toolbar focus:
 
-- Dirty PDF **页码** drafts restore and set `data-office-escape-consumer`; clean fields bubble Escape.
-- Inline worksheet rename marks the rename field as an Escape consumer while open.
+- Outside pointer dismiss and disable-while-open restore focus to the trigger.
+- Focusout onto non-focusable chrome restores the trigger; Tab exit keeps destination focus.
 
 ## Explore by surface
 

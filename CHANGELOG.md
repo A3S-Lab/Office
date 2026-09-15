@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.227.0 - 2026-09-15
+
+### Shared
+
+- Outside pointer dismiss (and disable-while-open) of shared `Popover` L2/L3
+  surfaces restores focus to the toolbar trigger. Focusout onto non-focusable
+  chrome also restores the trigger; Tab exit to another control still keeps
+  focus on that control.
+
 ## 0.226.0 - 2026-09-15
 
 ### PDF

@@ -106,6 +106,9 @@ These are already the default contract. Do not trade them away for breadth:
    Through `0.226.0`, PDF **页码** dirty drafts restore on Escape with an Escape
    consumer (clean fields bubble), and Spreadsheet sheet rename consumes Escape
    while rename is open.
+   Through `0.227.0`, shared `Popover` outside pointer dismiss (and
+   disable-while-open) restores focus to the toolbar trigger across L2/L3
+   menus; Tab exit still leaves focus on the destination control.
    Through `0.216.0`, curated
    What's new notes use the `writer` surface for Document work and reject unknown
    changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation

@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.226.0` tightens Escape ownership on PDF page-number and Spreadsheet sheet rename:
+Version `0.227.0` restores toolbar trigger focus when shared Popover L2/L3 menus dismiss by outside pointer:
 
-- Dirty PDF **页码** drafts restore the current page and set `data-office-escape-consumer`; clean fields let Escape bubble.
-- Inline worksheet rename marks the rename field as an Escape consumer while rename is open.
+- Outside pointer dismiss and disable-while-open call the same focus-restoring close path as Escape.
+- Focusout onto non-focusable chrome restores the trigger; Tab exit to another control keeps that focus.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

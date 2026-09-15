@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.226.0）
+## `main` 更新内容（0.227.0）
 
-PDF 页码与表格工作表重命名的 Escape 归属：
+共享 Popover 二级/三级菜单在外侧关闭时恢复工具栏焦点：
 
-- 脏的 PDF「页码」草稿还原并标记 `data-office-escape-consumer`；干净字段让 Escape 向上冒泡。
-- 内联工作表重命名在打开期间标记 Escape 消费者。
+- 外侧指针关闭与打开期间禁用都会把焦点还原到触发器。
+- 焦点落到不可聚焦区域时还原触发器；Tab 离开时仍保持目标控件焦点。
 
 ## 按表面探索
 

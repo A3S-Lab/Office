@@ -84,6 +84,42 @@ test('carries the editor control accent into a portal panel', () => {
   ).toHaveAttribute('data-theme', 'dark');
 });
 
+test('restores trigger focus after outside pointer dismiss', async () => {
+  render(
+    <>
+      <Popover
+        label="More tools"
+        panelLabel="More tools"
+        panelRole="menu"
+        portal
+        focusFirstOnOpen
+        trigger={(triggerProps) => (
+          <button {...triggerProps}>More tools</button>
+        )}
+      >
+        <button type="button" role="menuitem" tabIndex={-1}>
+          Export
+        </button>
+      </Popover>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: outside-dismiss probe */}
+      <div data-testid="outside-chrome">Canvas</div>
+    </>,
+  );
+
+  const trigger = screen.getByRole('button', { name: 'More tools' });
+  fireEvent.click(trigger);
+  await waitFor(() =>
+    expect(screen.getByRole('menuitem', { name: 'Export' })).toHaveFocus(),
+  );
+
+  fireEvent.pointerDown(screen.getByTestId('outside-chrome'));
+
+  await waitFor(() => {
+    expect(screen.queryByRole('menu', { name: 'More tools' })).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+});
+
 test('moves portal menu focus to the tab stop beside its trigger', async () => {
   render(
     <>

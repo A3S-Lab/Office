@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.227.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['shared'],
+    title: {
+      en: 'Outside Popover dismiss restores toolbar trigger focus',
+      zh: 'Popover 外侧关闭时还原工具栏触发器焦点',
+    },
+    summary: {
+      en: 'Shared: outside pointer dismiss and disable-while-open restore focus to the L2/L3 toolbar trigger; Tab exit still keeps destination focus.',
+      zh: '共享：外侧指针关闭与打开期间禁用都会把焦点还原到二级/三级工具栏触发器；Tab 离开仍保持目标焦点。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Outside pointer',
+          zh: '外侧指针',
+        },
+        detail: {
+          en: 'pointerdown outside uses the same close() path as Escape.',
+          zh: '外侧 pointerdown 走与 Escape 相同的 close() 路径。',
+        },
+      },
+      {
+        title: {
+          en: 'Non-focusable chrome',
+          zh: '不可聚焦区域',
+        },
+        detail: {
+          en: 'Focusout with a null relatedTarget restores the trigger.',
+          zh: 'relatedTarget 为空的 focusout 会还原触发器。',
+        },
+      },
+      {
+        title: {
+          en: 'Tab exit preserved',
+          zh: '保留 Tab 离开',
+        },
+        detail: {
+          en: 'Tabbing to another control does not steal focus back to the trigger.',
+          zh: 'Tab 到其他控件时不会把焦点抢回触发器。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.227.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.227.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.226.0',
     date: '2026-09-15',
     kind: 'fixed',

@@ -219,8 +219,8 @@ export function Popover({
 
   useEffect(() => {
     if (!disabled || !openRef.current) return;
-    updateOpen(false);
-  }, [disabled, updateOpen]);
+    close();
+  }, [close, disabled]);
 
   useEffect(() => {
     if (!open) return;
@@ -238,7 +238,7 @@ export function Popover({
       // Nested portal menus live outside this panel; keep the parent open
       // while a higher layer owns the pointer target.
       if (isInsideHigherOpenPopover(token, event.target)) return;
-      updateOpen(false);
+      close();
     };
     const closeFromKeyboard = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || openPopoverLayers.at(-1)?.token !== token)
@@ -254,7 +254,7 @@ export function Popover({
       document.removeEventListener('pointerdown', closeFromOutside);
       document.removeEventListener('keydown', closeFromKeyboard);
     };
-  }, [close, open, updateOpen]);
+  }, [close, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -272,6 +272,11 @@ export function Popover({
         return;
       }
       updateOpen(false);
+      // Pointer dismiss onto non-focusable chrome leaves relatedTarget null;
+      // restore the toolbar trigger. Tab exit already moved focus elsewhere.
+      if (!(nextTarget instanceof Node)) {
+        triggerRef.current?.focus({ preventScroll: true });
+      }
     };
     root?.addEventListener('focusout', closeFromFocusOut);
     if (portal) panel?.addEventListener('focusout', closeFromFocusOut);
