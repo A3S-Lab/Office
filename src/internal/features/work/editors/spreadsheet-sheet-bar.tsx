@@ -638,7 +638,9 @@ function moveSpreadsheetSheetMenuFocus(
       if (current >= 0 && swatches.length > 0) {
         event.preventDefault();
         const delta = event.key === 'ArrowRight' ? 1 : -1;
-        swatches[(current + delta + swatches.length) % swatches.length]?.focus();
+        swatches[
+          (current + delta + swatches.length) % swatches.length
+        ]?.focus();
         return true;
       }
     }

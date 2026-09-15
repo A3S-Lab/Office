@@ -66,7 +66,9 @@ test('sheet options color row uses menu group semantics and Left/Right swatch fo
     <SpreadsheetSheetBar
       activeSheetId="sheet-1"
       editable
-      sheets={[{ id: 'sheet-1', name: '执行看板', status: 1, color: '#4472C4' }]}
+      sheets={[
+        { id: 'sheet-1', name: '执行看板', status: 1, color: '#4472C4' },
+      ]}
       onActivate={() => undefined}
       onCreate={() => undefined}
       onDelete={() => undefined}
@@ -90,7 +92,9 @@ test('sheet options color row uses menu group semantics and Left/Right swatch fo
   expect(blue).toHaveFocus();
   fireEvent.keyDown(menu, { key: 'ArrowRight' });
   await waitFor(() =>
-    expect(screen.getByRole('menuitemradio', { name: '绿色标签' })).toHaveFocus(),
+    expect(
+      screen.getByRole('menuitemradio', { name: '绿色标签' }),
+    ).toHaveFocus(),
   );
   fireEvent.keyDown(menu, { key: 'ArrowLeft' });
   await waitFor(() => expect(blue).toHaveFocus());
