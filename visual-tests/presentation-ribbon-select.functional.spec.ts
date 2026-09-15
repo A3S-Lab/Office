@@ -46,11 +46,15 @@ test('Presentation ribbon keeps OfficeSelect controls on the 74px row', async ({
   );
 
   const alignTrigger = alignMenu.getByRole('button', {
-    name: '元素对齐到幻灯片',
+    name: '对象对齐',
   });
   // Single-object selection enables align-to-slide (not relative multi-align).
   await expect(alignTrigger).toBeEnabled();
   await expect(alignTrigger).toContainText('对象对齐');
+  await expect(alignTrigger).toHaveAttribute(
+    'aria-description',
+    '元素对齐到幻灯片',
+  );
   const alignOverflow = await alignTrigger.evaluate((node) => {
     const label = node.querySelector('span');
     if (!(label instanceof HTMLElement)) return null;

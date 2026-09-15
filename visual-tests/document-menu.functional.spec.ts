@@ -208,7 +208,7 @@ test('Word repeats Find and Replace commands by returning focus to the query', a
   await expect(page.getByText('已替换当前匹配')).toBeVisible();
 });
 
-test('Word list galleries apply a style without trapping focus in the ribbon', async ({
+test('Word list galleries restore ribbon trigger focus after a pick', async ({
   page,
 }) => {
   await page.goto('/playground/');
@@ -216,9 +216,11 @@ test('Word list galleries apply a style without trapping focus in the ribbon', a
   await waitForDocumentFixture(page);
 
   const body = page.getByRole('textbox', { name: '文档正文' });
+  const bulletTrigger = page.getByRole('button', { name: '项目符号库' });
+  const numberingTrigger = page.getByRole('button', { name: '编号库' });
   await body.focus();
 
-  await page.getByRole('button', { name: '项目符号库' }).click();
+  await bulletTrigger.click();
   let library = page.getByRole('dialog', { name: '项目符号库' });
   const disc = library.getByRole('menuitemradio', { name: '实心圆点' });
   const circle = library.getByRole('menuitemradio', { name: '空心圆点' });
@@ -233,20 +235,20 @@ test('Word list galleries apply a style without trapping focus in the ribbon', a
     page.getByRole('button', { name: '编号', exact: true }),
   ).toBeFocused();
 
-  await page.getByRole('button', { name: '项目符号库' }).click();
+  await bulletTrigger.click();
   library = page.getByRole('dialog', { name: '项目符号库' });
   await library.getByRole('menuitemradio', { name: '空心圆点' }).click();
-  await expect(body).toBeFocused();
+  await expect(bulletTrigger).toBeFocused();
 
-  await page.getByRole('button', { name: '项目符号库' }).click();
+  await bulletTrigger.click();
   library = page.getByRole('dialog', { name: '项目符号库' });
   await library.getByRole('button', { name: '清除项目符号' }).click();
-  await expect(body).toBeFocused();
+  await expect(bulletTrigger).toBeFocused();
 
-  await page.getByRole('button', { name: '编号库' }).click();
+  await numberingTrigger.click();
   const numbering = page.getByRole('dialog', { name: '编号库' });
   await numbering.getByRole('menuitemradio', { name: '小写字母' }).click();
-  await expect(body).toBeFocused();
+  await expect(numberingTrigger).toBeFocused();
 });
 
 test('Word page and reference commands keep the document ready for typing', async ({

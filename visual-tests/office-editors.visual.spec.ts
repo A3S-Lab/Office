@@ -378,7 +378,7 @@ test('Word paragraph layout popovers use touch-sized phone controls', async ({
   await expect(paginationTrigger).toBeFocused();
 });
 
-test('Word list galleries use touch-sized phone controls and preserve editing focus', async ({
+test('Word list galleries use touch-sized phone controls and restore ribbon focus', async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -390,7 +390,6 @@ test('Word list galleries use touch-sized phone controls and preserve editing fo
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
 
-  const body = page.getByRole('textbox', { name: '文档正文' });
   const toolbar = page.getByRole('toolbar', { name: '开始工具栏' });
   const nextRibbonPage = page.getByRole('button', {
     name: '向右查看更多开始工具',
@@ -480,7 +479,7 @@ test('Word list galleries use touch-sized phone controls and preserve editing fo
     'data-office-bullet-style',
     'square',
   );
-  await expect(body).toBeFocused();
+  await expect(bulletTrigger).toBeFocused();
 
   const orderedItem = page
     .locator('.work-document-editable .ProseMirror ol > li > p')
@@ -526,7 +525,7 @@ test('Word list galleries use touch-sized phone controls and preserve editing fo
     'type',
     'I',
   );
-  await expect(body).toBeFocused();
+  await expect(numberingTrigger).toBeFocused();
 
   await numberingTrigger.click();
   await expect(numberingPanel).toBeVisible();
@@ -536,7 +535,7 @@ test('Word list galleries use touch-sized phone controls and preserve editing fo
     'start',
     '4',
   );
-  await expect(body).toBeFocused();
+  await expect(numberingTrigger).toBeFocused();
 
   await numberingTrigger.click();
   await expect(numberingPanel).toBeVisible();
