@@ -414,7 +414,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('data-office-escape-consumer');
   expect(readme).toContain('Escape');
   expect(englishHome).toContain("## What's new on `main` (0.238.0)");
-  expect(englishHome).toContain('Document spacing and cell-margins Escape draft cancel');
+  expect(englishHome).toContain(
+    'Document spacing and cell-margins Escape draft cancel',
+  );
   expect(chineseHome).toContain('## `main` 更新内容（0.238.0）');
   expect(chineseHome).toContain('段落间距');
   expect(chineseHome).toContain('单元格边距');
