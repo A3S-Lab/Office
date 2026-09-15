@@ -415,7 +415,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('ribbon');
   expect(readme).toContain('L2');
   expect(englishHome).toContain("## What's new on `main` (0.242.0)");
-  expect(englishHome).toContain('Document split-primary and table-layout ribbon focus restore');
+  expect(englishHome).toContain(
+    'Document split-primary and table-layout ribbon focus restore',
+  );
   expect(chineseHome).toContain('## `main` 更新内容（0.242.0）');
   expect(chineseHome).toContain('拆分主按钮');
   expect(chineseHome).toContain('功能区');
