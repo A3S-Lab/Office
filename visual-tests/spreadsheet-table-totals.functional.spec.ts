@@ -46,9 +46,12 @@ test('Spreadsheet totals-row controls stay discoverable and usable', async ({
     animations: 'disabled',
   });
   await dialog.getByRole('button', { name: '完成' }).click();
-  await expect(ribbon.getByRole('button', { name: '汇总行' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
+  const totalsTrigger = ribbon.getByRole('button', { name: '汇总行' });
+  await expect(totalsTrigger).not.toHaveAttribute('aria-pressed');
+  await expect(totalsTrigger).toHaveClass(/active/);
+  await expect(totalsTrigger).toHaveAttribute(
+    'title',
+    '设置表格汇总行（已启用）',
   );
   expect(browserErrors).toEqual([]);
 });

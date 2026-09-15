@@ -113,7 +113,8 @@ test('Spreadsheet owns Find, Go To, match navigation, and focus restoration', as
   await findAndSelectMenu.getByRole('menuitem', { name: '查找' }).click();
   const query = page.getByRole('textbox', { name: '查找当前工作表' });
   await expect(query).toBeFocused();
-  await expect(findAndSelect).toHaveAttribute('aria-pressed', 'true');
+  await expect(findAndSelect).not.toHaveAttribute('aria-pressed');
+  await expect(findAndSelect).toHaveClass(/active/);
   const findGeometry = await page.evaluate(() => {
     const bar = document.querySelector('.work-spreadsheet-find-bar');
     const columnHeader = document.querySelector('.fortune-col-header');
