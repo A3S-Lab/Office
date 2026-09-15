@@ -1473,6 +1473,7 @@ test('cancels a dirty table-name draft without leaking Escape to parent surfaces
     showColumnStripes: false,
   };
   render(
+    // biome-ignore lint/a11y/noStaticElementInteractions: test Escape-leak probe
     <div
       onKeyDown={(event) => {
         if (event.key === 'Escape') leaked.push('parent');
