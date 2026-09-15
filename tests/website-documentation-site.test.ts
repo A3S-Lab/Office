@@ -413,9 +413,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('data-office-escape-consumer');
   expect(readme).toContain('Escape');
   expect(englishHome).toContain("## What's new on `main` (0.234.0)");
-  expect(englishHome).toContain(
-    'Compact insert-table Escape draft cancel',
-  );
+  expect(englishHome).toContain('Compact insert-table Escape draft cancel');
   expect(chineseHome).toContain('## `main` 更新内容（0.234.0）');
   expect(chineseHome).toContain('紧凑插入表格 Escape 草稿取消');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
