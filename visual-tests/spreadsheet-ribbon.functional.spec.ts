@@ -471,9 +471,18 @@ test('Spreadsheet renders and undoes native WPS cell borders', async ({
       exact: true,
     }),
   ).toBeFocused();
-  for (let index = 0; index < 6; index += 1) {
+  // 2-column grid: Down moves by row (index + 2) → left → none → outside
+  for (let index = 0; index < 3; index += 1) {
     await page.keyboard.press('ArrowDown');
   }
+  await expect(
+    borderGroup.getByRole('radio', { name: '外侧框线' }),
+  ).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(
+    borderGroup.getByRole('radio', { name: '内部框线' }),
+  ).toBeFocused();
+  await page.keyboard.press('ArrowLeft');
   await expect(
     borderGroup.getByRole('radio', { name: '外侧框线' }),
   ).toBeFocused();
