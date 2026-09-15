@@ -567,11 +567,46 @@ test('cancels a page-number draft on Escape without navigating on blur', () => {
   const page = screen.getByRole('textbox', { name: '页码' });
   page.focus();
   fireEvent.change(page, { target: { value: '7' } });
+  expect(page).toHaveAttribute('data-office-escape-consumer', 'true');
   fireEvent.keyDown(page, { key: 'Escape' });
 
   expect(page).toHaveValue('2');
+  expect(page).not.toHaveAttribute('data-office-escape-consumer');
   expect(page).not.toHaveFocus();
   expect(calls).not.toContain('page:7');
+});
+
+test('lets Escape bubble from a clean page-number field', () => {
+  const leaked: string[] = [];
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+
+  render(
+    // biome-ignore lint/a11y/noStaticElementInteractions: test Escape-leak probe
+    <div
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') leaked.push('parent');
+      }}
+    >
+      <PdfToolbar
+        annotationState={annotation.state}
+        can={createCanCommands(controller)}
+        commands={createCommands(controller, annotation, calls)}
+        editable
+        saveLabel="保存"
+        saveState="idle"
+        searchInputRef={createRef<HTMLInputElement>()}
+        state={controller.state}
+      />
+    </div>,
+  );
+
+  const page = screen.getByRole('textbox', { name: '页码' });
+  expect(page).toHaveValue('2');
+  expect(page).not.toHaveAttribute('data-office-escape-consumer');
+  fireEvent.keyDown(page, { key: 'Escape' });
+  expect(leaked).toEqual(['parent']);
 });
 
 test('does not restart or navigate a search while its current query is loading', () => {

@@ -208,6 +208,7 @@ test('cancels worksheet rename with Escape and restores tab keyboard focus', asy
 
   fireEvent.doubleClick(screen.getByRole('tab', { name: '执行看板' }));
   const input = screen.getByRole('textbox', { name: '重命名执行看板' });
+  expect(input).toHaveAttribute('data-office-escape-consumer', 'true');
   fireEvent.change(input, { target: { value: '不应保存' } });
   fireEvent.keyDown(input, { key: 'Escape' });
 

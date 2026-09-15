@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.225.0）
+## `main` 更新内容（0.226.0）
 
-表格「表格设计」表格名称 Escape 先还原脏草稿：
+PDF 页码与表格工作表重命名的 Escape 归属：
 
-- 脏的表格名称草稿还原，并标记 `data-office-escape-consumer`。
-- 第一次 Escape 取消草稿，不关闭父级/任务窗格表面。
+- 脏的 PDF「页码」草稿还原并标记 `data-office-escape-consumer`；干净字段让 Escape 向上冒泡。
+- 内联工作表重命名在打开期间标记 Escape 消费者。
 
 ## 按表面探索
 

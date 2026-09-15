@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.225.0` restores Escape draft cancel on Spreadsheet Table Design **表格名称**:
+Version `0.226.0` tightens Escape ownership on PDF page-number and Spreadsheet sheet rename:
 
-- Dirty table-name drafts restore the committed name and set `data-office-escape-consumer`.
-- First Escape cancels the draft without leaking to parent/task-pane surfaces.
+- Dirty PDF **页码** drafts restore the current page and set `data-office-escape-consumer`; clean fields let Escape bubble.
+- Inline worksheet rename marks the rename field as an Escape consumer while rename is open.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

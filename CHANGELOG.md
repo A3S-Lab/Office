@@ -4,6 +4,19 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.226.0 - 2026-09-15
+
+### PDF
+
+- Escape on a dirty page-number draft restores the current page and marks the
+  field as an Escape consumer. Clean page fields let Escape bubble to parent
+  surfaces instead of always consuming the key.
+
+### Spreadsheet
+
+- Inline worksheet rename marks the rename field as an Escape consumer so
+  Escape cancels rename without dismissing parent/task-pane surfaces first.
+
 ## 0.225.0 - 2026-09-15
 
 ### Spreadsheet

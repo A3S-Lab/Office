@@ -418,6 +418,11 @@ export function PdfToolbar({
           inputMode="numeric"
           value={pageValue}
           disabled={!can.goToPage(state.currentPage || 1)}
+          data-office-escape-consumer={
+            pageValue !==
+              (state.currentPage > 0 ? String(state.currentPage) : '') ||
+            undefined
+          }
           onBlur={() => {
             if (cancelPageBlurCommitRef.current) {
               cancelPageBlurCommitRef.current = false;
@@ -436,11 +441,17 @@ export function PdfToolbar({
               event.preventDefault();
               commitPage();
               event.currentTarget.select();
-            } else if (event.key === 'Escape') {
+            } else if (
+              event.key === 'Escape' &&
+              pageValue !==
+                (state.currentPage > 0 ? String(state.currentPage) : '')
+            ) {
               event.preventDefault();
               event.stopPropagation();
               cancelPageBlurCommitRef.current = true;
-              setPageValue(String(state.currentPage));
+              setPageValue(
+                state.currentPage > 0 ? String(state.currentPage) : '',
+              );
               event.currentTarget.blur();
             }
           }}

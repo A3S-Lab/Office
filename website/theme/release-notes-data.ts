@@ -37,6 +37,68 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.226.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['pdf', 'spreadsheet'],
+    title: {
+      en: 'PDF page and sheet-rename Escape consumers match nested surfaces',
+      zh: 'PDF 页码与工作表重命名 Escape 消费者对齐嵌套表面',
+    },
+    summary: {
+      en: 'PDF: dirty page-number drafts restore and consume Escape; clean fields bubble. Spreadsheet: inline sheet rename marks Escape consumer while open.',
+      zh: 'PDF：脏页码草稿还原并消费 Escape；干净字段冒泡。表格：内联工作表重命名在打开期间标记 Escape 消费者。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'PDF page field',
+          zh: 'PDF 页码',
+        },
+        detail: {
+          en: 'Dirty 页码 drafts restore current page and set data-office-escape-consumer.',
+          zh: '脏的「页码」草稿还原当前页，并设置 data-office-escape-consumer。',
+        },
+      },
+      {
+        title: {
+          en: 'Clean page bubble',
+          zh: '干净页码冒泡',
+        },
+        detail: {
+          en: 'Clean page fields no longer always stop Escape.',
+          zh: '干净页码字段不再一律拦截 Escape。',
+        },
+      },
+      {
+        title: {
+          en: 'Sheet rename',
+          zh: '工作表重命名',
+        },
+        detail: {
+          en: 'Rename input sets data-office-escape-consumer while rename is open.',
+          zh: '重命名输入在打开期间设置 data-office-escape-consumer。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './changelog.html',
+          zh: './changelog.html',
+        },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.226.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.226.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.225.0',
     date: '2026-09-15',
     kind: 'fixed',

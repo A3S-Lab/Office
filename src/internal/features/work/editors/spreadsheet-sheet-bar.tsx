@@ -337,6 +337,7 @@ export function SpreadsheetSheetBar({
                     aria-describedby={renameError ? renameErrorId : undefined}
                     aria-errormessage={renameError ? renameErrorId : undefined}
                     data-office-shortcuts="ignore"
+                    data-office-escape-consumer="true"
                     value={renameDraft}
                     maxLength={31}
                     onChange={(event) => {
