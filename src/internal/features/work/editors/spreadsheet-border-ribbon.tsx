@@ -150,6 +150,7 @@ export function SpreadsheetBorderRibbon({
                 const shortcut =
                   'shortcut' in definition ? definition.shortcut : undefined;
                 return (
+                  // biome-ignore lint/a11y/useSemanticElements: styled border radios; native input cannot host glyph and shortcut kbd.
                   <button
                     key={definition.id}
                     type="button"

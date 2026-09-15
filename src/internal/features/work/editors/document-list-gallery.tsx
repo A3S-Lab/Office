@@ -159,6 +159,7 @@ function BulletListControl({
               aria-label="项目符号样式"
             >
               {bulletStyles.map((style, index) => (
+                // biome-ignore lint/a11y/useSemanticElements: styled gallery radios; native input radios can't host glyph + keyboard grid.
                 <button
                   ref={(element) => {
                     optionRefs.current[index] = element;
@@ -317,6 +318,7 @@ function OrderedListControl({
               aria-label="编号样式"
             >
               {orderedStyles.map((style, index) => (
+                // biome-ignore lint/a11y/useSemanticElements: styled gallery radios; native input radios can't host glyph + keyboard grid.
                 <button
                   ref={(element) => {
                     optionRefs.current[index] = element;
