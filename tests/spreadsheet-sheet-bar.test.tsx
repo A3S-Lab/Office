@@ -1,5 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { SpreadsheetSheetBar } from '../src/internal/features/work/editors/spreadsheet-sheet-bar';
 
 test('uses one accessible worksheet bar for creation, activation, and menus', async () => {
