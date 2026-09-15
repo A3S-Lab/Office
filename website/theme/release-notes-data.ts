@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.234.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['shared', 'writer', 'presentation'],
+    title: {
+      en: 'Compact table insert Escape draft cancel',
+      zh: '紧凑插入表格 Escape 取消草稿',
+    },
+    summary: {
+      en: 'Compact insert-table 行数 / 列数 spinbuttons restore the focus baseline on Escape when dirty, with data-office-escape-consumer so the first Escape cancels without closing the picker.',
+      zh: '紧凑插入表格的行数 / 列数在脏草稿时 Escape 还原聚焦基线，并通过 data-office-escape-consumer 让第一次 Escape 取消而不关闭选择器。',
+    },
+    highlights: [
+      {
+        title: { en: 'Dirty Escape restores baseline', zh: '脏 Escape 还原基线' },
+        detail: {
+          en: 'Changing 行数 or 列数 then Escape returns the focus-time value without dismissing the dialog.',
+          zh: '修改行数或列数后按 Escape 回到聚焦时的值，不关闭对话框。',
+        },
+      },
+      {
+        title: { en: 'Clean Escape still closes', zh: '干净 Escape 仍关闭' },
+        detail: {
+          en: 'A second Escape (or Escape on an unchanged field) dismisses the picker and restores the trigger.',
+          zh: '再次 Escape（或未改动字段时 Escape）仍关闭选择器并还原触发按钮。',
+        },
+      },
+      {
+        title: { en: 'Stepper keeps field focus', zh: '步进保持字段焦点' },
+        detail: {
+          en: 'Plus/minus mousedown preventDefault keeps keyboard focus in the spinbutton for another Escape.',
+          zh: '加减按钮 mousedown preventDefault，保持键盘焦点在数字框以便再次 Escape。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.233.0',
     date: '2026-09-15',
     kind: 'fixed',

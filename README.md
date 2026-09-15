@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.233.0` fixes Spreadsheet border-position keyboard navigation:
+Version `0.234.0` keeps compact insert-table dimension drafts Escape-safe:
 
-- **更多框线** position radiogroup is a CSS 2-column grid; Left/Right now move between adjacent targets via `moveOfficeGridMenuFocus(..., 2)` instead of linear Up/Down-only menu focus.
+- Dirty **行数** / **列数** spinbuttons restore the focus baseline on Escape and mark `data-office-escape-consumer` so the first Escape cancels without closing the picker; a clean Escape still dismisses. Stepper mousedown uses `preventDefault` so focus stays in the field.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

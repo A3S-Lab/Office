@@ -217,6 +217,9 @@ function TableDimensionField({
   value: number;
   onChange: (value: number) => void;
 }) {
+  const [baseline, setBaseline] = useState(value);
+  const dirty = value !== baseline;
+
   return (
     <fieldset className="work-office-table-picker-dimension">
       <legend>{label}</legend>
@@ -225,6 +228,7 @@ function TableDimensionField({
           type="button"
           aria-label={`减少${label}`}
           disabled={value <= 1}
+          onMouseDown={(event) => event.preventDefault()}
           onClick={() => onChange(value - 1)}
         >
           <Minus size={16} aria-hidden="true" />
@@ -237,13 +241,24 @@ function TableDimensionField({
           min={1}
           max={maximum}
           value={value}
-          onFocus={(event) => event.currentTarget.select()}
+          data-office-escape-consumer={dirty || undefined}
+          onFocus={(event) => {
+            setBaseline(value);
+            event.currentTarget.select();
+          }}
           onChange={(event) => onChange(event.currentTarget.valueAsNumber)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape' || !dirty) return;
+            event.preventDefault();
+            event.stopPropagation();
+            onChange(baseline);
+          }}
         />
         <button
           type="button"
           aria-label={`增加${label}`}
           disabled={value >= maximum}
+          onMouseDown={(event) => event.preventDefault()}
           onClick={() => onChange(value + 1)}
         >
           <Plus size={16} aria-hidden="true" />

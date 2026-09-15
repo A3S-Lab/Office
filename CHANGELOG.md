@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.234.0 - 2026-09-15
+
+### Shared / Document / Presentation
+
+- Compact insert-table **行数** / **列数** spinbuttons restore the focus-time
+  baseline on Escape (dirty-only) with `data-office-escape-consumer` so the
+  first Escape cancels the draft without closing the picker; a clean Escape
+  still dismisses. Stepper buttons use `preventDefault` on mousedown to keep
+  focus in the field.
+
 ## 0.233.0 - 2026-09-15
 
 ### Spreadsheet

@@ -134,6 +134,33 @@ test('uses touch-sized row and column controls on compact screens', async () => 
   }
 });
 
+test('restores compact table dimension drafts on Escape before closing', async () => {
+  const restoreMatchMedia = mockMatchMedia(true);
+
+  try {
+    render(
+      <OfficeTableInsertPopover label="表格" onInsert={() => undefined} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '表格' }));
+    const rows = screen.getByRole('spinbutton', { name: '行数' });
+    await waitFor(() => expect(rows).toHaveFocus());
+
+    fireEvent.change(rows, { target: { value: '4' } });
+    expect(rows).toHaveValue(4);
+    fireEvent.keyDown(rows, { key: 'Escape' });
+
+    expect(rows).toHaveValue(1);
+    expect(screen.getByRole('dialog', { name: '选择表格大小' })).toBeTruthy();
+    expect(rows).toHaveFocus();
+
+    fireEvent.keyDown(rows, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: '选择表格大小' })).toBeNull();
+  } finally {
+    restoreMatchMedia();
+  }
+});
+
 test('shows Word-style table Design and Layout tabs only inside a table', async () => {
   editor = createMixedEditor();
   const outsidePosition = documentTextRange(editor, 'Outside').from;
