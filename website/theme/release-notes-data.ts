@@ -51,7 +51,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     },
     highlights: [
       {
-        title: { en: 'Dirty Escape restores baseline', zh: '脏 Escape 还原基线' },
+        title: {
+          en: 'Dirty Escape restores baseline',
+          zh: '脏 Escape 还原基线',
+        },
         detail: {
           en: 'Changing 行数 or 列数 then Escape returns the focus-time value without dismissing the dialog.',
           zh: '修改行数或列数后按 Escape 回到聚焦时的值，不关闭对话框。',
