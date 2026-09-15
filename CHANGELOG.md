@@ -17,6 +17,9 @@ All notable changes to A3S Office will be documented in this file.
 - Bullet / numbered list galleries no longer steal focus into the editor
   after a style pick; Popover restores focus to the ribbon trigger so L2
   disclosure loops stay usable from the keyboard.
+- Numbering library **起始编号** now matches other `OfficeNumberField`
+  drafts: Escape restores the committed value; blur / Enter commits
+  without closing the library. **应用起始值** still applies and closes.
 
 ## 0.229.0 - 2026-09-15
 

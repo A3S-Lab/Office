@@ -240,6 +240,16 @@ function OrderedListControl({
       optionRefs.current[activeIndex]?.focus({ preventScroll: true }),
     );
   };
+  const commitStart = (raw: string) => {
+    const next = validStartValue(raw);
+    if (next === null) {
+      setStartValue(committedStart);
+      return;
+    }
+    setStartValue(String(next));
+    if (next === (activeState?.start ?? 1)) return;
+    editor.commands.setDocumentNumberingStart(next);
+  };
   const applyStart = (close: () => void) => {
     if (validStart === null) return;
     runDocumentListMenuCommand(close, () =>
@@ -390,6 +400,7 @@ function OrderedListControl({
                     step={1}
                     escapeConsumer={startDirty}
                     onValueChange={setStartValue}
+                    onCommit={commitStart}
                     onCancel={
                       startDirty
                         ? () => setStartValue(committedStart)

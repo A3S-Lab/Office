@@ -42,12 +42,12 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
     kind: 'fixed',
     surfaces: ['presentation', 'writer'],
     title: {
-      en: 'Align name + list gallery focus stay on ribbon',
-      zh: '对象对齐名称与列表库焦点留在功能区',
+      en: 'Align name, list focus, and numbering-start drafts',
+      zh: '对象对齐名称、列表库焦点与起始编号草稿',
     },
     summary: {
-      en: 'Presentation 对象对齐 accessible name matches the visible label; mode hints stay in title/description. Document list galleries no longer steal editor focus after a pick.',
-      zh: '演示文稿「对象对齐」无障碍名称与可见文案一致；模式提示保留在 title/description。文档列表库选择后不再抢编辑器焦点。',
+      en: 'Presentation 对象对齐 accessible name matches the visible label. Document list galleries restore ribbon focus after a pick. Numbering 起始编号 Escape cancels / blur·Enter commits like other OfficeNumberField drafts.',
+      zh: '演示文稿「对象对齐」无障碍名称与可见文案一致。文档列表库选择后焦点还回功能区。编号「起始编号」与其他 OfficeNumberField 一致：Escape 取消，blur/Enter 提交。',
     },
     highlights: [
       {
@@ -65,10 +65,10 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
         },
       },
       {
-        title: { en: 'L2 disclosure loops', zh: '二级披露回路' },
+        title: { en: 'Numbering start drafts', zh: '起始编号草稿' },
         detail: {
-          en: 'Keyboard users can reopen list galleries without an extra Tab out of the canvas.',
-          zh: '键盘用户无需先从画布 Tab 出来即可再次打开列表库。',
+          en: 'Escape restores the committed start; blur / Enter commits without requiring 应用起始值; Apply still closes the library.',
+          zh: 'Escape 还原已提交起始值；blur / Enter 即可提交，不必先点「应用起始值」；应用按钮仍会关闭编号库。',
         },
       },
     ],

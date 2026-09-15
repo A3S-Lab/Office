@@ -920,6 +920,50 @@ test('cancels a dirty numbering-start draft before Escape closes the library', (
   expect(trigger).toHaveFocus();
 });
 
+test('commits a dirty numbering-start draft on Enter or blur like other Office number fields', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<ol start="7" type="I"><li><p>Item</p></li></ol>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Item'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '编号库' });
+  fireEvent.click(trigger);
+  let library = screen.getByRole('dialog', { name: '编号库' });
+  let start = within(library).getByRole('textbox', { name: '起始编号' });
+
+  fireEvent.change(start, { target: { value: '12' } });
+  fireEvent.keyDown(start, { key: 'Enter' });
+
+  expect(screen.getByRole('dialog', { name: '编号库' })).toBeInTheDocument();
+  expect(start).toHaveValue('12');
+  expect(editor.getHTML()).toContain('<ol start="12" type="I">');
+  expect(
+    within(library).getByRole('button', { name: '应用起始值' }),
+  ).toBeDisabled();
+
+  fireEvent.change(start, { target: { value: '0' } });
+  fireEvent.keyDown(start, { key: 'Enter' });
+  expect(start).toHaveValue('12');
+  expect(editor.getHTML()).toContain('<ol start="12" type="I">');
+
+  fireEvent.change(start, { target: { value: '4' } });
+  fireEvent.blur(start);
+  expect(editor.getHTML()).toContain('<ol start="4" type="I">');
+
+  fireEvent.click(trigger);
+  library = screen.getByRole('dialog', { name: '编号库' });
+  start = within(library).getByRole('textbox', { name: '起始编号' });
+  expect(start).toHaveValue('4');
+});
+
 function textRange(editor: Editor, text: string): { from: number; to: number } {
   let range: { from: number; to: number } | null = null;
   editor.state.doc.descendants((node, position) => {
