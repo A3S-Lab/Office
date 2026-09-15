@@ -658,7 +658,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         expect "freeze-panes-active" {
-            visible = css(".work-spreadsheet-editor[data-freeze-panes='active'] button[aria-label='冻结窗格'][aria-pressed='true']")
+            visible = css(".work-spreadsheet-editor[data-freeze-panes='active'] button[aria-label='冻结窗格'][title='冻结窗格（已启用）'].active")
         }
 
         click "reopen-freeze-panes-menu" {
@@ -686,7 +686,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         expect "freeze-panes-inactive" {
-            visible = css(".work-spreadsheet-editor:not([data-freeze-panes]) button[aria-label='冻结窗格'][aria-pressed='false']")
+            visible = css(".work-spreadsheet-editor:not([data-freeze-panes]) button[aria-label='冻结窗格'][title='冻结窗格']:not(.active)")
         }
 
         accessibility "spreadsheet-freeze-panes-accessibility" {

@@ -50,7 +50,6 @@ export function DocumentTextCaseRibbon({ editor }: { editor: Editor }) {
           {...triggerProps}
           type="button"
           className={value !== 'none' || open ? 'active' : ''}
-          aria-pressed={value !== 'none'}
           aria-keyshortcuts={changeCaseShortcut?.aria}
           title={`大小写效果（${current.label}${
             changeCaseShortcut ? `，${changeCaseShortcut.label}` : ''

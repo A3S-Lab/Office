@@ -69,7 +69,7 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
         <button
           {...triggerProps}
           className={`with-label${customized || popoverOpen ? ' active' : ''}`}
-          aria-pressed={customized}
+          title={customized ? '单元格边距（已自定义）' : '单元格边距'}
         >
           <Grid2X2 size={18} />
           <span>单元格边距</span>

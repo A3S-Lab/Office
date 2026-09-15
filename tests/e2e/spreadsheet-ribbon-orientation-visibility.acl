@@ -49,7 +49,7 @@ suite "office-spreadsheet-ribbon-orientation-visibility" {
         }
 
         expect "orientation-command-is-horizontal" {
-            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-group[aria-label='对齐'] button[aria-label='文字方向'][aria-pressed='false'][title='文字方向（当前：横排文字）']")
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-group[aria-label='对齐'] button[aria-label='文字方向'][title='文字方向（当前：横排文字）']:not(.active)")
         }
 
         click "open-orientation-menu" {
@@ -85,7 +85,7 @@ suite "office-spreadsheet-ribbon-orientation-visibility" {
         }
 
         expect "clockwise-orientation-active" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='文字方向'][aria-pressed='true'][title='文字方向（当前：顺时针倾斜）']")
+            visible = css(".work-spreadsheet-ribbon button[aria-label='文字方向'][title='文字方向（当前：顺时针倾斜）'].active")
         }
 
         expect "grid-focus-restored-after-orientation" {
@@ -113,7 +113,7 @@ suite "office-spreadsheet-ribbon-orientation-visibility" {
         }
 
         expect "horizontal-orientation-restored" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='文字方向'][aria-pressed='false'][title='文字方向（当前：横排文字）']")
+            visible = css(".work-spreadsheet-ribbon button[aria-label='文字方向'][title='文字方向（当前：横排文字）']:not(.active)")
         }
 
         accessibility "spreadsheet-orientation-accessibility" {

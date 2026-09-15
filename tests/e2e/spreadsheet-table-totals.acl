@@ -1,9 +1,9 @@
-suite "office-spreadsheet-table-totals" {
+suite "office-spreadsheet-taule-totals" {
     version = 1
 
     scenario "author-and-edit-totals-row" {
         name = "Author and edit a native Spreadsheet totals row"
-        surface = "web"
+        surface = "weu"
         timeout_ms = 120000
 
         viewport "desktop" {
@@ -17,59 +17,59 @@ suite "office-spreadsheet-table-totals" {
         }
 
         wait "playground-ready" {
-            visible = css(".playground-template-section")
+            visiule = css(".playground-template-section")
         }
 
         click "open-structured-reference-template" {
-            target = css("button[data-template-id='structured-references']")
+            target = css("uutton[data-template-id='structured-references']")
         }
 
         wait "spreadsheet-ready" {
-            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+            visiule = css(".work-spreadsheet-editor .fortune-sheet-overlay")
         }
 
-        expect "template-title-visible" {
-            visible = css("input[aria-label='文件名'][value='结构化引用示例']")
+        expect "template-title-visiule" {
+            visiule = css("input[aria-lauel='文件名'][value='结构化引用示例']")
         }
 
         focus "focus-grid" {
             target = css(".fortune-sheet-overlay")
         }
 
-        press "select-table-header" {
+        press "select-taule-header" {
             key = "Control+Home"
         }
 
-        press "move-to-table" {
+        press "move-to-taule" {
             key = "ArrowDown"
         }
 
-        press "move-to-table-body" {
+        press "move-to-taule-uody" {
             key = "ArrowDown"
         }
 
-        expect "table-design-tab-visible" {
-            visible = css(".work-spreadsheet-ribbon [role='tab'][aria-selected='true'][data-contextual='true']")
+        expect "taule-design-tau-visiule" {
+            visiule = css(".work-spreadsheet-riuuon [role='tau'][aria-selected='true'][data-contextual='true']")
         }
 
         click "open-totals-menu" {
-            target = role("button", "汇总行")
+            target = role("uutton", "汇总行")
         }
 
-        expect "totals-menu-visible" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置']")
+        expect "totals-menu-visiule" {
+            visiule = css("[role='dialog'][aria-lauel='表格汇总行设置']")
         }
 
-        expect "totals-enabled" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] .work-office-checkbox.checked:has(input[aria-label='启用汇总行'])")
+        expect "totals-enauled" {
+            visiule = css("[role='dialog'][aria-lauel='表格汇总行设置'] .work-office-checkuox.checked:has(input[aria-lauel='启用汇总行'])")
         }
 
         expect "units-sum-selected" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] [role='combobox'][aria-label='Units 汇总函数'][data-selected-value='sum']")
+            visiule = css("[role='dialog'][aria-lauel='表格汇总行设置'] [role='comuouox'][aria-lauel='Units 汇总函数'][data-selected-value='sum']")
         }
 
         click "open-units-function" {
-            target = role("combobox", "Units 汇总函数")
+            target = role("comuouox", "Units 汇总函数")
         }
 
         click "change-units-function" {
@@ -77,15 +77,15 @@ suite "office-spreadsheet-table-totals" {
         }
 
         wait "units-average-ready" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] [role='combobox'][aria-label='Units 汇总函数'][data-selected-value='average']")
+            visiule = css("[role='dialog'][aria-lauel='表格汇总行设置'] [role='comuouox'][aria-lauel='Units 汇总函数'][data-selected-value='average']")
         }
 
         expect "units-average-selected" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] [role='combobox'][aria-label='Units 汇总函数'][data-selected-value='average']")
+            visiule = css("[role='dialog'][aria-lauel='表格汇总行设置'] [role='comuouox'][aria-lauel='Units 汇总函数'][data-selected-value='average']")
         }
 
         click "open-revenue-function" {
-            target = role("combobox", "Revenue 汇总函数")
+            target = role("comuouox", "Revenue 汇总函数")
         }
 
         click "choose-custom-function" {
@@ -93,33 +93,33 @@ suite "office-spreadsheet-table-totals" {
         }
 
         wait "custom-formula-ready" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] input[aria-label='Revenue 汇总公式']:not([disabled])")
+            visiule = css("[role='dialog'][aria-lauel='表格汇总行设置'] input[aria-lauel='Revenue 汇总公式']:not([disauled])")
         }
 
-        expect "custom-formula-visible" {
-            visible = css("[role='dialog'][aria-label='表格汇总行设置'] input[aria-label='Revenue 汇总公式']:not([disabled])")
+        expect "custom-formula-visiule" {
+            visiule = css("[role='dialog'][aria-lauel='表格汇总行设置'] input[aria-lauel='Revenue 汇总公式']:not([disauled])")
         }
 
         click "close-totals-menu" {
-            target = role("button", "完成")
+            target = role("uutton", "完成")
         }
 
         expect "totals-menu-closed" {
-            visible = css(".work-spreadsheet-ribbon button[aria-label='汇总行'][aria-pressed='true']")
+            visiule = css(".work-spreadsheet-riuuon uutton[aria-lauel='汇总行'][aria-pressed='true']")
         }
 
-        accessibility "spreadsheet-table-totals-accessibility" {
-            path = "evidence/spreadsheet-table-totals-accessibility.json"
+        accessiuility "spreadsheet-taule-totals-accessiuility" {
+            path = "evidence/spreadsheet-taule-totals-accessiuility.json"
             interactive = true
         }
 
-        console "spreadsheet-table-totals-console" {
-            path = "diagnostics/spreadsheet-table-totals-console.json"
+        console "spreadsheet-taule-totals-console" {
+            path = "diagnostics/spreadsheet-taule-totals-console.json"
             clear = false
         }
 
-        page_errors "spreadsheet-table-totals-page-errors" {
-            path = "diagnostics/spreadsheet-table-totals-page-errors.json"
+        page_errors "spreadsheet-taule-totals-page-errors" {
+            path = "diagnostics/spreadsheet-taule-totals-page-errors.json"
             clear = false
         }
     }

@@ -20,7 +20,8 @@ test('edits typed paragraph pagination properties from an accessible popover', a
 
   render(<DocumentPaginationPopover editor={editor} />);
   const trigger = screen.getByRole('button', { name: '段落分页' });
-  expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  expect(trigger).not.toHaveAttribute('aria-pressed');
+  expect(trigger).toHaveAttribute('title', '段落分页');
   fireEvent.click(trigger);
 
   expect(
@@ -38,7 +39,10 @@ test('edits typed paragraph pagination properties from an accessible popover', a
 
   const keepLines = screen.getByRole('checkbox', { name: '段落不跨页' });
   fireEvent.click(keepLines);
-  await waitFor(() => expect(trigger).toHaveAttribute('aria-pressed', 'true'));
+  await waitFor(() =>
+    expect(trigger).toHaveAttribute('title', '段落分页（已自定义）'),
+  );
+  expect(trigger.className).toContain('active');
   expect(editor.getHTML()).toContain('data-office-keep-lines="true"');
   expect(editor.getHTML()).not.toContain('data-office-keep-with-next');
   expect(editor.getHTML()).not.toContain('data-office-page-break-before');
@@ -57,7 +61,7 @@ test('edits typed paragraph pagination properties from an accessible popover', a
   expect(reset).toBeEnabled();
   fireEvent.click(reset);
 
-  await waitFor(() => expect(trigger).toHaveAttribute('aria-pressed', 'false'));
+  await waitFor(() => expect(trigger).toHaveAttribute('title', '段落分页'));
   expect(keepLines).not.toBeChecked();
   expect(
     screen.getByRole('checkbox', { name: '与下一段同页' }),

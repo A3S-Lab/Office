@@ -193,7 +193,6 @@ function SpreadsheetTextOrientationMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger work-spreadsheet-orientation-trigger${active || open ? ' active' : ''}`}
-          aria-pressed={active}
           title={`文字方向（当前：${currentLabel}）`}
         >
           <TextOrientationGlyph orientation={selected ?? 'horizontal'} />

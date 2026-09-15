@@ -46,10 +46,14 @@ identity, authorization, providers, offline buffering, and persistence.
 
 ## What's new on `main` (0.228.0)
 
-Spreadsheet totals and insert-table L2 keyboard / ARIA hygiene:
+Spreadsheet, document, and PDF L2/L3 keyboard / ARIA hygiene:
 
 - **汇总行** opens with focus inside the dialog; disclosure drops conflicting `aria-pressed`.
-- Insert-table triggers keep `aria-expanded` only.
+- Insert-table, find/select, freeze panes, text orientation, text case,
+  cell margins, paragraph spacing, and pagination triggers keep
+  `aria-expanded` only (feature-on state stays in title / `.active`).
+- PDF **更多 PDF 工具** scopes `menuitemradio` sets with `role="group"`
+  (valid menu children; not `fieldset`).
 
 ## Explore by surface
 

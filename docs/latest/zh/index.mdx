@@ -44,10 +44,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 
 ## `main` 更新内容（0.228.0）
 
-表格汇总行与插入表格二级菜单的键盘 / ARIA 卫生：
+表格、文档与 PDF 二级 / 三级菜单的键盘 / ARIA 卫生：
 
 - 「汇总行」打开时焦点进入对话框；触发器不再与 `aria-expanded` 冲突地设置 `aria-pressed`。
-- 插入表格触发器只保留 `aria-expanded`。
+- 插入表格、查找和选择、冻结窗格、文字方向、大小写、单元格边距、段落间距与段落分页
+  触发器只保留 `aria-expanded`（启用态用 title / `.active` 表达）。
+- PDF「更多 PDF 工具」用合法的 `role="group"` 划分 `menuitemradio` 组（不再用 `fieldset`）。
 
 ## 按表面探索
 

@@ -285,6 +285,8 @@ test('advertises only shortcuts implemented by the PDF command surface', () => {
 
   fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
   const menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  expect(within(menu).getByRole('group', { name: '批注工具' })).toBeTruthy();
+  expect(within(menu).getByRole('group', { name: '缩放' })).toBeTruthy();
   expect(within(menu).getByRole('menuitem', { name: '撤销' })).toHaveAttribute(
     'aria-keyshortcuts',
     'Control+Z Meta+Z',

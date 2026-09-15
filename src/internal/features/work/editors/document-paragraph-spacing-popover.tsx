@@ -68,7 +68,7 @@ export function DocumentParagraphSpacingPopover({
         <button
           {...triggerProps}
           className={`with-label${customized || open ? ' active' : ''}`}
-          aria-pressed={customized}
+          title={customized ? '段落间距（已自定义）' : '段落间距'}
         >
           <MoveVertical size={19} />
           <span>段落间距</span>

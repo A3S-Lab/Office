@@ -13,11 +13,23 @@ All notable changes to A3S Office will be documented in this file.
   tabbing through the ribbon behind it. The disclosure no longer sets
   `aria-pressed` alongside `aria-expanded`; enabled state stays in the
   title and active styling.
+- Find & Select, freeze panes, and text-orientation menu triggers also
+  drop `aria-pressed` so `aria-expanded` / `aria-haspopup` stay unambiguous;
+  feature-on state remains in title text and `.active` styling.
 
 ### Shared / Document
 
 - Insert-table popover triggers no longer set `aria-pressed` to mirror
   open state (conflicts with `aria-expanded` / `aria-haspopup="dialog"`).
+- Document text-case, cell-margins, paragraph-spacing, and pagination
+  popover triggers follow the same menu/dialog disclosure pattern
+  (no `aria-pressed` on the trigger).
+
+### PDF
+
+- **更多 PDF 工具** overflow groups use `role="group"` instead of
+  `fieldset`, which is not a valid child of `role="menu"`, so each
+  `menuitemradio` set stays scoped to its labeled group.
 
 ## 0.227.0 - 2026-09-15
 

@@ -16,8 +16,8 @@ import {
   MoveHorizontal,
   Pencil,
   Plus,
-  Redo2,
   Ratio,
+  Redo2,
   Save,
   Scan,
   Search,
@@ -732,10 +732,7 @@ function PdfToolbarOverflow({
         return (
           <>
             {editable && annotationState.available && (
-              <fieldset
-                className="work-pdf-overflow-group"
-                aria-label="批注工具"
-              >
+              <PdfOverflowGroup ariaLabel="批注工具">
                 <PdfOverflowAction
                   label="选择"
                   active={annotationState.activeToolId === null}
@@ -804,15 +801,12 @@ function PdfToolbarOverflow({
                 >
                   <Trash2 size={15} />
                 </PdfOverflowAction>
-              </fieldset>
+              </PdfOverflowGroup>
             )}
             {editable &&
               annotationState.available &&
               annotationState.supportsOpacity && (
-                <fieldset
-                  className="work-pdf-overflow-group"
-                  aria-label="透明度"
-                >
+                <PdfOverflowGroup ariaLabel="透明度">
                   {PDF_ANNOTATION_OPACITY_OPTIONS.map((opacity) => {
                     const label = `透明度 ${Math.round(opacity * 100)}%`;
                     return (
@@ -829,12 +823,12 @@ function PdfToolbarOverflow({
                       </PdfOverflowAction>
                     );
                   })}
-                </fieldset>
+                </PdfOverflowGroup>
               )}
             {editable &&
               annotationState.available &&
               annotationState.supportsStrokeWidth && (
-                <fieldset className="work-pdf-overflow-group" aria-label="线宽">
+                <PdfOverflowGroup ariaLabel="线宽">
                   {PDF_ANNOTATION_STROKE_WIDTH_OPTIONS.map((strokeWidth) => (
                     <PdfOverflowAction
                       key={strokeWidth}
@@ -852,13 +846,10 @@ function PdfToolbarOverflow({
                       <Pencil size={15} />
                     </PdfOverflowAction>
                   ))}
-                </fieldset>
+                </PdfOverflowGroup>
               )}
             {editable && state.features.history && (
-              <fieldset
-                className="work-pdf-overflow-group"
-                aria-label="历史记录"
-              >
+              <PdfOverflowGroup ariaLabel="历史记录">
                 <PdfOverflowAction
                   label="撤销"
                   ariaKeyShortcuts={pdfKeyboardShortcuts.undo}
@@ -875,13 +866,10 @@ function PdfToolbarOverflow({
                 >
                   <Redo2 size={15} />
                 </PdfOverflowAction>
-              </fieldset>
+              </PdfOverflowGroup>
             )}
             {pageOrganizationAvailable && (
-              <fieldset
-                className="work-pdf-overflow-group"
-                aria-label="页面组织"
-              >
+              <PdfOverflowGroup ariaLabel="页面组织">
                 <PdfOverflowAction
                   label="组织页面"
                   disabled={!can.openPageOrganizer()}
@@ -889,10 +877,10 @@ function PdfToolbarOverflow({
                 >
                   <LayoutGrid size={15} />
                 </PdfOverflowAction>
-              </fieldset>
+              </PdfOverflowGroup>
             )}
             {state.features.navigation && (
-              <fieldset className="work-pdf-overflow-group" aria-label="翻页">
+              <PdfOverflowGroup ariaLabel="翻页">
                 <PdfOverflowAction
                   label="首页"
                   ariaKeyShortcuts={pdfKeyboardShortcuts.firstPage}
@@ -927,10 +915,10 @@ function PdfToolbarOverflow({
                 >
                   <ChevronsRight size={15} />
                 </PdfOverflowAction>
-              </fieldset>
+              </PdfOverflowGroup>
             )}
             {state.features.zoom && (
-              <fieldset className="work-pdf-overflow-group" aria-label="缩放">
+              <PdfOverflowGroup ariaLabel="缩放">
                 <PdfOverflowAction
                   label="缩小"
                   ariaKeyShortcuts={pdfKeyboardShortcuts.zoomOut}
@@ -974,12 +962,12 @@ function PdfToolbarOverflow({
                 >
                   <MoveHorizontal size={15} />
                 </PdfOverflowAction>
-              </fieldset>
+              </PdfOverflowGroup>
             )}
             {state.features.search && (
-              <fieldset
+              <PdfOverflowGroup
+                ariaLabel="搜索结果"
                 className="work-pdf-overflow-group work-pdf-overflow-narrow"
-                aria-label="搜索结果"
               >
                 <PdfOverflowAction
                   label="上一个搜索结果"
@@ -995,12 +983,30 @@ function PdfToolbarOverflow({
                 >
                   <ChevronDown size={15} />
                 </PdfOverflowAction>
-              </fieldset>
+              </PdfOverflowGroup>
             )}
           </>
         );
       }}
     </Popover>
+  );
+}
+
+function PdfOverflowGroup({
+  ariaLabel,
+  children,
+  className = 'work-pdf-overflow-group',
+}: {
+  ariaLabel: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    // Menu children must be menuitem* | group | separator — not fieldset.
+    // biome-ignore lint/a11y/useSemanticElements: role="menu" forbids fieldset; group scopes menuitemradio sets.
+    <div role="group" className={className} aria-label={ariaLabel}>
+      {children}
+    </div>
   );
 }
 

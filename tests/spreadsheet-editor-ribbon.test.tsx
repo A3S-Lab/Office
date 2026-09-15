@@ -520,8 +520,9 @@ test('offers the six WPS text orientations as an accessible radio menu', async (
   const alignment = screen.getByRole('region', { name: '对齐' });
   const trigger = within(alignment).getByRole('button', { name: '文字方向' });
   expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
-  expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  expect(trigger).not.toHaveAttribute('aria-pressed');
   expect(trigger).toHaveAttribute('title', '文字方向（当前：顺时针倾斜）');
+  expect(trigger.className).toContain('active');
   fireEvent.click(trigger);
 
   const menu = screen.getByRole('menu', { name: '文字方向选项' });
@@ -1240,7 +1241,9 @@ test('operates WPS Freeze Panes from the View window group', () => {
 
   const trigger = screen.getByRole('button', { name: '冻结窗格' });
   expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
-  expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  expect(trigger).not.toHaveAttribute('aria-pressed');
+  expect(trigger).toHaveAttribute('title', '冻结窗格（已启用）');
+  expect(trigger.className).toContain('active');
   fireEvent.click(trigger);
 
   const menu = screen.getByRole('menu', { name: '冻结窗格选项' });

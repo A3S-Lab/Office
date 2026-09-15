@@ -57,7 +57,7 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
         <button
           {...triggerProps}
           className={`with-label${customized || open ? ' active' : ''}`}
-          aria-pressed={customized}
+          title={customized ? '段落分页（已自定义）' : '段落分页'}
         >
           <Pilcrow size={19} />
           <span>段落分页</span>

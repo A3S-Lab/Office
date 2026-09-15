@@ -80,8 +80,11 @@ function SpreadsheetFindAndSelectMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger${findOpen || open ? ' active' : ''}`}
-          aria-pressed={findOpen}
-          title={spreadsheetCommandCatalog.findAndSelect.label}
+          title={
+            findOpen
+              ? `${spreadsheetCommandCatalog.findAndSelect.label}（查找已打开）`
+              : spreadsheetCommandCatalog.findAndSelect.label
+          }
         >
           <Search size={19} />
           <span>{spreadsheetCommandCatalog.findAndSelect.label}</span>

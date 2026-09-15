@@ -71,7 +71,6 @@ export function SpreadsheetFreezePanesMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger${active || open ? ' active' : ''}`}
-          aria-pressed={active}
           title={active ? '冻结窗格（已启用）' : '冻结窗格'}
         >
           <PanelsTopLeft size={19} />
