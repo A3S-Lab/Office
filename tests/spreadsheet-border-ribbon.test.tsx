@@ -51,9 +51,6 @@ test('supports keyboard border selection with persistent line and color settings
   const dialog = screen.getByRole('dialog', { name: '框线设置' });
   const group = within(dialog).getByRole('radiogroup', { name: '框线位置' });
   const top = within(group).getByRole('radio', { name: '上框线' });
-  const diagonalDown = within(group).getByRole('radio', {
-    name: '斜下框线',
-  });
   const diagonalUp = within(group).getByRole('radio', {
     name: '斜上框线',
   });
@@ -80,7 +77,23 @@ test('supports keyboard border selection with persistent line and color settings
   fireEvent.keyDown(group, { key: 'End' });
   expect(diagonalUp).toHaveFocus();
   fireEvent.keyDown(group, { key: 'ArrowUp' });
-  expect(diagonalDown).toHaveFocus();
+  expect(
+    within(group).getByRole('radio', { name: '内部竖框线' }),
+  ).toHaveFocus();
+  fireEvent.keyDown(group, { key: 'ArrowLeft' });
+  expect(
+    within(group).getByRole('radio', { name: '内部横框线' }),
+  ).toHaveFocus();
+  fireEvent.keyDown(group, { key: 'ArrowRight' });
+  expect(
+    within(group).getByRole('radio', { name: '内部竖框线' }),
+  ).toHaveFocus();
+  fireEvent.keyDown(group, { key: 'Home' });
+  expect(top).toHaveFocus();
+  fireEvent.keyDown(group, { key: 'ArrowRight' });
+  expect(within(group).getByRole('radio', { name: '下框线' })).toHaveFocus();
+  fireEvent.keyDown(group, { key: 'ArrowDown' });
+  expect(within(group).getByRole('radio', { name: '右框线' })).toHaveFocus();
   fireEvent.keyDown(group, { key: 'Home' });
   expect(top).toHaveFocus();
 

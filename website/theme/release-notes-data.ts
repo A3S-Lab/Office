@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.233.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Border position grid Left/Right focus',
+      zh: '框线位置网格支持左右焦点',
+    },
+    summary: {
+      en: 'Spreadsheet 更多框线 position radiogroup is a CSS 2-column grid; ArrowLeft / ArrowRight now move between adjacent targets via moveOfficeGridMenuFocus(..., 2).',
+      zh: '表格「更多框线」位置 radiogroup 是两列 CSS 网格；左右方向键通过 moveOfficeGridMenuFocus(..., 2) 在相邻目标间移动。',
+    },
+    highlights: [
+      {
+        title: { en: '2-column grid focus', zh: '两列网格焦点' },
+        detail: {
+          en: 'Border targets use moveOfficeGridMenuFocus with columns=2 so Left/Right match the visual layout.',
+          zh: '框线目标使用 columns=2 的 moveOfficeGridMenuFocus，左右键与可视布局一致。',
+        },
+      },
+      {
+        title: { en: 'Adjacent target pairs', zh: '相邻目标成对' },
+        detail: {
+          en: 'From 内部竖框线, Left reaches 内部横框线; from 下框线, Down reaches 右框线.',
+          zh: '从「内部竖框线」向左到达「内部横框线」；从「下框线」向下到达「右框线」。',
+        },
+      },
+      {
+        title: { en: 'Row moves unchanged', zh: '行间移动不变' },
+        detail: {
+          en: 'Home / End / Up / Down still traverse the radiogroup; only horizontal focus was broken under linear menu focus.',
+          zh: 'Home / End / 上下键仍遍历 radiogroup；原先线性菜单焦点只破坏了水平移动。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.232.0',
     date: '2026-09-15',
     kind: 'fixed',

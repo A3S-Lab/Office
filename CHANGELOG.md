@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.233.0 - 2026-09-15
+
+### Spreadsheet
+
+- **更多框线** position grid uses 2-column `moveOfficeGridMenuFocus` so
+  ArrowLeft / ArrowRight move between adjacent targets (for example 内部横 /
+  内部竖, 下 / 右) instead of treating the radiogroup as a linear list.
+
 ## 0.232.0 - 2026-09-15
 
 ### Document

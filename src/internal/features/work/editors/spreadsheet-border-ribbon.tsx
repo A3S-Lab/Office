@@ -2,7 +2,7 @@ import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
-import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
 import type {
   SpreadsheetCellBorderFormat,
   SpreadsheetCellBorderStyle,
@@ -142,7 +142,7 @@ export function SpreadsheetBorderRibbon({
             className="work-spreadsheet-border-targets"
             role="radiogroup"
             aria-label="框线位置"
-            onKeyDown={moveOfficeMenuFocus}
+            onKeyDown={(event) => moveOfficeGridMenuFocus(event, 2)}
           >
             {spreadsheetBorderTargetOptions.map(
               ({ target: option, definition }, index) => {

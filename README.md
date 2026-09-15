@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.232.0` keeps underline / strike ribbon focus on the disclosure:
+Version `0.233.0` fixes Spreadsheet border-position keyboard navigation:
 
-- Document **更多下划线** / **更多删除线** style picks and underline color no longer steal focus into the editor via `chain().focus()`; Popover restores the ribbon trigger for L2 keyboard loops.
+- **更多框线** position radiogroup is a CSS 2-column grid; Left/Right now move between adjacent targets via `moveOfficeGridMenuFocus(..., 2)` instead of linear Up/Down-only menu focus.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
