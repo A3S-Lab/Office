@@ -311,6 +311,99 @@ test('keeps font size select focus on the ribbon trigger after a pick', async ()
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps underline primary focus off the editor after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Underline me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Underline me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const disclosure = screen.getByRole('button', { name: '更多下划线' });
+  disclosure.focus();
+  expect(disclosure).toHaveFocus();
+
+  const primary = screen.getByRole('button', { name: '下划线' });
+  fireEvent.mouseDown(primary);
+  fireEvent.click(primary);
+
+  expect(editor.getAttributes('underline').underlineStyle).not.toBe('none');
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(disclosure).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps strike primary focus off the editor after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Strike me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Strike me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const disclosure = screen.getByRole('button', { name: '更多删除线' });
+  disclosure.focus();
+  expect(disclosure).toHaveFocus();
+
+  const primary = screen.getByRole('button', { name: '删除线' });
+  fireEvent.mouseDown(primary);
+  fireEvent.click(primary);
+
+  expect(editor.getAttributes('strike').strikeStyle).toBe('single');
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(disclosure).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps bullet list primary focus off the editor after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Bullet me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Bullet me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const disclosure = screen.getByRole('button', { name: '项目符号库' });
+  disclosure.focus();
+  expect(disclosure).toHaveFocus();
+
+  const primary = screen.getByRole('button', { name: '项目符号' });
+  fireEvent.mouseDown(primary);
+  fireEvent.click(primary);
+
+  expect(editor.getHTML()).toContain('<ul');
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(disclosure).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('keeps paragraph style select focus on the ribbon trigger after a pick', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

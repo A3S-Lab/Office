@@ -412,6 +412,29 @@ test('keeps table border apply select focus on the ribbon trigger after a pick',
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps table layout select focus on the ribbon trigger after a pick', async () => {
+  editor = createTableEditor();
+  document.body.append(editor.view.dom);
+  editor.commands.setNodeSelection(firstTablePosition(editor));
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('combobox', { name: '表格自动调整' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('option', { name: '适应内容' }));
+
+  expect(firstTableAttributes(editor)).toMatchObject({
+    geometry: expect.objectContaining({
+      layout: 'autofit',
+    }),
+  });
+  await waitFor(() => expect(trigger).toHaveFocus());
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('applies per-edge borders with a reusable Word-style border pen', () => {
   editor = createTableEditor();
   editor.commands.setNodeSelection(firstTablePosition(editor));

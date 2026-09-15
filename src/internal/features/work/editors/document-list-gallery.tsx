@@ -115,9 +115,11 @@ function BulletListControl({
         displayLabel={false}
         active={Boolean(activeStyle)}
         className="work-document-list-primary"
+        onMouseDown={(event) => event.preventDefault()}
         onClick={() => {
-          if (activeStyle) editor.chain().focus().clearDocumentList().run();
-          else editor.chain().focus().applyDocumentBulletList('disc').run();
+          // Keep ribbon focus — chain().focus() steals into the editor.
+          if (activeStyle) editor.commands.clearDocumentList();
+          else editor.commands.applyDocumentBulletList('disc');
         }}
       >
         <List size={16} />
@@ -271,9 +273,11 @@ function OrderedListControl({
         displayLabel={false}
         active={Boolean(activeState)}
         className="work-document-list-primary"
+        onMouseDown={(event) => event.preventDefault()}
         onClick={() => {
-          if (activeState) editor.chain().focus().clearDocumentList().run();
-          else editor.chain().focus().applyDocumentOrderedList('decimal').run();
+          // Keep ribbon focus — chain().focus() steals into the editor.
+          if (activeState) editor.commands.clearDocumentList();
+          else editor.commands.applyDocumentOrderedList('decimal');
         }}
       >
         <ListOrdered size={16} />

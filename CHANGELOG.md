@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.242.0 - 2026-09-15
+
+### Document
+
+- Underline/strike split primaries, bullet/number list primaries, and table
+  **表格自动调整** no longer call TipTap `chain().focus()` on apply. Focus stays
+  on the ribbon control so L2 formatting loops keep working (TipTap's deferred
+  focus otherwise steals into the editor after the click).
+
 ## 0.241.0 - 2026-09-15
 
 ### Document

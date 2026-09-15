@@ -494,14 +494,12 @@ function DocumentTableSizeRibbonGroup({
         options={displayedTableLayoutOptions}
         onValueChange={(layoutMode) => {
           if (layoutMode === 'current') return;
-          editor
-            .chain()
-            .focus()
-            .setDocumentTableLayoutMode(
-              layoutMode,
-              layoutMode === 'fixed' ? measuredTableWidth(editor) : undefined,
-            )
-            .run();
+          // Keep ribbon focus on the layout combobox via Popover restore.
+          // chain().focus() schedules into the editor and breaks L2 loops.
+          editor.commands.setDocumentTableLayoutMode(
+            layoutMode,
+            layoutMode === 'fixed' ? measuredTableWidth(editor) : undefined,
+          );
         }}
       />
       <RibbonButton

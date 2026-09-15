@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.241.0` keeps Document L2 select focus on ribbon comboboxes after apply:
+Version `0.242.0` keeps Document split-primary and table-layout focus on the ribbon after apply:
 
-- Font family/size, paragraph-style, and table **应用边框** selects apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 formatting loop off the combobox.
+- Underline/strike and bullet/number list primaries, plus table **表格自动调整**, apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 formatting loop off the ribbon control.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

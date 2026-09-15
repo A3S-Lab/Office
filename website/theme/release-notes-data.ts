@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.242.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Split primaries and table layout keep ribbon focus',
+      zh: '拆分主按钮与表格布局保留功能区焦点',
+    },
+    summary: {
+      en: 'Document underline/strike and list split primaries, plus table layout mode, apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 formatting loop off the ribbon control.',
+      zh: '文档下划线/删除线与列表拆分主按钮，以及表格自动调整，不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走功能区控件上的 L2 格式循环。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the ribbon primary or layout select.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在功能区主按钮或布局下拉框。',
+        },
+      },
+      {
+        title: {
+          en: 'Home splits and table Layout',
+          zh: '主页拆分控件与表格布局',
+        },
+        detail: {
+          en: 'Same focus contract as color pickers, highlight toggles, and font selects.',
+          zh: '与颜色选择器、突出显示切换和字体下拉框相同的焦点契约。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 formatting loops stay on the control',
+          zh: 'L2 格式循环留在控件上',
+        },
+        detail: {
+          en: 'After toggling underline, a list, or table autofit, keyboard users can continue from the same ribbon control.',
+          zh: '切换下划线、列表或表格自动调整后，键盘用户可从同一功能区控件继续操作。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.241.0',
     date: '2026-09-15',
     kind: 'fixed',

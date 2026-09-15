@@ -73,7 +73,11 @@ export function DocumentStrikeRibbon({
               aria-pressed={active}
               title={`${label}（${currentLabel}）`}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => editor.chain().focus().toggleStrike().run()}
+              onClick={() => {
+                // Keep ribbon focus (e.g. disclosure) — chain().focus() steals
+                // into the editor and breaks L2 formatting loops.
+                editor.commands.toggleStrike();
+              }}
             >
               <Strikethrough size={16} aria-hidden="true" />
             </button>

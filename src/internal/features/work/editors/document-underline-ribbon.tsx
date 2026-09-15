@@ -97,7 +97,11 @@ export function DocumentUnderlineRibbon({
               aria-pressed={active}
               title={`${label}（${currentLabel}；${shortcut?.label ?? ''}）`}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
+              onClick={() => {
+                // Keep ribbon focus (e.g. disclosure) — chain().focus() steals
+                // into the editor and breaks L2 formatting loops.
+                editor.commands.toggleUnderline();
+              }}
             >
               <Underline size={16} aria-hidden="true" />
             </button>
