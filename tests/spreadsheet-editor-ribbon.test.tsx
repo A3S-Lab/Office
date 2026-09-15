@@ -186,21 +186,18 @@ test('applies grouped WPS cell styles from a preview gallery', async () => {
     backgroundColor: '#c6efce',
     color: '#006100',
   });
-  await waitFor(() =>
-    expect(
-      within(menu).getByRole('menuitemradio', {
-        name: '应用单元格样式：常规',
-      }),
-    ).toHaveFocus(),
-  );
+  await waitFor(() => expect(good).toHaveFocus());
   const total = within(menu).getByRole('menuitemradio', {
     name: '应用单元格样式：总计',
+  });
+  const bad = within(menu).getByRole('menuitemradio', {
+    name: '应用单元格样式：差',
   });
   const neutral = within(menu).getByRole('menuitemradio', {
     name: '应用单元格样式：适中',
   });
   fireEvent.keyDown(menu, { key: 'ArrowRight' });
-  expect(good).toHaveFocus();
+  expect(bad).toHaveFocus();
   fireEvent.keyDown(menu, { key: 'ArrowDown' });
   expect(neutral).toHaveFocus();
   fireEvent.keyDown(menu, { key: 'End' });
