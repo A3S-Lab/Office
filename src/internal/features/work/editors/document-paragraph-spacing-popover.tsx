@@ -20,6 +20,7 @@ export function DocumentParagraphSpacingPopover({
   const afterValue = pointDraft(spacing.after);
   const beforeDirty = beforeDraft !== beforeValue;
   const afterDirty = afterDraft !== afterValue;
+  const dirty = beforeDirty || afterDirty;
   const customized = spacing.before !== null || spacing.after !== null;
   const commit = (key: 'before' | 'after', rawValue: string): void => {
     const value = pointValue(rawValue);
@@ -75,7 +76,16 @@ export function DocumentParagraphSpacingPopover({
         </button>
       )}
     >
-      <fieldset>
+      <fieldset
+        data-office-escape-consumer={dirty || undefined}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !dirty) return;
+          event.preventDefault();
+          event.stopPropagation();
+          setBeforeDraft(beforeValue);
+          setAfterDraft(afterValue);
+        }}
+      >
         <legend>段落间距</legend>
         <div className="work-document-paragraph-spacing-field">
           <span>段前</span>

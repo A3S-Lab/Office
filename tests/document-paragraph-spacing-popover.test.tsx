@@ -78,3 +78,37 @@ test('cancels a dirty spacing draft before Escape closes the popover', async () 
 
   editor.destroy();
 });
+
+test('cancels a dirty spacing draft from reset focus before Escape closes', async () => {
+  const editor = new Editor({
+    extensions: [StarterKit, DocumentParagraphFormatting],
+    content: '<p>A3S Office</p>',
+  });
+
+  render(<DocumentParagraphSpacingPopover editor={editor} />);
+  const trigger = screen.getByRole('button', { name: '段落间距' });
+  fireEvent.click(trigger);
+  const before = screen.getByRole('textbox', { name: '段前间距（磅）' });
+  await waitFor(() => expect(before).toHaveFocus());
+  const reset = screen.getByRole('button', { name: '恢复默认间距' });
+  // Move focus inside the panel first so changing an unfocused draft stays dirty.
+  reset.focus();
+  expect(reset).toHaveFocus();
+
+  fireEvent.change(before, { target: { value: '18' } });
+  expect(before).toHaveValue('18');
+  expect(editor.getHTML()).not.toContain('data-office-space-before');
+
+  fireEvent.keyDown(reset, { key: 'Escape' });
+  expect(
+    screen.getByRole('dialog', { name: '段落间距选项' }),
+  ).toBeInTheDocument();
+  expect(before).toHaveValue('');
+  expect(editor.getHTML()).not.toContain('data-office-space-before');
+
+  fireEvent.keyDown(reset, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '段落间距选项' })).toBeNull();
+  expect(trigger).toHaveFocus();
+
+  editor.destroy();
+});

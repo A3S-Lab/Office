@@ -496,6 +496,46 @@ test('cancels a dirty cell-margin draft before Escape closes the popover', async
   expect(trigger).toHaveFocus();
 });
 
+test('cancels a dirty cell-margin draft from sibling focus before Escape closes', async () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '单元格边距' });
+  fireEvent.click(trigger);
+  const topMargin = screen.getByRole('textbox', {
+    name: '单元格上边距（厘米）',
+  });
+  await waitFor(() => expect(topMargin).toHaveFocus());
+  const original = (topMargin as HTMLInputElement).value;
+  const leftMargin = screen.getByRole('textbox', {
+    name: '单元格左边距（厘米）',
+  });
+  // Move focus inside the panel first so changing an unfocused draft stays dirty.
+  leftMargin.focus();
+  expect(leftMargin).toHaveFocus();
+
+  fireEvent.change(topMargin, { target: { value: '0.5' } });
+  expect(topMargin).toHaveValue('0.5');
+
+  fireEvent.keyDown(leftMargin, { key: 'Escape' });
+  expect(
+    screen.getByRole('dialog', { name: '单元格边距设置' }),
+  ).toBeInTheDocument();
+  expect(topMargin).toHaveValue(original);
+
+  await waitFor(() =>
+    expect(
+      screen
+        .getByRole('dialog', { name: '单元格边距设置' })
+        .querySelector('[data-office-escape-consumer]'),
+    ).toBeNull(),
+  );
+  fireEvent.keyDown(leftMargin, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '单元格边距设置' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});
+
 test('aligns table cells and applies Word-style sizing from Layout', () => {
   editor = createTableEditor();
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);

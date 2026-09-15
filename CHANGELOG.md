@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.238.0 - 2026-09-15
+
+### Document
+
+- Paragraph spacing and table cell-margins panels restore dirty drafts on Escape
+  from any focus inside the panel fieldset (`data-office-escape-consumer`), so
+  Escape cancels without closing when another control is focused; a clean Escape
+  still dismisses.
+
 ## 0.237.0 - 2026-09-15
 
 ### Document

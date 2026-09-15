@@ -28,6 +28,9 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
   const [drafts, setDrafts] = useState(() => marginDrafts(margins));
   const customized = !sameMargins(margins, DEFAULT_DOCUMENT_TABLE_CELL_MARGINS);
   const committedDrafts = marginDrafts(margins);
+  const dirty = marginFields.some(
+    ({ side }) => drafts[side] !== committedDrafts[side],
+  );
 
   const commit = (side: DocumentTableCellMarginSide, rawValue: string) => {
     const centimeters = Number(rawValue);
@@ -76,7 +79,15 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
         </button>
       )}
     >
-      <fieldset>
+      <fieldset
+        data-office-escape-consumer={dirty || undefined}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !dirty) return;
+          event.preventDefault();
+          event.stopPropagation();
+          setDrafts(committedDrafts);
+        }}
+      >
         <legend>单元格边距</legend>
         <p>设置文字到单元格边框的距离。</p>
         <div className="work-document-table-margins-grid">

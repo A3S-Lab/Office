@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.237.0` keeps Document numbering-start drafts Escape-safe across the settings panel:
+Version `0.238.0` keeps Document paragraph-spacing and cell-margins drafts Escape-safe across each panel:
 
-- Dirty **起始编号** drafts in the numbering library restore on Escape from any focus inside the settings fieldset (`data-office-escape-consumer`), including after Tab to **应用起始值**; a clean Escape still closes and restores the trigger.
+- Dirty **段前** / **段后** spacing and cell-margin drafts restore on Escape from any focus inside the panel fieldset (`data-office-escape-consumer`); a clean Escape still closes and restores the trigger.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

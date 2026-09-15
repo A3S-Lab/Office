@@ -37,6 +37,55 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.238.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Spacing and margins panel Escape draft cancel',
+      zh: '间距与边距面板 Escape 取消草稿',
+    },
+    summary: {
+      en: 'Document paragraph spacing and table cell-margins restore dirty drafts on Escape from any focus inside each panel fieldset, with data-office-escape-consumer.',
+      zh: '文档段落间距与表格单元格边距在各自面板 fieldset 内任意焦点按 Escape 时还原脏草稿，并设置 data-office-escape-consumer。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Panel-wide dirty Escape',
+          zh: '面板级脏 Escape',
+        },
+        detail: {
+          en: 'A dirty spacing or margin draft restores when Escape is pressed from another control inside the same panel.',
+          zh: '在同一面板内其他控件上按 Escape 时，脏的间距或边距草稿会还原。',
+        },
+      },
+      {
+        title: { en: 'Clean Escape still closes', zh: '干净 Escape 仍关闭' },
+        detail: {
+          en: 'A second Escape (or Escape with an unchanged draft) dismisses the popover and restores the trigger.',
+          zh: '再次 Escape（或草稿未改动时 Escape）仍关闭弹层并还原触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Matches numbering Escape contract',
+          zh: '对齐编号 Escape 契约',
+        },
+        detail: {
+          en: 'Same dirty-only panel fieldset pattern as numbering start and OfficeColorPicker.',
+          zh: '与编号起始及 OfficeColorPicker 相同的脏-only 面板 fieldset 模式。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.237.0',
     date: '2026-09-15',
     kind: 'fixed',
