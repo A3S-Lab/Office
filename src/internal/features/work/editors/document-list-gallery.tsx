@@ -18,9 +18,9 @@ import { Popover } from '../../../design-system/primitives';
 import {
   type DocumentBulletListStyle,
   type DocumentOrderedListStyle,
-  MAX_DOCUMENT_NUMBERING_START,
   documentBulletListStyle,
   documentOrderedListState,
+  MAX_DOCUMENT_NUMBERING_START,
 } from '../work-document-lists';
 import { getDocumentCommandDefinition } from './document-command-catalog';
 import { OfficeNumberField } from './office-controls';
@@ -172,7 +172,7 @@ function BulletListControl({
                   data-list-style={style.value}
                   onFocus={() => setFocusIndex(index)}
                   onClick={() => {
-                    runDocumentListMenuCommand(editor, close, () =>
+                    runDocumentListMenuCommand(close, () =>
                       editor.commands.applyDocumentBulletList(style.value),
                     );
                   }}
@@ -185,7 +185,7 @@ function BulletListControl({
                       optionRefs,
                       setFocusIndex,
                       () =>
-                        runDocumentListMenuCommand(editor, close, () =>
+                        runDocumentListMenuCommand(close, () =>
                           editor.commands.applyDocumentBulletList(style.value),
                         ),
                     )
@@ -201,7 +201,7 @@ function BulletListControl({
               className="work-document-list-clear"
               disabled={!activeStyle}
               onClick={() =>
-                runDocumentListMenuCommand(editor, close, () =>
+                runDocumentListMenuCommand(close, () =>
                   editor.commands.clearDocumentList(),
                 )
               }
@@ -242,7 +242,7 @@ function OrderedListControl({
   };
   const applyStart = (close: () => void) => {
     if (validStart === null) return;
-    runDocumentListMenuCommand(editor, close, () =>
+    runDocumentListMenuCommand(close, () =>
       editor.commands.setDocumentNumberingStart(validStart),
     );
   };
@@ -318,7 +318,7 @@ function OrderedListControl({
                   data-list-style={style.value}
                   onFocus={() => setFocusIndex(index)}
                   onClick={() => {
-                    runDocumentListMenuCommand(editor, close, () =>
+                    runDocumentListMenuCommand(close, () =>
                       editor.commands.applyDocumentOrderedList(style.value),
                     );
                   }}
@@ -331,7 +331,7 @@ function OrderedListControl({
                       optionRefs,
                       setFocusIndex,
                       () =>
-                        runDocumentListMenuCommand(editor, close, () =>
+                        runDocumentListMenuCommand(close, () =>
                           editor.commands.applyDocumentOrderedList(style.value),
                         ),
                     )
@@ -353,7 +353,7 @@ function OrderedListControl({
                     type="button"
                     disabled={activeState.start === 1}
                     onClick={() =>
-                      runDocumentListMenuCommand(editor, close, () =>
+                      runDocumentListMenuCommand(close, () =>
                         editor.commands.restartDocumentNumbering(),
                       )
                     }
@@ -365,7 +365,7 @@ function OrderedListControl({
                     type="button"
                     disabled={!editor.can().continueDocumentNumbering()}
                     onClick={() =>
-                      runDocumentListMenuCommand(editor, close, () =>
+                      runDocumentListMenuCommand(close, () =>
                         editor.commands.continueDocumentNumbering(),
                       )
                     }
@@ -412,7 +412,7 @@ function OrderedListControl({
               className="work-document-list-clear"
               disabled={!activeState}
               onClick={() =>
-                runDocumentListMenuCommand(editor, close, () =>
+                runDocumentListMenuCommand(close, () =>
                   editor.commands.clearDocumentList(),
                 )
               }
@@ -428,18 +428,14 @@ function OrderedListControl({
 }
 
 function runDocumentListMenuCommand(
-  editor: Editor,
   close: () => void,
   command: () => boolean,
 ): boolean {
   const handled = command();
   if (!handled) return false;
+  // Keep ribbon keyboard focus on the gallery trigger via Popover restore.
+  // Forcing editor focus after choose breaks L2 disclosure loops.
   close();
-  queueMicrotask(() => {
-    if (!editor.isDestroyed) {
-      editor.commands.focus(undefined, { scrollIntoView: false });
-    }
-  });
   return true;
 }
 

@@ -4,6 +4,20 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.230.0 - 2026-09-15
+
+### Presentation
+
+- **对象对齐** accessible name matches the visible label; align mode
+  (`元素对齐到幻灯片` / `对齐所选对象`) stays in `title` /
+  `aria-description` and the panel label.
+
+### Document
+
+- Bullet / numbered list galleries no longer steal focus into the editor
+  after a style pick; Popover restores focus to the ribbon trigger so L2
+  disclosure loops stay usable from the keyboard.
+
 ## 0.229.0 - 2026-09-15
 
 ### Spreadsheet

@@ -791,7 +791,11 @@ test('uses a keyboard-operated bullet library without toggling the active style 
   expect(
     screen.queryByRole('dialog', { name: '项目符号库' }),
   ).not.toBeInTheDocument();
+  await waitFor(() => expect(trigger).toHaveFocus());
+  // Stay on the ribbon disclosure after microtasks (no editor focus steal).
+  await Promise.resolve();
   expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
 
   fireEvent.click(trigger);
   library = screen.getByRole('dialog', { name: '项目符号库' });

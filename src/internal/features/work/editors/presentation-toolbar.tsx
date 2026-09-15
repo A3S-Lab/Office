@@ -62,11 +62,11 @@ import {
 } from './office-font-families';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import { OfficeTableInsertPopover } from './office-table-insert-popover';
+import { PresentationAnimationPanel } from './presentation-animation-panel';
 import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
 } from './presentation-command-types';
-import { PresentationAnimationPanel } from './presentation-animation-panel';
 import { PresentationTransitionPanel } from './presentation-transition-panel';
 import {
   type WorkOfficeFileAction,
@@ -693,13 +693,13 @@ function PresentationAlignMenu({
   can: PresentationEditorCanCommands;
   commands: PresentationEditorCommands;
 }) {
-  const label = selectedUnitCount > 1 ? '对齐所选对象' : '元素对齐到幻灯片';
+  const modeHint = selectedUnitCount > 1 ? '对齐所选对象' : '元素对齐到幻灯片';
   const disabled = !can.alignElement('left');
 
   return (
     <Popover
-      label={label}
-      panelLabel={label}
+      label="对象对齐"
+      panelLabel={modeHint}
       panelRole="menu"
       portal
       className="presentation-align-menu"
@@ -712,7 +712,8 @@ function PresentationAlignMenu({
           {...triggerProps}
           type="button"
           className={`presentation-align-trigger${open ? ' open' : ''}`}
-          title={label}
+          title={modeHint}
+          aria-description={modeHint}
         >
           <span>对象对齐</span>
           <ChevronDown size={14} aria-hidden="true" />

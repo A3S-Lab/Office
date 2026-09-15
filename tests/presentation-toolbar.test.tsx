@@ -583,9 +583,13 @@ test('keeps Presentation ribbon selects sized for the 74px ribbon row', () => {
   ).toBeTruthy();
   expect(
     screen
-      .getByRole('button', { name: '元素对齐到幻灯片' })
+      .getByRole('button', { name: '对象对齐' })
       .closest('.presentation-align-menu'),
   ).toBeTruthy();
+  expect(screen.getByRole('button', { name: '对象对齐' })).toHaveAttribute(
+    'title',
+    '元素对齐到幻灯片',
+  );
   expect(screen.getByText('对象对齐')).toBeTruthy();
 });
 
@@ -625,7 +629,7 @@ test('Presentation align menu launches alignment commands without a fake select 
     />,
   );
 
-  fireEvent.click(screen.getByRole('button', { name: '元素对齐到幻灯片' }));
+  fireEvent.click(screen.getByRole('button', { name: '对象对齐' }));
   fireEvent.click(screen.getByRole('menuitem', { name: '水平居中' }));
   expect(calls).toContain('alignElement:center');
   expect(screen.queryByRole('listbox')).toBeNull();

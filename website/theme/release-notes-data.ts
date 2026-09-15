@@ -37,6 +37,56 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.230.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['presentation', 'writer'],
+    title: {
+      en: 'Align name + list gallery focus stay on ribbon',
+      zh: '对象对齐名称与列表库焦点留在功能区',
+    },
+    summary: {
+      en: 'Presentation 对象对齐 accessible name matches the visible label; mode hints stay in title/description. Document list galleries no longer steal editor focus after a pick.',
+      zh: '演示文稿「对象对齐」无障碍名称与可见文案一致；模式提示保留在 title/description。文档列表库选择后不再抢编辑器焦点。',
+    },
+    highlights: [
+      {
+        title: { en: 'Honest align name', zh: '对齐名称一致' },
+        detail: {
+          en: 'Visible 对象对齐 is the button name; 元素对齐到幻灯片 / 对齐所选对象 remain in title and aria-description.',
+          zh: '可见「对象对齐」即按钮名称；「元素对齐到幻灯片 / 对齐所选对象」保留在 title 与 aria-description。',
+        },
+      },
+      {
+        title: { en: 'List gallery focus', zh: '列表库焦点' },
+        detail: {
+          en: 'After choosing a bullet or numbering style, Popover restores the ribbon trigger instead of focusing the editor.',
+          zh: '选择项目符号或编号样式后，Popover 把焦点还回功能区触发器，而不是编辑器。',
+        },
+      },
+      {
+        title: { en: 'L2 disclosure loops', zh: '二级披露回路' },
+        detail: {
+          en: 'Keyboard users can reopen list galleries without an extra Tab out of the canvas.',
+          zh: '键盘用户无需先从画布 Tab 出来即可再次打开列表库。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.230.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.230.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.229.0',
     date: '2026-09-15',
     kind: 'fixed',

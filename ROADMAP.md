@@ -114,6 +114,9 @@ These are already the default contract. Do not trade them away for breadth:
    Through `0.229.0`, Spreadsheet worksheet options / cell-style / table-style
    L2 menus use `role="group"` (not `fieldset`) under `role="menu"`, and sheet
    tab color swatches support Left/Right focus.
+   Through `0.230.0`, Presentation **对象对齐** accessible name matches the
+   visible label, and Document list galleries stop stealing editor focus after
+   a style pick so Popover restores the ribbon trigger.
    Through `0.216.0`, curated
    What's new notes use the `writer` surface for Document work and reject unknown
    changelog surface keys so docs SSG cannot crash on a typo. Through `0.210.0`, Document table layout/border-target, Presentation

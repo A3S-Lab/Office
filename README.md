@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.229.0` fixes Spreadsheet L2 menu group semantics:
+Version `0.230.0` tightens Presentation and Document L2 toolbar focus:
 
-- Worksheet options, cell-style, and table-style galleries use `role="group"` (not `fieldset`) under `role="menu"`.
-- Sheet tab color swatches navigate with Left/Right; menu dividers keep native `hr` separators.
+- Presentation **对象对齐** uses the visible label as the accessible name; mode hints stay in title / description.
+- Document bullet and numbered list galleries keep focus on the ribbon trigger after a pick (no editor focus steal).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
