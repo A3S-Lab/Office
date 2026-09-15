@@ -413,7 +413,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('更多框线');
   expect(readme).toContain('menuitemradio');
   expect(englishHome).toContain("## What's new on `main` (0.231.0)");
-  expect(englishHome).toContain('Document and Spreadsheet L2 dialog option semantics');
+  expect(englishHome).toContain(
+    'Document and Spreadsheet L2 dialog option semantics',
+  );
   expect(chineseHome).toContain('## `main` 更新内容（0.231.0）');
   expect(chineseHome).toContain('文档与表格二级对话框选项语义');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");

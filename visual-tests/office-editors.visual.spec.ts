@@ -518,9 +518,7 @@ test('Word list galleries use touch-sized phone controls and restore ribbon focu
   );
   expect(numberingGeometry.numberFieldHeight).toBeGreaterThanOrEqual(43);
 
-  await numberingPanel
-    .getByRole('radio', { name: '大写罗马数字' })
-    .click();
+  await numberingPanel.getByRole('radio', { name: '大写罗马数字' }).click();
   await expect(orderedItem.locator('xpath=ancestor::ol[1]')).toHaveAttribute(
     'type',
     'I',
