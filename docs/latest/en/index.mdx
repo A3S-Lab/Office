@@ -44,16 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.228.0)
+## What's new on `main` (0.229.0)
 
-Spreadsheet, document, and PDF L2/L3 keyboard / ARIA hygiene:
+Spreadsheet L2 menu group semantics:
 
-- **汇总行** opens with focus inside the dialog; disclosure drops conflicting `aria-pressed`.
-- Insert-table, find/select, freeze panes, text orientation, text case,
-  cell margins, paragraph spacing, and pagination triggers keep
-  `aria-expanded` only (feature-on state stays in title / `.active`).
-- PDF **更多 PDF 工具** scopes `menuitemradio` sets with `role="group"`
-  (valid menu children; not `fieldset`).
+- Worksheet options, cell-style, and table-style galleries use `role="group"` (not `fieldset`) under `role="menu"`.
+- Sheet tab color swatches navigate with Left/Right; menu dividers keep native `hr` separators.
+
 
 ## Explore by surface
 

@@ -64,6 +64,13 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
           zh: '左右键在工作表标签色色块间移动，不离开该行。',
         },
       },
+      {
+        title: { en: 'Native menu dividers', zh: '原生菜单分隔线' },
+        detail: {
+          en: 'Worksheet option menus keep native hr separators (no redundant role=separator).',
+          zh: '工作表选项菜单保持原生 hr 分隔线（不再冗余设置 role=separator）。',
+        },
+      },
     ],
     links: [
       {
