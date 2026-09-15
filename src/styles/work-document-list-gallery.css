@@ -195,7 +195,10 @@
 .work-document-numbering-settings {
   display: grid;
   gap: 7px;
-  padding-top: 8px;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 8px 0 0;
+  border: 0;
   border-top: 1px solid var(--a3s-line);
 }
 

@@ -361,7 +361,17 @@ function OrderedListControl({
               ))}
             </div>
             {activeState && (
-              <div className="work-document-numbering-settings">
+              <fieldset
+                className="work-document-numbering-settings"
+                data-office-escape-consumer={startDirty || undefined}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Escape' || !startDirty) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setStartValue(committedStart);
+                }}
+              >
+                <legend className="sr-only">编号起始与续排</legend>
                 <div className="work-document-numbering-actions">
                   <button
                     type="button"
@@ -415,7 +425,7 @@ function OrderedListControl({
                     应用起始值
                   </button>
                 </form>
-              </div>
+              </fieldset>
             )}
             <button
               type="button"

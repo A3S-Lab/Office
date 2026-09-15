@@ -933,6 +933,39 @@ test('cancels a dirty numbering-start draft before Escape closes the library', (
   expect(trigger).toHaveFocus();
 });
 
+test('cancels a dirty numbering-start draft from Apply focus before Escape closes', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<ol start="7" type="I"><li><p>Item</p></li></ol>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Item'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '编号库' });
+  fireEvent.click(trigger);
+  const library = screen.getByRole('dialog', { name: '编号库' });
+  const start = within(library).getByRole('textbox', { name: '起始编号' });
+  fireEvent.change(start, { target: { value: '12' } });
+  const apply = within(library).getByRole('button', { name: '应用起始值' });
+  apply.focus();
+  expect(apply).toHaveFocus();
+
+  fireEvent.keyDown(apply, { key: 'Escape' });
+  expect(screen.getByRole('dialog', { name: '编号库' })).toBeInTheDocument();
+  expect(start).toHaveValue('7');
+  expect(editor.getHTML()).toContain('<ol start="7" type="I">');
+
+  fireEvent.keyDown(apply, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '编号库' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});
+
 test('commits a dirty numbering-start draft on Enter or blur like other Office number fields', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

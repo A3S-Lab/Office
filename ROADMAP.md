@@ -130,6 +130,8 @@ These are already the default contract. Do not trade them away for breadth:
    and Popover open-focus prefers in-tab-order controls.
    Through `0.236.0`, `OfficeColorPicker` restores dirty custom-color drafts
    on Escape from any focus inside the palette panel.
+   Through `0.237.0`, Document numbering library **起始编号** restores dirty
+   drafts on Escape from any focus inside the settings panel.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

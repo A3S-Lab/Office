@@ -37,6 +37,55 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.237.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Numbering start panel Escape draft cancel',
+      zh: '编号起始面板 Escape 取消草稿',
+    },
+    summary: {
+      en: 'Document numbering library restores dirty 起始编号 drafts on Escape from any focus inside the settings fieldset, including Apply, with data-office-escape-consumer.',
+      zh: '文档编号库在设置 fieldset 内任意焦点（含应用起始值）按 Escape 时还原脏起始编号草稿，并设置 data-office-escape-consumer。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Panel-wide dirty Escape',
+          zh: '面板级脏 Escape',
+        },
+        detail: {
+          en: 'Editing 起始编号 then Tab to 应用起始值 and Escape restores the committed start without closing.',
+          zh: '编辑起始编号后 Tab 到「应用起始值」再 Escape，还原已提交起始值且不关闭。',
+        },
+      },
+      {
+        title: { en: 'Clean Escape still closes', zh: '干净 Escape 仍关闭' },
+        detail: {
+          en: 'A second Escape (or Escape with an unchanged draft) dismisses the library and restores the trigger.',
+          zh: '再次 Escape（或草稿未改动时 Escape）仍关闭编号库并还原触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Matches color-picker Escape contract',
+          zh: '对齐颜色选择器 Escape 契约',
+        },
+        detail: {
+          en: 'Same dirty-only panel fieldset pattern as OfficeColorPicker so L2 Escape stays predictable.',
+          zh: '与 OfficeColorPicker 相同的脏-only 面板 fieldset 模式，L2 Escape 行为可预期。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.236.0',
     date: '2026-09-15',
     kind: 'fixed',

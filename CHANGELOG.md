@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.237.0 - 2026-09-15
+
+### Document
+
+- Numbering library **起始编号** dirty drafts restore on Escape from any focus
+  inside the settings panel (`data-office-escape-consumer` on the settings
+  fieldset), so Tab to **应用起始值** then Escape cancels without closing; a
+  clean Escape still dismisses.
+
 All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
