@@ -374,7 +374,7 @@ Codex editor operations typed and reproducible across all five surfaces.
 Version `0.229.0` fixes Spreadsheet L2 menu group semantics:
 
 - Worksheet options, cell-style, and table-style galleries use `role="group"` (not `fieldset`) under `role="menu"`.
-- Sheet tab color swatches navigate with Left/Right; menu dividers use `role="separator"`.
+- Sheet tab color swatches navigate with Left/Right; menu dividers keep native `hr` separators.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

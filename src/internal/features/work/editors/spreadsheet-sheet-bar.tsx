@@ -580,7 +580,7 @@ function SpreadsheetSheetMenu({
               />
             </div>
           </OfficeMenuGroup>
-          <hr role="separator" />
+          <hr />
           <SheetMenuButton
             icon={<ArrowLeft size={14} />}
             label="向左移动"
@@ -599,7 +599,7 @@ function SpreadsheetSheetMenu({
               onMove(sheetId, 1);
             }}
           />
-          <hr role="separator" />
+          <hr />
           <SheetMenuButton
             icon={<Trash2 size={14} />}
             label="删除工作表"

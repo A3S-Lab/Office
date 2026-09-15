@@ -46,8 +46,8 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
       zh: '表格二级菜单：role=group 与工作表标签色左右键',
     },
     summary: {
-      en: 'Worksheet options, cell-style, and table-style galleries use role=group instead of fieldset under role=menu. Sheet tab colors move focus with Left/Right; dividers use role=separator.',
-      zh: '工作表选项、单元格样式与表格样式库在 role=menu 下用 role=group 替代 fieldset。标签颜色支持左右键移动焦点；分隔线使用 role=separator。',
+      en: 'Worksheet options, cell-style, and table-style galleries use role=group instead of fieldset under role=menu. Sheet tab colors move focus with Left/Right; dividers keep native hr separators.',
+      zh: '工作表选项、单元格样式与表格样式库在 role=menu 下用 role=group 替代 fieldset。标签颜色支持左右键移动焦点；分隔线保持原生 hr。',
     },
     highlights: [
       {

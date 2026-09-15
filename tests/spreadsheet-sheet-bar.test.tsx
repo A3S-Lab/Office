@@ -1,5 +1,5 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { SpreadsheetSheetBar } from '../src/internal/features/work/editors/spreadsheet-sheet-bar';
 
 test('uses one accessible worksheet bar for creation, activation, and menus', async () => {
@@ -85,7 +85,7 @@ test('sheet options color row uses menu group semantics and Left/Right swatch fo
   const menu = screen.getByRole('menu', { name: '执行看板工作表操作' });
   expect(menu.querySelector('fieldset')).toBeNull();
   expect(screen.getByRole('group', { name: '标签颜色' })).toBeInTheDocument();
-  expect(menu.querySelectorAll('hr[role="separator"]')).toHaveLength(2);
+  expect(within(menu).getAllByRole('separator')).toHaveLength(2);
 
   const blue = screen.getByRole('menuitemradio', { name: '蓝色标签' });
   blue.focus();

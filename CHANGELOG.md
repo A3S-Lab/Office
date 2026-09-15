@@ -11,7 +11,7 @@ All notable changes to A3S Office will be documented in this file.
 - Worksheet options, cell-style gallery, and table-style gallery L2 menus
   use `role="group"` instead of `fieldset` (invalid under `role="menu"`).
 - Sheet tab color swatches support Left/Right focus movement; menu
-  dividers expose `role="separator"`.
+  dividers keep the native `hr` separator semantics under `role="menu"`.
 
 ## 0.228.0 - 2026-09-15
 
