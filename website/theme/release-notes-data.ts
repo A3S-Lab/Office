@@ -67,8 +67,8 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
       {
         title: { en: 'Numbering start drafts', zh: '起始编号草稿' },
         detail: {
-          en: 'Escape restores the committed start; blur / Enter commits without requiring 应用起始值; Apply still closes the library.',
-          zh: 'Escape 还原已提交起始值；blur / Enter 即可提交，不必先点「应用起始值」；应用按钮仍会关闭编号库。',
+          en: 'Escape restores the committed start; blur / Enter commits without requiring Apply; Apply confirms and closes even when already committed.',
+          zh: 'Escape 还原已提交起始值；blur / Enter 即可提交；应用起始值在已提交时仍可确认并关闭编号库。',
         },
       },
     ],

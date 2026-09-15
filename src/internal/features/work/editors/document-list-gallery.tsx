@@ -252,9 +252,11 @@ function OrderedListControl({
   };
   const applyStart = (close: () => void) => {
     if (validStart === null) return;
-    runDocumentListMenuCommand(close, () =>
-      editor.commands.setDocumentNumberingStart(validStart),
-    );
+    if (validStart !== (activeState?.start ?? 1)) {
+      if (!editor.commands.setDocumentNumberingStart(validStart)) return;
+    }
+    // Blur/Enter may already have committed; Apply still confirms and closes.
+    close();
   };
 
   return (
@@ -407,12 +409,7 @@ function OrderedListControl({
                         : undefined
                     }
                   />
-                  <button
-                    type="submit"
-                    disabled={
-                      validStart === null || validStart === activeState.start
-                    }
-                  >
+                  <button type="submit" disabled={validStart === null}>
                     应用起始值
                   </button>
                 </form>

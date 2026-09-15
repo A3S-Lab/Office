@@ -947,7 +947,17 @@ test('commits a dirty numbering-start draft on Enter or blur like other Office n
   expect(editor.getHTML()).toContain('<ol start="12" type="I">');
   expect(
     within(library).getByRole('button', { name: '应用起始值' }),
-  ).toBeDisabled();
+  ).toBeEnabled();
+
+  fireEvent.click(within(library).getByRole('button', { name: '应用起始值' }));
+  expect(screen.queryByRole('dialog', { name: '编号库' })).toBeNull();
+  expect(trigger).toHaveFocus();
+  expect(editor.getHTML()).toContain('<ol start="12" type="I">');
+
+  fireEvent.click(trigger);
+  library = screen.getByRole('dialog', { name: '编号库' });
+  start = within(library).getByRole('textbox', { name: '起始编号' });
+  expect(start).toHaveValue('12');
 
   fireEvent.change(start, { target: { value: '0' } });
   fireEvent.keyDown(start, { key: 'Enter' });

@@ -19,7 +19,8 @@ All notable changes to A3S Office will be documented in this file.
   disclosure loops stay usable from the keyboard.
 - Numbering library **起始编号** now matches other `OfficeNumberField`
   drafts: Escape restores the committed value; blur / Enter commits
-  without closing the library. **应用起始值** still applies and closes.
+  without closing the library. **应用起始值** confirms and closes even
+  when blur already applied the same start.
 
 ## 0.229.0 - 2026-09-15
 
