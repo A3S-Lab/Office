@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.235.0` keeps Spreadsheet more-borders drafts Escape-safe and focus-correct:
+Version `0.236.0` keeps shared color pickers Escape-safe across the palette:
 
-- Dirty **线型** / **颜色** drafts in **更多框线** restore the open-session baseline on Escape without closing (`data-office-escape-consumer`); outside dismiss without applying restores too. The position radiogroup tab stop follows the checked target, and Popover open-focus prefers tabindex>=0 controls.
+- Dirty custom-color drafts in `OfficeColorPicker` restore on Escape from any focus inside the panel (`data-office-escape-consumer`), including after Tab to **应用**; a clean Escape still closes and restores the trigger.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

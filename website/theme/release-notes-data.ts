@@ -37,6 +37,55 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.236.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['shared'],
+    title: {
+      en: 'Color picker panel Escape draft cancel',
+      zh: '颜色选择器面板 Escape 取消草稿',
+    },
+    summary: {
+      en: 'OfficeColorPicker restores dirty custom-color drafts on Escape from any focus inside the palette, including Apply, with data-office-escape-consumer on the panel fieldset.',
+      zh: 'OfficeColorPicker 在调色板内任意焦点（含应用）按 Escape 时还原脏自定义颜色草稿，并在面板 fieldset 上设置 data-office-escape-consumer。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Panel-wide dirty Escape',
+          zh: '面板级脏 Escape',
+        },
+        detail: {
+          en: 'Editing a custom hex then Tab to 应用 and Escape restores the committed color without closing.',
+          zh: '编辑自定义色值后 Tab 到「应用」再 Escape，还原已提交颜色且不关闭。',
+        },
+      },
+      {
+        title: { en: 'Clean Escape still closes', zh: '干净 Escape 仍关闭' },
+        detail: {
+          en: 'A second Escape (or Escape with an unchanged draft) dismisses the picker and restores the trigger.',
+          zh: '再次 Escape（或草稿未改动时 Escape）仍关闭选择器并还原触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Shared ribbon primitive',
+          zh: '共享功能区原语',
+        },
+        detail: {
+          en: 'One fix covers Document, Spreadsheet, Presentation, and PDF color disclosures that use OfficeColorPicker.',
+          zh: '一次修复覆盖文档、表格、演示与 PDF 中使用 OfficeColorPicker 的颜色披露。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.235.0',
     date: '2026-09-15',
     kind: 'fixed',

@@ -128,6 +128,8 @@ These are already the default contract. Do not trade them away for breadth:
    Through `0.235.0`, Spreadsheet **更多框线** restores dirty style/color
    session drafts on Escape, keeps radiogroup tabIndex on the checked target,
    and Popover open-focus prefers in-tab-order controls.
+   Through `0.236.0`, `OfficeColorPicker` restores dirty custom-color drafts
+   on Escape from any focus inside the palette panel.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

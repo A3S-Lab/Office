@@ -124,6 +124,32 @@ test('cancels a dirty custom-color draft before Escape closes the palette', asyn
   );
 });
 
+test('cancels a dirty custom-color draft from Apply focus before Escape closes', () => {
+  render(
+    <OfficeColorPicker
+      ariaLabel="文字颜色"
+      value="#111827"
+      onValueChange={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '文字颜色' });
+  fireEvent.click(trigger);
+  const input = screen.getByRole('textbox', { name: '自定义颜色值' });
+  fireEvent.change(input, { target: { value: '#fff2cc' } });
+  const apply = screen.getByRole('button', { name: '应用自定义颜色' });
+  apply.focus();
+  expect(apply).toHaveFocus();
+
+  fireEvent.keyDown(apply, { key: 'Escape' });
+  expect(screen.getByRole('dialog', { name: '文字颜色' })).toBeInTheDocument();
+  expect(input).toHaveValue('#111827');
+
+  fireEvent.keyDown(apply, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '文字颜色' })).toBeNull();
+  expect(trigger).toHaveFocus();
+});
+
 test('runs an optional reset action and restores focus to the trigger', () => {
   const selected: string[] = [];
   const resets: string[] = [];

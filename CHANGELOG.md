@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.236.0 - 2026-09-15
+
+### Shared
+
+- `OfficeColorPicker` restores dirty custom-color drafts on Escape from any
+  focus inside the palette (`data-office-escape-consumer` on the panel
+  fieldset), so Tab to **应用** then Escape cancels without closing; a clean
+  Escape still dismisses.
+
 ## 0.235.0 - 2026-09-15
 
 ### Spreadsheet / Shared
