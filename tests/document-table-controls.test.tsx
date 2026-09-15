@@ -34,6 +34,8 @@ test('chooses table dimensions with the keyboard and preserves selected text', a
 
   const trigger = screen.getByRole('button', { name: '插入表格' });
   fireEvent.click(trigger);
+  expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  expect(trigger).not.toHaveAttribute('aria-pressed');
 
   const firstCell = screen.getByRole('button', { name: '1 行 1 列' });
   await waitFor(() => expect(firstCell).toHaveFocus());

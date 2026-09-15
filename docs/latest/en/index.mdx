@@ -44,12 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.227.0)
+## What's new on `main` (0.228.0)
 
-Shared Popover L2/L3 outside dismiss restores toolbar focus:
+Spreadsheet totals and insert-table L2 keyboard / ARIA hygiene:
 
-- Outside pointer dismiss and disable-while-open restore focus to the trigger.
-- Focusout onto non-focusable chrome restores the trigger; Tab exit keeps destination focus.
+- **汇总行** opens with focus inside the dialog; disclosure drops conflicting `aria-pressed`.
+- Insert-table triggers keep `aria-expanded` only.
 
 ## Explore by surface
 

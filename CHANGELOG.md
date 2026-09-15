@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.228.0 - 2026-09-15
+
+### Spreadsheet
+
+- Table Design **汇总行** opens with focus on the enable checkbox
+  (`focusFirstOnOpen`) so keyboard users enter the dialog instead of
+  tabbing through the ribbon behind it. The disclosure no longer sets
+  `aria-pressed` alongside `aria-expanded`; enabled state stays in the
+  title and active styling.
+
+### Shared / Document
+
+- Insert-table popover triggers no longer set `aria-pressed` to mirror
+  open state (conflicts with `aria-expanded` / `aria-haspopup="dialog"`).
+
 ## 0.227.0 - 2026-09-15
 
 ### Shared

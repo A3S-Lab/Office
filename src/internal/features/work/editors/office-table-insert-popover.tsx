@@ -119,7 +119,6 @@ export function OfficeTableInsertPopover({
         <button
           {...triggerProps}
           className={`with-label${triggerOpen ? ' active' : ''}`}
-          aria-pressed={triggerOpen}
           disabled={disabled}
         >
           <Table2 size={19} />

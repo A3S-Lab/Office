@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.227.0` restores toolbar trigger focus when shared Popover L2/L3 menus dismiss by outside pointer:
+Version `0.228.0` tightens Spreadsheet totals and insert-table L2 keyboard / ARIA hygiene:
 
-- Outside pointer dismiss and disable-while-open call the same focus-restoring close path as Escape.
-- Focusout onto non-focusable chrome restores the trigger; Tab exit to another control keeps that focus.
+- Table Design **汇总行** moves focus into the dialog on open; disclosure drops conflicting `aria-pressed`.
+- Insert-table triggers keep `aria-expanded` only (no pressed=open mirror).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

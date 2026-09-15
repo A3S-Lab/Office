@@ -201,6 +201,7 @@ function SpreadsheetTableTotalsMenu({
       panelLabel="表格汇总行设置"
       panelRole="dialog"
       portal
+      focusFirstOnOpen
       className="work-spreadsheet-table-totals-root"
       panelClassName="work-spreadsheet-table-totals-menu"
       placement="bottom-end"
@@ -208,8 +209,11 @@ function SpreadsheetTableTotalsMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-table-totals-trigger${open || table.totalsRow ? ' active' : ''}`}
-          aria-pressed={table.totalsRow}
-          title="设置表格汇总行"
+          title={
+            table.totalsRow
+              ? '设置表格汇总行（已启用）'
+              : '设置表格汇总行'
+          }
         >
           <Calculator size={19} />
           <span>汇总行</span>

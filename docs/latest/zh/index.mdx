@@ -42,12 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.227.0）
+## `main` 更新内容（0.228.0）
 
-共享 Popover 二级/三级菜单在外侧关闭时恢复工具栏焦点：
+表格汇总行与插入表格二级菜单的键盘 / ARIA 卫生：
 
-- 外侧指针关闭与打开期间禁用都会把焦点还原到触发器。
-- 焦点落到不可聚焦区域时还原触发器；Tab 离开时仍保持目标控件焦点。
+- 「汇总行」打开时焦点进入对话框；触发器不再与 `aria-expanded` 冲突地设置 `aria-pressed`。
+- 插入表格触发器只保留 `aria-expanded`。
 
 ## 按表面探索
 

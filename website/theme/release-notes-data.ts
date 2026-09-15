@@ -37,6 +37,56 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.228.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['spreadsheet', 'shared', 'writer'],
+    title: {
+      en: 'Totals dialog focus and insert-table ARIA hygiene',
+      zh: '汇总行对话框焦点与插入表格 ARIA 卫生',
+    },
+    summary: {
+      en: 'Spreadsheet: 汇总行 opens with focus on the enable checkbox. Shared/Document: insert-table triggers drop aria-pressed that mirrored open state.',
+      zh: '表格：「汇总行」打开时焦点落到启用复选框。共享/文档：插入表格触发器去掉与打开状态重复的 aria-pressed。',
+    },
+    highlights: [
+      {
+        title: { en: 'Totals focus', zh: '汇总行焦点' },
+        detail: {
+          en: 'focusFirstOnOpen moves keyboard focus into the dialog.',
+          zh: 'focusFirstOnOpen 把键盘焦点移入对话框。',
+        },
+      },
+      {
+        title: { en: 'No pressed+expanded', zh: '去掉 pressed+expanded' },
+        detail: {
+          en: 'Totals and insert-table disclosures no longer set both aria-pressed and aria-expanded.',
+          zh: '汇总行与插入表格披露控件不再同时设置 aria-pressed 与 aria-expanded。',
+        },
+      },
+      {
+        title: { en: 'Enabled state in title', zh: '标题表达启用态' },
+        detail: {
+          en: 'Totals trigger title notes when the totals row is already enabled.',
+          zh: '汇总行触发器标题在已启用时说明状态。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: "What's new", zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.228.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.228.0',
+        },
+        label: { en: 'GitHub Release', zh: 'GitHub Release' },
+      },
+    ],
+  },
+  {
     version: '0.227.0',
     date: '2026-09-15',
     kind: 'fixed',

@@ -1370,7 +1370,7 @@ test('shows a contextual Table Design ribbon with all 60 built-in styles', () =>
   ]);
 });
 
-test('edits native totals-row functions, labels, and custom formulas', () => {
+test('edits native totals-row functions, labels, and custom formulas', async () => {
   const patches: unknown[] = [];
   const table = {
     id: 'table-totals',
@@ -1421,9 +1421,11 @@ test('edits native totals-row functions, labels, and custom formulas', () => {
 
   fireEvent.click(screen.getByRole('button', { name: '汇总行' }));
   const menu = screen.getByRole('dialog', { name: '表格汇总行设置' });
-  expect(
-    within(menu).getByRole('checkbox', { name: '启用汇总行' }),
-  ).toBeChecked();
+  const enableTotals = within(menu).getByRole('checkbox', {
+    name: '启用汇总行',
+  });
+  await waitFor(() => expect(enableTotals).toHaveFocus());
+  expect(enableTotals).toBeChecked();
   const unitsFunction = within(menu).getByRole('combobox', {
     name: 'Units 汇总函数',
   });
