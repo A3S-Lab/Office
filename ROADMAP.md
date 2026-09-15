@@ -139,6 +139,9 @@ These are already the default contract. Do not trade them away for breadth:
    ribbon trigger.
    Through `0.240.0`, Document Home and selection-toolbar highlight toggles
    stop stealing focus into the editor so the ribbon trigger keeps L2 loops.
+   Through `0.241.0`, Document font family/size, paragraph-style, and table
+   border-apply selects stop stealing focus into the editor so Popover restores
+   the ribbon combobox.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

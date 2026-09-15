@@ -193,16 +193,15 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
           onValueChange={(value) => {
             setBorderTarget(value);
             const clear = value === 'clear';
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableBorders(
-                clear ? 'all' : value,
-                clear
-                  ? { color: borderPen.color, style: 'none', width: 0 }
-                  : borderPen,
-              )
-              .run();
+            // Keep ribbon focus on the border-target combobox via Popover
+            // restore. chain().focus() schedules into the editor and breaks
+            // L2 loops (same class as cell fill).
+            editor.commands.setDocumentTableBorders(
+              clear ? 'all' : value,
+              clear
+                ? { color: borderPen.color, style: 'none', width: 0 }
+                : borderPen,
+            );
           }}
         />
       </RibbonGroup>

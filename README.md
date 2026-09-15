@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.240.0` keeps Document highlight focus on the ribbon trigger after toggle:
+Version `0.241.0` keeps Document L2 select focus on ribbon comboboxes after apply:
 
-- Home and selection-toolbar **突出显示** apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 formatting loop off the trigger.
+- Font family/size, paragraph-style, and table **应用边框** selects apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 formatting loop off the combobox.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

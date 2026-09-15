@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.241.0 - 2026-09-15
+
+### Document
+
+- Font family/size selects, paragraph-style select, and table **应用边框** no
+  longer call TipTap `chain().focus()` on apply. Popover restores focus to the
+  ribbon/toolbar combobox so L2 formatting loops keep working (TipTap's
+  deferred focus otherwise steals into the editor after close).
+
 ## 0.240.0 - 2026-09-15
 
 ### Document

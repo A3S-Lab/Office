@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.241.0',
+    date: '2026-09-15',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Font and border selects keep ribbon combobox focus',
+      zh: '字体与边框下拉框保留功能区焦点',
+    },
+    summary: {
+      en: 'Document font family/size, paragraph-style, and table border-apply selects apply without TipTap chain().focus(), so Popover restores the ribbon combobox after an L2 pick.',
+      zh: '文档字体/字号、段落样式与表格应用边框下拉框在选中时不再调用 TipTap chain().focus()，Popover 可将焦点还原到功能区下拉框。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps Popover trigger restore on the combobox.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后 Popover 对下拉框触发按钮的焦点还原得以保留。',
+        },
+      },
+      {
+        title: {
+          en: 'Home, style gallery, and table Design',
+          zh: '主页、样式库与表格设计',
+        },
+        detail: {
+          en: 'Same focus contract as color pickers and highlight toggles.',
+          zh: '与颜色选择器和突出显示切换相同的焦点契约。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 formatting loops stay on the combobox',
+          zh: 'L2 格式循环留下拉框',
+        },
+        detail: {
+          en: 'After picking a font, style, or border target, keyboard users can reopen the same combobox without re-focusing the ribbon.',
+          zh: '选择字体、样式或边框目标后，键盘用户无需重新聚焦功能区即可再次打开同一下拉框。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.240.0',
     date: '2026-09-15',
     kind: 'fixed',

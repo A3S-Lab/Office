@@ -387,6 +387,31 @@ test('keeps table cell fill picker focus on the ribbon trigger after a swatch pi
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps table border apply select focus on the ribbon trigger after a pick', async () => {
+  editor = createTableEditor();
+  document.body.append(editor.view.dom);
+  editor.commands.setNodeSelection(firstTablePosition(editor));
+  render(<DocumentTableDesignRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('combobox', { name: '应用边框' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('option', { name: '无框线' }));
+
+  expect(
+    tableCellAttributes(editor).every(({ borders }) =>
+      Object.values(borders ?? {}).every(
+        (border) => border.style === 'none' && border.width === 0,
+      ),
+    ),
+  ).toBe(true);
+  await waitFor(() => expect(trigger).toHaveFocus());
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('applies per-edge borders with a reusable Word-style border pen', () => {
   editor = createTableEditor();
   editor.commands.setNodeSelection(firstTablePosition(editor));

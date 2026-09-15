@@ -161,8 +161,10 @@ function applyDocumentParagraphStyle(
   editor: Editor,
   style: DocumentParagraphStyle,
 ): boolean {
+  // Keep ribbon focus on the style combobox / radiogroup. chain().focus()
+  // schedules into the editor and breaks L2 loops after a Popover pick.
   if (style.level === null) {
-    return editor.chain().focus().setParagraph().run();
+    return editor.commands.setParagraph();
   }
-  return editor.chain().focus().setHeading({ level: style.level }).run();
+  return editor.commands.setHeading({ level: style.level });
 }

@@ -255,6 +255,90 @@ test('keeps highlight focus on the ribbon trigger after toggle', async () => {
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps font family select focus on the ribbon trigger after a pick', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Font me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Font me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('combobox', { name: '字体' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('option', { name: 'Calibri' }));
+
+  expect(editor.getAttributes('textStyle').fontFamily).toMatch(/Calibri/i);
+  await waitFor(() => expect(trigger).toHaveFocus());
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps font size select focus on the ribbon trigger after a pick', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Size me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Size me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('combobox', { name: '字号' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('option', { name: '14' }));
+
+  expect(editor.getAttributes('textStyle').fontSize).toBe('14pt');
+  await waitFor(() => expect(trigger).toHaveFocus());
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps paragraph style select focus on the ribbon trigger after a pick', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Style me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Style me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('combobox', { name: '段落样式' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('option', { name: '标题 1' }));
+
+  expect(editor.getHTML()).toContain('<h1>Style me</h1>');
+  await waitFor(() => expect(trigger).toHaveFocus());
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('applies italic formatting without replacing the selected text', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

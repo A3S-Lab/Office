@@ -143,9 +143,10 @@ export function DocumentHomeRibbon({
                 layoutFonts,
               )}
               onValueChange={(value) => {
-                if (value === 'default')
-                  editor.chain().focus().unsetFontFamily().run();
-                else editor.chain().focus().setFontFamily(value).run();
+                // Keep ribbon focus on the font combobox via Popover restore.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                if (value === 'default') editor.commands.unsetFontFamily();
+                else editor.commands.setFontFamily(value);
               }}
             />
             <OfficeSelect
@@ -154,9 +155,10 @@ export function DocumentHomeRibbon({
               value={fontSizeValue}
               options={documentFontSizeOptionsForValue(fontSizeValue)}
               onValueChange={(value) => {
-                if (value === 'default')
-                  editor.chain().focus().unsetFontSize().run();
-                else editor.chain().focus().setFontSize(value).run();
+                // Keep ribbon focus on the size combobox via Popover restore.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                if (value === 'default') editor.commands.unsetFontSize();
+                else editor.commands.setFontSize(value);
               }}
             />
             <ToolbarButton
