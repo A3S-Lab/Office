@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.243.0 - 2026-09-16
+
+### Document
+
+- Home **加粗** / **斜体**, grow/shrink font steppers, and selection-toolbar
+  bold/italic no longer call TipTap `chain().focus()` on apply. Focus stays
+  on the ribbon or floating toolbar trigger so L2 formatting loops keep working
+  (TipTap's deferred focus otherwise steals into the editor after the click).
+
 ## 0.242.0 - 2026-09-15
 
 ### Document

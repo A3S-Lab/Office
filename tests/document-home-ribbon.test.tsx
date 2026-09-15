@@ -255,6 +255,90 @@ test('keeps highlight focus on the ribbon trigger after toggle', async () => {
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps bold focus on the ribbon trigger after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Bold me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Bold me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '加粗' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('bold')).toBe(true);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps italic focus on the ribbon trigger after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Italic me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Italic me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '斜体' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('italic')).toBe(true);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps grow-font focus on the ribbon trigger after step', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Grow me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Grow me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '增大字号' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.getAttributes('textStyle').fontSize).toBeTruthy();
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('keeps font family select focus on the ribbon trigger after a pick', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

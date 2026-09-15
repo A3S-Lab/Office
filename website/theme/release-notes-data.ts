@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.243.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Bold, italic, and font-size steppers keep ribbon focus',
+      zh: '加粗、斜体与字号步进保留功能区焦点',
+    },
+    summary: {
+      en: 'Document Home bold/italic, grow/shrink font steppers, and selection-toolbar bold/italic apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 formatting loop off the ribbon or floating toolbar trigger.',
+      zh: '文档主页加粗/斜体、增大/减小字号，以及选择工具栏加粗/斜体，不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走功能区或浮动工具栏触发按钮上的 L2 格式循环。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the ribbon or selection-toolbar trigger.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在功能区或选择工具栏触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Home and selection toolbar',
+          zh: '主页与选择工具栏',
+        },
+        detail: {
+          en: 'Same focus contract as underline/strike splits, list primaries, and font selects.',
+          zh: '与下划线/删除线拆分、列表主按钮和字体下拉框相同的焦点契约。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 formatting loops stay on the control',
+          zh: 'L2 格式循环留在控件上',
+        },
+        detail: {
+          en: 'After toggling bold/italic or stepping font size, keyboard users can continue from the same control.',
+          zh: '切换加粗/斜体或步进字号后，键盘用户可从同一控件继续操作。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.242.0',
     date: '2026-09-15',
     kind: 'fixed',

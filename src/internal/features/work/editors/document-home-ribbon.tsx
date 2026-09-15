@@ -21,7 +21,12 @@ import {
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
 } from 'lucide-react';
-import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
+import {
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  useCallback,
+  useSyncExternalStore,
+} from 'react';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   canChangeDocumentIndent,
@@ -165,6 +170,7 @@ export function DocumentHomeRibbon({
               label="增大字号"
               {...commandShortcut('growFont')}
               disabled={!canChangeDocumentFontSize(editor, 1)}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => changeDocumentFontSize(editor, 1)}
             >
               <AArrowUp size={16} />
@@ -173,6 +179,7 @@ export function DocumentHomeRibbon({
               label="减小字号"
               {...commandShortcut('shrinkFont')}
               disabled={!canChangeDocumentFontSize(editor, -1)}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => changeDocumentFontSize(editor, -1)}
             >
               <AArrowDown size={16} />
@@ -183,7 +190,12 @@ export function DocumentHomeRibbon({
               label="加粗"
               {...commandShortcut('bold')}
               active={editor.isActive('bold')}
-              onClick={() => editor.chain().focus().toggleBold().run()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Keep ribbon focus on the bold trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.toggleBold();
+              }}
             >
               <Bold size={16} />
             </ToolbarButton>
@@ -191,7 +203,12 @@ export function DocumentHomeRibbon({
               label="斜体"
               {...commandShortcut('italic')}
               active={editor.isActive('italic')}
-              onClick={() => editor.chain().focus().toggleItalic().run()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Keep ribbon focus on the italic trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.toggleItalic();
+              }}
             >
               <Italic size={16} />
             </ToolbarButton>
@@ -390,6 +407,7 @@ function ToolbarButton({
   active = false,
   disabled = false,
   onClick,
+  onMouseDown,
   children,
 }: {
   label: string;
@@ -398,6 +416,7 @@ function ToolbarButton({
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
+  onMouseDown?: (event: ReactMouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
 }) {
   return (
@@ -408,6 +427,7 @@ function ToolbarButton({
       active={active}
       displayLabel={false}
       disabled={disabled}
+      onMouseDown={onMouseDown}
       onClick={onClick}
     >
       {children}

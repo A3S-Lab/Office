@@ -143,14 +143,22 @@ export function DocumentSelectionToolbar({
           <SelectionToolbarButton
             label="加粗"
             active={editor.isActive('bold')}
-            onClick={() => editor.chain().focus().toggleBold().run()}
+            onClick={() => {
+              // Keep toolbar focus on the bold trigger.
+              // chain().focus() schedules into the editor and breaks L2 loops.
+              editor.commands.toggleBold();
+            }}
           >
             <Bold size={15} />
           </SelectionToolbarButton>
           <SelectionToolbarButton
             label="斜体"
             active={editor.isActive('italic')}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
+            onClick={() => {
+              // Keep toolbar focus on the italic trigger.
+              // chain().focus() schedules into the editor and breaks L2 loops.
+              editor.commands.toggleItalic();
+            }}
           >
             <Italic size={15} />
           </SelectionToolbarButton>

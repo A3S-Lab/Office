@@ -207,7 +207,7 @@ export function changeDocumentFontSize(
   const current = effectiveDocumentFontSizePoints(editor);
   const next = nextDocumentFontSize(current, direction);
   if (next === null) return false;
-  return editor.chain().focus().setFontSize(`${next}pt`).run();
+  return editor.commands.setFontSize(`${next}pt`);
 }
 
 export function canChangeDocumentFontSize(

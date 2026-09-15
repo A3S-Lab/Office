@@ -115,6 +115,54 @@ test('keeps the floating selection toolbar inside the Office theme boundary', as
   );
 });
 
+test('keeps bold focus on the selection toolbar trigger after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<section data-document-section="true"><p>Bold this selection.</p></section>',
+  });
+  const view = render(
+    <>
+      <EditorContent editor={editor} />
+      <DocumentSelectionToolbar
+        editor={editor}
+        canInsertComment
+        onInsertComment={() => undefined}
+      />
+    </>,
+  );
+  const range = textRange(editor, 'this selection');
+
+  editor.chain().focus().setTextSelection(range).run();
+  view.rerender(
+    <>
+      <EditorContent editor={editor} />
+      <DocumentSelectionToolbar
+        editor={editor}
+        canInsertComment
+        onInsertComment={() => undefined}
+      />
+    </>,
+  );
+
+  const toolbar = await screen.findByRole('toolbar', {
+    name: '文本快捷工具栏',
+  });
+  await waitFor(() => expect(toolbar).toBeVisible());
+
+  const trigger = screen.getByRole('button', { name: '加粗' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('bold')).toBe(true);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('hides for a caret and disables unavailable comment insertion', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
