@@ -310,12 +310,6 @@ pub(super) fn set_text_format(
     let snapshot = NativeOfficeDocument::from_package(package.clone())?;
     let requested = snapshot.get(path, 0)?;
     match requested.node_type {
-        OfficeNodeType::Paragraph if format.has_character_properties() => {
-            return Err(editor_error(
-                "use.office.mutation_type_unsupported",
-                "Presentation paragraph paths accept alignment only; address a run path for character formatting.",
-            ));
-        }
         OfficeNodeType::Run if format.alignment.is_some() => {
             return Err(editor_error(
                 "use.office.mutation_type_unsupported",
@@ -330,6 +324,7 @@ pub(super) fn set_text_format(
             ));
         }
     }
+    let character_paths = presentation_character_format_paths(&requested, format)?;
     let slide_path = path
         .split('/')
         .find(|segment| segment.starts_with("slide["))
@@ -352,66 +347,92 @@ pub(super) fn set_text_format(
     if let Some(alignment) = format.alignment {
         bytes = set_presentation_alignment(part_name, bytes, path, alignment)?;
     }
-    if format.has_character_properties() {
-        bytes = ensure_character_properties(part_name, bytes, path)?;
-        if let Some(bold) = format.bold {
-            bytes =
-                set_character_attribute(part_name, bytes, path, "b", if bold { "1" } else { "0" })?;
-        }
-        if let Some(italic) = format.italic {
-            bytes = set_character_attribute(
-                part_name,
-                bytes,
-                path,
-                "i",
-                if italic { "1" } else { "0" },
-            )?;
-        }
-        if let Some(underline) = format.underline {
-            bytes = set_character_attribute(
-                part_name,
-                bytes,
-                path,
-                "u",
-                presentation_underline(underline),
-            )?;
-        }
-        if let Some(script) = format.script {
-            bytes = set_character_attribute(
-                part_name,
-                bytes,
-                path,
-                "baseline",
-                presentation_baseline(script),
-            )?;
-        }
-        if let Some(text_case) = format.text_case {
-            let value = match text_case {
-                NativeOfficeTextCase::None => "none",
-                NativeOfficeTextCase::SmallCaps => "small",
-                NativeOfficeTextCase::AllCaps => "all",
-            };
-            bytes = set_character_attribute(part_name, bytes, path, "cap", value)?;
-        }
-        if let Some(language) = &format.language {
-            bytes = set_character_attribute(part_name, bytes, path, "lang", language)?;
-        }
-        if let Some(size) = format.font_size_centipoints {
-            bytes = set_character_attribute(part_name, bytes, path, "sz", &size.to_string())?;
-        }
-        if let Some(family) = &format.font_family {
-            for name in ["latin", "ea", "cs"] {
-                bytes = set_character_font(part_name, bytes, path, name, family)?;
-            }
-        }
-        if let Some(color) = format.text_color {
-            bytes = set_character_color(part_name, bytes, path, &color.hex())?;
-        }
-        if let Some(highlight) = format.highlight {
-            bytes = set_character_highlight(part_name, bytes, path, highlight)?;
-        }
+    for run_path in character_paths {
+        bytes = apply_presentation_run_character_format(part_name, bytes, &run_path, format)?;
     }
     package.set_part(part_name, bytes)
+}
+
+fn presentation_character_format_paths(
+    requested: &crate::semantic::DocumentNode,
+    format: &NativeOfficeTextFormat,
+) -> UseResult<Vec<String>> {
+    if !format.has_character_properties() {
+        return Ok(Vec::new());
+    }
+    if requested.node_type == OfficeNodeType::Run {
+        return Ok(vec![requested.path.clone()]);
+    }
+    let mut paths = requested
+        .children
+        .iter()
+        .filter(|child| child.node_type == OfficeNodeType::Run)
+        .map(|child| child.path.clone())
+        .collect::<Vec<_>>();
+    if paths.is_empty() {
+        paths.push(format!("{}/run[1]", requested.path));
+    }
+    Ok(paths)
+}
+
+fn apply_presentation_run_character_format(
+    part_name: &str,
+    mut bytes: Vec<u8>,
+    path: &str,
+    format: &NativeOfficeTextFormat,
+) -> UseResult<Vec<u8>> {
+    bytes = ensure_character_properties(part_name, bytes, path)?;
+    if let Some(bold) = format.bold {
+        bytes = set_character_attribute(part_name, bytes, path, "b", if bold { "1" } else { "0" })?;
+    }
+    if let Some(italic) = format.italic {
+        bytes =
+            set_character_attribute(part_name, bytes, path, "i", if italic { "1" } else { "0" })?;
+    }
+    if let Some(underline) = format.underline {
+        bytes = set_character_attribute(
+            part_name,
+            bytes,
+            path,
+            "u",
+            presentation_underline(underline),
+        )?;
+    }
+    if let Some(script) = format.script {
+        bytes = set_character_attribute(
+            part_name,
+            bytes,
+            path,
+            "baseline",
+            presentation_baseline(script),
+        )?;
+    }
+    if let Some(text_case) = format.text_case {
+        let value = match text_case {
+            NativeOfficeTextCase::None => "none",
+            NativeOfficeTextCase::SmallCaps => "small",
+            NativeOfficeTextCase::AllCaps => "all",
+        };
+        bytes = set_character_attribute(part_name, bytes, path, "cap", value)?;
+    }
+    if let Some(language) = &format.language {
+        bytes = set_character_attribute(part_name, bytes, path, "lang", language)?;
+    }
+    if let Some(size) = format.font_size_centipoints {
+        bytes = set_character_attribute(part_name, bytes, path, "sz", &size.to_string())?;
+    }
+    if let Some(family) = &format.font_family {
+        for name in ["latin", "ea", "cs"] {
+            bytes = set_character_font(part_name, bytes, path, name, family)?;
+        }
+    }
+    if let Some(color) = format.text_color {
+        bytes = set_character_color(part_name, bytes, path, &color.hex())?;
+    }
+    if let Some(highlight) = format.highlight {
+        bytes = set_character_highlight(part_name, bytes, path, highlight)?;
+    }
+    Ok(bytes)
 }
 
 fn presentation_underline(underline: NativeOfficeUnderline) -> &'static str {

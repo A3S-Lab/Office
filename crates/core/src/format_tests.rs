@@ -194,6 +194,82 @@ async fn native_word_writes_run_format_and_paragraph_alignment_losslessly() {
 }
 
 #[tokio::test]
+async fn word_paragraph_path_applies_character_format_to_primary_run() {
+    // MCP agents commonly batch set-text + set-text-format on /body/p[N].
+    // Character formatting must apply to the paragraph's runs instead of
+    // failing the whole atomic apply_batch.
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("paragraph-format.docx");
+    let mut editor = NativeOfficeEditor::create(&path).await.unwrap();
+    editor
+        .apply_batch(&[
+            NativeOfficeMutation::SetText {
+                path: "/body/p[1]".into(),
+                text: "工作区文档正文写入".into(),
+            },
+            NativeOfficeMutation::SetTextFormat {
+                path: "/body/p[1]".into(),
+                format: NativeOfficeTextFormat {
+                    bold: Some(true),
+                    font_size_centipoints: Some(3200),
+                    ..NativeOfficeTextFormat::default()
+                },
+            },
+            NativeOfficeMutation::AddParagraph {
+                parent: "/body".into(),
+                text: "这是写入目标文档的第一句正文内容。".into(),
+            },
+            NativeOfficeMutation::AddParagraph {
+                parent: "/body".into(),
+                text: "这是写入目标文档的第二句正文内容。".into(),
+            },
+        ])
+        .unwrap();
+
+    let snapshot = editor.snapshot().unwrap();
+    let run = snapshot.get("/body/p[1]/r[1]", 0).unwrap();
+    assert_eq!(run.format["bold"], "true");
+    assert_eq!(run.format["size"], "32pt");
+    assert!(snapshot
+        .get("/body/p[2]", 0)
+        .unwrap()
+        .text
+        .contains("第一句"));
+    assert!(snapshot
+        .get("/body/p[3]", 0)
+        .unwrap()
+        .text
+        .contains("第二句"));
+}
+
+#[tokio::test]
+async fn presentation_paragraph_path_applies_character_format_to_primary_run() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("paragraph-format.pptx");
+    let mut editor = NativeOfficeEditor::create(&path).await.unwrap();
+    editor.add_slide("/", "Native Slides").unwrap();
+    editor
+        .set_text_format(
+            "/slide[1]/shape[1]/paragraph[1]",
+            NativeOfficeTextFormat {
+                bold: Some(true),
+                font_size_centipoints: Some(2800),
+                double_strikethrough: None,
+                ..NativeOfficeTextFormat::default()
+            },
+        )
+        .unwrap();
+
+    let run = editor
+        .snapshot()
+        .unwrap()
+        .get("/slide[1]/shape[1]/paragraph[1]/run[1]", 0)
+        .unwrap();
+    assert_eq!(run.format["bold"], "1");
+    assert_eq!(run.format["size"], "28pt");
+}
+
+#[tokio::test]
 async fn word_explicit_format_overrides_theme_and_complex_script_properties() {
     let temp = tempfile::tempdir().unwrap();
     let path = temp.path().join("word-theme.docx");

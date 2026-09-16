@@ -192,12 +192,6 @@ pub(super) fn set_text_format(
     let index = index_xml(&original)?;
     let target = locate_word_path(&index, path)?;
     match target.local_name.as_str() {
-        "p" if format.has_character_properties() => {
-            return Err(editor_error(
-                "use.office.mutation_type_unsupported",
-                "Word paragraph paths accept alignment only; address a run path for character formatting.",
-            ));
-        }
         "r" if format.alignment.is_some() => {
             return Err(editor_error(
                 "use.office.mutation_type_unsupported",
@@ -215,64 +209,114 @@ pub(super) fn set_text_format(
 
     let mut bytes = original.raw().to_vec();
     if let Some(alignment) = format.alignment {
+        if target.local_name != "p" {
+            return Err(editor_error(
+                "use.office.mutation_type_unsupported",
+                "Word run paths accept character formatting only; address the paragraph for alignment.",
+            ));
+        }
         bytes = set_paragraph_alignment(bytes, path, alignment)?;
     }
     if format.has_character_properties() {
-        bytes = ensure_run_properties(bytes, path)?;
-        if let Some(bold) = format.bold {
-            bytes = set_run_boolean(bytes, path, "b", bold)?;
-            bytes = set_run_boolean(bytes, path, "bCs", bold)?;
+        // Agents commonly format the paragraph they just wrote. Character
+        // properties apply to every text run under that paragraph (creating a
+        // primary run when the paragraph is still empty).
+        let part = LosslessXmlPart::parse(DOCUMENT_PART.to_string(), bytes)?;
+        let index = index_xml(&part)?;
+        let target = locate_word_path(&index, path)?;
+        let (mut next, run_paths) = word_character_format_targets(&part, path, target)?;
+        for run_path in run_paths {
+            next = apply_word_run_character_format(next, &run_path, format)?;
         }
-        if let Some(italic) = format.italic {
-            bytes = set_run_boolean(bytes, path, "i", italic)?;
-            bytes = set_run_boolean(bytes, path, "iCs", italic)?;
-        }
-        if let Some(strikethrough) = format.strikethrough {
-            bytes = set_run_boolean(bytes, path, "strike", strikethrough)?;
-        }
-        if let Some(double_strikethrough) = format.double_strikethrough {
-            bytes = set_run_boolean(bytes, path, "dstrike", double_strikethrough)?;
-        }
-        if let Some(text_case) = format.text_case {
-            let (caps, small_caps) = match text_case {
-                NativeOfficeTextCase::None => (false, false),
-                NativeOfficeTextCase::SmallCaps => (false, true),
-                NativeOfficeTextCase::AllCaps => (true, false),
-            };
-            bytes = set_run_boolean(bytes, path, "caps", caps)?;
-            bytes = set_run_boolean(bytes, path, "smallCaps", small_caps)?;
-        }
-        if let Some(family) = &format.font_family {
-            bytes = set_run_fonts(bytes, path, family)?;
-        }
-        if let Some(size) = format.font_size_centipoints {
-            let half_points = size / 50;
-            bytes = set_run_value(bytes, path, "sz", &half_points.to_string(), &[])?;
-            bytes = set_run_value(bytes, path, "szCs", &half_points.to_string(), &[])?;
-        }
-        if let Some(color) = format.text_color {
-            bytes = set_run_value(
-                bytes,
-                path,
-                "color",
-                &color.hex(),
-                &["themeColor", "themeTint", "themeShade"],
-            )?;
-        }
-        if let Some(highlight) = format.highlight {
-            bytes = set_run_value(bytes, path, "highlight", highlight.word_value(), &[])?;
-        }
-        if let Some(underline) = format.underline {
-            bytes = set_run_value(bytes, path, "u", word_underline(underline), &[])?;
-        }
-        if let Some(script) = format.script {
-            bytes = set_run_value(bytes, path, "vertAlign", word_script(script), &[])?;
-        }
-        if let Some(language) = &format.language {
-            bytes = set_run_value(bytes, path, "lang", language, &[])?;
-        }
+        bytes = next;
     }
     package.set_part(DOCUMENT_PART, bytes)
+}
+
+fn word_character_format_targets(
+    part: &LosslessXmlPart,
+    path: &str,
+    target: &IndexedXmlElement,
+) -> UseResult<(Vec<u8>, Vec<String>)> {
+    if target.local_name == "r" {
+        return Ok((part.raw().to_vec(), vec![path.to_string()]));
+    }
+
+    let mut run_paths = Vec::new();
+    let mut position = 1usize;
+    for child in &target.children {
+        if child.local_name == "r" && !is_comment_reference_run(child) {
+            run_paths.push(format!("{path}/r[{position}]"));
+            position += 1;
+        }
+    }
+    if !run_paths.is_empty() {
+        return Ok((part.raw().to_vec(), run_paths));
+    }
+
+    let edited = insert_child(part, target, word_text_fragment(target, "", true))?;
+    Ok((edited, vec![format!("{path}/r[1]")]))
+}
+
+fn apply_word_run_character_format(
+    mut bytes: Vec<u8>,
+    path: &str,
+    format: &NativeOfficeTextFormat,
+) -> UseResult<Vec<u8>> {
+    bytes = ensure_run_properties(bytes, path)?;
+    if let Some(bold) = format.bold {
+        bytes = set_run_boolean(bytes, path, "b", bold)?;
+        bytes = set_run_boolean(bytes, path, "bCs", bold)?;
+    }
+    if let Some(italic) = format.italic {
+        bytes = set_run_boolean(bytes, path, "i", italic)?;
+        bytes = set_run_boolean(bytes, path, "iCs", italic)?;
+    }
+    if let Some(strikethrough) = format.strikethrough {
+        bytes = set_run_boolean(bytes, path, "strike", strikethrough)?;
+    }
+    if let Some(double_strikethrough) = format.double_strikethrough {
+        bytes = set_run_boolean(bytes, path, "dstrike", double_strikethrough)?;
+    }
+    if let Some(text_case) = format.text_case {
+        let (caps, small_caps) = match text_case {
+            NativeOfficeTextCase::None => (false, false),
+            NativeOfficeTextCase::SmallCaps => (false, true),
+            NativeOfficeTextCase::AllCaps => (true, false),
+        };
+        bytes = set_run_boolean(bytes, path, "caps", caps)?;
+        bytes = set_run_boolean(bytes, path, "smallCaps", small_caps)?;
+    }
+    if let Some(family) = &format.font_family {
+        bytes = set_run_fonts(bytes, path, family)?;
+    }
+    if let Some(size) = format.font_size_centipoints {
+        let half_points = size / 50;
+        bytes = set_run_value(bytes, path, "sz", &half_points.to_string(), &[])?;
+        bytes = set_run_value(bytes, path, "szCs", &half_points.to_string(), &[])?;
+    }
+    if let Some(color) = format.text_color {
+        bytes = set_run_value(
+            bytes,
+            path,
+            "color",
+            &color.hex(),
+            &["themeColor", "themeTint", "themeShade"],
+        )?;
+    }
+    if let Some(highlight) = format.highlight {
+        bytes = set_run_value(bytes, path, "highlight", highlight.word_value(), &[])?;
+    }
+    if let Some(underline) = format.underline {
+        bytes = set_run_value(bytes, path, "u", word_underline(underline), &[])?;
+    }
+    if let Some(script) = format.script {
+        bytes = set_run_value(bytes, path, "vertAlign", word_script(script), &[])?;
+    }
+    if let Some(language) = &format.language {
+        bytes = set_run_value(bytes, path, "lang", language, &[])?;
+    }
+    Ok(bytes)
 }
 
 fn word_underline(underline: NativeOfficeUnderline) -> &'static str {

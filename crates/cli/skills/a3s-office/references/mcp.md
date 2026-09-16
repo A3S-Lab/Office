@@ -541,8 +541,9 @@ Rich-text changes use the typed `set-text-format` mutation inside
 }
 ```
 
-Use a run path for Word/Presentation character properties, a paragraph path
-for their alignment, and a cell or bounded range path for Spreadsheet.
+Use a paragraph path to format every text run under that paragraph (agent
+convenience for set-text + set-text-format batches), a run path for a single
+Word/Presentation run, and a cell or bounded range path for Spreadsheet.
 Underline accepts `none`, `single`, or `double`; script accepts `baseline`,
 `superscript`, or `subscript`. Strikethrough is native for Word and Spreadsheet
 and is rejected for Presentation. `textCase`, `highlight`, and `language` are
