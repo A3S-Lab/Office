@@ -26,7 +26,10 @@ test('Markdown source pane scrolls inside the textarea, not the pane shell', () 
   const pane = ruleBlock(stylesheet, '.work-markdown-pane.source {');
   expect(pane).toContain('overflow: hidden;');
 
-  const textarea = ruleBlock(stylesheet, '.work-markdown-pane.source textarea {');
+  const textarea = ruleBlock(
+    stylesheet,
+    '.work-markdown-pane.source textarea {',
+  );
   expect(textarea).toContain('min-height: 0;');
   expect(textarea).toContain('overflow: auto;');
   expect(textarea).not.toContain('min-height: 100%;');
