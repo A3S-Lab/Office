@@ -148,6 +148,63 @@ test('Spreadsheet border settings use OfficeSelect and OfficeColorPicker, not na
   expect(css).not.toMatch(/\.work-spreadsheet-border-settings\s+select\b/);
 });
 
+test('Spreadsheet row/column header overlays stay translucent so canvas labels remain visible', () => {
+  const css = readFileSync(
+    join(stylesRoot, 'work-spreadsheet-chrome.css'),
+    'utf8',
+  );
+  expect(css).toMatch(
+    /\.fortune-row-header-hover[\s\S]*?background:\s*color-mix\(\s*in srgb,\s*var\(--work-spreadsheet-accent\)\s+12%,\s*transparent/s,
+  );
+  expect(css).toMatch(
+    /\.fortune-row-header-selected[\s\S]*?background:\s*color-mix\(\s*in srgb,\s*var\(--work-spreadsheet-accent\)\s+16%,\s*transparent/s,
+  );
+  expect(css).not.toMatch(
+    /\.fortune-row-header-hover\s*\{[^}]*background:\s*var\(--work-spreadsheet-chrome-hover\)/s,
+  );
+  expect(css).not.toMatch(
+    /\.fortune-row-header-selected\s*\{[^}]*background:\s*var\(--work-spreadsheet-chrome-active\)/s,
+  );
+});
+
+test('Spreadsheet in-cell editor defaults to vertical middle alignment', () => {
+  const css = readFileSync(
+    join(stylesRoot, 'work-spreadsheet-chrome.css'),
+    'utf8',
+  );
+  expect(css).toMatch(
+    /\.luckysheet-input-box-inner\s*\{[^}]*display:\s*flex[^}]*align-items:\s*center/s,
+  );
+  expect(css).toContain(
+    ".work-spreadsheet-editor[data-cell-vt='1'] .luckysheet-input-box-inner",
+  );
+  expect(css).toContain(
+    ".work-spreadsheet-editor[data-cell-vt='2'] .luckysheet-input-box-inner",
+  );
+  expect(css).toMatch(
+    /\.luckysheet-cell-input\s*\{[^}]*height:\s*auto\s*!important/s,
+  );
+
+  const alignmentRibbon = readFileSync(
+    join(
+      process.cwd(),
+      'src/internal/features/work/editors/spreadsheet-alignment-ribbon.tsx',
+    ),
+    'utf8',
+  );
+  expect(alignmentRibbon).toContain('Number(toolbarCell?.vt ?? 0) === 0');
+  expect(alignmentRibbon).not.toContain('Number(toolbarCell?.vt ?? 1) === 1');
+
+  const editor = readFileSync(
+    join(
+      process.cwd(),
+      'src/internal/features/work/editors/spreadsheet-editor.tsx',
+    ),
+    'utf8',
+  );
+  expect(editor).toContain('data-cell-vt={');
+});
+
 test('Document contextual ribbon selects keep fixed widths and 24px table comboboxes', () => {
   const css = readFileSync(
     join(stylesRoot, 'work-document-controls.css'),

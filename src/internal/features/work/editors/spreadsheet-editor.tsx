@@ -2032,6 +2032,11 @@ function SpreadsheetEditorSurface({
       ref={spreadsheetRootRef}
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
       data-auto-filter={autoFilterActive ? 'active' : undefined}
+      data-cell-vt={
+        toolbarCell?.vt === undefined || toolbarCell?.vt === null
+          ? '0'
+          : String(toolbarCell.vt)
+      }
       data-column-count={targetSheetGridSize?.columnCount}
       data-format-painter={formatPainterMode ?? undefined}
       data-formula-bar={formulaBarVisible ? 'visible' : 'hidden'}
