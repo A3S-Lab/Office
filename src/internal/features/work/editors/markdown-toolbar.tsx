@@ -289,7 +289,9 @@ export function MarkdownToolbar({
       return;
     }
     if (!editor.isActive('link')) return;
-    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    // Keep ribbon focus on remove-link. chain().focus() schedules into the
+    // editor and breaks L2 loops.
+    editor.chain().extendMarkRange('link').unsetLink().run();
   };
   const openImageDialog = () => {
     if (sourceEditing) {
@@ -389,7 +391,8 @@ export function MarkdownToolbar({
                   disabled={!canUndo}
                   onClick={() => {
                     if (usesSharedHistory) onSourceUndo();
-                    else editor.chain().focus().undo().run();
+                    // Keep ribbon focus — chain().focus() steals into the editor.
+                    else editor.commands.undo();
                   }}
                 >
                   <Undo2 size={16} />
@@ -400,7 +403,8 @@ export function MarkdownToolbar({
                   disabled={!canRedo}
                   onClick={() => {
                     if (usesSharedHistory) onSourceRedo();
-                    else editor.chain().focus().redo().run();
+                    // Keep ribbon focus — chain().focus() steals into the editor.
+                    else editor.commands.redo();
                   }}
                 >
                   <Redo2 size={16} />
@@ -423,7 +427,9 @@ export function MarkdownToolbar({
                   onValueChange={(value) => {
                     if (value === 'paragraph') {
                       runCommand('paragraph', () => {
-                        editor.chain().focus().setParagraph().run();
+                        // Keep ribbon focus on the style combobox.
+                        // chain().focus() schedules into the editor and breaks L2 loops.
+                        editor.commands.setParagraph();
                       });
                     } else {
                       const level = Number(value.slice(1)) as
@@ -434,7 +440,9 @@ export function MarkdownToolbar({
                         | 5
                         | 6;
                       runCommand(`heading-${level}`, () => {
-                        editor.chain().focus().toggleHeading({ level }).run();
+                        // Keep ribbon focus on the style combobox.
+                        // chain().focus() schedules into the editor and breaks L2 loops.
+                        editor.commands.toggleHeading({ level });
                       });
                     }
                   }}
@@ -451,7 +459,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('bold', () => {
-                      editor.chain().focus().toggleBold().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleBold();
                     })
                   }
                 >
@@ -467,7 +476,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('italic', () => {
-                      editor.chain().focus().toggleItalic().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleItalic();
                     })
                   }
                 >
@@ -482,7 +492,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('strike', () => {
-                      editor.chain().focus().toggleStrike().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleStrike();
                     })
                   }
                 >
@@ -497,7 +508,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('code', () => {
-                      editor.chain().focus().toggleCode().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleCode();
                     })
                   }
                 >
@@ -514,7 +526,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('bullet-list', () => {
-                      editor.chain().focus().toggleBulletList().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleBulletList();
                     })
                   }
                 >
@@ -529,7 +542,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('ordered-list', () => {
-                      editor.chain().focus().toggleOrderedList().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleOrderedList();
                     })
                   }
                 >
@@ -544,7 +558,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('task-list', () => {
-                      editor.chain().focus().toggleTaskList().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleTaskList();
                     })
                   }
                 >
@@ -559,7 +574,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('blockquote', () => {
-                      editor.chain().focus().toggleBlockquote().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleBlockquote();
                     })
                   }
                 >
@@ -607,7 +623,8 @@ export function MarkdownToolbar({
                   }
                   onClick={() =>
                     runCommand('code-block', () => {
-                      editor.chain().focus().toggleCodeBlock().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.toggleCodeBlock();
                     })
                   }
                 >
@@ -618,7 +635,8 @@ export function MarkdownToolbar({
                   displayLabel
                   onClick={() =>
                     runCommand('horizontal-rule', () => {
-                      editor.chain().focus().setHorizontalRule().run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.setHorizontalRule();
                     })
                   }
                 >
@@ -629,15 +647,12 @@ export function MarkdownToolbar({
                   displayLabel
                   onClick={() =>
                     runCommand('table', () => {
-                      editor
-                        .chain()
-                        .focus()
-                        .insertTable({
-                          rows: 3,
-                          cols: 3,
-                          withHeaderRow: true,
-                        })
-                        .run();
+                      // Keep ribbon focus — chain().focus() steals into the editor.
+                      editor.commands.insertTable({
+                        rows: 3,
+                        cols: 3,
+                        withHeaderRow: true,
+                      });
                     })
                   }
                 >
@@ -724,6 +739,7 @@ function MarkdownToolbarButton({
   active = false,
   displayLabel = false,
   children,
+  onMouseDown,
   ...props
 }: {
   label: string;
@@ -745,6 +761,11 @@ function MarkdownToolbarButton({
       aria-keyshortcuts={shortcut?.ariaKeyShortcuts}
       active={active}
       displayLabel={displayLabel}
+      onMouseDown={(event) => {
+        // Keep focus on stay-mounted ribbon triggers for L2 loops.
+        event.preventDefault();
+        onMouseDown?.(event);
+      }}
     >
       {children}
     </WorkOfficeRibbonButton>

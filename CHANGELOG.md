@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.247.0 - 2026-09-16
+
+### Markdown
+
+- Markdown ribbon stay-mounted formatting controls (undo/redo, paragraph
+  style, bold/italic/strike/code, lists, blockquote, code block, horizontal
+  rule, insert table, and remove-link) no longer call TipTap
+  `chain().focus()` on apply. Focus stays on the ribbon trigger so L2
+  Markdown editing loops keep working (TipTap's deferred focus otherwise
+  steals into the editor after the click). Link and image dialogs still
+  restore editor focus after apply because the dialog UI goes away.
+
 ## 0.246.0 - 2026-09-16
 
 ### Document

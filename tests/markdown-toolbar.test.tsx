@@ -12,6 +12,90 @@ afterEach(() => {
   editor = null;
 });
 
+function textRange(current: Editor, text: string): { from: number; to: number } {
+  let range: { from: number; to: number } | null = null;
+  current.state.doc.descendants((node, position) => {
+    if (range || !node.isText || !node.text) return;
+    const offset = node.text.indexOf(text);
+    if (offset < 0) return;
+    range = {
+      from: position + offset,
+      to: position + offset + text.length,
+    };
+  });
+  if (!range) throw new Error(`Text "${text}" was not found.`);
+  return range;
+}
+
+function renderVisualToolbar(current: Editor) {
+  document.body.appendChild(current.view.dom);
+  return render(
+    <MarkdownToolbar
+      editor={current}
+      sourceEditing={false}
+      canSourceRedo={false}
+      canSourceUndo={false}
+      viewMode="visual"
+      getSourceFocusTarget={() => null}
+      getSourceSelection={() => ({
+        markdown: '',
+        selection: { start: 0, end: 0, direction: 'none' },
+        text: '',
+      })}
+      onSourceCommand={() => true}
+      onSourceRedo={() => false}
+      onSourceReplace={() => false}
+      onSourceUndo={() => false}
+      onViewModeChange={() => undefined}
+    />,
+  );
+}
+
+test('keeps bold focus on the markdown ribbon trigger after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkMarkdownExtensions(),
+    content: '<p>Bold me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Bold me'));
+  renderVisualToolbar(editor);
+
+  const trigger = screen.getByRole('button', { name: '加粗' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('bold')).toBe(true);
+  // TipTap chain().focus() schedules DOM focus on a later animation frame;
+  // stay on the ribbon trigger after that frame so L2 loops keep working.
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps remove-link focus on the markdown ribbon trigger', async () => {
+  editor = new Editor({
+    extensions: createWorkMarkdownExtensions(),
+    content: '<p><a href="https://a3s.dev">Linked</a></p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Linked'));
+  renderVisualToolbar(editor);
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  const trigger = screen.getByRole('button', { name: '移除链接' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('link')).toBe(false);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('keeps failed source commands out of the hidden visual editor', () => {
   editor = new Editor({
     extensions: createWorkMarkdownExtensions(),

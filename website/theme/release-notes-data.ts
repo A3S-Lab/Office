@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.247.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['markdown'],
+    title: {
+      en: 'Markdown ribbon stay-mounted formatting keeps focus',
+      zh: 'Markdown 功能区常驻格式控件保留焦点',
+    },
+    summary: {
+      en: 'Markdown ribbon stay-mounted formatting controls (undo/redo, paragraph style, bold/italic/strike/code, lists, blockquote, code block, horizontal rule, insert table, and remove-link) apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 Markdown editing loop off the ribbon trigger. Link and image dialogs still restore editor focus after apply because the dialog UI goes away.',
+      zh: 'Markdown 功能区常驻格式控件（撤销/重做、段落样式、加粗/斜体/删除线/行内代码、列表、引用、代码块、分隔线、插入表格与移除链接）不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走功能区触发按钮上的 L2 Markdown 编辑循环。链接与图片对话框因界面会离开而在应用后仍还原编辑器焦点。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the Markdown ribbon trigger.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在 Markdown 功能区触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Stay-mounted Markdown controls',
+          zh: '保持挂载的 Markdown 控件',
+        },
+        detail: {
+          en: 'Undo/redo, style, marks, lists, block inserts, and remove-link keep the ribbon mounted, so L2 loops stay on the same trigger.',
+          zh: '撤销/重做、样式、标记、列表、块级插入与移除链接会使功能区保持挂载，因此 L2 循环留在同一触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Dialogs still restore the editor',
+          zh: '对话框仍还原编辑器',
+        },
+        detail: {
+          en: 'Link and image insert dialogs continue to focus the editor after apply because those surfaces dismiss.',
+          zh: '链接与图片插入对话框在应用后仍聚焦编辑器，因为这些界面会关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.246.0',
     date: '2026-09-16',
     kind: 'fixed',

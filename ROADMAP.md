@@ -159,6 +159,11 @@ These are already the default contract. Do not trade them away for breadth:
    stealing focus into the editor so the ribbon or chrome trigger keeps L2
    header/footer editing loops; add-link via prompt still restores chrome-editor
    focus.
+   Through `0.247.0`, Markdown ribbon stay-mounted formatting (undo/redo,
+   paragraph style, marks, lists, blockquote, code block, horizontal rule,
+   insert table, remove-link) stop stealing focus into the editor so the
+   ribbon trigger keeps L2 Markdown editing loops; link/image dialogs still
+   restore editor focus.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

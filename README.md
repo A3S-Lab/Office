@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.246.0` keeps page-chrome undo/redo and remove-link focused on the ribbon after apply:
+Version `0.247.0` keeps Markdown ribbon stay-mounted formatting focused on the trigger after apply:
 
-- Header/footer ribbon undo/redo and remove-link, plus the inline chrome toolbar undo/redo and remove-link, apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 header/footer editing loop off the trigger. Adding a link through the prompt dialog still restores chrome-editor focus after apply.
+- Markdown undo/redo, paragraph style, bold/italic/strike/code, lists, blockquote, code block, horizontal rule, insert table, and remove-link apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 Markdown editing loop off the ribbon trigger. Link and image dialogs still restore editor focus after apply.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
