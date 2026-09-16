@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.243.0` keeps Document bold/italic and font-size stepper focus on the ribbon after apply:
+Version `0.244.0` keeps Document alignment and page-chrome formatting focus on the ribbon after apply:
 
-- Home **加粗** / **斜体**, grow/shrink font steppers, and selection-toolbar bold/italic apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 formatting loop off the ribbon or floating toolbar trigger.
+- Home paragraph alignment and page-chrome bold/italic, sub/superscript, and alignment apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 formatting loop off the ribbon or chrome trigger.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

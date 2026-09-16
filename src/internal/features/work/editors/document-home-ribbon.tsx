@@ -312,7 +312,12 @@ export function DocumentHomeRibbon({
               label="左对齐"
               {...commandShortcut('alignLeft')}
               active={editor.isActive({ textAlign: 'left' })}
-              onClick={() => editor.chain().focus().setTextAlign('left').run()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Keep ribbon focus on the alignment trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.setTextAlign('left');
+              }}
             >
               <AlignLeft size={16} />
             </ToolbarButton>
@@ -320,9 +325,12 @@ export function DocumentHomeRibbon({
               label="居中"
               {...commandShortcut('alignCenter')}
               active={editor.isActive({ textAlign: 'center' })}
-              onClick={() =>
-                editor.chain().focus().setTextAlign('center').run()
-              }
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Keep ribbon focus on the alignment trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.setTextAlign('center');
+              }}
             >
               <AlignCenter size={16} />
             </ToolbarButton>
@@ -330,7 +338,12 @@ export function DocumentHomeRibbon({
               label="右对齐"
               {...commandShortcut('alignRight')}
               active={editor.isActive({ textAlign: 'right' })}
-              onClick={() => editor.chain().focus().setTextAlign('right').run()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Keep ribbon focus on the alignment trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.setTextAlign('right');
+              }}
             >
               <AlignRight size={16} />
             </ToolbarButton>
@@ -338,9 +351,12 @@ export function DocumentHomeRibbon({
               label="两端对齐"
               {...commandShortcut('alignJustify')}
               active={editor.isActive({ textAlign: 'justify' })}
-              onClick={() =>
-                editor.chain().focus().setTextAlign('justify').run()
-              }
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Keep ribbon focus on the alignment trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.setTextAlign('justify');
+              }}
             >
               <AlignJustify size={16} />
             </ToolbarButton>
@@ -348,9 +364,12 @@ export function DocumentHomeRibbon({
               label="分散对齐"
               {...commandShortcut('alignDistribute')}
               active={editor.isActive({ textAlign: 'distribute' })}
-              onClick={() =>
-                editor.chain().focus().setTextAlign('distribute').run()
-              }
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                // Keep ribbon focus on the alignment trigger.
+                // chain().focus() schedules into the editor and breaks L2 loops.
+                editor.commands.setTextAlign('distribute');
+              }}
             >
               <AlignHorizontalDistributeCenter size={16} />
             </ToolbarButton>

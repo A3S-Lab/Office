@@ -266,48 +266,66 @@ export function DocumentPageChromeRichTextEditor({
                 <PageChromeButton
                   label={`${label}加粗`}
                   active={state?.bold}
-                  onClick={() => editor?.chain().focus().toggleBold().run()}
+                  onClick={() => {
+                    // Keep chrome focus on the bold trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.toggleBold();
+                  }}
                 >
                   <Bold size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}斜体`}
                   active={state?.italic}
-                  onClick={() => editor?.chain().focus().toggleItalic().run()}
+                  onClick={() => {
+                    // Keep chrome focus on the italic trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.toggleItalic();
+                  }}
                 >
                   <Italic size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}下划线`}
                   active={state?.underline}
-                  onClick={() =>
-                    editor?.chain().focus().toggleUnderline().run()
-                  }
+                  onClick={() => {
+                    // Keep chrome focus on the underline trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.toggleUnderline();
+                  }}
                 >
                   <UnderlineIcon size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}删除线`}
                   active={state?.strike}
-                  onClick={() => editor?.chain().focus().toggleStrike().run()}
+                  onClick={() => {
+                    // Keep chrome focus on the strike trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.toggleStrike();
+                  }}
                 >
                   <Strikethrough size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}下标`}
                   active={state?.subscript}
-                  onClick={() =>
-                    editor?.chain().focus().toggleDocumentSubscript().run()
-                  }
+                  onClick={() => {
+                    // Keep chrome focus on the subscript trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.toggleDocumentSubscript();
+                  }}
                 >
                   <SubscriptIcon size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}上标`}
                   active={state?.superscript}
-                  onClick={() =>
-                    editor?.chain().focus().toggleDocumentSuperscript().run()
-                  }
+                  onClick={() => {
+                    // Keep chrome focus on the superscript trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.toggleDocumentSuperscript();
+                  }}
                 >
                   <SuperscriptIcon size={14} />
                 </PageChromeButton>
@@ -319,36 +337,44 @@ export function DocumentPageChromeRichTextEditor({
                 <PageChromeButton
                   label={`${label}左对齐`}
                   active={state?.alignment === 'left'}
-                  onClick={() =>
-                    editor?.chain().focus().setTextAlign('left').run()
-                  }
+                  onClick={() => {
+                    // Keep chrome focus on the alignment trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.setTextAlign('left');
+                  }}
                 >
                   <AlignLeft size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}居中`}
                   active={state?.alignment === 'center'}
-                  onClick={() =>
-                    editor?.chain().focus().setTextAlign('center').run()
-                  }
+                  onClick={() => {
+                    // Keep chrome focus on the alignment trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.setTextAlign('center');
+                  }}
                 >
                   <AlignCenter size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}右对齐`}
                   active={state?.alignment === 'right'}
-                  onClick={() =>
-                    editor?.chain().focus().setTextAlign('right').run()
-                  }
+                  onClick={() => {
+                    // Keep chrome focus on the alignment trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.setTextAlign('right');
+                  }}
                 >
                   <AlignRight size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}两端对齐`}
                   active={state?.alignment === 'justify'}
-                  onClick={() =>
-                    editor?.chain().focus().setTextAlign('justify').run()
-                  }
+                  onClick={() => {
+                    // Keep chrome focus on the alignment trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.setTextAlign('justify');
+                  }}
                 >
                   <AlignJustify size={14} />
                 </PageChromeButton>

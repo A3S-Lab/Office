@@ -180,7 +180,11 @@ export function DocumentPageChromeRibbon({
           shortcut="Cmd/Ctrl+B"
           ariaKeyShortcuts="Control+B Meta+B"
           active={state.bold}
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          onClick={() => {
+            // Keep ribbon focus on the bold trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.toggleBold();
+          }}
         >
           <Bold size={16} />
         </PageChromeRibbonButton>
@@ -189,7 +193,11 @@ export function DocumentPageChromeRibbon({
           shortcut="Cmd/Ctrl+I"
           ariaKeyShortcuts="Control+I Meta+I"
           active={state.italic}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+          onClick={() => {
+            // Keep ribbon focus on the italic trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.toggleItalic();
+          }}
         >
           <Italic size={16} />
         </PageChromeRibbonButton>
@@ -210,7 +218,11 @@ export function DocumentPageChromeRibbon({
           label="页眉页脚下标"
           {...pageChromeCommandShortcut('subscript')}
           active={state.subscript}
-          onClick={() => editor.chain().focus().toggleDocumentSubscript().run()}
+          onClick={() => {
+            // Keep ribbon focus on the subscript trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.toggleDocumentSubscript();
+          }}
         >
           <SubscriptIcon size={16} />
         </PageChromeRibbonButton>
@@ -218,9 +230,11 @@ export function DocumentPageChromeRibbon({
           label="页眉页脚上标"
           {...pageChromeCommandShortcut('superscript')}
           active={state.superscript}
-          onClick={() =>
-            editor.chain().focus().toggleDocumentSuperscript().run()
-          }
+          onClick={() => {
+            // Keep ribbon focus on the superscript trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.toggleDocumentSuperscript();
+          }}
         >
           <SuperscriptIcon size={16} />
         </PageChromeRibbonButton>
@@ -253,7 +267,11 @@ export function DocumentPageChromeRibbon({
               pageChromeAlignmentCommandIds[alignment],
             )}
             active={state.alignment === alignment}
-            onClick={() => editor.chain().focus().setTextAlign(alignment).run()}
+            onClick={() => {
+              // Keep ribbon focus on the alignment trigger.
+              // chain().focus() schedules into the editor and breaks L2 loops.
+              editor.commands.setTextAlign(alignment);
+            }}
           >
             {alignmentIcon(alignment)}
           </PageChromeRibbonButton>

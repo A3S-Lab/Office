@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.244.0 - 2026-09-16
+
+### Document
+
+- Home paragraph alignment and page-chrome (header/footer) bold/italic,
+  subscript/superscript, and alignment no longer call TipTap
+  `chain().focus()` on apply. Focus stays on the ribbon or chrome trigger
+  so L2 formatting loops keep working (TipTap's deferred focus otherwise
+  steals into the editor after the click).
 ## 0.243.0 - 2026-09-16
 
 ### Document

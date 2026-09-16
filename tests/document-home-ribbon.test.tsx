@@ -311,6 +311,34 @@ test('keeps italic focus on the ribbon trigger after toggle', async () => {
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps center-align focus on the ribbon trigger after toggle', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Align me</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Align me'));
+  document.body.appendChild(editor.view.dom);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '居中' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive({ textAlign: 'center' })).toBe(true);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('keeps grow-font focus on the ribbon trigger after step', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.244.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Alignment and page-chrome formatting keep ribbon focus',
+      zh: '对齐与页眉页脚格式保留功能区焦点',
+    },
+    summary: {
+      en: 'Document Home paragraph alignment and page-chrome bold/italic, sub/superscript, and alignment apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 formatting loop off the ribbon or chrome trigger.',
+      zh: '文档主页段落对齐，以及页眉页脚加粗/斜体、上/下标与对齐，不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走功能区或页眉页脚触发按钮上的 L2 格式循环。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the Home alignment or page-chrome trigger.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在主页对齐或页眉页脚触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Home alignment and page chrome',
+          zh: '主页对齐与页眉页脚',
+        },
+        detail: {
+          en: 'Same focus contract as bold/italic, underline/strike splits, and font selects.',
+          zh: '与加粗/斜体、下划线/删除线拆分和字体下拉框相同的焦点契约。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 formatting loops stay on the control',
+          zh: 'L2 格式循环留在控件上',
+        },
+        detail: {
+          en: 'After aligning or toggling page-chrome bold/italic, keyboard users can continue from the same control.',
+          zh: '对齐或切换页眉页脚加粗/斜体后，键盘用户可从同一控件继续操作。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.243.0',
     date: '2026-09-16',
     kind: 'fixed',

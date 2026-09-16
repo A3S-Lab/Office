@@ -171,3 +171,69 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
   expect(closes).toBe(1);
   editor.destroy();
 });
+
+test('keeps bold focus on the page-chrome ribbon trigger after toggle', async () => {
+  const editor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header bold</p>',
+  });
+  editor.commands.setTextSelection({ from: 1, to: 12 });
+  document.body.appendChild(editor.view.dom);
+
+  render(
+    <DocumentPageChromeRibbon
+      editor={editor}
+      editingPart="header"
+      showPageNumber={false}
+      onEditingPartChange={() => undefined}
+      onTogglePageNumber={() => undefined}
+      onClose={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '页眉页脚加粗' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('bold')).toBe(true);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+  editor.destroy();
+});
+
+test('keeps center-align focus on the page-chrome ribbon trigger after toggle', async () => {
+  const editor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header align</p>',
+  });
+  editor.commands.setTextSelection({ from: 1, to: 13 });
+  document.body.appendChild(editor.view.dom);
+
+  render(
+    <DocumentPageChromeRibbon
+      editor={editor}
+      editingPart="header"
+      showPageNumber={false}
+      onEditingPartChange={() => undefined}
+      onTogglePageNumber={() => undefined}
+      onClose={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '页眉页脚居中' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive({ textAlign: 'center' })).toBe(true);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+  editor.destroy();
+});
