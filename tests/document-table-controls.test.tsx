@@ -488,7 +488,10 @@ test('keeps table horizontal-align focus on the ribbon trigger after apply', asy
   fireEvent.mouseDown(trigger);
   fireEvent.click(trigger);
 
-  expect(editor.getAttributes('tableCell').textAlign ?? editor.getAttributes('paragraph').textAlign).toBeTruthy();
+  expect(
+    editor.getAttributes('tableCell').textAlign ??
+      editor.getAttributes('paragraph').textAlign,
+  ).toBeTruthy();
   await new Promise<void>((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );

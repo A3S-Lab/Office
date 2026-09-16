@@ -416,9 +416,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('ribbon');
   expect(readme).toContain('L2');
   expect(englishHome).toContain("## What's new on `main` (0.245.0)");
-  expect(englishHome).toContain(
-    'Document table Layout ribbon focus restore',
-  );
+  expect(englishHome).toContain('Document table Layout ribbon focus restore');
   expect(chineseHome).toContain('## `main` 更新内容（0.245.0）');
   expect(chineseHome).toContain('表格布局');
   expect(chineseHome).toContain('合并/拆分');
