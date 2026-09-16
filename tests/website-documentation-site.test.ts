@@ -415,9 +415,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('split');
   expect(readme).toContain('preview');
   expect(englishHome).toContain("## What's new on `main` (0.255.0)");
-  expect(englishHome).toContain(
-    'Markdown source scroll stays on the textarea',
-  );
+  expect(englishHome).toContain('Markdown source scroll stays on the textarea');
   expect(chineseHome).toContain('## `main` 更新内容（0.255.0）');
   expect(chineseHome).toContain('Markdown');
   expect(chineseHome).toContain('textarea');
