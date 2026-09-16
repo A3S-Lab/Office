@@ -23,6 +23,7 @@ import {
 import {
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
   useEffect,
   useId,
@@ -139,8 +140,13 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
           label="标题行"
           visibleLabel="标题行"
           active={editor.isActive('tableHeader')}
-          disabled={!editor.can().chain().focus().toggleHeaderRow().run()}
-          onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+          disabled={!editor.can().toggleHeaderRow()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the header-row trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.toggleHeaderRow();
+          }}
         >
           <PanelTop size={18} />
         </RibbonButton>
@@ -224,24 +230,39 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         <RibbonButton
           label="在上方插入行"
           visibleLabel="上方插入"
-          disabled={!editor.can().chain().focus().addRowBefore().run()}
-          onClick={() => editor.chain().focus().addRowBefore().run()}
+          disabled={!editor.can().addRowBefore()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the insert-row trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.addRowBefore();
+          }}
         >
           <BetweenHorizontalStart size={18} />
         </RibbonButton>
         <RibbonButton
           label="在下方插入行"
           visibleLabel="下方插入"
-          disabled={!editor.can().chain().focus().addRowAfter().run()}
-          onClick={() => editor.chain().focus().addRowAfter().run()}
+          disabled={!editor.can().addRowAfter()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the insert-row trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.addRowAfter();
+          }}
         >
           <BetweenHorizontalEnd size={18} />
         </RibbonButton>
         <RibbonButton
           label="删除当前行"
           visibleLabel="删除行"
-          disabled={!editor.can().chain().focus().deleteRow().run()}
-          onClick={() => editor.chain().focus().deleteRow().run()}
+          disabled={!editor.can().deleteRow()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the delete-row trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.deleteRow();
+          }}
         >
           <Rows3 size={18} />
         </RibbonButton>
@@ -250,24 +271,39 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         <RibbonButton
           label="在左侧插入列"
           visibleLabel="左侧插入"
-          disabled={!editor.can().chain().focus().addColumnBefore().run()}
-          onClick={() => editor.chain().focus().addColumnBefore().run()}
+          disabled={!editor.can().addColumnBefore()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the insert-column trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.addColumnBefore();
+          }}
         >
           <BetweenVerticalStart size={18} />
         </RibbonButton>
         <RibbonButton
           label="在右侧插入列"
           visibleLabel="右侧插入"
-          disabled={!editor.can().chain().focus().addColumnAfter().run()}
-          onClick={() => editor.chain().focus().addColumnAfter().run()}
+          disabled={!editor.can().addColumnAfter()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the insert-column trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.addColumnAfter();
+          }}
         >
           <BetweenVerticalEnd size={18} />
         </RibbonButton>
         <RibbonButton
           label="删除当前列"
           visibleLabel="删除列"
-          disabled={!editor.can().chain().focus().deleteColumn().run()}
-          onClick={() => editor.chain().focus().deleteColumn().run()}
+          disabled={!editor.can().deleteColumn()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the delete-column trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.deleteColumn();
+          }}
         >
           <Trash2 size={18} />
         </RibbonButton>
@@ -276,16 +312,26 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         <RibbonButton
           label="合并单元格"
           visibleLabel="合并"
-          disabled={!editor.can().chain().focus().mergeCells().run()}
-          onClick={() => editor.chain().focus().mergeCells().run()}
+          disabled={!editor.can().mergeCells()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the merge trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.mergeCells();
+          }}
         >
           <TableCellsMerge size={18} />
         </RibbonButton>
         <RibbonButton
           label="拆分单元格"
           visibleLabel="拆分"
-          disabled={!editor.can().chain().focus().splitCell().run()}
-          onClick={() => editor.chain().focus().splitCell().run()}
+          disabled={!editor.can().splitCell()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the split trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.splitCell();
+          }}
         >
           <TableCellsSplit size={18} />
         </RibbonButton>
@@ -310,13 +356,12 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="单元格水平左对齐"
           visibleLabel="左对齐"
           active={horizontalAlignment === 'left'}
-          onClick={() =>
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableHorizontalAlignment('left')
-              .run()
-          }
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the alignment trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.setDocumentTableHorizontalAlignment('left');
+          }}
         >
           <AlignLeft size={18} />
         </RibbonButton>
@@ -324,13 +369,12 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="单元格水平居中"
           visibleLabel="水平居中"
           active={horizontalAlignment === 'center'}
-          onClick={() =>
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableHorizontalAlignment('center')
-              .run()
-          }
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the alignment trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.setDocumentTableHorizontalAlignment('center');
+          }}
         >
           <AlignCenter size={18} />
         </RibbonButton>
@@ -338,13 +382,12 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="单元格水平右对齐"
           visibleLabel="右对齐"
           active={horizontalAlignment === 'right'}
-          onClick={() =>
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableHorizontalAlignment('right')
-              .run()
-          }
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the alignment trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.setDocumentTableHorizontalAlignment('right');
+          }}
         >
           <AlignRight size={18} />
         </RibbonButton>
@@ -352,6 +395,7 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="单元格顶端对齐"
           visibleLabel="顶端"
           active={cellFormat.verticalAlign === 'top'}
+          onMouseDown={(event) => event.preventDefault()}
           onClick={() => setVerticalAlignment(editor, 'top')}
         >
           <AlignVerticalJustifyStart size={18} />
@@ -360,6 +404,7 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="单元格垂直居中"
           visibleLabel="垂直居中"
           active={cellFormat.verticalAlign === 'middle'}
+          onMouseDown={(event) => event.preventDefault()}
           onClick={() => setVerticalAlignment(editor, 'middle')}
         >
           <AlignVerticalJustifyCenter size={18} />
@@ -368,6 +413,7 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="单元格底端对齐"
           visibleLabel="底端"
           active={cellFormat.verticalAlign === 'bottom'}
+          onMouseDown={(event) => event.preventDefault()}
           onClick={() => setVerticalAlignment(editor, 'bottom')}
         >
           <AlignVerticalJustifyEnd size={18} />
@@ -407,8 +453,13 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         <RibbonButton
           label="删除表格"
           visibleLabel="删除表格"
-          disabled={!editor.can().chain().focus().deleteTable().run()}
-          onClick={() => editor.chain().focus().deleteTable().run()}
+          disabled={!editor.can().deleteTable()}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on the delete-table trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.deleteTable();
+          }}
         >
           <Trash2 size={18} />
         </RibbonButton>
@@ -441,16 +492,10 @@ function DocumentTableSizeRibbonGroup({
       : tableLayoutOptions;
   const canDistributeRows = editor
     .can()
-    .chain()
-    .focus()
-    .distributeDocumentTableRows(measuredRowSelection)
-    .run();
+    .distributeDocumentTableRows(measuredRowSelection);
   const canDistributeColumns = editor
     .can()
-    .chain()
-    .focus()
-    .distributeDocumentTableColumns(measuredColumnSelection)
-    .run();
+    .distributeDocumentTableColumns(measuredColumnSelection);
   return (
     <RibbonGroup label="单元格大小">
       <div className="work-document-table-size-fields">
@@ -461,14 +506,10 @@ function DocumentTableSizeRibbonGroup({
             sizing?.rowHeight ?? measuredCurrentTableDimension(editor, 'rows')
           }
           onValueChange={(height) =>
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableRowHeight(
-                height,
-                sizing?.rowHeightRule ?? 'atLeast',
-              )
-              .run()
+            editor.commands.setDocumentTableRowHeight(
+              height,
+              sizing?.rowHeightRule ?? 'atLeast',
+            )
           }
         />
         <TableDimensionField
@@ -476,14 +517,10 @@ function DocumentTableSizeRibbonGroup({
           ariaLabel="列宽（厘米）"
           value={displayedColumnWidth}
           onValueChange={(width) =>
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableColumnWidth(
-                width,
-                measuredTableColumnWidths(editor),
-              )
-              .run()
+            editor.commands.setDocumentTableColumnWidth(
+              width,
+              measuredTableColumnWidths(editor),
+            )
           }
         />
       </div>
@@ -506,13 +543,12 @@ function DocumentTableSizeRibbonGroup({
         label="平均分布行"
         visibleLabel="平均行高"
         disabled={!canDistributeRows}
-        onClick={() =>
-          editor
-            .chain()
-            .focus()
-            .distributeDocumentTableRows(measuredRowSelection)
-            .run()
-        }
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => {
+          // Keep ribbon focus on the distribute trigger.
+          // chain().focus() schedules into the editor and breaks L2 loops.
+          editor.commands.distributeDocumentTableRows(measuredRowSelection);
+        }}
       >
         <Rows3 size={18} />
       </RibbonButton>
@@ -520,13 +556,14 @@ function DocumentTableSizeRibbonGroup({
         label="平均分布列"
         visibleLabel="平均列宽"
         disabled={!canDistributeColumns}
-        onClick={() =>
-          editor
-            .chain()
-            .focus()
-            .distributeDocumentTableColumns(measuredColumnSelection)
-            .run()
-        }
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => {
+          // Keep ribbon focus on the distribute trigger.
+          // chain().focus() schedules into the editor and breaks L2 loops.
+          editor.commands.distributeDocumentTableColumns(
+            measuredColumnSelection,
+          );
+        }}
       >
         <Columns3 size={18} />
       </RibbonButton>
@@ -726,8 +763,11 @@ function DocumentTableStyleGallery({ editor }: { editor: Editor }) {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const activeStyle = activeDocumentTableStyle(editor.state);
 
-  const applyStyle = (style: DocumentTableStyleOption) =>
-    editor.chain().focus().applyDocumentTableStyle(style.id).run();
+  const applyStyle = (style: DocumentTableStyleOption) => {
+    // Keep radiogroup focus on the style option.
+    // chain().focus() schedules into the editor and breaks L2 loops.
+    editor.commands.applyDocumentTableStyle(style.id);
+  };
   const moveSelection = (
     event: KeyboardEvent<HTMLInputElement>,
     nextIndex: number,
@@ -806,7 +846,9 @@ function setVerticalAlignment(
   editor: Editor,
   verticalAlign: 'top' | 'middle' | 'bottom',
 ) {
-  editor.chain().focus().setDocumentTableCellFormat({ verticalAlign }).run();
+  // Keep ribbon focus on the vertical-align trigger.
+  // chain().focus() schedules into the editor and breaks L2 loops.
+  editor.commands.setDocumentTableCellFormat({ verticalAlign });
 }
 
 function borderOptionValue(
@@ -853,6 +895,7 @@ function RibbonButton({
   active = false,
   disabled = false,
   onClick,
+  onMouseDown,
   children,
 }: {
   label: string;
@@ -860,6 +903,7 @@ function RibbonButton({
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
+  onMouseDown?: (event: ReactMouseEvent<HTMLButtonElement>) => void;
   children: ReactNode;
 }) {
   return (
@@ -868,6 +912,7 @@ function RibbonButton({
       visibleLabel={visibleLabel}
       active={active}
       disabled={disabled}
+      onMouseDown={onMouseDown}
       onClick={onClick}
     >
       {children}

@@ -435,6 +435,67 @@ test('keeps table layout select focus on the ribbon trigger after a pick', async
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps table insert-row focus on the ribbon trigger after apply', async () => {
+  editor = createTableEditor();
+  document.body.append(editor.view.dom);
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '在下方插入行' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(tableShape(editor)).toEqual([2, 2, 2]);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps table merge-cells focus on the ribbon trigger after apply', async () => {
+  editor = createTableEditor();
+  document.body.append(editor.view.dom);
+  const [firstCell, secondCell] = tableCellPositions(editor);
+  editor.commands.setCellSelection({
+    anchorCell: firstCell,
+    headCell: secondCell,
+  });
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '合并单元格' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(tableShape(editor)).toEqual([1, 2]);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps table horizontal-align focus on the ribbon trigger after apply', async () => {
+  editor = createTableEditor();
+  document.body.append(editor.view.dom);
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '单元格水平居中' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.getAttributes('tableCell').textAlign ?? editor.getAttributes('paragraph').textAlign).toBeTruthy();
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('applies per-edge borders with a reusable Word-style border pen', () => {
   editor = createTableEditor();
   editor.commands.setNodeSelection(firstTablePosition(editor));

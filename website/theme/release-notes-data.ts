@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.245.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Table Layout structural controls keep ribbon focus',
+      zh: '表格布局结构控件保留功能区焦点',
+    },
+    summary: {
+      en: 'Document table Layout row/column insert/delete, merge/split, delete table, cell alignment, distribute, dimension fields, header-row toggle, and the style gallery apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 table-editing loop off the ribbon trigger.',
+      zh: '文档表格布局的插入/删除行与列、合并/拆分、删除表格、单元格对齐、平均分布、尺寸字段、标题行切换与样式库不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走功能区触发按钮上的 L2 表格编辑循环。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the table Layout ribbon trigger.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在表格布局功能区触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Structural table edits',
+          zh: '表格结构编辑',
+        },
+        detail: {
+          en: 'Insert/delete rows and columns, merge/split, delete table, alignment, distribute, and dimensions share the same focus contract as Home formatting.',
+          zh: '插入/删除行与列、合并/拆分、删除表格、对齐、平均分布与尺寸字段与主页格式化共享同一焦点契约。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 table-editing loops stay on the control',
+          zh: 'L2 表格编辑循环留在控件上',
+        },
+        detail: {
+          en: 'After inserting a row or merging cells, keyboard users can continue from the same ribbon button.',
+          zh: '插入行或合并单元格后，键盘用户可从同一功能区按钮继续操作。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.244.0',
     date: '2026-09-16',
     kind: 'fixed',
