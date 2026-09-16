@@ -33,7 +33,8 @@ test('markdown compact layout follows the editor container and fills preview', (
   );
   expect(container).toBe(viewport);
 
-  for (const block of [viewport, container]) {
+  for (const rawBlock of [viewport, container]) {
+    const block = rawBlock.replace(/\r\n/g, '\n');
     expect(block).toContain('padding: 28px 20px 64px;');
     expect(block).toContain(
       '[data-compact-pane="preview"]\n    .work-markdown-canvas',

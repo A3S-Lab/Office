@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.255.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['markdown'],
+    title: {
+      en: 'Markdown source scrolls inside the textarea',
+      zh: 'Markdown 源码在 textarea 内滚动',
+    },
+    summary: {
+      en: 'Long Markdown source documents scroll inside the textarea instead of the pane shell, so proportional split sync with the preview fires again. Compact layouts keep the same scroll-ownership contract.',
+      zh: '长 Markdown 源码在 textarea 内滚动，而不再撑破窗格外壳，左右分栏比例同步再次生效。窄屏布局保持同一滚动归属约定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Pane shell no longer steals scroll',
+          zh: '窗格外壳不再抢走滚动',
+        },
+        detail: {
+          en: 'Source pane uses overflow: hidden; the textarea uses min-height: 0 with overflow: auto so flex layout keeps scrolling on the control that owns onScroll.',
+          zh: '源码窗格使用 overflow: hidden；textarea 使用 min-height: 0 与 overflow: auto，让 flex 布局把滚动留在挂有 onScroll 的控件上。',
+        },
+      },
+      {
+        title: {
+          en: 'Split sync works on long docs',
+          zh: '长文档下分栏同步恢复',
+        },
+        detail: {
+          en: 'Proportional progress mapping listens on the textarea again, so preview scroll follows source scroll for long documents.',
+          zh: '比例进度映射重新监听 textarea，预览滚动会跟随长文档的源码滚动。',
+        },
+      },
+      {
+        title: {
+          en: 'Compact layouts keep ownership',
+          zh: '窄屏布局保持滚动归属',
+        },
+        detail: {
+          en: 'Phone and container compact rules keep min-height: 0 on the source textarea instead of forcing min-height: 100%.',
+          zh: '手机与容器窄屏规则继续对源码 textarea 使用 min-height: 0，而不再强制 min-height: 100%。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.254.0',
     date: '2026-09-16',
     kind: 'fixed',

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.255.0 - 2026-09-16
+
+### Markdown
+
+- Long Markdown source documents scroll inside the textarea instead of the pane
+  shell, so proportional split sync fires again. Compact layouts keep
+  `min-height: 0` on the source textarea so the pane never becomes the scroller.
+
 ## 0.254.0 - 2026-09-16
 
 ### Spreadsheet
