@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.251.0 - 2026-09-16
+
+### Document
+
+- Proofing language settings (`设置校对语言`) restores dirty drafts on the first
+  Escape and only closes on a second Escape when the form is clean. Cancel and
+  the window close control still discard immediately, matching the Font dialog
+  L2 dirty-restore pattern.
+
 ## 0.250.0 - 2026-09-16
 
 ### Document

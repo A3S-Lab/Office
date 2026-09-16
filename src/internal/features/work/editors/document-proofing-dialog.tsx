@@ -63,6 +63,16 @@ export function DocumentProofingDialog({
   const patch = proofingDialogPatch(source, draft, touched);
   const hasChanges = Object.keys(patch).length > 0;
 
+  const resetDraft = () => {
+    setDraft({
+      latin: source.latin.value ?? '',
+      eastAsia: source.eastAsia.value ?? '',
+      bidi: source.bidi.value ?? '',
+      noProof: proofingStateDraft(source),
+    });
+    setTouched({ latin: false, eastAsia: false, bidi: false, noProof: false });
+  };
+
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     if (!hasChanges || error) return;
@@ -80,6 +90,13 @@ export function DocumentProofingDialog({
       className="work-document-proofing-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
+      onEscape={() => {
+        if (hasChanges) {
+          resetDraft();
+          return;
+        }
+        onClose();
+      }}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>

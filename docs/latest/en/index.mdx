@@ -44,11 +44,11 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.250.0)
+## What's new on `main` (0.251.0)
 
-Document Insert and Page Layout page-break keep editor focus:
+Document proofing dialog Escape restores dirty drafts:
 
-- Insert and Page Layout page-break controls insert breaks without TipTap `chain().focus()`, so the caret stays in the document after the click. Ctrl+Enter still focuses intentionally.
+- Proofing language settings restores draft fields on the first Escape when dirty, and only closes on a second Escape when clean. Cancel and the window close control still discard immediately.
 
 
 
