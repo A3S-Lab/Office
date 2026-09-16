@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.252.0 - 2026-09-16
+
+### Spreadsheet
+
+- Create Table (`创建表格`) restores dirty drafts on the first Escape and only
+  closes on a second Escape when the form is clean. Cancel and the window close
+  control still discard immediately, matching the Document proofing L2
+  dirty-restore pattern.
+
 ## 0.251.0 - 2026-09-16
 
 ### Document
