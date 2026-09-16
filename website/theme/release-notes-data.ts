@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.250.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Insert and Page Layout page-break keep focus',
+      zh: '插入与页面布局分页符保持焦点',
+    },
+    summary: {
+      en: 'Document Insert and Page Layout page-break controls insert breaks without TipTap chain().focus(), so the caret stays in the document after the click. Ctrl+Enter still focuses intentionally because that chord is a keyboard path, not a stay-mounted ribbon click.',
+      zh: '文档插入与页面布局中的分页符控件不再通过 TipTap chain().focus() 抢焦点，点击后光标留在正文。Ctrl+Enter 仍按需聚焦，因为该快捷键是键盘路径而非常驻功能区点击。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps the caret where the page-break was inserted.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后光标留在分页符插入处。',
+        },
+      },
+      {
+        title: {
+          en: 'Insert and Page Layout stay-mounted',
+          zh: '插入与页面布局保持挂载',
+        },
+        detail: {
+          en: 'Both Insert ribbon and Page Layout ribbon page-break buttons use editor.commands.insertContent plus mousedown preventDefault.',
+          zh: '插入功能区与页面布局功能区的分页符按钮均使用 editor.commands.insertContent，并在 mousedown 时 preventDefault。',
+        },
+      },
+      {
+        title: {
+          en: 'Ctrl+Enter still focuses',
+          zh: 'Ctrl+Enter 仍聚焦',
+        },
+        detail: {
+          en: 'The keyboard page-break chord still uses chain().focus() so the editor receives the caret after the shortcut.',
+          zh: '键盘分页符快捷键仍使用 chain().focus()，以便快捷键后编辑器获得光标。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.249.0',
     date: '2026-09-16',
     kind: 'fixed',

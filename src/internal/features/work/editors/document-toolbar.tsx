@@ -754,13 +754,12 @@ export function DocumentToolbar({
                   shortcut="Cmd/Ctrl+Enter"
                   ariaKeyShortcuts="Control+Enter Meta+Enter"
                   displayLabel
-                  onClick={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContent({ type: 'pageBreak' })
-                      .run()
-                  }
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    // Keep ribbon focus on Insert page-break. chain().focus()
+                    // schedules into the editor and breaks L2 loops.
+                    editor.commands.insertContent({ type: 'pageBreak' });
+                  }}
                 >
                   <FilePlus2 size={19} />
                 </ToolbarButton>

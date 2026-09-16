@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.250.0 - 2026-09-16
+
+### Document
+
+- Insert and Page Layout page-break controls insert breaks without TipTap
+  `chain().focus()`, so the caret stays in the document after the click.
+  Ctrl+Enter still focuses intentionally because that chord is a keyboard
+  path, not a stay-mounted ribbon click.
+
 ## 0.249.0 - 2026-09-16
 
 ### Document

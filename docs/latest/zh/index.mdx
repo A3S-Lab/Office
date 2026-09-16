@@ -42,11 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.249.0）
+## `main` 更新内容（0.250.0）
 
-文档字体对话框 Escape 还原未提交草稿：
+文档插入与页面布局分页符保持编辑器焦点:
 
-- 字体高级设置在表单有改动时，第一次 Escape 还原草稿字段；仅在干净状态下第二次 Escape 才关闭。取消与窗口关闭仍立即丢弃。
+- 插入与页面布局中的分页符控件不再通过 TipTap `chain().focus()` 抢焦点，点击后光标留在正文。Ctrl+Enter 仍按需聚焦。
+
 
 
 ## 按表面探索

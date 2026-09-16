@@ -855,6 +855,46 @@ test('keeps remove-link focus on the insert ribbon trigger', async () => {
   expect(editor.isFocused).toBe(false);
 });
 
+test('keeps Insert page-break focus on the ribbon trigger', async () => {
+  editor = createEditor();
+  const calls = createCalls();
+  render(toolbar(editor, calls));
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  const before = nodeCount(editor, 'pageBreak');
+  const trigger = screen.getByRole('button', { name: '插入分页符' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(nodeCount(editor, 'pageBreak')).toBe(before + 1);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps Page Layout page-break focus on the ribbon trigger', async () => {
+  editor = createEditor();
+  const calls = createCalls();
+  render(toolbar(editor, calls));
+
+  fireEvent.click(screen.getByRole('tab', { name: '页面布局' }));
+  const before = nodeCount(editor, 'pageBreak');
+  const trigger = screen.getByRole('button', { name: '插入分页符' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(nodeCount(editor, 'pageBreak')).toBe(before + 1);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('disables document zoom buttons at the supported boundaries', () => {
   editor = createEditor();
   const calls = createCalls();

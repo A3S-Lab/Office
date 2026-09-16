@@ -181,9 +181,12 @@ export function DocumentPageLayoutRibbon({
           label={pageBreakCommand.label}
           title={`${pageBreakCommand.label}（${pageBreakCommand.shortcut?.label}）`}
           aria-keyshortcuts={pageBreakCommand.shortcut?.aria}
-          onClick={() =>
-            editor.chain().focus().insertContent({ type: 'pageBreak' }).run()
-          }
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            // Keep ribbon focus on Page Layout page-break. chain().focus()
+            // schedules into the editor and breaks L2 loops.
+            editor.commands.insertContent({ type: 'pageBreak' });
+          }}
         >
           <FilePlus2 size={19} />
         </WorkOfficeRibbonButton>
