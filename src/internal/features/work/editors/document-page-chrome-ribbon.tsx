@@ -78,7 +78,9 @@ export function DocumentPageChromeRibbon({
   const state = documentPageChromeEditorState(editor);
   const editLink = async () => {
     if (state.link) {
-      editor.chain().focus().setDocumentPageChromeLink(null).run();
+      // Keep ribbon focus on the link trigger. chain().focus() schedules into
+      // the editor and breaks L2 loops.
+      editor.commands.setDocumentPageChromeLink(null);
       return;
     }
     const href = await officeDialog.prompt({
@@ -98,6 +100,7 @@ export function DocumentPageChromeRibbon({
     if (href === null) return;
     const normalized = normalizeDocumentPageChromeHref(href);
     if (normalized && !editor.isDestroyed) {
+      // Dialog restore targets the chrome editor; focus there after apply.
       editor.chain().focus().setDocumentPageChromeLink(normalized).run();
     }
   };
@@ -149,7 +152,11 @@ export function DocumentPageChromeRibbon({
           shortcut="Cmd/Ctrl+Z"
           ariaKeyShortcuts="Control+Z Meta+Z"
           disabled={!state.canUndo}
-          onClick={() => editor.chain().focus().undo().run()}
+          onClick={() => {
+            // Keep ribbon focus on the undo trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.undo();
+          }}
         >
           <Undo2 size={16} />
         </PageChromeRibbonButton>
@@ -158,7 +165,11 @@ export function DocumentPageChromeRibbon({
           shortcut="Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y"
           ariaKeyShortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
           disabled={!state.canRedo}
-          onClick={() => editor.chain().focus().redo().run()}
+          onClick={() => {
+            // Keep ribbon focus on the redo trigger.
+            // chain().focus() schedules into the editor and breaks L2 loops.
+            editor.commands.redo();
+          }}
         >
           <Redo2 size={16} />
         </PageChromeRibbonButton>

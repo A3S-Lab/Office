@@ -371,9 +371,9 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.245.0` keeps Document table Layout structural controls focused on the ribbon after apply:
+Version `0.246.0` keeps page-chrome undo/redo and remove-link focused on the ribbon after apply:
 
-- Table row/column insert/delete, merge/split, cell alignment, distribute, dimension fields, header-row toggle, and the style gallery apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 table-editing loop off the ribbon trigger. Delete table still restores editor focus because the contextual ribbon goes away.
+- Header/footer ribbon undo/redo and remove-link, plus the inline chrome toolbar undo/redo and remove-link, apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 header/footer editing loop off the trigger. Adding a link through the prompt dialog still restores chrome-editor focus after apply.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

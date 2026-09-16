@@ -155,6 +155,10 @@ These are already the default contract. Do not trade them away for breadth:
    merge/split, cell alignment, distribute, dimensions, header-row, style
    gallery) stop stealing focus into the editor so the ribbon trigger keeps
    L2 table-editing loops; delete table still restores editor focus.
+   Through `0.246.0`, Document page-chrome undo/redo and remove-link stop
+   stealing focus into the editor so the ribbon or chrome trigger keeps L2
+   header/footer editing loops; add-link via prompt still restores chrome-editor
+   focus.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

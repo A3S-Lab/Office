@@ -237,3 +237,74 @@ test('keeps center-align focus on the page-chrome ribbon trigger after toggle', 
   expect(editor.isFocused).toBe(false);
   editor.destroy();
 });
+
+test('keeps undo focus on the page-chrome ribbon trigger after undo', async () => {
+  const editor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header undo</p>',
+  });
+  editor.commands.setTextSelection({ from: 1, to: 12 });
+  editor.commands.toggleBold();
+  document.body.appendChild(editor.view.dom);
+
+  render(
+    <DocumentPageChromeRibbon
+      editor={editor}
+      editingPart="header"
+      showPageNumber={false}
+      onEditingPartChange={() => undefined}
+      onTogglePageNumber={() => undefined}
+      onClose={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '撤销页眉页脚编辑' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('bold')).toBe(false);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+  editor.destroy();
+});
+
+test('keeps remove-link focus on the page-chrome ribbon trigger', async () => {
+  const editor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header link</p>',
+  });
+  editor.commands.setTextSelection({ from: 1, to: 12 });
+  editor.commands.setDocumentPageChromeLink('https://a3s.dev/header');
+  document.body.appendChild(editor.view.dom);
+
+  render(
+    <DocumentPageChromeRibbon
+      editor={editor}
+      editingPart="header"
+      showPageNumber={false}
+      onEditingPartChange={() => undefined}
+      onTogglePageNumber={() => undefined}
+      onClose={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '移除页眉页脚链接' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  await waitFor(() => expect(editor.getHTML()).not.toContain('href='));
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  // Label flips to add-link; same control should keep focus for L2 loops.
+  expect(
+    screen.getByRole('button', { name: '添加页眉页脚链接' }),
+  ).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+  editor.destroy();
+});

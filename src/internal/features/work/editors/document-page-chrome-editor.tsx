@@ -186,7 +186,9 @@ export function DocumentPageChromeRichTextEditor({
   const editLink = async () => {
     if (!editor) return;
     if (documentPageChromeEditorState(editor).link) {
-      editor.chain().focus().setDocumentPageChromeLink(null).run();
+      // Keep chrome focus on the link trigger. chain().focus() schedules into
+      // the editor and breaks L2 loops.
+      editor.commands.setDocumentPageChromeLink(null);
       return;
     }
     const href = await officeDialog.prompt({
@@ -206,6 +208,7 @@ export function DocumentPageChromeRichTextEditor({
     if (href === null) return;
     const normalized = normalizeDocumentPageChromeHref(href);
     if (normalized && !editor.isDestroyed) {
+      // Dialog restore targets the chrome editor; focus there after apply.
       editor.chain().focus().setDocumentPageChromeLink(normalized).run();
     }
   };
@@ -252,14 +255,22 @@ export function DocumentPageChromeRichTextEditor({
                 <PageChromeButton
                   label={`${label}撤销`}
                   disabled={!state?.canUndo}
-                  onClick={() => editor?.chain().focus().undo().run()}
+                  onClick={() => {
+                    // Keep chrome focus on the undo trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.undo();
+                  }}
                 >
                   <Undo2 size={14} />
                 </PageChromeButton>
                 <PageChromeButton
                   label={`${label}重做`}
                   disabled={!state?.canRedo}
-                  onClick={() => editor?.chain().focus().redo().run()}
+                  onClick={() => {
+                    // Keep chrome focus on the redo trigger.
+                    // chain().focus() schedules into the editor and breaks L2 loops.
+                    editor?.commands.redo();
+                  }}
                 >
                   <Redo2 size={14} />
                 </PageChromeButton>

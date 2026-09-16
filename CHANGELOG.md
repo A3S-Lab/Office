@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.246.0 - 2026-09-16
+
+### Document
+
+- Page-chrome (header/footer) ribbon undo/redo and remove-link, plus the
+  inline chrome toolbar undo/redo and remove-link, no longer call TipTap
+  `chain().focus()` on apply. Focus stays on the ribbon or chrome trigger
+  so L2 header/footer editing loops keep working (TipTap's deferred focus
+  otherwise steals into the editor after the click). Adding a link through
+  the prompt dialog still restores chrome-editor focus after apply.
+
 ## 0.245.0 - 2026-09-16
 
 ### Document

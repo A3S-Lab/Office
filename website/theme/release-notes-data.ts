@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.246.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Page-chrome undo/redo and remove-link keep ribbon focus',
+      zh: '页眉页脚撤销/重做与移除链接保留功能区焦点',
+    },
+    summary: {
+      en: 'Document page-chrome ribbon undo/redo and remove-link, plus the inline chrome toolbar undo/redo and remove-link, apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 header/footer editing loop off the trigger. Adding a link through the prompt dialog still restores chrome-editor focus after apply.',
+      zh: '文档页眉页脚功能区撤销/重做与移除链接，以及内联页眉页脚工具栏撤销/重做与移除链接，不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走触发按钮上的 L2 页眉页脚编辑循环。通过提示对话框添加链接后仍会还原页眉页脚编辑器焦点。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the page-chrome undo/redo or remove-link trigger.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在页眉页脚撤销/重做或移除链接触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Stay-mounted chrome controls',
+          zh: '保持挂载的页眉页脚控件',
+        },
+        detail: {
+          en: 'Undo, redo, and remove-link keep the header/footer ribbon mounted, so L2 loops stay on the same trigger. Add-link still focuses the chrome editor after the prompt.',
+          zh: '撤销、重做与移除链接会使页眉页脚功能区保持挂载，因此 L2 循环留在同一触发按钮。添加链接在提示后仍聚焦页眉页脚编辑器。',
+        },
+      },
+      {
+        title: {
+          en: 'L2 header/footer loops stay on the control',
+          zh: 'L2 页眉页脚循环留在控件上',
+        },
+        detail: {
+          en: 'After undoing a chrome edit or removing a link, keyboard users can continue from the same ribbon or chrome button.',
+          zh: '撤销页眉页脚编辑或移除链接后，键盘用户可从同一功能区或页眉页脚按钮继续操作。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.245.0',
     date: '2026-09-16',
     kind: 'fixed',
