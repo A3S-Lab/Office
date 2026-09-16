@@ -371,9 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.248.0` keeps Document Quick Access and Insert link/bookmark stay-mounted controls focused on the trigger after apply:
+Version `0.249.0` restores dirty Document font-dialog drafts on Escape:
 
-- Document Quick Access undo/redo, Insert remove-link, and delete-bookmark apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 document editing loop off the QAT or ribbon trigger. Add-link and add-bookmark prompts still restore editor focus after apply.
+- Font advanced settings restores draft fields on the first Escape when the
+  form is dirty, and only closes on a second Escape when clean. Cancel and the
+  window close control still discard immediately so L2 font edits are not lost
+  by a single Escape.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

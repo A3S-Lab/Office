@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.249.0 - 2026-09-16
+
+### Document
+
+- Font advanced settings (`字体高级设置`) restores dirty drafts on the first
+  Escape and only closes on a second Escape when the form is clean. Cancel and
+  the window close control still discard immediately. Shared `Dialog` now
+  accepts an optional `onEscape` so modal drafts can match the L2 dirty-restore
+  pattern already used by stay-mounted popovers.
+
 ## 0.248.0 - 2026-09-16
 
 ### Document

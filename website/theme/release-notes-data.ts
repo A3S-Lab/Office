@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.249.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Font dialog Escape restores dirty drafts',
+      zh: '字体对话框 Escape 还原未提交草稿',
+    },
+    summary: {
+      en: 'Font advanced settings restores dirty drafts on the first Escape and only closes on a second Escape when the form is clean. Cancel and the window close control still discard immediately. Shared Dialog now accepts an optional onEscape so modal drafts can match the L2 dirty-restore pattern already used by stay-mounted popovers.',
+      zh: '字体高级设置在表单有改动时，第一次 Escape 还原草稿；仅在干净状态下第二次 Escape 才关闭。取消与窗口关闭仍立即丢弃。共享 Dialog 现支持可选 onEscape，使模态草稿与常驻弹出层的 L2 脏还原模式一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First Escape restores, second closes',
+          zh: '第一次 Escape 还原，第二次关闭',
+        },
+        detail: {
+          en: 'Dirty character-scale and other draft fields snap back without dismissing the dialog, so L2 font edits survive an accidental Escape.',
+          zh: '未提交的字符缩放等草稿字段会还原且不关闭对话框，避免误按 Escape 丢掉 L2 字体编辑。',
+        },
+      },
+      {
+        title: {
+          en: 'Dialog onEscape hook',
+          zh: 'Dialog onEscape 钩子',
+        },
+        detail: {
+          en: 'Modal Dialog Escape / cancel can restore drafts without changing Cancel or the window close control.',
+          zh: '模态 Dialog 的 Escape / cancel 可还原草稿，且不影响取消与窗口关闭控件。',
+        },
+      },
+      {
+        title: {
+          en: 'Cancel still discards immediately',
+          zh: '取消仍立即丢弃',
+        },
+        detail: {
+          en: 'Cancel and the window close control keep one-shot discard semantics; only Escape uses the two-step dirty restore.',
+          zh: '取消与窗口关闭仍保持一次丢弃语义；只有 Escape 走两步脏还原。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.248.0',
     date: '2026-09-16',
     kind: 'fixed',

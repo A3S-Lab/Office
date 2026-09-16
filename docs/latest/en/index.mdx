@@ -44,12 +44,11 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.248.0)
+## What's new on `main` (0.249.0)
 
-Document Quick Access and Insert link/bookmark stay-mounted focus restore:
+Document font dialog Escape restores dirty drafts:
 
-- Document Quick Access undo/redo, Insert remove-link, and delete-bookmark apply without TipTap `chain().focus()`.
-- Focus stays on the QAT or ribbon trigger so L2 document editing loops keep working. Add-link and add-bookmark prompts still restore editor focus after apply.
+- Font advanced settings restores draft fields on the first Escape when dirty, and only closes on a second Escape when clean. Cancel and the window close control still discard immediately.
 
 
 ## Explore by surface

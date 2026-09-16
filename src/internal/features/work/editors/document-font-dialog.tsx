@@ -246,6 +246,30 @@ export function DocumentFontDialog({
     documentFontDialogOpenTypePreviewFeatures(source, draft),
   );
 
+  const resetDraft = () => {
+    setDraft(createDocumentFontDialogDraft(source));
+    setCharacterScaleTouched(false);
+    setCharacterSpacingTouched(false);
+    setCharacterPositionTouched(false);
+    setKerningTouched(false);
+    setEmphasisTouched(false);
+    setHiddenTextTouched(false);
+    setLegacyTextOutlineTouched(false);
+    setLegacyTextShadowTouched(false);
+    setLegacyTextEmbossTouched(false);
+    setLegacyTextImprintTouched(false);
+    setRunBorderTouched(false);
+    setRunShadingTouched(false);
+    setLatinFontTouched(false);
+    setEastAsiaFontTouched(false);
+    setComplexScriptFontTouched(false);
+    setOpenTypeLigaturesTouched(false);
+    setOpenTypeNumberFormTouched(false);
+    setOpenTypeNumberSpacingTouched(false);
+    setOpenTypeStylisticSetsTouched(false);
+    setOpenTypeContextualAlternatesTouched(false);
+  };
+
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     if (!hasChanges || error) return;
@@ -259,6 +283,13 @@ export function DocumentFontDialog({
       className="work-document-font-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
+      onEscape={() => {
+        if (hasChanges) {
+          resetDraft();
+          return;
+        }
+        onClose();
+      }}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>

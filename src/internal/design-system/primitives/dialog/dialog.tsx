@@ -12,6 +12,7 @@ export function Dialog({
   children,
   footer,
   onClose,
+  onEscape = onClose,
   closeDisabled = false,
   className,
   focusKey,
@@ -22,6 +23,8 @@ export function Dialog({
   children: ReactNode;
   footer?: ReactNode;
   onClose: () => void;
+  /** Escape / dialog cancel. Defaults to `onClose`. Use to restore dirty drafts first. */
+  onEscape?: () => void;
   closeDisabled?: boolean;
   className?: string;
   focusKey?: string | number;
@@ -37,7 +40,7 @@ export function Dialog({
     );
   }
   const focusScope = useDialogFocusScope<HTMLElement>({
-    onEscape: onClose,
+    onEscape,
     escapeDisabled: closeDisabled,
     restoreFocusTarget,
   });
@@ -52,7 +55,7 @@ export function Dialog({
       onCancel={(event) => {
         event.preventDefault();
         if (closeDisabled || hasOpenOfficePopover()) return;
-        onClose();
+        onEscape();
       }}
     >
       <section

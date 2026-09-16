@@ -666,6 +666,63 @@ test('writes an explicit none emphasis reset and restores the prior mark with on
   await waitFor(() => expect(editor?.view.dom).toHaveFocus());
 });
 
+test('cancels a dirty font draft before Escape closes the dialog', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>A3S Office</p>',
+  });
+  editor.commands.selectAll();
+  const source = documentFontDialogSource(editor);
+  const closes: string[] = [];
+
+  function Harness() {
+    const [open, setOpen] = useState(true);
+    return (
+      <>
+        <button type="button" data-testid="font-dialog-launcher">
+          打开字体
+        </button>
+        {open ? (
+          <DocumentFontDialog
+            source={source}
+            restoreFocusTarget={() =>
+              document.querySelector<HTMLElement>(
+                '[data-testid="font-dialog-launcher"]',
+              )
+            }
+            onApply={() => true}
+            onClose={() => {
+              closes.push('close');
+              setOpen(false);
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  render(<Harness />);
+  const scale = screen.getByRole('textbox', { name: '字符缩放比例（%）' });
+  fireEvent.change(scale, { target: { value: '150' } });
+  expect(scale).toHaveValue('150');
+  expect(screen.getByRole('button', { name: '应用' })).toBeEnabled();
+
+  fireEvent.keyDown(scale, { key: 'Escape' });
+  expect(
+    screen.getByRole('dialog', { name: '字体高级设置' }),
+  ).toBeInTheDocument();
+  expect(scale).toHaveValue('100');
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+  expect(closes).toEqual([]);
+
+  fireEvent.keyDown(scale, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '字体高级设置' })).toBeNull();
+  expect(closes).toEqual(['close']);
+  await waitFor(() =>
+    expect(screen.getByTestId('font-dialog-launcher')).toHaveFocus(),
+  );
+});
+
 function FontDialogHarness({
   editor,
   selection,
