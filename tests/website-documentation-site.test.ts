@@ -416,7 +416,9 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('ribbon');
   expect(readme).toContain('L2');
   expect(englishHome).toContain("## What's new on `main` (0.246.0)");
-  expect(englishHome).toContain('Document page-chrome undo/redo and remove-link focus restore');
+  expect(englishHome).toContain(
+    'Document page-chrome undo/redo and remove-link focus restore',
+  );
   expect(chineseHome).toContain('## `main` 更新内容（0.246.0）');
   expect(chineseHome).toContain('页眉页脚');
   expect(chineseHome).toContain('撤销/重做');
