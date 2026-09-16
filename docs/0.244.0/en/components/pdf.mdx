@@ -1,0 +1,170 @@
+---
+title: PdfViewer
+description: PDF source lifecycle, page organization, PDFium resources, annotations, and save handling.
+---
+
+# PdfViewer
+
+`PdfViewer` loads PDF data on demand, renders pages through PDFium WebAssembly,
+and exposes navigation, search, annotations, history, and save behavior.
+
+Unlike the other editors, PDF source bytes do not use a controlled content
+object. The host provides and persists complete `Blob` values through explicit
+ports. An optional Yjs session adds a typed annotation/form overlay without
+putting the source PDF in the shared document.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `collaboration` | `OfficeCollaborationSession` | No | — | Initialized PDF Yjs session. Its immutable source identity must match `loadSource`. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes page/annotation location, projects remote page presence and roster navigation; requires the exact `collaboration` session. |
+| `onCollaborationChange` | `(content: PdfCollaborationContent) => void` | No | — | Receives local and remote collaboration snapshots. Persist Yjs updates rather than rewriting the snapshot. |
+| `loadSource` | `() => Promise<Blob>` | Yes | — | Reads the PDF without requiring file-system access. |
+| `onSave` | `(pdf: Blob) => Promise<boolean>` | No | — | Persists an edited PDF. Returning `true` reports success. |
+| `onPageExport` | `(files: readonly PdfPageOrganizationExport[]) => boolean \| Promise<boolean>` | No | browser download | Persists files created by Extract or Split. Return `true` after accepting every file. |
+| `fileName` | `string` | No | `'document.pdf'` | File identity and download name. |
+| `saveLabel` | `string` | No | `'Save'` | Save command label. |
+| `sourceKey` | `string` | No | — | Source version key. A change releases and reloads the source. |
+| `wasmUrl` | `string` | No | packaged `pdfium.wasm` | PDFium WebAssembly URL. |
+| `worker` | `boolean` | No | `true` | Runs PDFium in a Web Worker. Set to `false` when a host CSP cannot permit Blob workers. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+```tsx
+import type { PdfPageOrganizationExport } from '@a3s-lab/office/react';
+import { PdfViewer } from '@a3s-lab/office/react';
+
+async function persistPageExports(
+  files: readonly PdfPageOrganizationExport[],
+): Promise<boolean> {
+  await Promise.all(
+    files.map(({ fileName, pageCount, pdf }) =>
+      uploadPdfExport(fileName, pdf, { pageCount }),
+    ),
+  );
+  return true;
+}
+
+export function PdfPage({ file }: { file: File }) {
+  return (
+    <PdfViewer
+      fileName={file.name}
+      sourceKey={`${file.name}:${file.lastModified}`}
+      loadSource={() => Promise.resolve(file)}
+      onSave={async (pdf) => {
+        await uploadPdf(pdf);
+        return true;
+      }}
+      onPageExport={persistPageExports}
+    />
+  );
+}
+```
+
+Use `loadSource` to connect object storage, IndexedDB, or a local file handle.
+Use `onSave` to own authorization, progress, versioning, and failure behavior.
+PDFium and annotation-controller internals are not public extension points.
+
+## Page organization
+
+Providing `onSave` exposes **组织 PDF 页面** in the responsive PDF toolbar. The
+organizer supports seven operations:
+
+- **Insert blank page** inserts an A4-sized page after the selected page.
+- **Delete** removes the selected pages while retaining at least one page.
+- **Rotate** turns selected pages clockwise or counter-clockwise in 90-degree
+  increments.
+- **Reorder** moves one or more selected pages with buttons, keyboard-accessible
+  controls, or desktop drag and drop.
+- **Extract** creates one PDF from the selected pages without changing the
+  current source.
+- **Merge another PDF** inserts every page from another PDF after the current
+  selection.
+- **Split** creates numbered PDFs at the selected boundaries without changing
+  the current source.
+
+The page engine and `pdf-lib` load lazily in a dedicated Web Worker, separate
+from the PDFium rendering Worker. Each insert, delete, rotate, reorder, or merge
+returns one complete replacement `Blob` and creates exactly one page-history
+record. Extract and split do not create history. Toolbar Undo/Redo resolves
+native PDF history first, then page history; a successful page replacement
+reopens the emitted bytes in PDFium before the next command becomes available.
+
+The operation contract is deliberately bounded:
+
+| Input or result | Limit |
+| --- | ---: |
+| Primary source | 256 MiB |
+| Merge source | 128 MiB |
+| Pages in each result | 1–4,096 |
+| Blank-page width or height | 18–14,400 PDF points |
+
+Malformed or encrypted inputs fail closed. Any page mutation rejects a signed
+source because rewriting invalidates its trust evidence. Delete, reorder, and
+merge also reject PDFs with forms, outlines, or tagged structure because their
+document-level page references cannot yet be rewritten safely. Extract and
+split may copy pages from those PDFs, but emit the
+`pdf.pages.catalog-not-copied` diagnostic because outlines, forms, tags,
+attachments, scripts, and signatures are intentionally excluded from the
+derived files.
+
+Without `onPageExport`, Extract downloads `<stem>-extracted.pdf` and Split
+downloads `<stem>-part-1.pdf`, `<stem>-part-2.pdf`, and so on. A host callback
+receives the same names, the exact `pageCount`, and the PDF `Blob` in each
+`PdfPageOrganizationExport`; return `false` or throw to keep failure visible in
+the organizer. Mutated source bytes remain host-owned and are persisted only
+when the user invokes `onSave`.
+
+Page organization is intentionally unavailable when `collaboration` or
+`evidenceOverlay` is active. Those modes attach shared review records or typed
+evidence to an immutable PDF source identity; changing page bytes or indexes
+would invalidate that contract. Finish the review or remount a standalone
+`PdfViewer` with the resulting source before organizing its pages.
+
+## Collaboration
+
+Initialize a `kind: 'pdf'` collaboration session only after the provider's
+initial synchronization, then pass the session and exact immutable source to
+`PdfViewer`. The viewer verifies SHA-256, byte length, and page count, captures
+source annotations and form values, and projects shared overlay records in
+both directions. Annotation deletion is a durable tombstone and cannot be
+restored by undo. Created annotations and form edits use local-origin Yjs
+undo/redo; remote updates never enter the local history stack.
+
+Collaborative annotation projection currently covers free text, highlight,
+underline, strikeout, and ink. Binary-context annotation kinds such as stamps
+and signatures fail closed until an authenticated host asset port is supplied.
+Shared form values must target an existing writable field in the source PDF.
+
+The Rust API, `a3s-office collab mutate`, standard MCP server, and A3S Code
+worker can write the same overlay roots without opening the PDF bytes. Native
+operations cover form values; portable annotation create, recursive optimistic
+leaf update, and irreversible deletion; append-only redaction and rotate,
+delete, or reorder page-operation proposals; and the single final review
+decision. Annotation payloads use EmbedPDF geometry such as nested
+`rect.origin`/`rect.size` and Highlight `segmentRects`, so native updates project
+directly into the viewer. Stable IDs, source-page bounds, immutable claims,
+duplicate/reordered delivery, restart recovery, and browser projection are
+covered by Rust, CLI/MCP, Yjs interoperability, and `a3s-test` Playground
+regressions.
+
+The collaborative model excludes current page, zoom, search, selection,
+rendered bitmaps, caches, and source bytes. The host remains responsible for
+transport authorization and for saving/reopening a complete merged PDF.
+
+## Page navigation
+
+The desktop surface keeps a scrollable page-thumbnail rail synchronized with
+the page field and PDF viewport. On compact screens the same rail becomes a
+dismissible modal drawer. Its trigger is part of the toolbar page controls,
+not an overlay on the rendered document. Long documents render a bounded
+thumbnail window, so navigation cost does not grow linearly with the page
+count.
+
+Each thumbnail is a real button. `ArrowUp` and `ArrowDown` move one page,
+`Home` selects the first page, and `End` selects the last page. Keyboard
+navigation updates both `aria-current` and DOM focus after the destination is
+mounted, including destinations outside the current virtualized window. The
+viewer serializes overlapping page changes and preserves the latest requested
+destination while the PDF viewport settles. The host does not need to
+coordinate thumbnail focus or page selection.
