@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.248.0 - 2026-09-16
+
+### Document
+
+- Document Quick Access undo/redo, Insert ribbon remove-link, and delete-bookmark
+  no longer call TipTap `chain().focus()` on apply. Focus stays on the QAT
+  or ribbon trigger so L2 document editing loops keep working (TipTap's
+  deferred focus otherwise steals into the editor after the click). Add-link
+  and add-bookmark prompt dialogs still restore editor focus after apply
+  because those surfaces go away.
+
 ## 0.247.0 - 2026-09-16
 
 ### Markdown

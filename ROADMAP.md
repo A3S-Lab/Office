@@ -164,6 +164,10 @@ These are already the default contract. Do not trade them away for breadth:
    insert table, remove-link) stop stealing focus into the editor so the
    ribbon trigger keeps L2 Markdown editing loops; link/image dialogs still
    restore editor focus.
+   Through `0.248.0`, Document Quick Access undo/redo, Insert remove-link, and
+   delete-bookmark stop stealing focus into the editor so the QAT or ribbon
+   trigger keeps L2 document editing loops; add-link/add-bookmark prompts still
+   restore editor focus.
    Through `0.230.0`, Presentation **对象对齐** accessible name matches the
    visible label, and Document list galleries stop stealing editor focus after
    a style pick so Popover restores the ribbon trigger.

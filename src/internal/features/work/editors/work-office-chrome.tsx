@@ -490,6 +490,7 @@ function WorkOfficeQuickAccessToolbar({
               : action.label
           }
           disabled={action.disabled}
+          onMouseDown={(event) => event.preventDefault()}
           onClick={() => void action.onSelect()}
         >
           <span aria-hidden="true">{action.icon}</span>

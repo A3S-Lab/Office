@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.248.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Document QAT undo/redo and remove-link keep focus',
+      zh: '文档快速访问撤销/重做与取消链接保留焦点',
+    },
+    summary: {
+      en: 'Document Quick Access undo/redo, Insert ribbon remove-link, and delete-bookmark apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 document editing loop off the QAT or ribbon trigger. Add-link and add-bookmark prompt dialogs still restore editor focus after apply because those surfaces go away.',
+      zh: '文档快速访问撤销/重做、插入区取消链接与删除书签不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走快速访问或功能区触发按钮上的 L2 文档编辑循环。添加链接与添加书签提示框因界面会离开而在应用后仍还原编辑器焦点。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No deferred editor focus steal',
+          zh: '不再被延迟的编辑器焦点抢走',
+        },
+        detail: {
+          en: 'TipTap chain().focus() schedules DOM focus on a later animation frame; omitting it keeps focus on the QAT or Insert ribbon trigger.',
+          zh: 'TipTap chain().focus() 会在后续动画帧调度 DOM 焦点；省略后焦点留在快速访问或插入功能区触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Stay-mounted Document controls',
+          zh: '保持挂载的文档控件',
+        },
+        detail: {
+          en: 'Quick Access undo/redo, remove-link, and delete-bookmark keep the chrome mounted, so L2 loops stay on the same trigger.',
+          zh: '快速访问撤销/重做、取消链接与删除书签会使工具栏保持挂载，因此 L2 循环留在同一触发按钮。',
+        },
+      },
+      {
+        title: {
+          en: 'Prompts still restore the editor',
+          zh: '提示框仍还原编辑器',
+        },
+        detail: {
+          en: 'Add-link and add-bookmark prompts continue to focus the editor after apply because those surfaces dismiss.',
+          zh: '添加链接与添加书签提示框在应用后仍聚焦编辑器，因为这些界面会关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.247.0',
     date: '2026-09-16',
     kind: 'fixed',

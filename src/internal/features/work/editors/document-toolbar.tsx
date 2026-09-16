@@ -370,7 +370,9 @@ export function DocumentToolbar({
               : documentRibbonTabs;
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
-      editor.chain().focus().unsetLink().run();
+      // Keep ribbon focus on remove-link. chain().focus() schedules into the
+      // editor and breaks L2 loops.
+      editor.chain().extendMarkRange('link').unsetLink().run();
       return;
     }
     const href = await prompt({
@@ -392,7 +394,9 @@ export function DocumentToolbar({
   }, [editor, prompt]);
   const toggleBookmark = useCallback(async () => {
     if (activeBookmark) {
-      editor.chain().focus().deleteDocumentBookmark(activeBookmark.id).run();
+      // Keep ribbon focus on delete-bookmark. chain().focus() schedules into
+      // the editor and breaks L2 loops.
+      editor.commands.deleteDocumentBookmark(activeBookmark.id);
       return;
     }
     const name = await prompt({
@@ -693,7 +697,9 @@ export function DocumentToolbar({
                       history.undo();
                       return;
                     }
-                    editor.chain().focus().undo().run();
+                    // Keep QAT focus on undo. chain().focus() schedules into
+                    // the editor and breaks L2 loops.
+                    editor.commands.undo();
                   },
                 },
                 {
@@ -712,7 +718,9 @@ export function DocumentToolbar({
                       history.redo();
                       return;
                     }
-                    editor.chain().focus().redo().run();
+                    // Keep QAT focus on redo. chain().focus() schedules into
+                    // the editor and breaks L2 loops.
+                    editor.commands.redo();
                   },
                 },
               ]
@@ -1282,6 +1290,7 @@ function ToolbarButton({
       active={active}
       displayLabel={displayLabel}
       disabled={disabled}
+      onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
     >
       {children}

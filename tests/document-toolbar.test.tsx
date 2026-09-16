@@ -807,6 +807,54 @@ test('keeps quick access undo and redo connected to document history', () => {
   expect(editor.getHTML()).toBe(changedHtml);
 });
 
+test('keeps quick access undo focus on the QAT trigger after undo', async () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls));
+
+  editor.commands.setTextSelection({ from: 1, to: 13 });
+  editor.commands.toggleBold();
+  view.rerender(toolbar(editor, calls));
+
+  const quickAccess = screen.getByRole('toolbar', { name: '快速访问工具栏' });
+  const trigger = within(quickAccess).getByRole('button', { name: '撤销' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('bold')).toBe(false);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
+test('keeps remove-link focus on the insert ribbon trigger', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<section data-document-section="true"><p><a href="https://a3s.dev">Linked</a></p></section>',
+  });
+  document.body.append(editor.view.dom);
+  editor.commands.setTextSelection({ from: 2, to: 8 });
+  const calls = createCalls();
+  render(toolbar(editor, calls));
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  const trigger = screen.getByRole('button', { name: '取消链接' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.isActive('link')).toBe(false);
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(trigger).toHaveFocus();
+  expect(editor.isFocused).toBe(false);
+});
+
 test('disables document zoom buttons at the supported boundaries', () => {
   editor = createEditor();
   const calls = createCalls();
