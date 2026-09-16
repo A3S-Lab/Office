@@ -36,7 +36,13 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import {
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { Popover } from '../../../design-system/primitives';
 import {
   activeDocumentBookmark,
@@ -778,6 +784,7 @@ export function DocumentToolbar({
                   ariaKeyShortcuts="Control+K Meta+K"
                   displayLabel
                   active={editor.isActive('link')}
+                  onMouseDown={(event) => event.preventDefault()}
                   onClick={() => void toggleLink()}
                 >
                   <Link2 size={19} />
@@ -786,6 +793,7 @@ export function DocumentToolbar({
                   label={activeBookmark ? '删除书签' : '添加书签'}
                   displayLabel
                   active={Boolean(activeBookmark)}
+                  onMouseDown={(event) => event.preventDefault()}
                   onClick={() => void toggleBookmark()}
                 >
                   <BookmarkIcon size={19} />
@@ -1268,6 +1276,7 @@ function ToolbarButton({
   active = false,
   disabled = false,
   displayLabel = false,
+  onMouseDown,
   onClick,
   children,
 }: {
@@ -1278,6 +1287,7 @@ function ToolbarButton({
   active?: boolean;
   disabled?: boolean;
   displayLabel?: boolean;
+  onMouseDown?: (event: ReactMouseEvent<HTMLButtonElement>) => void;
   onClick: () => void;
   children: ReactNode;
 }) {
@@ -1290,7 +1300,7 @@ function ToolbarButton({
       active={active}
       displayLabel={displayLabel}
       disabled={disabled}
-      onMouseDown={(event) => event.preventDefault()}
+      onMouseDown={onMouseDown}
       onClick={onClick}
     >
       {children}
