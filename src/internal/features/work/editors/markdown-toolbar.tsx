@@ -26,7 +26,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { OfficeSelect } from './office-controls';
 import {
   MarkdownInsertDialog,
   type MarkdownInsertDialogRequest,
@@ -44,6 +43,7 @@ import {
   isMarkdownSourceCommandActive,
 } from './markdown-source-commands';
 import type { MarkdownViewMode } from './markdown-workspace';
+import { OfficeSelect } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,

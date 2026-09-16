@@ -1,8 +1,8 @@
-import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { MarkdownToolbar } from '../src/internal/features/work/editors/markdown-toolbar';
+import { Editor } from '@tiptap/core';
 import type { MarkdownSourceCommand } from '../src/internal/features/work/editors/markdown-source-commands';
+import { MarkdownToolbar } from '../src/internal/features/work/editors/markdown-toolbar';
 import { createWorkMarkdownExtensions } from '../src/internal/features/work/work-markdown-extensions';
 
 let editor: Editor | null = null;
@@ -12,7 +12,10 @@ afterEach(() => {
   editor = null;
 });
 
-function textRange(current: Editor, text: string): { from: number; to: number } {
+function textRange(
+  current: Editor,
+  text: string,
+): { from: number; to: number } {
   let range: { from: number; to: number } | null = null;
   current.state.doc.descendants((node, position) => {
     if (range || !node.isText || !node.text) return;
