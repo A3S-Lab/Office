@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.254.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Data Validation Escape restores dirty drafts',
+      zh: '数据验证 Escape 还原未提交草稿',
+    },
+    summary: {
+      en: 'Data Validation restores dirty drafts on the first Escape and only closes on a second Escape when the form is clean. Cancel and the window close control still discard immediately, matching the Sort Options L2 dirty-restore pattern.',
+      zh: '数据验证在表单有改动时，第一次 Escape 还原草稿；仅在干净状态下第二次 Escape 才关闭。取消与窗口关闭仍立即丢弃，与排序选项的 L2 脏还原模式一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First Escape restores, second closes',
+          zh: '第一次 Escape 还原，第二次关闭',
+        },
+        detail: {
+          en: 'Dirty allow-blank, type, formula, and alert draft fields snap back without dismissing the dialog.',
+          zh: '未提交的忽略空值、类型、公式与警告草稿字段会还原且不关闭对话框。',
+        },
+      },
+      {
+        title: {
+          en: 'Reuses Dialog onEscape',
+          zh: '复用 Dialog onEscape',
+        },
+        detail: {
+          en: 'Data Validation wires the shared Dialog onEscape hook used by Sort Options and Create Table.',
+          zh: '数据验证接入排序选项与创建表格共用的 Dialog onEscape 钩子。',
+        },
+      },
+      {
+        title: {
+          en: 'Cancel still discards immediately',
+          zh: '取消仍立即丢弃',
+        },
+        detail: {
+          en: 'Cancel and the window close control keep one-shot discard semantics; only Escape uses the two-step dirty restore.',
+          zh: '取消与窗口关闭仍保持一次丢弃语义；只有 Escape 走两步脏还原。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.253.0',
     date: '2026-09-16',
     kind: 'fixed',

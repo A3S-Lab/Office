@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.254.0 - 2026-09-16
+
+### Spreadsheet
+
+- Data Validation (`数据验证`) restores dirty drafts on the first Escape and only
+  closes on a second Escape when the form is clean. Cancel and the window close
+  control still discard immediately, matching the Sort Options L2 dirty-restore
+  pattern.
+
 ## 0.253.0 - 2026-09-16
 
 ### Spreadsheet

@@ -70,9 +70,14 @@ export function SpreadsheetDataValidationDialog({
   const formId = useId();
   const operators = spreadsheetDataValidationOperators(value.type);
   const validationError = onValidate(value);
-  const dirty =
-    source.mixed || !sameSpreadsheetDataValidationValue(value, source.value);
+  const valueDirty = !sameSpreadsheetDataValidationValue(value, source.value);
+  const dirty = source.mixed || valueDirty;
   const visibleError = touched ? validationError : null;
+
+  const resetDraft = () => {
+    setValue(source.value);
+    setTouched(false);
+  };
 
   const update = (patch: Partial<SpreadsheetDataValidationDialogValue>) => {
     setValue((current) => ({ ...current, ...patch }));
@@ -102,6 +107,13 @@ export function SpreadsheetDataValidationDialog({
       className="work-spreadsheet-data-validation-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
+      onEscape={() => {
+        if (valueDirty) {
+          resetDraft();
+          return;
+        }
+        onClose();
+      }}
       footer={
         <>
           {source.hasValidation && (
