@@ -176,10 +176,10 @@ test('Spreadsheet in-cell editor defaults to vertical middle alignment', () => {
     /\.luckysheet-input-box-inner\s*\{[^}]*display:\s*flex[^}]*align-items:\s*center/s,
   );
   expect(css).toContain(
-    ".work-spreadsheet-editor[data-cell-vt='1'] .luckysheet-input-box-inner",
+    '.work-spreadsheet-editor[data-cell-vt="1"] .luckysheet-input-box-inner',
   );
   expect(css).toContain(
-    ".work-spreadsheet-editor[data-cell-vt='2'] .luckysheet-input-box-inner",
+    '.work-spreadsheet-editor[data-cell-vt="2"] .luckysheet-input-box-inner',
   );
   expect(css).toMatch(
     /\.luckysheet-cell-input\s*\{[^}]*height:\s*auto\s*!important/s,

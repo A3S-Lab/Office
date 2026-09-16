@@ -129,11 +129,11 @@
   align-items: center;
 }
 
-.work-spreadsheet-editor[data-cell-vt='1'] .luckysheet-input-box-inner {
+.work-spreadsheet-editor[data-cell-vt="1"] .luckysheet-input-box-inner {
   align-items: flex-start;
 }
 
-.work-spreadsheet-editor[data-cell-vt='2'] .luckysheet-input-box-inner {
+.work-spreadsheet-editor[data-cell-vt="2"] .luckysheet-input-box-inner {
   align-items: flex-end;
 }
 
