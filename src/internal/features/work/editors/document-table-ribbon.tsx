@@ -454,11 +454,11 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="删除表格"
           visibleLabel="删除表格"
           disabled={!editor.can().deleteTable()}
-          onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
-            // Keep ribbon focus on the delete-table trigger.
-            // chain().focus() schedules into the editor and breaks L2 loops.
-            editor.commands.deleteTable();
+            // Deleting the table removes the contextual ribbon, so restore
+            // editor focus. Other Layout structural controls omit focus() to
+            // keep L2 loops on the ribbon trigger.
+            editor.chain().focus().deleteTable().run();
           }}
         >
           <Trash2 size={18} />

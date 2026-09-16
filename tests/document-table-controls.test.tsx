@@ -454,6 +454,24 @@ test('keeps table insert-row focus on the ribbon trigger after apply', async () 
   expect(editor.isFocused).toBe(false);
 });
 
+test('restores editor focus after deleting the table from Layout', async () => {
+  editor = createTableEditor();
+  document.body.append(editor.view.dom);
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '删除表格' });
+  trigger.focus();
+  fireEvent.mouseDown(trigger);
+  fireEvent.click(trigger);
+
+  expect(editor.state.doc.content.firstChild?.type.name).not.toBe('table');
+  await new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+  );
+  expect(editor.isFocused).toBe(true);
+});
+
 test('keeps table merge-cells focus on the ribbon trigger after apply', async () => {
   editor = createTableEditor();
   document.body.append(editor.view.dom);

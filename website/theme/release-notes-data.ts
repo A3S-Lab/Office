@@ -46,8 +46,8 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
       zh: '表格布局结构控件保留功能区焦点',
     },
     summary: {
-      en: 'Document table Layout row/column insert/delete, merge/split, delete table, cell alignment, distribute, dimension fields, header-row toggle, and the style gallery apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 table-editing loop off the ribbon trigger.',
-      zh: '文档表格布局的插入/删除行与列、合并/拆分、删除表格、单元格对齐、平均分布、尺寸字段、标题行切换与样式库不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走功能区触发按钮上的 L2 表格编辑循环。',
+      en: 'Document table Layout row/column insert/delete, merge/split, cell alignment, distribute, dimension fields, header-row toggle, and the style gallery apply without TipTap chain().focus(), so deferred editor focus does not steal the L2 table-editing loop off the ribbon trigger. Delete table still restores editor focus because the contextual ribbon goes away.',
+      zh: '文档表格布局的插入/删除行与列、合并/拆分、单元格对齐、平均分布、尺寸字段、标题行切换与样式库不再调用 TipTap chain().focus()，延迟的编辑器焦点不会抢走功能区触发按钮上的 L2 表格编辑循环。删除表格仍会还原编辑器焦点，因为上下文功能区会随表格一起消失。',
     },
     highlights: [
       {
@@ -66,8 +66,8 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
           zh: '表格结构编辑',
         },
         detail: {
-          en: 'Insert/delete rows and columns, merge/split, delete table, alignment, distribute, and dimensions share the same focus contract as Home formatting.',
-          zh: '插入/删除行与列、合并/拆分、删除表格、对齐、平均分布与尺寸字段与主页格式化共享同一焦点契约。',
+          en: 'Insert/delete rows and columns, merge/split, alignment, distribute, and dimensions share the same focus contract as Home formatting. Delete table intentionally restores editor focus.',
+          zh: '插入/删除行与列、合并/拆分、对齐、平均分布与尺寸字段与主页格式化共享同一焦点契约。删除表格会有意还原编辑器焦点。',
         },
       },
       {

@@ -4,12 +4,13 @@
 
 ### Document
 
-- Table Layout row/column insert/delete, merge/split, delete table, cell
-  horizontal/vertical alignment, distribute rows/columns, dimension fields,
-  header-row toggle, and the table style gallery no longer call TipTap
-  `chain().focus()` on apply. Focus stays on the ribbon trigger so L2
-  table-editing loops keep working (TipTap's deferred focus otherwise steals
-  into the editor after the click).
+- Table Layout row/column insert/delete, merge/split, cell horizontal/vertical
+  alignment, distribute rows/columns, dimension fields, header-row toggle, and
+  the table style gallery no longer call TipTap `chain().focus()` on apply.
+  Focus stays on the ribbon trigger so L2 table-editing loops keep working
+  (TipTap's deferred focus otherwise steals into the editor after the click).
+  Delete table still restores editor focus because the contextual ribbon goes
+  away with the table.
 
 ## 0.244.0 - 2026-09-16
 

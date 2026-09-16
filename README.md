@@ -373,7 +373,7 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 Version `0.245.0` keeps Document table Layout structural controls focused on the ribbon after apply:
 
-- Table row/column insert/delete, merge/split, delete table, cell alignment, distribute, dimension fields, header-row toggle, and the style gallery apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 table-editing loop off the ribbon trigger.
+- Table row/column insert/delete, merge/split, cell alignment, distribute, dimension fields, header-row toggle, and the style gallery apply without TipTap `chain().focus()`, so deferred editor focus does not steal the L2 table-editing loop off the ribbon trigger. Delete table still restores editor focus because the contextual ribbon goes away.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
