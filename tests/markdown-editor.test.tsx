@@ -646,6 +646,8 @@ test('keeps long Markdown source scrolling on the textarea for pane sync', async
 
   expect(source.scrollTop).toBe(400);
   expect(pane.scrollTop).toBe(0);
+  expect(source).toHaveAttribute('data-source-scrolled', 'true');
+  expect(pane).toHaveAttribute('data-pane-scrolled', 'false');
 });
 
 test('resizes and resets the Markdown split panes from the separator', async () => {
