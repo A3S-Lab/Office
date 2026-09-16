@@ -17,6 +17,15 @@ export function SpreadsheetSortOptionsDialog({
 }) {
   const [draft, setDraft] = useState(value);
   const formId = useId();
+  const dirty =
+    draft.caseSensitive !== value.caseSensitive ||
+    draft.textMethod !== value.textMethod ||
+    draft.orientation !== value.orientation;
+
+  const resetDraft = () => {
+    setDraft(value);
+  };
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onApply(draft);
@@ -29,6 +38,13 @@ export function SpreadsheetSortOptionsDialog({
       className="work-spreadsheet-sort-options-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
+      onEscape={() => {
+        if (dirty) {
+          resetDraft();
+          return;
+        }
+        onClose();
+      }}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>

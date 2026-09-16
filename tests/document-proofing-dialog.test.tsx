@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from '@rstest/core';
 import { Editor } from '@tiptap/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { DocumentProofingDialog } from '../src/internal/features/work/editors/document-proofing-dialog';
 import {
   applyDocumentProofingDialogPatch,
@@ -125,6 +126,64 @@ test('keeps untouched mixed values and applies custom tags through one accessibl
       noProof: true,
     },
   ]);
+});
+
+test('cancels a dirty proofing draft before Escape closes the dialog', async () => {
+  const source = {
+    latin: { mixed: false, value: 'en-US' },
+    eastAsia: { mixed: false, value: 'zh-CN' },
+    bidi: { mixed: false, value: 'ar-SA' },
+    noProof: { mixed: false, value: false },
+    selectedCharacters: 4,
+  } as const;
+  const closes: string[] = [];
+
+  function Harness() {
+    const [open, setOpen] = useState(true);
+    return (
+      <>
+        <button type="button" data-testid="proofing-dialog-launcher">
+          打开校对语言
+        </button>
+        {open ? (
+          <DocumentProofingDialog
+            source={source}
+            restoreFocusTarget={() =>
+              document.querySelector<HTMLElement>(
+                '[data-testid="proofing-dialog-launcher"]',
+              )
+            }
+            onApply={() => true}
+            onClose={() => {
+              closes.push('close');
+              setOpen(false);
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  render(<Harness />);
+  const eastAsia = screen.getByRole('combobox', { name: '东亚文字校对语言' });
+  fireEvent.change(eastAsia, { target: { value: 'ja-JP' } });
+  expect(eastAsia).toHaveValue('ja-JP');
+  expect(screen.getByRole('button', { name: '应用' })).toBeEnabled();
+
+  fireEvent.keyDown(eastAsia, { key: 'Escape' });
+  expect(
+    screen.getByRole('dialog', { name: '设置校对语言' }),
+  ).toBeInTheDocument();
+  expect(eastAsia).toHaveValue('zh-CN');
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+  expect(closes).toEqual([]);
+
+  fireEvent.keyDown(eastAsia, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '设置校对语言' })).toBeNull();
+  expect(closes).toEqual(['close']);
+  await waitFor(() =>
+    expect(screen.getByTestId('proofing-dialog-launcher')).toHaveFocus(),
+  );
 });
 
 test('clears a direct language slot through Follow Style', () => {

@@ -37,6 +37,266 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.255.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['markdown'],
+    title: {
+      en: 'Markdown source scrolls inside the textarea',
+      zh: 'Markdown 源码在 textarea 内滚动',
+    },
+    summary: {
+      en: 'Long Markdown source documents scroll inside the textarea instead of the pane shell, so proportional split sync with the preview fires again. Compact layouts keep the same scroll-ownership contract.',
+      zh: '长 Markdown 源码在 textarea 内滚动，而不再撑破窗格外壳，左右分栏比例同步再次生效。窄屏布局保持同一滚动归属约定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Pane shell no longer steals scroll',
+          zh: '窗格外壳不再抢走滚动',
+        },
+        detail: {
+          en: 'Source pane uses overflow: hidden; the textarea uses min-height: 0 with overflow: auto so flex layout keeps scrolling on the control that owns onScroll.',
+          zh: '源码窗格使用 overflow: hidden；textarea 使用 min-height: 0 与 overflow: auto，让 flex 布局把滚动留在挂有 onScroll 的控件上。',
+        },
+      },
+      {
+        title: {
+          en: 'Split sync works on long docs',
+          zh: '长文档下分栏同步恢复',
+        },
+        detail: {
+          en: 'Proportional progress mapping listens on the textarea again, so preview scroll follows source scroll for long documents.',
+          zh: '比例进度映射重新监听 textarea，预览滚动会跟随长文档的源码滚动。',
+        },
+      },
+      {
+        title: {
+          en: 'Compact layouts keep ownership',
+          zh: '窄屏布局保持滚动归属',
+        },
+        detail: {
+          en: 'Phone and container compact rules keep min-height: 0 on the source textarea instead of forcing min-height: 100%.',
+          zh: '手机与容器窄屏规则继续对源码 textarea 使用 min-height: 0，而不再强制 min-height: 100%。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
+    version: '0.254.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Data Validation Escape restores dirty drafts',
+      zh: '数据验证 Escape 还原未提交草稿',
+    },
+    summary: {
+      en: 'Data Validation restores dirty drafts on the first Escape and only closes on a second Escape when the form is clean. Cancel and the window close control still discard immediately, matching the Sort Options L2 dirty-restore pattern.',
+      zh: '数据验证在表单有改动时，第一次 Escape 还原草稿；仅在干净状态下第二次 Escape 才关闭。取消与窗口关闭仍立即丢弃，与排序选项的 L2 脏还原模式一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First Escape restores, second closes',
+          zh: '第一次 Escape 还原，第二次关闭',
+        },
+        detail: {
+          en: 'Dirty allow-blank, type, formula, and alert draft fields snap back without dismissing the dialog.',
+          zh: '未提交的忽略空值、类型、公式与警告草稿字段会还原且不关闭对话框。',
+        },
+      },
+      {
+        title: {
+          en: 'Reuses Dialog onEscape',
+          zh: '复用 Dialog onEscape',
+        },
+        detail: {
+          en: 'Data Validation wires the shared Dialog onEscape hook used by Sort Options and Create Table.',
+          zh: '数据验证接入排序选项与创建表格共用的 Dialog onEscape 钩子。',
+        },
+      },
+      {
+        title: {
+          en: 'Cancel still discards immediately',
+          zh: '取消仍立即丢弃',
+        },
+        detail: {
+          en: 'Cancel and the window close control keep one-shot discard semantics; only Escape uses the two-step dirty restore.',
+          zh: '取消与窗口关闭仍保持一次丢弃语义；只有 Escape 走两步脏还原。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
+    version: '0.253.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Sort Options Escape restores dirty drafts',
+      zh: '排序选项 Escape 还原未提交草稿',
+    },
+    summary: {
+      en: 'Sort Options restores dirty drafts on the first Escape and only closes on a second Escape when the form is clean. Cancel and the window close control still discard immediately, matching the Create Table L2 dirty-restore pattern.',
+      zh: '排序选项在表单有改动时，第一次 Escape 还原草稿；仅在干净状态下第二次 Escape 才关闭。取消与窗口关闭仍立即丢弃，与创建表格的 L2 脏还原模式一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First Escape restores, second closes',
+          zh: '第一次 Escape 还原，第二次关闭',
+        },
+        detail: {
+          en: 'Dirty case-sensitivity, text-method, and orientation draft fields snap back without dismissing the dialog.',
+          zh: '未提交的大小写、文本方法与方向草稿字段会还原且不关闭对话框。',
+        },
+      },
+      {
+        title: {
+          en: 'Reuses Dialog onEscape',
+          zh: '复用 Dialog onEscape',
+        },
+        detail: {
+          en: 'Sort Options wires the shared Dialog onEscape hook used by Create Table and Document proofing settings.',
+          zh: '排序选项接入创建表格与文档校对语言设置共用的 Dialog onEscape 钩子。',
+        },
+      },
+      {
+        title: {
+          en: 'Cancel still discards immediately',
+          zh: '取消仍立即丢弃',
+        },
+        detail: {
+          en: 'Cancel and the window close control keep one-shot discard semantics; only Escape uses the two-step dirty restore.',
+          zh: '取消与窗口关闭仍保持一次丢弃语义；只有 Escape 走两步脏还原。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
+    version: '0.252.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Create Table Escape restores dirty drafts',
+      zh: '创建表格 Escape 还原未提交草稿',
+    },
+    summary: {
+      en: 'Create Table restores dirty drafts on the first Escape and only closes on a second Escape when the form is clean. Cancel and the window close control still discard immediately, matching the Document proofing L2 dirty-restore pattern.',
+      zh: '创建表格在表单有改动时，第一次 Escape 还原草稿；仅在干净状态下第二次 Escape 才关闭。取消与窗口关闭仍立即丢弃，与文档校对语言对话框的 L2 脏还原模式一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First Escape restores, second closes',
+          zh: '第一次 Escape 还原，第二次关闭',
+        },
+        detail: {
+          en: 'Dirty range, header-row, and totals-row draft fields snap back without dismissing the dialog.',
+          zh: '未提交的区域、标题行与汇总行草稿字段会还原且不关闭对话框。',
+        },
+      },
+      {
+        title: {
+          en: 'Reuses Dialog onEscape',
+          zh: '复用 Dialog onEscape',
+        },
+        detail: {
+          en: 'Create Table wires the shared Dialog onEscape hook used by Font and proofing settings.',
+          zh: '创建表格接入字体与校对语言设置共用的 Dialog onEscape 钩子。',
+        },
+      },
+      {
+        title: {
+          en: 'Cancel still discards immediately',
+          zh: '取消仍立即丢弃',
+        },
+        detail: {
+          en: 'Cancel and the window close control keep one-shot discard semantics; only Escape uses the two-step dirty restore.',
+          zh: '取消与窗口关闭仍保持一次丢弃语义；只有 Escape 走两步脏还原。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
+    version: '0.251.0',
+    date: '2026-09-16',
+    kind: 'fixed',
+    surfaces: ['writer'],
+    title: {
+      en: 'Proofing dialog Escape restores dirty drafts',
+      zh: '校对语言对话框 Escape 还原未提交草稿',
+    },
+    summary: {
+      en: 'Proofing language settings restores dirty drafts on the first Escape and only closes on a second Escape when the form is clean. Cancel and the window close control still discard immediately, matching the Font dialog L2 dirty-restore pattern.',
+      zh: '校对语言设置在表单有改动时，第一次 Escape 还原草稿；仅在干净状态下第二次 Escape 才关闭。取消与窗口关闭仍立即丢弃，与字体对话框的 L2 脏还原模式一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First Escape restores, second closes',
+          zh: '第一次 Escape 还原，第二次关闭',
+        },
+        detail: {
+          en: 'Dirty language and proofing-behavior draft fields snap back without dismissing the dialog, so L2 proofing edits survive an accidental Escape.',
+          zh: '未提交的语言与校对行为草稿字段会还原且不关闭对话框，避免误按 Escape 丢掉 L2 校对编辑。',
+        },
+      },
+      {
+        title: {
+          en: 'Reuses Dialog onEscape',
+          zh: '复用 Dialog onEscape',
+        },
+        detail: {
+          en: 'Proofing dialog wires the shared Dialog onEscape hook introduced for Font advanced settings.',
+          zh: '校对语言对话框接入字体高级设置为共享 Dialog 引入的 onEscape 钩子。',
+        },
+      },
+      {
+        title: {
+          en: 'Cancel still discards immediately',
+          zh: '取消仍立即丢弃',
+        },
+        detail: {
+          en: 'Cancel and the window close control keep one-shot discard semantics; only Escape uses the two-step dirty restore.',
+          zh: '取消与窗口关闭仍保持一次丢弃语义；只有 Escape 走两步脏还原。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.250.0',
     date: '2026-09-16',
     kind: 'fixed',

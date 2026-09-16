@@ -143,14 +143,19 @@
 }
 
 .work-markdown-pane.source {
+  overflow: hidden;
   background: color-mix(in srgb, var(--a3s-panel) 96%, var(--a3s-bg));
 }
 
 .work-markdown-pane.source textarea {
   box-sizing: border-box;
   width: 100%;
-  min-height: 100%;
-  flex: 1;
+  /* Bound the flex child so long documents scroll inside the textarea.
+   * min-height: 100% grew the control past the pane and made the pane the
+   * scroller, which broke proportional sync (onScroll is on the textarea). */
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
   resize: none;
   padding: 38px clamp(28px, 5vw, 72px) 80px;
   border: 0;
@@ -250,7 +255,6 @@
 }
 
 .work-markdown-workspace.split .work-markdown-pane.source textarea {
-  min-height: calc(100% - 32px);
   padding: 32px clamp(24px, 3.5vw, 46px) 72px;
 }
 
@@ -678,7 +682,7 @@
   }
 
   .work-markdown-workspace.split .work-markdown-pane.source textarea {
-    min-height: 100%;
+    min-height: 0;
     padding: 28px 20px 64px;
   }
 
@@ -808,7 +812,7 @@
   }
 
   .work-markdown-workspace.split .work-markdown-pane.source textarea {
-    min-height: 100%;
+    min-height: 0;
     padding: 28px 20px 64px;
   }
 

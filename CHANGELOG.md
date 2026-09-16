@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.255.0 - 2026-09-16
+
+### Markdown
+
+- Long Markdown source documents scroll inside the textarea instead of the pane
+  shell, so proportional split sync fires again. Compact layouts keep
+  `min-height: 0` on the source textarea so the pane never becomes the scroller.
+
+## 0.254.0 - 2026-09-16
+
+### Spreadsheet
+
+- Data Validation (`数据验证`) restores dirty drafts on the first Escape and only
+  closes on a second Escape when the form is clean. Cancel and the window close
+  control still discard immediately, matching the Sort Options L2 dirty-restore
+  pattern.
+
+## 0.253.0 - 2026-09-16
+
+### Spreadsheet
+
+- Sort Options (`排序选项`) restores dirty drafts on the first Escape and only
+  closes on a second Escape when the form is clean. Cancel and the window close
+  control still discard immediately, matching the Create Table L2 dirty-restore
+  pattern.
+
+## 0.252.0 - 2026-09-16
+
+### Spreadsheet
+
+- Create Table (`创建表格`) restores dirty drafts on the first Escape and only
+  closes on a second Escape when the form is clean. Cancel and the window close
+  control still discard immediately, matching the Document proofing L2
+  dirty-restore pattern.
+
+## 0.251.0 - 2026-09-16
+
+### Document
+
+- Proofing language settings (`设置校对语言`) restores dirty drafts on the first
+  Escape and only closes on a second Escape when the form is clean. Cancel and
+  the window close control still discard immediately, matching the Font dialog
+  L2 dirty-restore pattern.
+
 ## 0.250.0 - 2026-09-16
 
 ### Document

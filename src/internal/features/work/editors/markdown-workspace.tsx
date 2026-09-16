@@ -49,6 +49,17 @@ export function proportionalMarkdownScrollTop(
   return progress * targetRange;
 }
 
+/** Publish scroll-ownership markers for a3s-test / Playwright regression gates. */
+export function publishMarkdownSourceScrollOwnership(
+  source: HTMLTextAreaElement,
+): void {
+  const pane = source.closest('.work-markdown-pane.source');
+  source.dataset.sourceScrolled = source.scrollTop > 0 ? 'true' : 'false';
+  if (pane instanceof HTMLElement) {
+    pane.dataset.paneScrolled = pane.scrollTop > 0 ? 'true' : 'false';
+  }
+}
+
 export function MarkdownWorkspace({
   editor,
   markdown,
@@ -141,13 +152,15 @@ export function MarkdownWorkspace({
 
   const handleSourceScroll = useCallback(
     (event: UIEvent<HTMLTextAreaElement>) => {
+      const source = event.currentTarget;
+      publishMarkdownSourceScrollOwnership(source);
+
       if (mode !== 'split') return;
       if (synchronizedTargetRef.current === 'source') {
         synchronizedTargetRef.current = null;
         return;
       }
 
-      const source = event.currentTarget;
       const target = visualRef.current;
       if (!target) return;
       synchronizedTargetRef.current = 'visual';
@@ -158,6 +171,8 @@ export function MarkdownWorkspace({
         target.scrollHeight,
         target.clientHeight,
       );
+      target.dataset.previewScrollSynced =
+        target.scrollTop > 0 ? 'true' : 'false';
       releaseScrollLock();
     },
     [mode, releaseScrollLock],

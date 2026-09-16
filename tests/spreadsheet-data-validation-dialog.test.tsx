@@ -1,5 +1,5 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRef, useState } from 'react';
 import { SpreadsheetDataValidationDialog } from '../src/internal/features/work/editors/spreadsheet-data-validation-dialog';
 import {
@@ -176,6 +176,59 @@ test('clears existing rules and restores the exact trigger', () => {
     '1',
   );
   expect(trigger).toHaveFocus();
+});
+
+test('cancels a dirty Data Validation draft before Escape closes the dialog', async () => {
+  const closes: string[] = [];
+
+  function Harness() {
+    const [open, setOpen] = useState(true);
+    return (
+      <>
+        <button type="button" data-testid="data-validation-dialog-launcher">
+          数据验证
+        </button>
+        {open ? (
+          <SpreadsheetDataValidationDialog
+            source={dialogSource()}
+            restoreFocusTarget={() =>
+              document.querySelector<HTMLElement>(
+                '[data-testid="data-validation-dialog-launcher"]',
+              )
+            }
+            onApply={() => {
+              setOpen(false);
+              return true;
+            }}
+            onClose={() => {
+              closes.push('close');
+              setOpen(false);
+            }}
+            onRemove={() => false}
+            onValidate={() => null}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  render(<Harness />);
+  const allowBlank = screen.getByRole('checkbox', { name: '忽略空值' });
+  expect(allowBlank).toBeChecked();
+  fireEvent.click(allowBlank);
+  expect(allowBlank).not.toBeChecked();
+
+  fireEvent.keyDown(allowBlank, { key: 'Escape' });
+  expect(screen.getByRole('dialog', { name: '数据验证' })).toBeInTheDocument();
+  expect(allowBlank).toBeChecked();
+  expect(closes).toEqual([]);
+
+  fireEvent.keyDown(allowBlank, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '数据验证' })).toBeNull();
+  expect(closes).toEqual(['close']);
+  await waitFor(() =>
+    expect(screen.getByTestId('data-validation-dialog-launcher')).toHaveFocus(),
+  );
 });
 
 function DataValidationDialogHarness() {

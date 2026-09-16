@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.250.0` keeps Document Insert and Page Layout page-break focus:
+Version `0.255.0` keeps long Markdown source scrolling on the textarea:
 
-- Insert and Page Layout page-break controls insert breaks without TipTap
-  `chain().focus()`, so the caret stays in the document after the click.
-  Ctrl+Enter still focuses intentionally so L2 page-break stays stay-mounted.
+- The Markdown source pane no longer grows past its flex viewport. Long documents
+  scroll inside the textarea so proportional split sync with the preview keeps
+  working. Compact layouts keep the same scroll-ownership contract.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

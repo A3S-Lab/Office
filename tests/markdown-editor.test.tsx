@@ -603,6 +603,53 @@ test('maps split-pane scrolling by document progress', () => {
   expect(proportionalMarkdownScrollTop(20, 100, 100, 2000, 200)).toBe(0);
 });
 
+test('keeps long Markdown source scrolling on the textarea for pane sync', async () => {
+  const markdown = Array.from(
+    { length: 80 },
+    (_, index) => `Line ${index + 1}: ${'x'.repeat(48)}`,
+  ).join('\n');
+
+  render(
+    <div style={{ width: 960, height: 420 }}>
+      <MarkdownEditor
+        content={{ type: 'markdown', markdown }}
+        onChange={() => undefined}
+        theme="light"
+      />
+    </div>,
+  );
+
+  const source = await screen.findByLabelText('Markdown 源码');
+  const pane = source.closest('.work-markdown-pane.source');
+  expect(pane).toBeInstanceOf(HTMLElement);
+  if (!(pane instanceof HTMLElement)) return;
+
+  Object.defineProperty(source, 'clientHeight', {
+    configurable: true,
+    value: 280,
+  });
+  Object.defineProperty(source, 'scrollHeight', {
+    configurable: true,
+    value: 2400,
+  });
+  Object.defineProperty(pane, 'clientHeight', {
+    configurable: true,
+    value: 320,
+  });
+  Object.defineProperty(pane, 'scrollHeight', {
+    configurable: true,
+    value: 320,
+  });
+
+  source.scrollTop = 400;
+  fireEvent.scroll(source);
+
+  expect(source.scrollTop).toBe(400);
+  expect(pane.scrollTop).toBe(0);
+  expect(source).toHaveAttribute('data-source-scrolled', 'true');
+  expect(pane).toHaveAttribute('data-pane-scrolled', 'false');
+});
+
 test('resizes and resets the Markdown split panes from the separator', async () => {
   render(
     <MarkdownEditor

@@ -1,0 +1,79 @@
+suite "office-markdown-source-scroll" {
+    version = 1
+
+    scenario "source-wheel-scrolls-textarea-not-pane" {
+        name = "Wheel on a long Markdown source scrolls the textarea, not the pane shell"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/?e2e=markdown-source-scroll"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-markdown" {
+            target = text("产品说明", true)
+        }
+
+        wait "markdown-ready" {
+            visible = css(".work-markdown-editor .work-markdown-pane.source textarea")
+        }
+
+        expect "split-source-visible" {
+            visible = css(".work-markdown-workspace.split .work-markdown-pane.source textarea")
+        }
+
+        fill "write-long-markdown-source" {
+            target = css(".work-markdown-pane.source textarea")
+            value = "# Scroll ownership\n\nLine 01 — keep the source textarea as the only vertical scroller so proportional preview sync stays attached to onScroll.\nLine 02 — filler for overflow geometry in the Markdown source pane.\nLine 03 — filler for overflow geometry in the Markdown source pane.\nLine 04 — filler for overflow geometry in the Markdown source pane.\nLine 05 — filler for overflow geometry in the Markdown source pane.\nLine 06 — filler for overflow geometry in the Markdown source pane.\nLine 07 — filler for overflow geometry in the Markdown source pane.\nLine 08 — filler for overflow geometry in the Markdown source pane.\nLine 09 — filler for overflow geometry in the Markdown source pane.\nLine 10 — filler for overflow geometry in the Markdown source pane.\nLine 11 — filler for overflow geometry in the Markdown source pane.\nLine 12 — filler for overflow geometry in the Markdown source pane.\nLine 13 — filler for overflow geometry in the Markdown source pane.\nLine 14 — filler for overflow geometry in the Markdown source pane.\nLine 15 — filler for overflow geometry in the Markdown source pane.\nLine 16 — filler for overflow geometry in the Markdown source pane.\nLine 17 — filler for overflow geometry in the Markdown source pane.\nLine 18 — filler for overflow geometry in the Markdown source pane.\nLine 19 — filler for overflow geometry in the Markdown source pane.\nLine 20 — filler for overflow geometry in the Markdown source pane.\nLine 21 — filler for overflow geometry in the Markdown source pane.\nLine 22 — filler for overflow geometry in the Markdown source pane.\nLine 23 — filler for overflow geometry in the Markdown source pane.\nLine 24 — filler for overflow geometry in the Markdown source pane.\nLine 25 — filler for overflow geometry in the Markdown source pane.\nLine 26 — filler for overflow geometry in the Markdown source pane.\nLine 27 — filler for overflow geometry in the Markdown source pane.\nLine 28 — filler for overflow geometry in the Markdown source pane.\nLine 29 — filler for overflow geometry in the Markdown source pane.\nLine 30 — filler for overflow geometry in the Markdown source pane.\nLine 31 — filler for overflow geometry in the Markdown source pane.\nLine 32 — filler for overflow geometry in the Markdown source pane.\nLine 33 — filler for overflow geometry in the Markdown source pane.\nLine 34 — filler for overflow geometry in the Markdown source pane.\nLine 35 — filler for overflow geometry in the Markdown source pane.\nLine 36 — filler for overflow geometry in the Markdown source pane.\nLine 37 — filler for overflow geometry in the Markdown source pane.\nLine 38 — filler for overflow geometry in the Markdown source pane.\nLine 39 — filler for overflow geometry in the Markdown source pane.\nLine 40 — filler for overflow geometry in the Markdown source pane.\nLine 41 — filler for overflow geometry in the Markdown source pane.\nLine 42 — filler for overflow geometry in the Markdown source pane.\nLine 43 — filler for overflow geometry in the Markdown source pane.\nLine 44 — filler for overflow geometry in the Markdown source pane.\nLine 45 — filler for overflow geometry in the Markdown source pane.\nLine 46 — filler for overflow geometry in the Markdown source pane.\nLine 47 — filler for overflow geometry in the Markdown source pane.\nLine 48 — filler for overflow geometry in the Markdown source pane.\nLine 49 — filler for overflow geometry in the Markdown source pane.\nLine 50 — filler for overflow geometry in the Markdown source pane.\nLine 51 — filler for overflow geometry in the Markdown source pane.\nLine 52 — filler for overflow geometry in the Markdown source pane.\nLine 53 — filler for overflow geometry in the Markdown source pane.\nLine 54 — filler for overflow geometry in the Markdown source pane.\nLine 55 — filler for overflow geometry in the Markdown source pane.\nLine 56 — filler for overflow geometry in the Markdown source pane.\nLine 57 — filler for overflow geometry in the Markdown source pane.\nLine 58 — filler for overflow geometry in the Markdown source pane.\nLine 59 — filler for overflow geometry in the Markdown source pane.\nLine 60 — filler for overflow geometry in the Markdown source pane.\nLine 61 — filler for overflow geometry in the Markdown source pane.\nLine 62 — filler for overflow geometry in the Markdown source pane.\nLine 63 — filler for overflow geometry in the Markdown source pane.\nLine 64 — filler for overflow geometry in the Markdown source pane.\nLine 65 — filler for overflow geometry in the Markdown source pane.\nLine 66 — filler for overflow geometry in the Markdown source pane.\nLine 67 — filler for overflow geometry in the Markdown source pane.\nLine 68 — filler for overflow geometry in the Markdown source pane.\nLine 69 — filler for overflow geometry in the Markdown source pane.\nLine 70 — filler for overflow geometry in the Markdown source pane.\nLine 71 — filler for overflow geometry in the Markdown source pane.\nLine 72 — filler for overflow geometry in the Markdown source pane.\nLine 73 — filler for overflow geometry in the Markdown source pane.\nLine 74 — filler for overflow geometry in the Markdown source pane.\nLine 75 — filler for overflow geometry in the Markdown source pane.\nLine 76 — filler for overflow geometry in the Markdown source pane.\nLine 77 — filler for overflow geometry in the Markdown source pane.\nLine 78 — filler for overflow geometry in the Markdown source pane.\nLine 79 — filler for overflow geometry in the Markdown source pane.\nLine 80 — end of scroll fixture."
+        }
+
+        click "focus-markdown-source" {
+            target = css(".work-markdown-pane.source textarea")
+        }
+
+        wheel "scroll-markdown-source" {
+            target = css(".work-markdown-pane.source textarea")
+            delta_x = 0
+            delta_y = 960
+            modifiers = []
+        }
+
+        wait "textarea-owns-scroll" {
+            visible = css(".work-markdown-pane.source textarea[data-source-scrolled='true']")
+        }
+
+        expect "pane-shell-did-not-scroll" {
+            visible = css(".work-markdown-pane.source[data-pane-scrolled='false']")
+        }
+
+        expect "preview-followed-source-scroll" {
+            visible = css(".work-markdown-pane.visual[data-preview-scroll-synced='true']")
+        }
+
+        screenshot "markdown-source-scroll-ownership" {
+            path = "screenshots/markdown-source-scroll-ownership.png"
+        }
+
+        accessibility "markdown-source-scroll-accessibility" {
+            path = "evidence/markdown-source-scroll-accessibility.json"
+        }
+
+        console "markdown-source-scroll-console" {
+            path = "diagnostics/markdown-source-scroll-console.json"
+        }
+
+        page_errors "markdown-source-scroll-page-errors" {
+            path = "diagnostics/markdown-source-scroll-page-errors.json"
+        }
+    }
+}

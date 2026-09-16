@@ -231,14 +231,16 @@
       "formats": ["md", "markdown"],
       "visual": [
         "visual-tests/markdown-menu.functional.spec.ts",
-        "visual-tests/markdown-format-shortcuts.functional.spec.ts"
+        "visual-tests/markdown-format-shortcuts.functional.spec.ts",
+        "visual-tests/markdown-source-scroll.functional.spec.ts"
       ],
       "acl": [
         "tests/e2e/markdown-phone-modes.acl",
         "tests/e2e/markdown-ribbon-collapse.acl",
         "tests/e2e/markdown-link-shortcut.acl",
         "tests/e2e/markdown-bold-shortcut.acl",
-        "tests/e2e/markdown-italic-shortcut.acl"
+        "tests/e2e/markdown-italic-shortcut.acl",
+        "tests/e2e/markdown-source-scroll.acl"
       ],
       "fixtures": [],
       "agent": {

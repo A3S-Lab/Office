@@ -25,6 +25,15 @@ export function SpreadsheetTableDialog({
   const formId = useId();
   const validationError = onValidate(value);
   const visibleError = touched ? validationError : null;
+  const dirty =
+    value.rangeReference !== source.value.rangeReference ||
+    value.headerRow !== source.value.headerRow ||
+    Boolean(value.totalsRow) !== Boolean(source.value.totalsRow);
+
+  const resetDraft = () => {
+    setValue(source.value);
+    setTouched(false);
+  };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,6 +49,13 @@ export function SpreadsheetTableDialog({
       className="work-spreadsheet-table-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
+      onEscape={() => {
+        if (dirty) {
+          resetDraft();
+          return;
+        }
+        onClose();
+      }}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>

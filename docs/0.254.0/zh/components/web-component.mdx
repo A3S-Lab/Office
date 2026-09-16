@@ -1,0 +1,33 @@
+---
+title: Web Component
+description: 注册 A3S Office 自定义元素，接入任意前端框架或原生页面。
+---
+
+# Web Component
+
+先注册一次自定义元素，再通过 JavaScript 属性传入结构化数据。复杂对象不会被
+序列化进 HTML attribute。
+
+```ts title="document-editor.ts"
+import {
+  defineA3SOfficeElements,
+} from '@a3s-lab/office/web-component';
+import '@a3s-lab/office/styles.css';
+
+defineA3SOfficeElements();
+
+const editor = document.querySelector('a3s-document-editor');
+
+editor.content = {
+  type: 'document',
+  html: '<h1>项目说明</h1><p>从这里开始编辑。</p>',
+  pageSize: 'a4',
+};
+
+editor.addEventListener('change', (event) => {
+  editor.content = event.detail;
+});
+```
+
+`theme`、`preview`、`save-status` 等简单值可以使用 attribute；内容、回调、
+文件操作、Extension 和数据加载函数应通过元素属性传入。
