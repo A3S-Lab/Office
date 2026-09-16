@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.253.0 - 2026-09-16
+
+### Spreadsheet
+
+- Sort Options (`排序选项`) restores dirty drafts on the first Escape and only
+  closes on a second Escape when the form is clean. Cancel and the window close
+  control still discard immediately, matching the Create Table L2 dirty-restore
+  pattern.
+
 ## 0.252.0 - 2026-09-16
 
 ### Spreadsheet

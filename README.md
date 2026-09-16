@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.252.0` restores dirty Spreadsheet Create Table drafts on Escape:
+Version `0.253.0` restores dirty Spreadsheet Sort Options drafts on Escape:
 
-- Create Table restores draft fields on the first Escape when the form is dirty,
+- Sort Options restores draft fields on the first Escape when the form is dirty,
   and only closes on a second Escape when clean. Cancel and the window close
-  control still discard immediately so L2 table-creation edits are not lost by
-  a single Escape.
+  control still discard immediately so L2 sort-option edits are not lost by a
+  single Escape.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

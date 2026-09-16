@@ -1,11 +1,13 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { useState } from 'react';
 import type {
   SpreadsheetSortDialogSource,
   SpreadsheetSortDialogValue,
 } from '../src/internal/features/work/editors/spreadsheet-sort';
 import { SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS } from '../src/internal/features/work/editors/spreadsheet-sort-custom-list';
 import { SpreadsheetSortDialog } from '../src/internal/features/work/editors/spreadsheet-sort-dialog';
+import { SpreadsheetSortOptionsDialog } from '../src/internal/features/work/editors/spreadsheet-sort-options-dialog';
 
 function chooseOfficeSelectOption(
   ariaLabel: string,
@@ -189,3 +191,57 @@ function sortSource(): SpreadsheetSortDialogSource {
     },
   };
 }
+
+test('cancels a dirty Sort Options draft before Escape closes the dialog', async () => {
+  const closes: string[] = [];
+  const value = {
+    caseSensitive: false,
+    textMethod: 'pinyin' as const,
+    orientation: 'top-to-bottom' as const,
+  };
+
+  function Harness() {
+    const [open, setOpen] = useState(true);
+    return (
+      <>
+        <button type="button" data-testid="sort-options-dialog-launcher">
+          选项…
+        </button>
+        {open ? (
+          <SpreadsheetSortOptionsDialog
+            value={value}
+            restoreFocusTarget={() =>
+              document.querySelector<HTMLElement>(
+                '[data-testid="sort-options-dialog-launcher"]',
+              )
+            }
+            onApply={() => {
+              setOpen(false);
+            }}
+            onClose={() => {
+              closes.push('close');
+              setOpen(false);
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
+
+  render(<Harness />);
+  const caseSensitive = screen.getByRole('checkbox', { name: '区分大小写' });
+  fireEvent.click(caseSensitive);
+  expect(caseSensitive).toBeChecked();
+
+  fireEvent.keyDown(caseSensitive, { key: 'Escape' });
+  expect(screen.getByRole('dialog', { name: '排序选项' })).toBeInTheDocument();
+  expect(caseSensitive).not.toBeChecked();
+  expect(closes).toEqual([]);
+
+  fireEvent.keyDown(caseSensitive, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '排序选项' })).toBeNull();
+  expect(closes).toEqual(['close']);
+  await waitFor(() =>
+    expect(screen.getByTestId('sort-options-dialog-launcher')).toHaveFocus(),
+  );
+});
