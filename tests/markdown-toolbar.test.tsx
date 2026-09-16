@@ -12,7 +12,10 @@ afterEach(() => {
   editor = null;
 });
 
-function textRange(current: Editor, text: string): { from: number; to: number } {
+function textRange(
+  current: Editor,
+  text: string,
+): { from: number; to: number } {
   let range: { from: number; to: number } | null = null;
   current.state.doc.descendants((node, position) => {
     if (range || !node.isText || !node.text) return;
