@@ -17,6 +17,7 @@ import {
   buildFigureCaptionFixture,
   buildFootnoteFixture,
   buildHeaderFooterComplexFieldFixture,
+  buildHeaderFooterDateTimeFieldFixture,
   buildHeaderFooterFieldFixture,
   buildHeaderFooterFixture,
   buildIndexEntryFixture,
@@ -142,6 +143,30 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.footerTexts.join(' ')).toContain('of');
     expect(result.identities.plainText).toContain(
       'Report body with complex chrome fields',
+    );
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expect(result.firstPassIssues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['docx.headers']),
+    );
+  });
+
+  test('header DATE and footer TIME fields survive round trip', async () => {
+    const bytes = await buildHeaderFooterDateTimeFieldFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'report-header-footer-date-time-fields.docx',
+    );
+
+    expect(result.identities.fieldKinds).toEqual(['date', 'time']);
+    expect(result.identities.fieldInstructions).toEqual([
+      'DATE \\@ "yyyy-MM-dd"',
+      'TIME',
+    ]);
+    expect(result.identities.headerTexts.join(' ')).toContain('Printed');
+    expect(result.identities.footerTexts.join(' ')).toContain('at');
+    expect(result.identities.plainText).toContain(
+      'Report body with date/time chrome',
     );
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/footer1.xml');

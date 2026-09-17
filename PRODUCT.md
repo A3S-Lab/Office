@@ -63,7 +63,8 @@ inline text and rich-text content-control alias/tag/type/text identity, body PAG
 bookmark-backed PAGEREF plus NUMPAGES plus SECTION plus SECTIONPAGES plus
 NUMWORDS plus NUMCHARS plus DATE (bare and `\@` format) plus TIME field
 kind/instruction (/target) identity, header/footer PAGE and NUMPAGES live-field
-identity for both `fldSimple` and complex `fldChar` forms, figure SEQ caption
+identity for both `fldSimple` and complex `fldChar` forms, header DATE (`\@`
+format) and footer TIME live-field identity, figure SEQ caption
 kind/id plus caption REF target identity, table SEQ caption kind/id, XE index
 entry plus INDEX column identity, and TOC level/hyperlink options plus cached
 entry title identity in addition to v1 bookmarks/links, track changes, contract
