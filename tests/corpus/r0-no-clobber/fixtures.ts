@@ -239,6 +239,28 @@ export async function buildDateFieldFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: body TIME field kind/instruction identity.
+ */
+export async function buildTimeFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Time </w:t></w:r><w:fldSimple w:instr="TIME"><w:r><w:t>16:05</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Report-shaped DOCX: body DATE with \@ format-switch instruction identity.
+ */
+export async function buildDateFormatFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Formatted </w:t></w:r><w:fldSimple w:instr="DATE \\@ &quot;yyyy-MM-dd&quot;"><w:r><w:t>2026-09-17</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Academic-shaped DOCX: XE index entry main/sub-entry identity.
  */
 export async function buildIndexEntryFixture(): Promise<Uint8Array> {

@@ -9,6 +9,8 @@ import {
   buildActiveContentFailClosedFixture,
   buildBookmarksAndLinksFixture,
   buildContractTableFixture,
+  buildDateFieldFixture,
+  buildDateFormatFieldFixture,
   buildDuplicateBookmarkFixture,
   buildEndnoteFixture,
   buildFootnoteFixture,
@@ -25,9 +27,9 @@ import {
   buildReviewTrackChangesFixture,
   buildSectionFieldFixture,
   buildSectionPagesFieldFixture,
-  buildDateFieldFixture,
   buildTableOfContentsFixture,
   buildTextContentControlFixture,
+  buildTimeFieldFixture,
 } from './fixtures';
 import {
   expectIssueCodes,
@@ -217,6 +219,28 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.fieldKinds).toEqual(['date']);
     expect(result.identities.fieldInstructions).toEqual(['DATE']);
     expect(result.identities.plainText).toContain('Date');
+    expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
+  });
+
+  test('TIME field kind and instruction survive round trip', async () => {
+    const bytes = await buildTimeFieldFixture();
+    const result = await roundTripDocx(bytes, 'report-time-field.docx');
+
+    expect(result.identities.fieldKinds).toEqual(['time']);
+    expect(result.identities.fieldInstructions).toEqual(['TIME']);
+    expect(result.identities.plainText).toContain('Time');
+    expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
+  });
+
+  test('DATE format-switch instruction survives round trip', async () => {
+    const bytes = await buildDateFormatFieldFixture();
+    const result = await roundTripDocx(bytes, 'report-date-format-field.docx');
+
+    expect(result.identities.fieldKinds).toEqual(['date']);
+    expect(result.identities.fieldInstructions).toEqual([
+      'DATE \\@ "yyyy-MM-dd"',
+    ]);
+    expect(result.identities.plainText).toContain('Formatted');
     expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
   });
 
