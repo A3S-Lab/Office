@@ -123,9 +123,9 @@ describe('R0 no-clobber corpus', () => {
     );
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/footer1.xml');
-    expect(
-      result.firstPassIssues.map((issue) => issue.code),
-    ).toEqual(expect.arrayContaining(['docx.headers']));
+    expect(result.firstPassIssues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['docx.headers']),
+    );
   });
 
   test('footnote reference and note body text survive round trip', async () => {
