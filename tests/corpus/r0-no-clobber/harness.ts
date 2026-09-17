@@ -16,6 +16,9 @@ export type R0IdentitySnapshot = {
   changeTexts: string[];
   commentAuthors: string[];
   commentTexts: string[];
+  footerTexts: string[];
+  footnoteTexts: string[];
+  headerTexts: string[];
   hrefs: string[];
   plainText: string;
   tableCellTexts: string[];
@@ -60,6 +63,10 @@ export async function roundTripDocx(
         identities: extractDocumentIdentities(
           reopened.content.html,
           reopened.content.comments ?? [],
+          {
+            headerHtml: reopened.content.pageChrome?.default.headerHtml ?? '',
+            footerHtml: reopened.content.pageChrome?.default.footerHtml ?? '',
+          },
         ),
         secondPassIssues: reopened.compatibility?.issues ?? [],
         exportedParts,
@@ -75,6 +82,7 @@ export async function roundTripDocx(
 export function extractDocumentIdentities(
   html: string,
   comments: readonly R0CommentIdentity[] = [],
+  pageChrome: { headerHtml?: string; footerHtml?: string } = {},
 ): R0IdentitySnapshot {
   return {
     bookmarkNames: uniqueSorted(
@@ -91,6 +99,18 @@ export function extractDocumentIdentities(
     ),
     commentAuthors: uniqueSorted(comments.map((comment) => comment.author)),
     commentTexts: uniqueSorted(comments.map((comment) => comment.text)),
+    footerTexts: uniqueSorted(
+      [normalizePlainText(pageChrome.footerHtml ?? '')].filter(Boolean),
+    ),
+    footnoteTexts: uniqueSorted(
+      matchAll(
+        html,
+        /<aside\b[^>]*data-document-note="true"[^>]*data-note-kind="footnote"[^>]*>([\s\S]*?)<\/aside>/gi,
+      ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
+    ),
+    headerTexts: uniqueSorted(
+      [normalizePlainText(pageChrome.headerHtml ?? '')].filter(Boolean),
+    ),
     hrefs: uniqueSorted(matchAll(html, /href="([^"]+)"/g)),
     plainText: normalizePlainText(html),
     tableCellTexts: uniqueSorted(
