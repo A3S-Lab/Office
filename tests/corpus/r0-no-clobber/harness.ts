@@ -102,6 +102,9 @@ export function extractDocumentIdentities(
   comments: readonly R0CommentIdentity[] = [],
   pageChrome: { headerHtml?: string; footerHtml?: string } = {},
 ): R0IdentitySnapshot {
+  const headerHtml = pageChrome.headerHtml ?? '';
+  const footerHtml = pageChrome.footerHtml ?? '';
+  const fieldHtml = `${html}\n${headerHtml}\n${footerHtml}`;
   return {
     bookmarkNames: uniqueSorted(
       matchAll(html, /data-bookmark-name="([^"]+)"/g),
@@ -144,24 +147,22 @@ export function extractDocumentIdentities(
       ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
     ),
     fieldInstructions: uniqueSorted(
-      matchAll(html, /data-field-instruction="([^"]+)"/g).map(decodeHtmlAttr),
+      matchAll(fieldHtml, /data-field-instruction="([^"]+)"/g).map(
+        decodeHtmlAttr,
+      ),
     ),
-    fieldKinds: uniqueSorted(matchAll(html, /data-field-kind="([^"]+)"/g)),
+    fieldKinds: uniqueSorted(matchAll(fieldHtml, /data-field-kind="([^"]+)"/g)),
     fieldTargetNames: uniqueSorted(
-      matchAll(html, /data-field-target-name="([^"]+)"/g),
+      matchAll(fieldHtml, /data-field-target-name="([^"]+)"/g),
     ),
-    footerTexts: uniqueSorted(
-      [normalizePlainText(pageChrome.footerHtml ?? '')].filter(Boolean),
-    ),
+    footerTexts: uniqueSorted([normalizePlainText(footerHtml)].filter(Boolean)),
     footnoteTexts: uniqueSorted(
       matchAll(
         html,
         /<aside\b[^>]*data-document-note="true"[^>]*data-note-kind="footnote"[^>]*>([\s\S]*?)<\/aside>/gi,
       ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
     ),
-    headerTexts: uniqueSorted(
-      [normalizePlainText(pageChrome.headerHtml ?? '')].filter(Boolean),
-    ),
+    headerTexts: uniqueSorted([normalizePlainText(headerHtml)].filter(Boolean)),
     hrefs: uniqueSorted(matchAll(html, /href="([^"]+)"/g)),
     indexColumns: uniqueSorted(matchAll(html, /data-index-columns="([^"]+)"/g)),
     indexMainEntries: uniqueSorted(

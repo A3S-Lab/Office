@@ -102,6 +102,23 @@ export async function buildHeaderFooterFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: header PAGE + footer NUMPAGES live field identity.
+ */
+export async function buildHeaderFooterFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${OFFICE_RELATIONSHIPS_NAMESPACE}"><w:body><w:p><w:r><w:t>Report body with live chrome</w:t></w:r></w:p><w:sectPr><w:headerReference w:type="default" r:id="rIdHeader"/><w:footerReference w:type="default" r:id="rIdFooter"/></w:sectPr></w:body></w:document>`,
+    documentRelationships: [
+      ['rIdHeader', `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`, 'header1.xml'],
+      ['rIdFooter', `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`, 'footer1.xml'],
+    ],
+    headerXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Page </w:t></w:r><w:fldSimple w:instr="PAGE"><w:r><w:t>2</w:t></w:r></w:fldSimple></w:p></w:hdr>`,
+    footerXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>of </w:t></w:r><w:fldSimple w:instr="NUMPAGES"><w:r><w:t>10</w:t></w:r></w:fldSimple></w:p></w:ftr>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Academic/report-shaped DOCX: footnote reference + note body identity.
  */
 export async function buildFootnoteFixture(): Promise<Uint8Array> {

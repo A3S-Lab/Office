@@ -1,3 +1,10 @@
+import {
+  documentFieldCodeDisplay,
+  documentFieldLabel,
+  docxDocumentFieldKind,
+  supportedDocxDocumentFieldInstruction,
+  type WorkDocumentFieldKind,
+} from './work-document-fields';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import { documentScriptFontSegments } from './work-document-script-fonts';
 import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
@@ -108,6 +115,8 @@ const WORDPROCESSING_DRAWING_2010_NAMESPACE =
 const WORD_2010_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2010/wordml';
 
+let pageChromeFieldSequence = 0;
+
 export async function importSectionPageChrome(
   section: Element,
   archive: OoxmlPackage,
@@ -214,6 +223,7 @@ async function pageChromePartHtml(
   archive: OoxmlPackage,
   partPath: string,
 ): Promise<string> {
+  pageChromeFieldSequence = 0;
   const relationships = await archive.relationships(partPath);
   const themePath = archive
     .paths('word/theme/')
@@ -317,10 +327,33 @@ async function paragraphHtml(
       continue;
     }
     if (child.localName === 'fldSimple') {
-      const instruction = attribute(child, 'instr') ?? '';
-      if (!/\bPAGE\b/i.test(instruction)) {
-        html += await containerRunsHtml(child, field, runContext);
+      const instruction = (attribute(child, 'instr') ?? '').trim();
+      const kind = docxDocumentFieldKind(instruction);
+      if (kind && supportedDocxDocumentFieldInstruction(instruction)) {
+        const display =
+          (
+            await containerRunsHtml(
+              child,
+              {
+                active: false,
+                instruction: '',
+                separated: false,
+                skipResult: false,
+              },
+              runContext,
+            )
+          ).replace(/<[^>]+>/g, '') ||
+          child.textContent?.trim() ||
+          '';
+        html += pageChromeFieldSpanHtml(
+          kind,
+          instruction,
+          display,
+          allocatePageChromeFieldId(),
+        );
+        continue;
       }
+      html += await containerRunsHtml(child, field, runContext);
       continue;
     }
     html += await containerRunsHtml(child, field, runContext);
@@ -774,6 +807,22 @@ function docxPageChromeFontSizePointsFromProperties(
 
 function formatNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
+}
+
+function pageChromeFieldSpanHtml(
+  kind: WorkDocumentFieldKind,
+  instruction: string,
+  display: string,
+  id: string,
+): string {
+  const label = documentFieldLabel(kind);
+  const resolvedDisplay = display.trim() || label;
+  return `<span data-document-field="true" data-field-id="${escapeHtml(id)}" data-field-kind="${escapeHtml(kind)}" data-field-instruction="${escapeHtml(instruction)}" data-field-code="${escapeHtml(documentFieldCodeDisplay(instruction))}" data-field-display="${escapeHtml(resolvedDisplay)}" class="work-document-field" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${escapeHtml(resolvedDisplay)}</span>`;
+}
+
+function allocatePageChromeFieldId(): string {
+  pageChromeFieldSequence += 1;
+  return `docx-chrome-field-${pageChromeFieldSequence}`;
 }
 
 function htmlAttributes(attributes: Record<string, string>): string {

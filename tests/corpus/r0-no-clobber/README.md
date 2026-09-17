@@ -27,11 +27,11 @@ Current fixtures cover report bookmarks/external links, internal
 bookmark-anchor hyperlinks, review track changes, review comments, default
 headers/footers, footnotes, endnotes, text and rich-text content controls,
 body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS,
-NUMCHARS, DATE (bare and `\@` format), and TIME fields, figure SEQ captions and
-caption REF targets, table SEQ captions, XE index entries and INDEX field
-columns, TOC level/hyperlink options and cached entry titles, contract tables,
-duplicate-bookmark identity diagnostics, and active-content fail-closed
-export.
+NUMCHARS, DATE (bare and `\@` format), and TIME fields, header PAGE and footer
+NUMPAGES live fields, figure SEQ captions and caption REF targets, table SEQ
+captions, XE index entries and INDEX field columns, TOC level/hyperlink options
+and cached entry titles, contract tables, duplicate-bookmark identity
+diagnostics, and active-content fail-closed export.
 
 Grow fixtures here when a real Traditional Office sample still fails the
 contract. Do not grow decorative PDF art-border coverage in place of this gate.

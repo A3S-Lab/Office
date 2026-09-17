@@ -36,6 +36,7 @@ import {
 import { DocumentScriptFontFormatting } from '../work-document-script-font-extension';
 import { DocumentEquation } from '../work-document-equations';
 import { DocumentEquationOpaque } from '../work-document-equation-opaque';
+import { DocumentField } from '../work-document-field-node';
 import { DocumentImage } from '../work-document-image-layout';
 import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
 import { sanitizeDocumentPageChromeHtml } from '../work-document-page-chrome';
@@ -464,6 +465,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentImage.configure({ allowBase64: true, inline: true }),
     DocumentEquation,
     DocumentEquationOpaque,
+    DocumentField,
     DocumentTextStyle,
     DocumentScriptFontFormatting,
     DocumentFontFamily,
