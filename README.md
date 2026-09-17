@@ -371,15 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.267.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.268.0` grows the permanent R0 no-clobber corpus gate:
 
-- Body TIME and DATE `\@` format-switch field kind/instruction identity now
-  join NUMCHARS/bare DATE, SECTIONPAGES/NUMWORDS, NUMPAGES/SECTION, TOC,
-  XE/INDEX, PAGE/PAGEREF fields, endnotes, text content controls,
-  headers/footers, footnotes, bookmarks, comments, and contract tables in the
-  representative DOCX round-trip corpus. Intentional normalizations stay
-  diagnosed; VBA and package signatures stay fail-closed on export
-  (`bun run test:corpus:r0`).
+- Figure SEQ caption kind/id and caption REF target identity now join TIME and
+  DATE `\@` format fields, NUMCHARS/bare DATE, SECTIONPAGES/NUMWORDS,
+  NUMPAGES/SECTION, TOC, XE/INDEX, PAGE/PAGEREF fields, endnotes, text content
+  controls, headers/footers, footnotes, bookmarks, comments, and contract
+  tables in the representative DOCX round-trip corpus. Intentional
+  normalizations stay diagnosed; VBA and package signatures stay fail-closed
+  on export (`bun run test:corpus:r0`).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

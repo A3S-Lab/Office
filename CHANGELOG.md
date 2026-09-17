@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.268.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for figure SEQ caption kind/id identity and caption
+  REF target identity, covering figure caption and cross-reference workflows
+  without art-border breadth.
+
 ## 0.267.0 - 2026-09-17
 
 ### Document

@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.268.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers figure captions and caption REF',
+      zh: 'R0 语料库覆盖图注与 caption REF',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for figure SEQ caption kind/id and caption REF target identity.',
+      zh: '永久无静默覆盖门禁新增图 SEQ 题注种类/id 与 caption REF 目标身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Figure caption identity',
+          zh: '图题注身份',
+        },
+        detail: {
+          en: 'Figure SEQ captions keep kind and a stable caption id across import → export → reopen.',
+          zh: '图 SEQ 题注在导入 → 导出 → 再打开后仍保留种类与稳定 caption id。',
+        },
+      },
+      {
+        title: {
+          en: 'Caption REF targets',
+          zh: 'Caption REF 目标',
+        },
+        detail: {
+          en: 'Caption REF fields keep the same target identity as the referenced caption.',
+          zh: 'Caption REF 字段与被引用题注保持同一目标身份。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.267.0',
     date: '2026-09-17',
     kind: 'improved',
