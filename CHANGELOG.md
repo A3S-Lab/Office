@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.259.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for default header/footer text and footnote
+  reference/body identity, covering report chrome and academic/report note
+  workflows without art-border breadth.
+
 ## 0.258.0 - 2026-09-17
 
 ### Document

@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.259.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers headers, footers, and footnotes',
+      zh: 'R0 语料库覆盖页眉、页脚与脚注',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for default header/footer text and footnote reference/body identity.',
+      zh: '永久无静默覆盖门禁新增默认页眉/页脚文本与脚注引用/正文身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Header and footer chrome',
+          zh: '页眉页脚',
+        },
+        detail: {
+          en: 'Default section header and footer text survive import → export → reopen.',
+          zh: '默认节页眉与页脚文本在导入 → 导出 → 再打开后仍然保留。',
+        },
+      },
+      {
+        title: {
+          en: 'Footnote identity',
+          zh: '脚注身份',
+        },
+        detail: {
+          en: 'Footnote references keep their note body text across the same round trip.',
+          zh: '脚注引用在相同往返中保留注释放正文。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.258.0',
     date: '2026-09-17',
     kind: 'improved',
