@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.270.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for rich-text content-control
+  alias/tag/type/text identity, covering contract rich SDT workflows without
+  art-border breadth.
+
 ## 0.269.0 - 2026-09-17
 
 ### Document

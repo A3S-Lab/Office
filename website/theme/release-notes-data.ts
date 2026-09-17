@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.270.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers rich-text content controls',
+      zh: 'R0 语料库覆盖富文本内容控件',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for rich-text SDT alias/tag/type/text identity.',
+      zh: '永久无静默覆盖门禁新增富文本 SDT 别名/标签/类型/文本身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Rich-text SDT identity',
+          zh: '富文本 SDT 身份',
+        },
+        detail: {
+          en: 'Rich-text content controls keep alias, tag, type, and text across import → export → reopen.',
+          zh: '富文本内容控件在导入 → 导出 → 再打开后仍保留别名、标签、类型与文本。',
+        },
+      },
+      {
+        title: {
+          en: 'Paired with plain-text SDTs',
+          zh: '与纯文本 SDT 成对',
+        },
+        detail: {
+          en: 'Complements the plain-text content-control fixture already gated on main.',
+          zh: '补齐 main 上已门禁的纯文本内容控件夹具。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.269.0',
     date: '2026-09-17',
     kind: 'improved',

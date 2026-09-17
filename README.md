@@ -371,13 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.269.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.270.0` grows the permanent R0 no-clobber corpus gate:
 
-- Table SEQ caption kind/id identity now joins figure SEQ captions, caption
-  REF targets, TIME and DATE `\@` format fields, NUMCHARS/bare DATE,
-  SECTIONPAGES/NUMWORDS, NUMPAGES/SECTION, TOC, XE/INDEX, PAGE/PAGEREF fields,
-  endnotes, text content controls, headers/footers, footnotes, bookmarks,
-  comments, and contract tables in the representative DOCX round-trip corpus.
+- Rich-text content-control alias/tag/type/text identity now joins table SEQ
+  captions, figure SEQ captions, caption REF targets, TIME and DATE `\@`
+  format fields, and the rest of the representative DOCX round-trip corpus.
   Intentional normalizations stay diagnosed; VBA and package signatures stay
   fail-closed on export (`bun run test:corpus:r0`).
 
