@@ -147,9 +147,7 @@ export function extractDocumentIdentities(
       [normalizePlainText(pageChrome.headerHtml ?? '')].filter(Boolean),
     ),
     hrefs: uniqueSorted(matchAll(html, /href="([^"]+)"/g)),
-    indexColumns: uniqueSorted(
-      matchAll(html, /data-index-columns="([^"]+)"/g),
-    ),
+    indexColumns: uniqueSorted(matchAll(html, /data-index-columns="([^"]+)"/g)),
     indexMainEntries: uniqueSorted(
       matchAll(html, /data-index-main-entry="([^"]+)"/g).map(decodeHtmlAttr),
     ),
