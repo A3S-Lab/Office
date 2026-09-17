@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.274.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers complex header DATE and TIME',
+      zh: 'R0 语料库覆盖复杂页眉 DATE 与 TIME',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds complex fldChar header DATE (format switch) and footer TIME fixtures for Word-authored report chrome.',
+      zh: '永久无静默覆盖门禁新增复杂 fldChar 页眉 DATE（格式开关）与页脚 TIME 夹具，覆盖 Word 报告页眉页脚写法。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Complex DATE chrome',
+          zh: '复杂 DATE 页眉',
+        },
+        detail: {
+          en: 'Complex header DATE keeps kind and \\@ instruction across import → export → reopen.',
+          zh: '复杂页眉 DATE 在导入 → 导出 → 再打开后仍保留种类与 \\@ 指令。',
+        },
+      },
+      {
+        title: {
+          en: 'Complex TIME chrome',
+          zh: '复杂 TIME 页脚',
+        },
+        detail: {
+          en: 'Complex footer TIME round-trips with the same page-chrome field spans.',
+          zh: '复杂页脚 TIME 以相同页眉页脚字段跨度往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.273.0',
     date: '2026-09-18',
     kind: 'improved',

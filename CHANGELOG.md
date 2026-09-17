@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.274.0 - 2026-09-18
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for complex (fldChar) header DATE (`\@` format) and
+  footer TIME live-field identity, covering Word-authored report chrome without
+  art-border breadth.
+
 ## 0.273.0 - 2026-09-18
 
 ### Document
