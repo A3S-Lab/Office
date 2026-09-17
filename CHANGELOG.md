@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.266.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for body NUMCHARS and bare DATE field
+  kind/instruction identity, covering character-count and date-chrome
+  workflows without art-border breadth.
+
 ## 0.265.0 - 2026-09-17
 
 ### Document

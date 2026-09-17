@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.266.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers NUMCHARS and DATE fields',
+      zh: 'R0 语料库覆盖 NUMCHARS 与 DATE 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for body NUMCHARS and bare DATE field kind/instruction identity.',
+      zh: '永久无静默覆盖门禁新增正文 NUMCHARS 与裸 DATE 字段种类/指令身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'NUMCHARS identity',
+          zh: 'NUMCHARS 身份',
+        },
+        detail: {
+          en: 'Body NUMCHARS fields keep kind and instruction across import → export → reopen.',
+          zh: '正文 NUMCHARS 字段在导入 → 导出 → 再打开后仍保留种类与指令。',
+        },
+      },
+      {
+        title: {
+          en: 'DATE identity',
+          zh: 'DATE 身份',
+        },
+        detail: {
+          en: 'Bare DATE fields keep the same kind/instruction contract.',
+          zh: '裸 DATE 字段保持相同的种类/指令契约。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.265.0',
     date: '2026-09-17',
     kind: 'improved',
