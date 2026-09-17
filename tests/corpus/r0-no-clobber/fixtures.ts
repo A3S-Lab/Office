@@ -217,6 +217,28 @@ export async function buildNumWordsFieldFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: body NUMCHARS field kind/instruction identity.
+ */
+export async function buildNumCharsFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Chars </w:t></w:r><w:fldSimple w:instr="NUMCHARS"><w:r><w:t>640</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Report-shaped DOCX: body DATE field kind/instruction identity.
+ */
+export async function buildDateFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Date </w:t></w:r><w:fldSimple w:instr="DATE"><w:r><w:t>2026-09-17</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Academic-shaped DOCX: XE index entry main/sub-entry identity.
  */
 export async function buildIndexEntryFixture(): Promise<Uint8Array> {
