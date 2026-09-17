@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.257.0` adds the permanent R0 no-clobber corpus gate:
+Version `0.258.0` grows the permanent R0 no-clobber corpus gate:
 
-- Representative DOCX fixtures must import → export → reopen without silent
-  identity loss. Bookmarks, track-change authors/text, and table cells stay
-  intact; intentional normalizations appear in compatibility diagnostics; VBA
-  and package signatures stay fail-closed on export (`bun run test:corpus:r0`).
+- Internal bookmark-anchor hyperlinks and review comment author/text identity
+  now join bookmarks, track changes, and contract tables in the representative
+  DOCX round-trip corpus. Intentional normalizations stay diagnosed; VBA and
+  package signatures stay fail-closed on export (`bun run test:corpus:r0`).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

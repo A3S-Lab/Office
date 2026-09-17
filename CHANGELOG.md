@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.258.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for internal bookmark-anchor hyperlinks and review
+  comment author/text identity, covering report navigation and review
+  workflows without art-border breadth.
+
 ## 0.257.0 - 2026-09-17
 
 ### Document
