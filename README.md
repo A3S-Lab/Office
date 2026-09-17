@@ -371,12 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.256.0` keeps Spreadsheet row indexes readable and centers in-cell edit:
+Version `0.257.0` adds the permanent R0 no-clobber corpus gate:
 
-- Row/column header hover and selected overlays stay translucent so Fortune's
-  canvas-painted index labels remain visible. The in-cell editor defaults to
-  vertical middle alignment, matching Fortune `vt` `0` and the ribbon 垂直居中
-  active state.
+- Representative DOCX fixtures must import → export → reopen without silent
+  identity loss. Bookmarks, track-change authors/text, and table cells stay
+  intact; intentional normalizations appear in compatibility diagnostics; VBA
+  and package signatures stay fail-closed on export (`bun run test:corpus:r0`).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

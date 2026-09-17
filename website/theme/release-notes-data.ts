@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.257.0',
+    date: '2026-09-17',
+    kind: 'new',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 no-clobber corpus becomes a permanent gate',
+      zh: 'R0 无静默覆盖语料库成为永久门禁',
+    },
+    summary: {
+      en: 'Representative DOCX fixtures must round-trip without silent identity loss. Intentional normalizations are diagnosed, and active content stays fail-closed on export.',
+      zh: '代表性 DOCX 夹具必须往返而不静默丢失身份。故意规范化会被诊断，活动内容在导出时保持 fail-closed。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Identity round trips',
+          zh: '身份往返',
+        },
+        detail: {
+          en: 'Bookmarks/links, review track-change authors and text, and contract table cells survive import → export → reopen.',
+          zh: '书签/链接、审阅修订作者与文本，以及合同表格单元格在导入 → 导出 → 再打开后仍然保留。',
+        },
+      },
+      {
+        title: {
+          en: 'Diagnosed normalizations',
+          zh: '可诊断的规范化',
+        },
+        detail: {
+          en: 'Duplicate bookmark names emit docx.bookmarks.identity instead of silently clobbering ranges.',
+          zh: '重复书签名会发出 docx.bookmarks.identity，而不是静默覆盖范围。',
+        },
+      },
+      {
+        title: {
+          en: 'Active content fail-closed',
+          zh: '活动内容 fail-closed',
+        },
+        detail: {
+          en: 'VBA and package signatures are stripped on export while safe vendor parts may survive. Run bun run test:corpus:r0.',
+          zh: '导出时剥离 VBA 与包签名，安全的供应商部件仍可保留。运行 bun run test:corpus:r0。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.256.0',
     date: '2026-09-17',
     kind: 'fixed',

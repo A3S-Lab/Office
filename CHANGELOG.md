@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.257.0 - 2026-09-17
+
+### Document
+
+- Add the permanent R0 no-clobber corpus v1 gate (`bun run test:corpus:r0`):
+  representative DOCX fixtures round-trip without silent identity loss for
+  bookmarks/links, review track changes, and contract tables; duplicate
+  bookmark names diagnose identity normalization; active content stays
+  fail-closed on export.
+
 ## 0.256.0 - 2026-09-17
 
 ### Spreadsheet
