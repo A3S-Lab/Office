@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.256.0',
+    date: '2026-09-17',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Spreadsheet row indexes stay readable',
+      zh: '表格行号保持可读',
+    },
+    summary: {
+      en: 'Row and column header overlays stay translucent so Fortune canvas labels remain visible, and the in-cell editor defaults to vertical middle alignment matching Fortune vt 0.',
+      zh: '行/列标题叠加层保持半透明，Fortune 画布绘制的行列号仍可见；单元格内编辑器默认垂直居中，与 Fortune vt 0 一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Translucent header overlays',
+          zh: '半透明标题叠加层',
+        },
+        detail: {
+          en: 'Hover and selected fills use accent color-mix against transparent instead of opaque panel fills that read as black on dark themes.',
+          zh: '悬停与选中填充使用强调色与透明色的 color-mix，而不再用深色主题下会发黑的不透明面板填充。',
+        },
+      },
+      {
+        title: {
+          en: 'In-cell editor vertical center',
+          zh: '单元格内编辑垂直居中',
+        },
+        detail: {
+          en: 'The input-box inner container is flex with align-items center by default; data-cell-vt 1/2 switches to top/bottom.',
+          zh: '输入框内层默认 flex 并垂直居中；data-cell-vt 为 1/2 时切换到顶端/底端对齐。',
+        },
+      },
+      {
+        title: {
+          en: 'Ribbon 垂直居中 matches default',
+          zh: '功能区垂直居中匹配默认',
+        },
+        detail: {
+          en: 'Missing vt treats the cell as middle-aligned so 垂直居中 stays active for unformatted cells.',
+          zh: '缺失 vt 时按垂直居中处理，未设置格式的单元格上“垂直居中”保持按下态。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.255.0',
     date: '2026-09-16',
     kind: 'fixed',

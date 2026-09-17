@@ -371,11 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.255.0` keeps long Markdown source scrolling on the textarea:
+Version `0.256.0` keeps Spreadsheet row indexes readable and centers in-cell edit:
 
-- The Markdown source pane no longer grows past its flex viewport. Long documents
-  scroll inside the textarea so proportional split sync with the preview keeps
-  working. Compact layouts keep the same scroll-ownership contract.
+- Row/column header hover and selected overlays stay translucent so Fortune's
+  canvas-painted index labels remain visible. The in-cell editor defaults to
+  vertical middle alignment, matching Fortune `vt` `0` and the ribbon 垂直居中
+  active state.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

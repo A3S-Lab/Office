@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.256.0 - 2026-09-17
+
+### Spreadsheet
+
+- Row and column header hover/selected overlays stay translucent so Fortune's
+  canvas-painted index labels remain readable on light and dark panels. The
+  in-cell editor is a flex container that defaults to vertical middle alignment
+  (Fortune `vt` `0`), with `data-cell-vt` overrides for top and bottom, and the
+  ribbon 垂直居中 active state matches that default.
+
 ## 0.255.0 - 2026-09-16
 
 ### Markdown
