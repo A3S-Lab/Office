@@ -371,13 +371,14 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.262.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.263.0` grows the permanent R0 no-clobber corpus gate:
 
-- XE index main/sub-entry identity and INDEX field column identity now join
-  PAGE/PAGEREF fields, endnotes, text content controls, headers/footers,
-  footnotes, bookmarks, comments, and contract tables in the representative
-  DOCX round-trip corpus. Intentional normalizations stay diagnosed; VBA and
-  package signatures stay fail-closed on export (`bun run test:corpus:r0`).
+- TOC min/max level, hyperlink options, and cached entry title identity now
+  join XE/INDEX, PAGE/PAGEREF fields, endnotes, text content controls,
+  headers/footers, footnotes, bookmarks, comments, and contract tables in the
+  representative DOCX round-trip corpus. Intentional normalizations stay
+  diagnosed; VBA and package signatures stay fail-closed on export
+  (`bun run test:corpus:r0`).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

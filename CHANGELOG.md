@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.263.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for TOC min/max level, hyperlink options, and
+  cached entry title identity, covering report table-of-contents workflows
+  without art-border breadth.
+
 ## 0.262.0 - 2026-09-17
 
 ### Document

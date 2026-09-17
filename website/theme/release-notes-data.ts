@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.263.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers TOC field options and entries',
+      zh: 'R0 语料库覆盖 TOC 字段选项与条目',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for TOC min/max level, hyperlink options, and cached entry title identity.',
+      zh: '永久无静默覆盖门禁新增 TOC 最小/最大级别、超链接选项与缓存条目标题身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'TOC level options',
+          zh: 'TOC 级别选项',
+        },
+        detail: {
+          en: 'SDT-wrapped TOC fields keep min/max outline levels across import → export → reopen.',
+          zh: 'SDT 包装的 TOC 字段在导入 → 导出 → 再打开后仍保留最小/最大大纲级别。',
+        },
+      },
+      {
+        title: {
+          en: 'Cached entry titles',
+          zh: '缓存条目标题',
+        },
+        detail: {
+          en: 'Cached TOC entry titles and hyperlink options survive the same round trip.',
+          zh: '缓存的 TOC 条目标题与超链接选项通过相同往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.262.0',
     date: '2026-09-17',
     kind: 'improved',
