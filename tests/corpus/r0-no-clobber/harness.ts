@@ -16,6 +16,10 @@ export type R0IdentitySnapshot = {
   changeTexts: string[];
   commentAuthors: string[];
   commentTexts: string[];
+  contentControlAliases: string[];
+  contentControlTags: string[];
+  contentControlTexts: string[];
+  endnoteTexts: string[];
   footerTexts: string[];
   footnoteTexts: string[];
   headerTexts: string[];
@@ -99,6 +103,24 @@ export function extractDocumentIdentities(
     ),
     commentAuthors: uniqueSorted(comments.map((comment) => comment.author)),
     commentTexts: uniqueSorted(comments.map((comment) => comment.text)),
+    contentControlAliases: uniqueSorted(
+      matchAll(html, /data-content-control-alias="([^"]+)"/g),
+    ),
+    contentControlTags: uniqueSorted(
+      matchAll(html, /data-content-control-tag="([^"]+)"/g),
+    ),
+    contentControlTexts: uniqueSorted(
+      matchAll(
+        html,
+        /<span\b[^>]*data-document-content-control="true"[^>]*>([\s\S]*?)<\/span>/gi,
+      ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
+    ),
+    endnoteTexts: uniqueSorted(
+      matchAll(
+        html,
+        /<aside\b[^>]*data-document-note="true"[^>]*data-note-kind="endnote"[^>]*>([\s\S]*?)<\/aside>/gi,
+      ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
+    ),
     footerTexts: uniqueSorted(
       [normalizePlainText(pageChrome.footerHtml ?? '')].filter(Boolean),
     ),

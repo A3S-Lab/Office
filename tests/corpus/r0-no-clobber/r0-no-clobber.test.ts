@@ -10,11 +10,13 @@ import {
   buildBookmarksAndLinksFixture,
   buildContractTableFixture,
   buildDuplicateBookmarkFixture,
+  buildEndnoteFixture,
   buildFootnoteFixture,
   buildHeaderFooterFixture,
   buildInternalBookmarkLinkFixture,
   buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
+  buildTextContentControlFixture,
 } from './fixtures';
 import {
   expectIssueCodes,
@@ -98,6 +100,28 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.plainText).toContain('Cite the warranty clause');
     expect(result.exportedParts).toContain('word/footnotes.xml');
     expectIssueCodes(result.firstPassIssues, ['docx.notes']);
+  });
+
+  test('endnote reference and note body text survive round trip', async () => {
+    const bytes = await buildEndnoteFixture();
+    const result = await roundTripDocx(bytes, 'report-endnote.docx');
+
+    expect(result.identities.endnoteTexts).toEqual(['See appendix A']);
+    expect(result.identities.plainText).toContain('Body with endnote');
+    expect(result.identities.plainText).toContain('See appendix A');
+    expect(result.exportedParts).toContain('word/endnotes.xml');
+    expectIssueCodes(result.firstPassIssues, ['docx.notes']);
+  });
+
+  test('text content control alias, tag, and text survive round trip', async () => {
+    const bytes = await buildTextContentControlFixture();
+    const result = await roundTripDocx(bytes, 'contract-content-control.docx');
+
+    expect(result.identities.contentControlAliases).toEqual(['PartyName']);
+    expect(result.identities.contentControlTags).toEqual(['party_name']);
+    expect(result.identities.contentControlTexts).toEqual(['Acme Corp']);
+    expect(result.identities.plainText).toContain('Acme Corp');
+    expectIssueCodes(result.firstPassIssues, ['docx.content-controls']);
   });
 
   test('contract table cell identities survive round trip', async () => {
