@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.271.0 - 2026-09-17
+
+### Document
+
+- Preserve live PAGE and NUMPAGES fields in page-chrome HTML across import →
+  export, and grow the permanent R0 no-clobber corpus with header PAGE plus
+  footer NUMPAGES identity (`bun run test:corpus:r0`) without art-border
+  breadth.
+
 ## 0.270.0 - 2026-09-17
 
 ### Document
