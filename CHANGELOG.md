@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.269.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for table SEQ caption kind/id identity, covering
+  contract and report table-caption workflows without art-border breadth.
+
 ## 0.268.0 - 2026-09-17
 
 ### Document

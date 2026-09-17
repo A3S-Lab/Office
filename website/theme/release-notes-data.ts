@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.269.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers table SEQ captions',
+      zh: 'R0 语料库覆盖表 SEQ 题注',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for table SEQ caption kind/id identity.',
+      zh: '永久无静默覆盖门禁新增表 SEQ 题注种类/id 身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Table caption identity',
+          zh: '表题注身份',
+        },
+        detail: {
+          en: 'Table SEQ captions keep kind and a stable caption id across import → export → reopen.',
+          zh: '表 SEQ 题注在导入 → 导出 → 再打开后仍保留种类与稳定 caption id。',
+        },
+      },
+      {
+        title: {
+          en: 'Paired with figure captions',
+          zh: '与图题注成对',
+        },
+        detail: {
+          en: 'Complements the figure SEQ and caption REF fixtures already gated on main.',
+          zh: '补齐 main 上已门禁的图 SEQ 与 caption REF 夹具。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.268.0',
     date: '2026-09-17',
     kind: 'improved',
