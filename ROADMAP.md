@@ -316,7 +316,8 @@ Still required for R0 exit:
    comments, default headers/footers, footnotes, endnotes, text and rich-text
    content controls, body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION,
    SECTIONPAGES, NUMWORDS, NUMCHARS, DATE (bare and `\@` format), and TIME
-   fields, figure SEQ captions and caption REF targets, table SEQ captions,
+   fields, header/footer PAGE and NUMPAGES (`fldSimple` and complex `fldChar`),
+   figure SEQ captions and caption REF targets, table SEQ captions,
    XE index entries and INDEX field columns, TOC level/hyperlink options and
    cached entry titles, contract tables, duplicate-bookmark identity
    diagnostics, and active-content fail-closed export. Grow the corpus with
