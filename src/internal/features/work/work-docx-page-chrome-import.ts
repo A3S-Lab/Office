@@ -1,3 +1,7 @@
+import { documentCharacterPositionDomAttributes } from './work-document-character-position';
+import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
+import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
+import { documentEmphasisMarkDomAttributes } from './work-document-emphasis';
 import {
   documentFieldCodeDisplay,
   documentFieldLabel,
@@ -5,74 +9,70 @@ import {
   supportedDocxDocumentFieldInstruction,
   type WorkDocumentFieldKind,
 } from './work-document-fields';
-import { normalizeDocumentImageIdentity } from './work-document-image-identity';
-import { documentScriptFontSegments } from './work-document-script-fonts';
-import { documentCharacterScaleDomAttributes } from './work-document-character-scale';
-import { documentCharacterPositionDomAttributes } from './work-document-character-position';
-import { documentCharacterSpacingDomAttributes } from './work-document-character-spacing';
-import { documentEmphasisMarkDomAttributes } from './work-document-emphasis';
-import { documentKerningDomAttributes } from './work-document-kerning';
-import { documentOpenTypeDomAttributes } from './work-document-opentype';
-import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
-import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
-import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
-import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
-import { resolveDocxOpenTypeFeatures } from './work-docx-opentype-import';
-import { resolveDocxEmphasisMark } from './work-docx-emphasis';
-import { resolveDocxHiddenText } from './work-docx-hidden-text';
 import { documentHiddenTextDomAttributes } from './work-document-hidden-text';
-import { documentLegacyTextEffectsDomAttributes } from './work-document-legacy-text-effects';
-import { resolveDocxLegacyTextEffects } from './work-docx-legacy-text-effects';
-import { documentRunBorderDomAttributes } from './work-document-run-border';
-import { resolveDocxRunBorder } from './work-docx-run-border';
-import { documentRunShadingDomAttributes } from './work-document-run-shading';
-import { resolveDocxRunShading } from './work-docx-run-shading';
-import { documentProofingDomAttributes } from './work-document-proofing';
-import { resolveDocxProofing } from './work-docx-proofing';
 import {
   documentHighlightDomAttributes,
   documentHighlightFromDocxValue,
   type WorkDocumentHighlight,
 } from './work-document-highlight';
-import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
+import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import { documentKerningDomAttributes } from './work-document-kerning';
+import { documentLegacyTextEffectsDomAttributes } from './work-document-legacy-text-effects';
+import { documentOpenTypeDomAttributes } from './work-document-opentype';
 import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
 } from './work-document-page-chrome';
+import { documentParagraphBordersDomAttributes } from './work-document-paragraph-borders';
 import { normalizeDocumentParagraphIdentity } from './work-document-paragraph-identity';
 import { documentParagraphShadingDomAttributes } from './work-document-paragraph-shading';
+import { documentProofingDomAttributes } from './work-document-proofing';
+import { documentRunBorderDomAttributes } from './work-document-run-border';
+import { documentRunShadingDomAttributes } from './work-document-run-shading';
+import { documentScriptFontSegments } from './work-document-script-fonts';
+import { documentStrikeDomAttributes } from './work-document-strike';
 import {
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
   normalizeDocumentTableRowIdentity,
 } from './work-document-table-row-identity';
+import { documentUnderlineDomAttributes } from './work-document-underline';
+import { docxCharacterPositionHalfPointsFromProperties } from './work-docx-character-position';
+import { docxCharacterScalePercentFromProperties } from './work-docx-character-scale';
+import { docxCharacterSpacingTwipsFromProperties } from './work-docx-character-spacing';
+import { resolveDocxEmphasisMark } from './work-docx-emphasis';
 import { docxEquationHtml } from './work-docx-equation-import';
 import { isDocxEquationLikeRoot } from './work-docx-equation-story';
-import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
-import {
-  type DocxParagraphStyleResolver,
-  createDocxParagraphStyleResolver,
-  docxRunPropertySources,
-} from './work-docx-paragraph-styles';
+import { resolveDocxHiddenText } from './work-docx-hidden-text';
+import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
+import { resolveDocxKerningThresholdHalfPoints } from './work-docx-kerning';
+import { resolveDocxLegacyTextEffects } from './work-docx-legacy-text-effects';
+import { resolveDocxOpenTypeFeatures } from './work-docx-opentype-import';
 import { resolveDocxParagraphBordersForParagraph } from './work-docx-paragraph-borders-import';
+import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { parseDirectDocxParagraphShading } from './work-docx-paragraph-shading-import';
 import {
-  type DocxTableStyleResolver,
-  createDocxTableStyleResolver,
-  docxTableRunPropertySources,
-} from './work-docx-table-styles';
-import { createDocxThemeResolver } from './work-docx-theme';
-import { documentUnderlineDomAttributes } from './work-document-underline';
-import { importedDocxUnderline } from './work-docx-underline';
-import { documentStrikeDomAttributes } from './work-document-strike';
-import { importedDocxStrike } from './work-docx-strike';
-import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
+  createDocxParagraphStyleResolver,
+  type DocxParagraphStyleResolver,
+  docxRunPropertySources,
+} from './work-docx-paragraph-styles';
+import { resolveDocxProofing } from './work-docx-proofing';
+import { resolveDocxRunBorder } from './work-docx-run-border';
+import { resolveDocxRunShading } from './work-docx-run-shading';
 import {
   XMLNS_NAMESPACE,
   xmlAttributeLocalName,
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
+import { importedDocxStrike } from './work-docx-strike';
+import {
+  createDocxTableStyleResolver,
+  type DocxTableStyleResolver,
+  docxTableRunPropertySources,
+} from './work-docx-table-styles';
+import { createDocxThemeResolver } from './work-docx-theme';
 import { parseBoundedDocxInteger } from './work-docx-twips';
+import { importedDocxUnderline } from './work-docx-underline';
 import {
   attribute,
   bytesToDataUrl,
@@ -304,7 +304,8 @@ async function paragraphHtml(
     active: false,
     instruction: '',
     separated: false,
-    skipResult: false,
+    captureLive: false,
+    resultText: '',
   };
   let html = '';
   for (const child of directChildren(paragraph)) {
@@ -338,7 +339,8 @@ async function paragraphHtml(
                 active: false,
                 instruction: '',
                 separated: false,
-                skipResult: false,
+                captureLive: false,
+                resultText: '',
               },
               runContext,
             )
@@ -424,12 +426,19 @@ async function runHtml(
   let content = '';
   for (const child of directChildren(run)) {
     if (child.localName === 'fldChar') {
-      updateFieldState(field, attribute(child, 'fldCharType'));
+      content += consumeComplexFieldChar(
+        field,
+        attribute(child, 'fldCharType'),
+      );
       continue;
     }
     if (child.localName === 'instrText') {
       if (field.active && !field.separated)
         field.instruction += child.textContent ?? '';
+      continue;
+    }
+    if (field.active && field.separated && field.captureLive) {
+      if (child.localName === 't') field.resultText += child.textContent ?? '';
       continue;
     }
     if (!fieldContentVisible(field)) continue;
@@ -839,34 +848,60 @@ function escapeHtml(value: string): string {
     .replaceAll('"', '&quot;');
 }
 
-function updateFieldState(field: FieldState, fieldType: string | null): void {
+function consumeComplexFieldChar(
+  field: FieldState,
+  fieldType: string | null,
+): string {
   if (fieldType === 'begin') {
     field.active = true;
     field.instruction = '';
     field.separated = false;
-    field.skipResult = false;
-    return;
+    field.captureLive = false;
+    field.resultText = '';
+    return '';
   }
   if (fieldType === 'separate' && field.active) {
     field.separated = true;
-    field.skipResult = /\bPAGE\b/i.test(field.instruction);
-    return;
+    const instruction = field.instruction.trim();
+    const kind = docxDocumentFieldKind(instruction);
+    field.captureLive = !!(
+      kind && supportedDocxDocumentFieldInstruction(instruction)
+    );
+    field.resultText = '';
+    return '';
   }
   if (fieldType === 'end') {
+    let html = '';
+    if (field.captureLive) {
+      const instruction = field.instruction.trim();
+      const kind = docxDocumentFieldKind(instruction);
+      if (kind) {
+        html = pageChromeFieldSpanHtml(
+          kind,
+          instruction,
+          field.resultText,
+          allocatePageChromeFieldId(),
+        );
+      }
+    }
     field.active = false;
     field.instruction = '';
     field.separated = false;
-    field.skipResult = false;
+    field.captureLive = false;
+    field.resultText = '';
+    return html;
   }
+  return '';
 }
 
 function fieldContentVisible(field: FieldState): boolean {
-  return !field.active || (field.separated && !field.skipResult);
+  return !field.active || field.separated;
 }
 
 interface FieldState {
   active: boolean;
   instruction: string;
   separated: boolean;
-  skipResult: boolean;
+  captureLive: boolean;
+  resultText: string;
 }
