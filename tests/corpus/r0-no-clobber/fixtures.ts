@@ -195,6 +195,28 @@ export async function buildSectionFieldFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: body SECTIONPAGES field kind/instruction identity.
+ */
+export async function buildSectionPagesFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Section pages </w:t></w:r><w:fldSimple w:instr="SECTIONPAGES"><w:r><w:t>4</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Report-shaped DOCX: body NUMWORDS field kind/instruction identity.
+ */
+export async function buildNumWordsFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Words </w:t></w:r><w:fldSimple w:instr="NUMWORDS"><w:r><w:t>128</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Academic-shaped DOCX: XE index entry main/sub-entry identity.
  */
 export async function buildIndexEntryFixture(): Promise<Uint8Array> {

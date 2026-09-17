@@ -314,12 +314,12 @@ Still required for R0 exit:
    `tests/corpus/r0-no-clobber/` (`bun run test:corpus:r0`): bookmarks/external
    links, internal bookmark-anchor hyperlinks, review track changes, review
    comments, default headers/footers, footnotes, endnotes, text content
-   controls, body PAGE, bookmark-backed PAGEREF, NUMPAGES, and SECTION
-   fields, XE index entries and INDEX field columns, TOC level/hyperlink
-   options and cached entry titles, contract tables, duplicate-bookmark
-   identity diagnostics, and active-content fail-closed export. Grow the
-   corpus with more representative fixtures; do not substitute decorative
-   art-border breadth for this gate.
+   controls, body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION,
+   SECTIONPAGES, and NUMWORDS fields, XE index entries and INDEX field
+   columns, TOC level/hyperlink options and cached entry titles, contract
+   tables, duplicate-bookmark identity diagnostics, and active-content
+   fail-closed export. Grow the corpus with more representative fixtures; do
+   not substitute decorative art-border breadth for this gate.
 
 R0 exit criteria (unchanged in substance): representative fixtures reopen
 without unreported data loss; edited native structures retain identity;

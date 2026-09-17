@@ -17,11 +17,13 @@ import {
   buildIndexFieldFixture,
   buildInternalBookmarkLinkFixture,
   buildNumPagesFieldFixture,
+  buildNumWordsFieldFixture,
   buildPageFieldFixture,
   buildPageRefFieldFixture,
   buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
   buildSectionFieldFixture,
+  buildSectionPagesFieldFixture,
   buildTableOfContentsFixture,
   buildTextContentControlFixture,
 } from './fixtures';
@@ -173,6 +175,26 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.fieldKinds).toEqual(['section']);
     expect(result.identities.fieldInstructions).toEqual(['SECTION']);
     expect(result.identities.plainText).toContain('Section');
+    expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
+  });
+
+  test('SECTIONPAGES field kind and instruction survive round trip', async () => {
+    const bytes = await buildSectionPagesFieldFixture();
+    const result = await roundTripDocx(bytes, 'report-sectionpages-field.docx');
+
+    expect(result.identities.fieldKinds).toEqual(['sectionPages']);
+    expect(result.identities.fieldInstructions).toEqual(['SECTIONPAGES']);
+    expect(result.identities.plainText).toContain('Section pages');
+    expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
+  });
+
+  test('NUMWORDS field kind and instruction survive round trip', async () => {
+    const bytes = await buildNumWordsFieldFixture();
+    const result = await roundTripDocx(bytes, 'report-numwords-field.docx');
+
+    expect(result.identities.fieldKinds).toEqual(['wordCount']);
+    expect(result.identities.fieldInstructions).toEqual(['NUMWORDS']);
+    expect(result.identities.plainText).toContain('Words');
     expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
   });
 
