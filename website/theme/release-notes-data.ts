@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.260.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers endnotes and text content controls',
+      zh: 'R0 语料库覆盖尾注与文本内容控件',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for endnote reference/body identity and inline text content-control alias/tag/text.',
+      zh: '永久无静默覆盖门禁新增尾注引用/正文身份与内联文本内容控件别名/标签/文本的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Endnote identity',
+          zh: '尾注身份',
+        },
+        detail: {
+          en: 'Endnote references keep their note body text across import → export → reopen.',
+          zh: '尾注引用在导入 → 导出 → 再打开后仍保留注释放正文。',
+        },
+      },
+      {
+        title: {
+          en: 'Text content controls',
+          zh: '文本内容控件',
+        },
+        detail: {
+          en: 'Inline text control alias, tag, and visible text survive the same round-trip contract.',
+          zh: '内联文本控件的别名、标签与可见文本通过相同的往返契约。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.259.0',
     date: '2026-09-17',
     kind: 'improved',

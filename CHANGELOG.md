@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.260.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for endnote reference/body identity and inline text
+  content-control alias/tag/text, covering academic notes and contract form
+  fields without art-border breadth.
+
 ## 0.259.0 - 2026-09-17
 
 ### Document
