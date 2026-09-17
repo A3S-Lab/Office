@@ -32,6 +32,10 @@ export type R0IdentitySnapshot = {
   indexSubEntries: string[];
   plainText: string;
   tableCellTexts: string[];
+  tocEntryTitles: string[];
+  tocHyperlinks: string[];
+  tocMaxLevels: string[];
+  tocMinLevels: string[];
 };
 
 export type R0RoundTripResult = {
@@ -160,6 +164,23 @@ export function extractDocumentIdentities(
         text.replace(/<[^>]+>/g, '').trim(),
       ),
     ),
+    tocEntryTitles: uniqueSorted(
+      matchAll(html, /data-toc-entries="([^"]+)"/g)
+        .map(decodeHtmlAttr)
+        .flatMap((raw) => {
+          try {
+            const entries = JSON.parse(raw) as Array<{ title?: string }>;
+            return entries.map((entry) => entry.title?.trim() ?? '');
+          } catch {
+            return [];
+          }
+        }),
+    ),
+    tocHyperlinks: uniqueSorted(
+      matchAll(html, /data-toc-hyperlinks="([^"]+)"/g),
+    ),
+    tocMaxLevels: uniqueSorted(matchAll(html, /data-toc-max-level="([^"]+)"/g)),
+    tocMinLevels: uniqueSorted(matchAll(html, /data-toc-min-level="([^"]+)"/g)),
   };
 }
 
