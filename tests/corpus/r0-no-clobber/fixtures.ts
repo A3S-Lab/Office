@@ -151,6 +151,28 @@ export async function buildTextContentControlFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: body PAGE field kind/instruction identity.
+ */
+export async function buildPageFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Page </w:t></w:r><w:fldSimple w:instr="PAGE"><w:r><w:t>3</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Report-shaped DOCX: bookmark + PAGEREF target/instruction identity.
+ */
+export async function buildPageRefFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:bookmarkStart w:id="9" w:name="Warranty"/><w:r><w:t>Warranty clause</w:t></w:r><w:bookmarkEnd w:id="9"/></w:p><w:p><w:r><w:t>See page </w:t></w:r><w:fldSimple w:instr="PAGEREF Warranty \\h"><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Active-content fail-closed: safe custom parts may survive, VBA/signatures
  * must not be revived after a light edit + export.
  */

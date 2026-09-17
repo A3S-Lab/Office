@@ -20,6 +20,9 @@ export type R0IdentitySnapshot = {
   contentControlTags: string[];
   contentControlTexts: string[];
   endnoteTexts: string[];
+  fieldInstructions: string[];
+  fieldKinds: string[];
+  fieldTargetNames: string[];
   footerTexts: string[];
   footnoteTexts: string[];
   headerTexts: string[];
@@ -121,6 +124,13 @@ export function extractDocumentIdentities(
         /<aside\b[^>]*data-document-note="true"[^>]*data-note-kind="endnote"[^>]*>([\s\S]*?)<\/aside>/gi,
       ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
     ),
+    fieldInstructions: uniqueSorted(
+      matchAll(html, /data-field-instruction="([^"]+)"/g).map(decodeHtmlAttr),
+    ),
+    fieldKinds: uniqueSorted(matchAll(html, /data-field-kind="([^"]+)"/g)),
+    fieldTargetNames: uniqueSorted(
+      matchAll(html, /data-field-target-name="([^"]+)"/g),
+    ),
     footerTexts: uniqueSorted(
       [normalizePlainText(pageChrome.footerHtml ?? '')].filter(Boolean),
     ),
@@ -181,4 +191,13 @@ function normalizePlainText(html: string): string {
     .replace(/&nbsp;/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function decodeHtmlAttr(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
 }
