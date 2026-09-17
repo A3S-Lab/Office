@@ -92,21 +92,56 @@
 
 .work-spreadsheet-editor .fortune-col-header-selected {
   border-bottom-color: var(--work-spreadsheet-accent);
-  background: var(--work-spreadsheet-chrome-active);
-  color: color-mix(in srgb, var(--work-spreadsheet-accent) 82%, var(--a3s-ink));
-  font-weight: 650;
+  /* Translucent only: opaque fills hide canvas-painted column letters. */
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 16%,
+    transparent
+  );
 }
 
 .work-spreadsheet-editor .fortune-row-header-selected {
   border-right-color: var(--work-spreadsheet-accent);
-  background: var(--work-spreadsheet-chrome-active);
-  color: color-mix(in srgb, var(--work-spreadsheet-accent) 82%, var(--a3s-ink));
-  font-weight: 650;
+  /* Translucent only: opaque fills hide canvas-painted row numbers. */
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 16%,
+    transparent
+  );
 }
 
 .work-spreadsheet-editor .fortune-col-header-hover,
 .work-spreadsheet-editor .fortune-row-header-hover {
-  background: var(--work-spreadsheet-chrome-hover);
+  /* Match Fortune's translucent hover so index labels stay readable on
+     light and dark panels (opaque --a3s-panel fills read as black). */
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 12%,
+    transparent
+  );
+}
+
+/* In-cell editor: Fortune paints vt via alignItems on the inner box, but the
+   default stylesheet never makes that box a flex container, so the caret
+   sticks to the top. Default to middle (Fortune normalizedCellAttr vt "0"). */
+.work-spreadsheet-editor .luckysheet-input-box-inner {
+  display: flex;
+  align-items: center;
+}
+
+.work-spreadsheet-editor[data-cell-vt="1"] .luckysheet-input-box-inner {
+  align-items: flex-start;
+}
+
+.work-spreadsheet-editor[data-cell-vt="2"] .luckysheet-input-box-inner {
+  align-items: flex-end;
+}
+
+.work-spreadsheet-editor .luckysheet-cell-input {
+  /* Shrink to content height so the flex parent can vertically center it. */
+  height: auto !important;
+  max-height: 100%;
+  width: 100% !important;
 }
 
 .work-spreadsheet-editor .luckysheet-cell-selected {

@@ -73,7 +73,7 @@ export function SpreadsheetAlignmentRibbonGroup({
       <WorkOfficeRibbonButton
         label="顶端对齐"
         displayLabel={false}
-        active={Number(toolbarCell?.vt ?? 1) === 1}
+        active={Number(toolbarCell?.vt) === 1}
         disabled={!can.setCellFormat('vt', 1)}
         onClick={() => commands.setCellFormat('vt', 1)}
       >
@@ -82,7 +82,7 @@ export function SpreadsheetAlignmentRibbonGroup({
       <WorkOfficeRibbonButton
         label="垂直居中"
         displayLabel={false}
-        active={Number(toolbarCell?.vt) === 0}
+        active={Number(toolbarCell?.vt ?? 0) === 0}
         disabled={!can.setCellFormat('vt', 0)}
         onClick={() => commands.setCellFormat('vt', 0)}
       >
