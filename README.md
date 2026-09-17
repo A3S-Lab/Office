@@ -371,11 +371,12 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.260.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.261.0` grows the permanent R0 no-clobber corpus gate:
 
-- Endnote reference/body identity and inline text content-control alias/tag/text
-  now join headers/footers, footnotes, bookmarks, comments, and contract tables
-  in the representative DOCX round-trip corpus. Intentional normalizations stay
+- Body PAGE field kind/instruction identity and bookmark-backed PAGEREF
+  kind/instruction/target identity now join endnotes, text content controls,
+  headers/footers, footnotes, bookmarks, comments, and contract tables in the
+  representative DOCX round-trip corpus. Intentional normalizations stay
   diagnosed; VBA and package signatures stay fail-closed on export
   (`bun run test:corpus:r0`).
 

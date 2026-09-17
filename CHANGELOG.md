@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.261.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for body PAGE field kind/instruction identity and
+  bookmark-backed PAGEREF kind/instruction/target identity, covering report
+  page-number and cross-page reference workflows without art-border breadth.
+
 ## 0.260.0 - 2026-09-17
 
 ### Document

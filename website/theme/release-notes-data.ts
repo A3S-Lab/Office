@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.261.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers PAGE and bookmark-backed PAGEREF fields',
+      zh: 'R0 语料库覆盖 PAGE 与书签支持的 PAGEREF 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for body PAGE field kind/instruction identity and bookmark-backed PAGEREF kind/instruction/target identity.',
+      zh: '永久无静默覆盖门禁新增正文 PAGE 字段种类/指令身份与书签支持的 PAGEREF 种类/指令/目标身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'PAGE field identity',
+          zh: 'PAGE 字段身份',
+        },
+        detail: {
+          en: 'Body PAGE fields keep kind and instruction across import → export → reopen.',
+          zh: '正文 PAGE 字段在导入 → 导出 → 再打开后仍保留种类与指令。',
+        },
+      },
+      {
+        title: {
+          en: 'PAGEREF target identity',
+          zh: 'PAGEREF 目标身份',
+        },
+        detail: {
+          en: 'Bookmark-backed PAGEREF fields keep instruction and target name through the same round trip.',
+          zh: '书签支持的 PAGEREF 字段在相同往返中保留指令与目标名称。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.260.0',
     date: '2026-09-17',
     kind: 'improved',
