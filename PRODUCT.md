@@ -56,12 +56,15 @@ family is complete through `0.147.0`; the move-range family is largely
 complete; residual fail-closed edges are deeper nesting, a nested table
 beside the move, and SDT+nested-table combinations. Attributed note refs,
 move-range nesting through two levels, and current-level bullet
-`w:numberingChange` are already admitted through tip. Next R0 work is
-growing the permanent no-clobber corpus beyond v1
-(`bun run test:corpus:r0`), broader bounded property-revision subsets, and
-full PDF/UA structure trees / broader vector paint—not decorative art-border
-treadmills—then R1 Writer daily leftovers, R2 calculation fidelity, R3
-animation/media, and R4 PDF content editing.
+`w:numberingChange` are already admitted through tip. The permanent no-clobber corpus (`bun run test:corpus:r0`) now covers
+internal bookmark-anchor hyperlinks and review comment author/text identity
+in addition to v1 bookmarks/links, track changes, contract tables,
+duplicate-bookmark diagnostics, and active-content fail-closed export. Next
+R0 work is further corpus growth for representative Traditional Office
+samples, broader bounded property-revision subsets, and full PDF/UA structure
+trees / broader vector paint—not decorative art-border treadmills—then R1
+Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
+PDF content editing.
 
 ## Current Spreadsheet Milestone
 

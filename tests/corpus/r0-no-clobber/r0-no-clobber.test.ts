@@ -10,6 +10,8 @@ import {
   buildBookmarksAndLinksFixture,
   buildContractTableFixture,
   buildDuplicateBookmarkFixture,
+  buildInternalBookmarkLinkFixture,
+  buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
 } from './fixtures';
 import {
@@ -20,13 +22,13 @@ import {
 } from './harness';
 
 /**
- * R0 no-clobber corpus v1.
+ * R0 no-clobber corpus.
  *
  * Permanent gate: representative DOCX fixtures reopen without silent identity
  * loss; intentional normalizations appear in compatibility diagnostics;
  * active content stays fail-closed on export.
  */
-describe('R0 no-clobber corpus v1', () => {
+describe('R0 no-clobber corpus', () => {
   test('bookmarks and external links survive import → export → reopen', async () => {
     const bytes = await buildBookmarksAndLinksFixture();
     const result = await roundTripDocx(bytes, 'report-bookmarks-links.docx');
@@ -35,6 +37,17 @@ describe('R0 no-clobber corpus v1', () => {
     expect(result.identities.hrefs).toContain('https://a3s.dev/office');
     expect(result.identities.plainText).toContain('Architecture overview');
     expect(result.identities.plainText).toContain('Product site');
+    expectIssueCodes(result.firstPassIssues, ['docx.bookmarks-links']);
+  });
+
+  test('internal hyperlink anchors keep bookmark identity across round trip', async () => {
+    const bytes = await buildInternalBookmarkLinkFixture();
+    const result = await roundTripDocx(bytes, 'report-internal-link.docx');
+
+    expect(result.identities.bookmarkNames).toContain('Obligations');
+    expect(result.identities.hrefs).toContain('#Obligations');
+    expect(result.identities.plainText).toContain('Obligations section');
+    expect(result.identities.plainText).toContain('See obligations');
     expectIssueCodes(result.firstPassIssues, ['docx.bookmarks-links']);
   });
 
@@ -47,6 +60,17 @@ describe('R0 no-clobber corpus v1', () => {
       expect.arrayContaining(['Added warranty', 'Remove liability']),
     );
     expect(result.identities.plainText).toContain('Keep this clause');
+  });
+
+  test('review comment authors and texts survive round trip', async () => {
+    const bytes = await buildReviewCommentsFixture();
+    const result = await roundTripDocx(bytes, 'review-comments.docx');
+
+    expect(result.identities.commentAuthors).toEqual(['Bea Counsel']);
+    expect(result.identities.commentTexts).toEqual(['Clarify liability cap']);
+    expect(result.identities.plainText).toContain('Liability clause');
+    expect(result.exportedParts).toContain('word/comments.xml');
+    expectIssueCodes(result.firstPassIssues, ['docx.comments']);
   });
 
   test('contract table cell identities survive round trip', async () => {

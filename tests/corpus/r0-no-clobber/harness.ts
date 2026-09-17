@@ -5,10 +5,17 @@ import {
 } from '../../../src/core';
 import type { WorkCompatibilityIssue } from '../../../src/internal/features/work/work-types';
 
+export type R0CommentIdentity = {
+  author: string;
+  text: string;
+};
+
 export type R0IdentitySnapshot = {
   bookmarkNames: string[];
   changeAuthors: string[];
   changeTexts: string[];
+  commentAuthors: string[];
+  commentTexts: string[];
   hrefs: string[];
   plainText: string;
   tableCellTexts: string[];
@@ -50,7 +57,10 @@ export async function roundTripDocx(
       }
       return {
         firstPassIssues,
-        identities: extractDocumentIdentities(reopened.content.html),
+        identities: extractDocumentIdentities(
+          reopened.content.html,
+          reopened.content.comments ?? [],
+        ),
         secondPassIssues: reopened.compatibility?.issues ?? [],
         exportedParts,
       };
@@ -62,7 +72,10 @@ export async function roundTripDocx(
   }
 }
 
-export function extractDocumentIdentities(html: string): R0IdentitySnapshot {
+export function extractDocumentIdentities(
+  html: string,
+  comments: readonly R0CommentIdentity[] = [],
+): R0IdentitySnapshot {
   return {
     bookmarkNames: uniqueSorted(
       matchAll(html, /data-bookmark-name="([^"]+)"/g),
@@ -76,6 +89,8 @@ export function extractDocumentIdentities(html: string): R0IdentitySnapshot {
         /<(?:ins|del)\b[^>]*data-document-change="true"[^>]*>([\s\S]*?)<\/(?:ins|del)>/g,
       ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
     ),
+    commentAuthors: uniqueSorted(comments.map((comment) => comment.author)),
+    commentTexts: uniqueSorted(comments.map((comment) => comment.text)),
     hrefs: uniqueSorted(matchAll(html, /href="([^"]+)"/g)),
     plainText: normalizePlainText(html),
     tableCellTexts: uniqueSorted(

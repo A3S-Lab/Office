@@ -54,6 +54,37 @@ export async function buildDuplicateBookmarkFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: internal hyperlink keeps Word anchor semantics to a
+ * body bookmark (no external relationship).
+ */
+export async function buildInternalBookmarkLinkFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:bookmarkStart w:id="7" w:name="Obligations"/><w:r><w:t>Obligations section</w:t></w:r><w:bookmarkEnd w:id="7"/></w:p><w:p><w:hyperlink w:anchor="Obligations" w:tooltip="Jump to obligations"><w:r><w:t>See obligations</w:t></w:r></w:hyperlink></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Review-shaped DOCX: one anchored comment with stable author and text.
+ */
+export async function buildReviewCommentsFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:commentRangeStart w:id="0"/><w:r><w:t>Liability clause</w:t></w:r><w:commentRangeEnd w:id="0"/><w:r><w:commentReference w:id="0"/></w:r></w:p><w:sectPr/></w:body></w:document>`,
+    commentsXml: `<w:comments xmlns:w="${WORD_NAMESPACE}"><w:comment w:id="0" w:author="Bea Counsel" w:date="2026-09-17T02:00:00Z" w:initials="BC"><w:p><w:r><w:t>Clarify liability cap</w:t></w:r></w:p></w:comment></w:comments>`,
+    documentRelationships: [
+      [
+        'rIdComments',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/comments`,
+        'comments.xml',
+      ],
+    ],
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Active-content fail-closed: safe custom parts may survive, VBA/signatures
  * must not be revived after a light edit + export.
  */
@@ -93,27 +124,44 @@ function writePackageSkeleton(
   options: {
     documentXml: string;
     relationships?: Array<[string, string, string, string?]>;
+    documentRelationships?: Array<[string, string, string]>;
+    commentsXml?: string;
   },
 ): void {
+  const overrides = [
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>',
+  ];
+  if (options.commentsXml) {
+    overrides.push(
+      '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>',
+    );
+  }
   archive.file(
     '[Content_Types].xml',
-    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="${CONTENT_TYPES_NAMESPACE}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`,
+    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="${CONTENT_TYPES_NAMESPACE}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${overrides.join('')}</Types>`,
   );
   archive.file(
     '_rels/.rels',
     `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${RELATIONSHIPS_NAMESPACE}"><Relationship Id="rId1" Type="${OFFICE_RELATIONSHIPS_NAMESPACE}/officeDocument" Target="word/document.xml"/></Relationships>`,
   );
   archive.file('word/document.xml', options.documentXml);
-  const relationships = options.relationships ?? [];
+  if (options.commentsXml) {
+    archive.file('word/comments.xml', options.commentsXml);
+  }
+  const relationships = [
+    ...(options.documentRelationships ?? []),
+    ...(options.relationships ?? []),
+  ];
   if (relationships.length > 0) {
     archive.file(
       'word/_rels/document.xml.rels',
       `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${RELATIONSHIPS_NAMESPACE}">${relationships
-        .map(([id, type, target, mode]) =>
-          mode
+        .map((entry) => {
+          const [id, type, target, mode] = entry;
+          return mode
             ? `<Relationship Id="${id}" Type="${type}" Target="${target}" TargetMode="${mode}"/>`
-            : `<Relationship Id="${id}" Type="${type}" Target="${target}"/>`,
-        )
+            : `<Relationship Id="${id}" Type="${type}" Target="${target}"/>`;
+        })
         .join('')}</Relationships>`,
     );
   }
