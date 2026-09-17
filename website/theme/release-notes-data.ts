@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.272.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers complex page-chrome PAGE fields',
+      zh: 'R0 语料库覆盖复杂页眉/页脚 PAGE 字段',
+    },
+    summary: {
+      en: 'Page chrome keeps complex fldChar PAGE and NUMPAGES fields, and the permanent no-clobber gate adds a complex header/footer fixture.',
+      zh: '页眉页脚保留复杂 fldChar PAGE 与 NUMPAGES 字段，永久无静默覆盖门禁新增复杂页眉/页脚夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Complex page-chrome fields',
+          zh: '复杂页眉页脚字段',
+        },
+        detail: {
+          en: 'Supported fldChar PAGE/NUMPAGES in headers and footers import as editable field spans.',
+          zh: '页眉页脚中受支持的 fldChar PAGE/NUMPAGES 导入为可编辑字段跨度。',
+        },
+      },
+      {
+        title: {
+          en: 'Round-trip identity',
+          zh: '往返身份',
+        },
+        detail: {
+          en: 'Complex header PAGE and footer NUMPAGES keep kind and instruction across import → export → reopen.',
+          zh: '复杂页眉 PAGE 与页脚 NUMPAGES 在导入 → 导出 → 再打开后仍保留种类与指令。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.271.0',
     date: '2026-09-17',
     kind: 'improved',
