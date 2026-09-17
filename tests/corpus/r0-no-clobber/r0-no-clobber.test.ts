@@ -16,6 +16,7 @@ import {
   buildEndnoteFixture,
   buildFigureCaptionFixture,
   buildFootnoteFixture,
+  buildHeaderFooterFieldFixture,
   buildHeaderFooterFixture,
   buildIndexEntryFixture,
   buildIndexFieldFixture,
@@ -104,6 +105,27 @@ describe('R0 no-clobber corpus', () => {
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/footer1.xml');
     expectIssueCodes(result.firstPassIssues, ['docx.headers']);
+  });
+
+  test('header PAGE and footer NUMPAGES fields survive round trip', async () => {
+    const bytes = await buildHeaderFooterFieldFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'report-header-footer-fields.docx',
+    );
+
+    expect(result.identities.fieldKinds).toEqual(['numPages', 'page']);
+    expect(result.identities.fieldInstructions).toEqual(['NUMPAGES', 'PAGE']);
+    expect(result.identities.headerTexts.join(' ')).toContain('Page');
+    expect(result.identities.footerTexts.join(' ')).toContain('of');
+    expect(result.identities.plainText).toContain(
+      'Report body with live chrome',
+    );
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expect(
+      result.firstPassIssues.map((issue) => issue.code),
+    ).toEqual(expect.arrayContaining(['docx.headers']));
   });
 
   test('footnote reference and note body text survive round trip', async () => {

@@ -1,4 +1,11 @@
 import {
+  documentFieldCodeDisplay,
+  documentFieldKind,
+  documentFieldLabel,
+  docxDocumentFieldKind,
+  supportedDocxDocumentFieldInstruction,
+} from './work-document-fields';
+import {
   createDocumentEquationElement,
   documentEquationFromElement,
 } from './work-document-equations';
@@ -482,6 +489,45 @@ function normalizePageChromeContent(
   };
 }
 
+function sanitizePageChromeFieldSpan(element: HTMLElement): void {
+  const instruction = element.dataset.fieldInstruction?.trim() ?? '';
+  const kind =
+    documentFieldKind(element.dataset.fieldKind) ??
+    docxDocumentFieldKind(instruction);
+  if (
+    !kind ||
+    !instruction ||
+    !supportedDocxDocumentFieldInstruction(instruction)
+  ) {
+    element.replaceWith(
+      element.ownerDocument.createTextNode(element.textContent?.trim() ?? ''),
+    );
+    return;
+  }
+  const display =
+    element.dataset.fieldDisplay?.trim() ||
+    element.textContent?.trim() ||
+    documentFieldLabel(kind);
+  const id = element.dataset.fieldId?.trim() || 'docx-chrome-field';
+  const locked = element.dataset.fieldLocked === 'true';
+  for (const attribute of Array.from(element.attributes)) {
+    element.removeAttribute(attribute.name);
+  }
+  element.dataset.documentField = 'true';
+  element.dataset.fieldId = id;
+  element.dataset.fieldKind = kind;
+  element.dataset.fieldInstruction = instruction;
+  element.dataset.fieldCode = documentFieldCodeDisplay(instruction);
+  element.dataset.fieldDisplay = display;
+  if (locked) element.dataset.fieldLocked = 'true';
+  element.className = locked
+    ? 'work-document-field work-document-field-locked'
+    : 'work-document-field';
+  element.setAttribute('aria-label', documentFieldLabel(kind));
+  element.setAttribute('title', documentFieldLabel(kind));
+  element.textContent = display;
+}
+
 function sanitizeAttributes(element: Element, tag: string) {
   if (MATHML_TAGS.has(tag)) {
     for (const attribute of Array.from(element.attributes)) {
@@ -492,6 +538,13 @@ function sanitizeAttributes(element: Element, tag: string) {
     return;
   }
   if (!(element instanceof HTMLElement)) return;
+  if (
+    tag === 'span' &&
+    element.getAttribute('data-document-field') === 'true'
+  ) {
+    sanitizePageChromeFieldSpan(element);
+    return;
+  }
   for (const attribute of Array.from(element.attributes)) {
     if (attribute.name.toLowerCase().startsWith('on'))
       element.removeAttribute(attribute.name);
