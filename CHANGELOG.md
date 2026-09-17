@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.267.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for body TIME and DATE `\@` format-switch field
+  kind/instruction identity, covering time chrome and formatted date workflows
+  without art-border breadth.
+
 ## 0.266.0 - 2026-09-17
 
 ### Document

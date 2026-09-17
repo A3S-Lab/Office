@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.267.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers TIME and DATE format fields',
+      zh: 'R0 语料库覆盖 TIME 与 DATE 格式字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for body TIME and DATE \\@ format-switch field kind/instruction identity.',
+      zh: '永久无静默覆盖门禁新增正文 TIME 与 DATE \\@ 格式开关字段种类/指令身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'TIME identity',
+          zh: 'TIME 身份',
+        },
+        detail: {
+          en: 'Body TIME fields keep kind and instruction across import → export → reopen.',
+          zh: '正文 TIME 字段在导入 → 导出 → 再打开后仍保留种类与指令。',
+        },
+      },
+      {
+        title: {
+          en: 'DATE format switch',
+          zh: 'DATE 格式开关',
+        },
+        detail: {
+          en: 'DATE instructions with a bounded \\@ format switch keep the same contract.',
+          zh: '带有有界 \\@ 格式开关的 DATE 指令保持相同契约。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.266.0',
     date: '2026-09-17',
     kind: 'improved',
