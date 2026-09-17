@@ -59,10 +59,11 @@ move-range nesting through two levels, and current-level bullet
 `w:numberingChange` are already admitted through tip. The permanent no-clobber corpus (`bun run test:corpus:r0`) now covers
 internal bookmark-anchor hyperlinks, review comment author/text identity,
 default header/footer text, footnote and endnote reference/body identity,
-inline text content-control alias/tag/text identity, and body PAGE plus
-bookmark-backed PAGEREF field kind/instruction/target identity in addition to
-v1 bookmarks/links, track changes, contract tables, duplicate-bookmark
-diagnostics, and active-content fail-closed export. Next
+inline text content-control alias/tag/text identity, body PAGE plus
+bookmark-backed PAGEREF field kind/instruction/target identity, and XE index
+entry plus INDEX column identity in addition to v1 bookmarks/links, track
+changes, contract tables, duplicate-bookmark diagnostics, and active-content
+fail-closed export. Next
 R0 work is further corpus growth for representative Traditional Office
 samples, broader bounded property-revision subsets, and full PDF/UA structure
 trees / broader vector paint—not decorative art-border treadmills—then R1

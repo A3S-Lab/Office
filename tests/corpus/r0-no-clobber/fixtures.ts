@@ -173,6 +173,28 @@ export async function buildPageRefFieldFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Academic-shaped DOCX: XE index entry main/sub-entry identity.
+ */
+export async function buildIndexEntryFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Runtime</w:t></w:r><w:fldSimple w:instr="XE &quot;Architecture:Runtime&quot; \\b"><w:r><w:t/></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Academic-shaped DOCX: SDT-wrapped INDEX field columns identity.
+ */
+export async function buildIndexFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:sdt><w:sdtPr><w:docPartObj><w:docPartGallery w:val="Indexes"/><w:docPartUnique/></w:docPartObj></w:sdtPr><w:sdtContent><w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> INDEX \\c "2" </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r></w:p><w:p><w:pPr><w:pStyle w:val="Index1"/><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9360"/></w:tabs></w:pPr><w:r><w:t>Architecture</w:t></w:r><w:r><w:tab/></w:r><w:r><w:t>3</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:sdtContent></w:sdt><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Active-content fail-closed: safe custom parts may survive, VBA/signatures
  * must not be revived after a light edit + export.
  */
