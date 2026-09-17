@@ -16,7 +16,8 @@ Each fixture must prove:
    critical identities (bookmarks, revision authors/text, review comments,
    internal and external links, headers/footers, footnotes, endnotes, text and
    rich-text content controls, PAGE/PAGEREF/NUMPAGES/SECTION/SECTIONPAGES/NUMWORDS/
-   NUMCHARS/DATE/TIME fields (including DATE `\@` format switches), figure
+   NUMCHARS/DATE/TIME fields (including DATE `\@` format switches), header/footer
+   PAGE and NUMPAGES as `fldSimple` or complex `fldChar` live fields, figure
    SEQ captions and caption REF targets, table SEQ captions, XE/INDEX index
    identities, TOC options/entries, table cells).
 2. Every intentional normalization appears in `compatibility.issues` with a
@@ -28,7 +29,7 @@ bookmark-anchor hyperlinks, review track changes, review comments, default
 headers/footers, footnotes, endnotes, text and rich-text content controls,
 body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS,
 NUMCHARS, DATE (bare and `\@` format), and TIME fields, header PAGE and footer
-NUMPAGES live fields, figure SEQ captions and caption REF targets, table SEQ
+NUMPAGES live fields (both `fldSimple` and complex `fldChar` forms), figure SEQ captions and caption REF targets, table SEQ
 captions, XE index entries and INDEX field columns, TOC level/hyperlink options
 and cached entry titles, contract tables, duplicate-bookmark identity
 diagnostics, and active-content fail-closed export.

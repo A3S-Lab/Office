@@ -16,6 +16,7 @@ import {
   buildEndnoteFixture,
   buildFigureCaptionFixture,
   buildFootnoteFixture,
+  buildHeaderFooterComplexFieldFixture,
   buildHeaderFooterFieldFixture,
   buildHeaderFooterFixture,
   buildIndexEntryFixture,
@@ -31,10 +32,10 @@ import {
   buildRichTextContentControlFixture,
   buildSectionFieldFixture,
   buildSectionPagesFieldFixture,
+  buildTableCaptionFixture,
   buildTableOfContentsFixture,
   buildTextContentControlFixture,
   buildTimeFieldFixture,
-  buildTableCaptionFixture,
 } from './fixtures';
 import {
   expectIssueCodes,
@@ -120,6 +121,27 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.footerTexts.join(' ')).toContain('of');
     expect(result.identities.plainText).toContain(
       'Report body with live chrome',
+    );
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expect(result.firstPassIssues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['docx.headers']),
+    );
+  });
+
+  test('complex header PAGE and footer NUMPAGES fields survive round trip', async () => {
+    const bytes = await buildHeaderFooterComplexFieldFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'report-header-footer-complex-fields.docx',
+    );
+
+    expect(result.identities.fieldKinds).toEqual(['numPages', 'page']);
+    expect(result.identities.fieldInstructions).toEqual(['NUMPAGES', 'PAGE']);
+    expect(result.identities.headerTexts.join(' ')).toContain('Page');
+    expect(result.identities.footerTexts.join(' ')).toContain('of');
+    expect(result.identities.plainText).toContain(
+      'Report body with complex chrome fields',
     );
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/footer1.xml');

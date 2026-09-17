@@ -62,12 +62,13 @@ default header/footer text, footnote and endnote reference/body identity,
 inline text and rich-text content-control alias/tag/type/text identity, body PAGE plus
 bookmark-backed PAGEREF plus NUMPAGES plus SECTION plus SECTIONPAGES plus
 NUMWORDS plus NUMCHARS plus DATE (bare and `\@` format) plus TIME field
-kind/instruction (/target) identity, figure SEQ caption kind/id plus caption
-REF target identity, table SEQ caption kind/id, XE index entry plus INDEX
-column identity, and TOC level/hyperlink options plus cached entry title
-identity in addition to v1 bookmarks/links, track changes, contract tables,
-duplicate-bookmark diagnostics, and active-content fail-closed export. Next
-R0 work is further corpus growth for representative Traditional Office
+kind/instruction (/target) identity, header/footer PAGE and NUMPAGES live-field
+identity for both `fldSimple` and complex `fldChar` forms, figure SEQ caption
+kind/id plus caption REF target identity, table SEQ caption kind/id, XE index
+entry plus INDEX column identity, and TOC level/hyperlink options plus cached
+entry title identity in addition to v1 bookmarks/links, track changes, contract
+tables, duplicate-bookmark diagnostics, and active-content fail-closed export.
+Next R0 work is further corpus growth for representative Traditional Office
 samples, broader bounded property-revision subsets, and full PDF/UA structure
 trees / broader vector paint—not decorative art-border treadmills—then R1
 Writer daily leftovers, R2 calculation fidelity, R3 animation/media, and R4
