@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.265.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers SECTIONPAGES and NUMWORDS fields',
+      zh: 'R0 语料库覆盖 SECTIONPAGES 与 NUMWORDS 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for body SECTIONPAGES and NUMWORDS field kind/instruction identity.',
+      zh: '永久无静默覆盖门禁新增正文 SECTIONPAGES 与 NUMWORDS 字段种类/指令身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'SECTIONPAGES identity',
+          zh: 'SECTIONPAGES 身份',
+        },
+        detail: {
+          en: 'Body SECTIONPAGES fields keep kind and instruction across import → export → reopen.',
+          zh: '正文 SECTIONPAGES 字段在导入 → 导出 → 再打开后仍保留种类与指令。',
+        },
+      },
+      {
+        title: {
+          en: 'NUMWORDS identity',
+          zh: 'NUMWORDS 身份',
+        },
+        detail: {
+          en: 'Body NUMWORDS fields keep the same kind/instruction contract.',
+          zh: '正文 NUMWORDS 字段保持相同的种类/指令契约。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.264.0',
     date: '2026-09-17',
     kind: 'improved',

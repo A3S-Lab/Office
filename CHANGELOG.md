@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.265.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for body SECTIONPAGES and NUMWORDS field
+  kind/instruction identity, covering section page-count and live word-count
+  workflows without art-border breadth.
+
 ## 0.264.0 - 2026-09-17
 
 ### Document
