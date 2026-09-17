@@ -54,10 +54,13 @@ through `0.131.0`, plus untracked text-only sibling runs beside
 whole-paragraph marks through `0.130.0`). The note-adjacent empty glyphs
 family is complete through `0.147.0`; the move-range family is largely
 complete; residual fail-closed edges are deeper nesting, a nested table
-beside the move, and SDT+nested-table combinations. Next R0 work is
-attributed note refs, broader bounded property-revision subsets, full
-PDF/UA structure trees / broader vector paint, and continuous no-clobber
-fixtures—then R1 Writer daily leftovers, R2 calculation fidelity, R3
+beside the move, and SDT+nested-table combinations. Attributed note refs,
+move-range nesting through two levels, and current-level bullet
+`w:numberingChange` are already admitted through tip. Next R0 work is
+growing the permanent no-clobber corpus beyond v1
+(`bun run test:corpus:r0`), broader bounded property-revision subsets, and
+full PDF/UA structure trees / broader vector paint—not decorative art-border
+treadmills—then R1 Writer daily leftovers, R2 calculation fidelity, R3
 animation/media, and R4 PDF content editing.
 
 ## Current Spreadsheet Milestone
