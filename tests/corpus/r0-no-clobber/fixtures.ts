@@ -261,6 +261,28 @@ export async function buildDateFormatFieldFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: figure SEQ caption kind/id identity.
+ */
+export async function buildFigureCaptionFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:bookmarkStart w:id="21" w:name="_RefFigureArchitecture"/><w:r><w:t>Figure </w:t></w:r><w:fldSimple w:instr=" SEQ Figure \\* ARABIC "><w:r><w:t>1</w:t></w:r></w:fldSimple><w:r><w:t>: Architecture</w:t></w:r><w:bookmarkEnd w:id="21"/></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Report-shaped DOCX: figure caption + caption REF target identity.
+ */
+export async function buildCaptionRefFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:bookmarkStart w:id="22" w:name="_RefFigureRuntime"/><w:r><w:t>Figure </w:t></w:r><w:fldSimple w:instr=" SEQ Figure \\* ARABIC "><w:r><w:t>1</w:t></w:r></w:fldSimple><w:r><w:t>: Runtime</w:t></w:r><w:bookmarkEnd w:id="22"/></w:p><w:p><w:r><w:t>See </w:t></w:r><w:fldSimple w:instr=" REF _RefFigureRuntime \\h "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Academic-shaped DOCX: XE index entry main/sub-entry identity.
  */
 export async function buildIndexEntryFixture(): Promise<Uint8Array> {

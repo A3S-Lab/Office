@@ -62,10 +62,11 @@ default header/footer text, footnote and endnote reference/body identity,
 inline text content-control alias/tag/text identity, body PAGE plus
 bookmark-backed PAGEREF plus NUMPAGES plus SECTION plus SECTIONPAGES plus
 NUMWORDS plus NUMCHARS plus DATE (bare and `\@` format) plus TIME field
-kind/instruction (/target) identity, XE index entry plus INDEX column
-identity, and TOC level/hyperlink options plus cached entry title identity in
-addition to v1 bookmarks/links, track changes, contract tables,
-duplicate-bookmark diagnostics, and active-content fail-closed export. Next
+kind/instruction (/target) identity, figure SEQ caption kind/id plus caption
+REF target identity, XE index entry plus INDEX column identity, and TOC
+level/hyperlink options plus cached entry title identity in addition to v1
+bookmarks/links, track changes, contract tables, duplicate-bookmark
+diagnostics, and active-content fail-closed export. Next
 R0 work is further corpus growth for representative Traditional Office
 samples, broader bounded property-revision subsets, and full PDF/UA structure
 trees / broader vector paint—not decorative art-border treadmills—then R1

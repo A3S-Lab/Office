@@ -12,6 +12,8 @@ export type R0CommentIdentity = {
 
 export type R0IdentitySnapshot = {
   bookmarkNames: string[];
+  captionIds: string[];
+  captionKinds: string[];
   changeAuthors: string[];
   changeTexts: string[];
   commentAuthors: string[];
@@ -19,6 +21,7 @@ export type R0IdentitySnapshot = {
   contentControlAliases: string[];
   contentControlTags: string[];
   contentControlTexts: string[];
+  crossReferenceTargetIds: string[];
   endnoteTexts: string[];
   fieldInstructions: string[];
   fieldKinds: string[];
@@ -102,6 +105,8 @@ export function extractDocumentIdentities(
     bookmarkNames: uniqueSorted(
       matchAll(html, /data-bookmark-name="([^"]+)"/g),
     ),
+    captionIds: uniqueSorted(matchAll(html, /data-caption-id="([^"]+)"/g)),
+    captionKinds: uniqueSorted(matchAll(html, /data-caption-kind="([^"]+)"/g)),
     changeAuthors: uniqueSorted(
       matchAll(html, /data-change-author="([^"]+)"/g),
     ),
@@ -124,6 +129,9 @@ export function extractDocumentIdentities(
         html,
         /<span\b[^>]*data-document-content-control="true"[^>]*>([\s\S]*?)<\/span>/gi,
       ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
+    ),
+    crossReferenceTargetIds: uniqueSorted(
+      matchAll(html, /data-reference-target-id="([^"]+)"/g),
     ),
     endnoteTexts: uniqueSorted(
       matchAll(
