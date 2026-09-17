@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.262.0 - 2026-09-17
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for XE index main/sub-entry identity and INDEX field
+  column identity, covering academic indexing workflows without art-border
+  breadth.
+
 ## 0.261.0 - 2026-09-17
 
 ### Document

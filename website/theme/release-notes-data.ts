@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.262.0',
+    date: '2026-09-17',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers XE index entries and INDEX fields',
+      zh: 'R0 语料库覆盖 XE 索引项与 INDEX 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds representative fixtures for XE main/sub-entry identity and INDEX field column identity.',
+      zh: '永久无静默覆盖门禁新增 XE 主项/子项身份与 INDEX 字段列数身份的代表性夹具。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'XE entry identity',
+          zh: 'XE 索引项身份',
+        },
+        detail: {
+          en: 'Native XE markers keep main and sub-entry text across import → export → reopen.',
+          zh: '原生 XE 标记在导入 → 导出 → 再打开后仍保留主项与子项文本。',
+        },
+      },
+      {
+        title: {
+          en: 'INDEX column identity',
+          zh: 'INDEX 列数身份',
+        },
+        detail: {
+          en: 'SDT-wrapped INDEX fields keep column options through the same round trip.',
+          zh: 'SDT 包装的 INDEX 字段在相同往返中保留列数选项。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.261.0',
     date: '2026-09-17',
     kind: 'improved',
