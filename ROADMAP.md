@@ -316,12 +316,12 @@ Still required for R0 exit:
    comments, default headers/footers, footnotes, endnotes, text content
    controls, body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION,
    SECTIONPAGES, NUMWORDS, NUMCHARS, DATE (bare and `\@` format), and TIME
-   fields, figure SEQ captions and caption REF targets, XE index entries and
-   INDEX field columns, TOC level/hyperlink options and cached entry titles,
-   contract tables, duplicate-bookmark identity diagnostics, and
-   active-content fail-closed export. Grow the corpus with more
-   representative fixtures; do not substitute decorative art-border breadth
-   for this gate.
+   fields, figure SEQ captions and caption REF targets, table SEQ captions,
+   XE index entries and INDEX field columns, TOC level/hyperlink options and
+   cached entry titles, contract tables, duplicate-bookmark identity
+   diagnostics, and active-content fail-closed export. Grow the corpus with
+   more representative fixtures; do not substitute decorative art-border
+   breadth for this gate.
 
 R0 exit criteria (unchanged in substance): representative fixtures reopen
 without unreported data loss; edited native structures retain identity;
