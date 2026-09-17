@@ -283,6 +283,17 @@ export async function buildCaptionRefFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Contract-shaped DOCX: table SEQ caption kind/id identity.
+ */
+export async function buildTableCaptionFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:bookmarkStart w:id="23" w:name="_RefTableSchedule"/><w:r><w:t>Table </w:t></w:r><w:fldSimple w:instr=" SEQ Table \\* ARABIC "><w:r><w:t>1</w:t></w:r></w:fldSimple><w:r><w:t>: Schedule</w:t></w:r><w:bookmarkEnd w:id="23"/></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Academic-shaped DOCX: XE index entry main/sub-entry identity.
  */
 export async function buildIndexEntryFixture(): Promise<Uint8Array> {

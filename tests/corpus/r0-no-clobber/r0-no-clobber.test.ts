@@ -32,6 +32,7 @@ import {
   buildTableOfContentsFixture,
   buildTextContentControlFixture,
   buildTimeFieldFixture,
+  buildTableCaptionFixture,
 } from './fixtures';
 import {
   expectIssueCodes,
@@ -270,6 +271,19 @@ describe('R0 no-clobber corpus', () => {
     );
     expect(result.identities.plainText).toContain('Runtime');
     expect(result.identities.plainText).toContain('See');
+    expectIssueCodes(result.firstPassIssues, ['docx.captions']);
+  });
+
+  test('table SEQ caption kind and id survive round trip', async () => {
+    const bytes = await buildTableCaptionFixture();
+    const result = await roundTripDocx(bytes, 'contract-table-caption.docx');
+
+    expect(result.identities.captionKinds).toEqual(['table']);
+    expect(result.identities.captionIds.length).toBeGreaterThanOrEqual(1);
+    expect(result.identities.captionIds[0]).toMatch(
+      /^docx-(?:caption-|table-caption-)/,
+    );
+    expect(result.identities.plainText).toContain('Schedule');
     expectIssueCodes(result.firstPassIssues, ['docx.captions']);
   });
 

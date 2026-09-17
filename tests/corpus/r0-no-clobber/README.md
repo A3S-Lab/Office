@@ -17,8 +17,8 @@ Each fixture must prove:
    internal and external links, headers/footers, footnotes, endnotes, text
    content controls, PAGE/PAGEREF/NUMPAGES/SECTION/SECTIONPAGES/NUMWORDS/
    NUMCHARS/DATE/TIME fields (including DATE `\@` format switches), figure
-   SEQ captions and caption REF targets, XE/INDEX index identities, TOC
-   options/entries, table cells).
+   SEQ captions and caption REF targets, table SEQ captions, XE/INDEX index
+   identities, TOC options/entries, table cells).
 2. Every intentional normalization appears in `compatibility.issues` with a
    stable code.
 3. Active content (VBA, package signatures) stays fail-closed on export.
@@ -28,9 +28,10 @@ bookmark-anchor hyperlinks, review track changes, review comments, default
 headers/footers, footnotes, endnotes, text content controls, body PAGE,
 bookmark-backed PAGEREF, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS, NUMCHARS,
 DATE (bare and `\@` format), and TIME fields, figure SEQ captions and caption
-REF targets, XE index entries and INDEX field columns, TOC level/hyperlink
-options and cached entry titles, contract tables, duplicate-bookmark identity
-diagnostics, and active-content fail-closed export.
+REF targets, table SEQ captions, XE index entries and INDEX field columns, TOC
+level/hyperlink options and cached entry titles, contract tables,
+duplicate-bookmark identity diagnostics, and active-content fail-closed
+export.
 
 Grow fixtures here when a real Traditional Office sample still fails the
 contract. Do not grow decorative PDF art-border coverage in place of this gate.
