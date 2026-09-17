@@ -252,7 +252,9 @@ describe('R0 no-clobber corpus', () => {
 
     expect(result.identities.captionKinds).toEqual(['figure']);
     expect(result.identities.captionIds.length).toBeGreaterThanOrEqual(1);
-    expect(result.identities.captionIds[0]).toMatch(/^docx-(?:caption-|figure-caption-)/);
+    expect(result.identities.captionIds[0]).toMatch(
+      /^docx-(?:caption-|figure-caption-)/,
+    );
     expect(result.identities.plainText).toContain('Architecture');
     expectIssueCodes(result.firstPassIssues, ['docx.captions']);
   });
