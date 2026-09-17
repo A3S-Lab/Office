@@ -27,6 +27,7 @@ import {
   buildPageRefFieldFixture,
   buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
+  buildRichTextContentControlFixture,
   buildSectionFieldFixture,
   buildSectionPagesFieldFixture,
   buildTableOfContentsFixture,
@@ -136,7 +137,27 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.contentControlAliases).toEqual(['PartyName']);
     expect(result.identities.contentControlTags).toEqual(['party_name']);
     expect(result.identities.contentControlTexts).toEqual(['Acme Corp']);
+    expect(result.identities.contentControlTypes).toEqual(['text']);
     expect(result.identities.plainText).toContain('Acme Corp');
+    expectIssueCodes(result.firstPassIssues, ['docx.content-controls']);
+  });
+
+  test('rich-text content control alias, tag, type, and text survive round trip', async () => {
+    const bytes = await buildRichTextContentControlFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'contract-richtext-content-control.docx',
+    );
+
+    expect(result.identities.contentControlAliases).toEqual(['ClauseBody']);
+    expect(result.identities.contentControlTags).toEqual(['clause_body']);
+    expect(result.identities.contentControlTexts).toEqual([
+      'Indemnity survives termination.',
+    ]);
+    expect(result.identities.contentControlTypes).toEqual(['richText']);
+    expect(result.identities.plainText).toContain(
+      'Indemnity survives termination.',
+    );
     expectIssueCodes(result.firstPassIssues, ['docx.content-controls']);
   });
 

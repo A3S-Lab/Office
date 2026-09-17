@@ -21,6 +21,7 @@ export type R0IdentitySnapshot = {
   contentControlAliases: string[];
   contentControlTags: string[];
   contentControlTexts: string[];
+  contentControlTypes: string[];
   crossReferenceTargetIds: string[];
   endnoteTexts: string[];
   fieldInstructions: string[];
@@ -129,6 +130,9 @@ export function extractDocumentIdentities(
         html,
         /<span\b[^>]*data-document-content-control="true"[^>]*>([\s\S]*?)<\/span>/gi,
       ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
+    ),
+    contentControlTypes: uniqueSorted(
+      matchAll(html, /data-content-control-type="([^"]+)"/g),
     ),
     crossReferenceTargetIds: uniqueSorted(
       matchAll(html, /data-reference-target-id="([^"]+)"/g),

@@ -151,6 +151,17 @@ export async function buildTextContentControlFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Contract-shaped DOCX: rich-text content-control alias/tag/type/text identity.
+ */
+export async function buildRichTextContentControlFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:sdt><w:sdtPr><w:alias w:val="ClauseBody"/><w:tag w:val="clause_body"/><w:id w:val="1002"/><w:richText/></w:sdtPr><w:sdtContent><w:r><w:t>Indemnity survives termination.</w:t></w:r></w:sdtContent></w:sdt></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Report-shaped DOCX: body PAGE field kind/instruction identity.
  */
 export async function buildPageFieldFixture(): Promise<Uint8Array> {

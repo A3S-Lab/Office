@@ -14,8 +14,8 @@ Each fixture must prove:
 
 1. Import → light/no-op edit path → export → reopen does not silently drop
    critical identities (bookmarks, revision authors/text, review comments,
-   internal and external links, headers/footers, footnotes, endnotes, text
-   content controls, PAGE/PAGEREF/NUMPAGES/SECTION/SECTIONPAGES/NUMWORDS/
+   internal and external links, headers/footers, footnotes, endnotes, text and
+   rich-text content controls, PAGE/PAGEREF/NUMPAGES/SECTION/SECTIONPAGES/NUMWORDS/
    NUMCHARS/DATE/TIME fields (including DATE `\@` format switches), figure
    SEQ captions and caption REF targets, table SEQ captions, XE/INDEX index
    identities, TOC options/entries, table cells).
@@ -25,11 +25,11 @@ Each fixture must prove:
 
 Current fixtures cover report bookmarks/external links, internal
 bookmark-anchor hyperlinks, review track changes, review comments, default
-headers/footers, footnotes, endnotes, text content controls, body PAGE,
-bookmark-backed PAGEREF, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS, NUMCHARS,
-DATE (bare and `\@` format), and TIME fields, figure SEQ captions and caption
-REF targets, table SEQ captions, XE index entries and INDEX field columns, TOC
-level/hyperlink options and cached entry titles, contract tables,
+headers/footers, footnotes, endnotes, text and rich-text content controls,
+body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS,
+NUMCHARS, DATE (bare and `\@` format), and TIME fields, figure SEQ captions and
+caption REF targets, table SEQ captions, XE index entries and INDEX field
+columns, TOC level/hyperlink options and cached entry titles, contract tables,
 duplicate-bookmark identity diagnostics, and active-content fail-closed
 export.
 

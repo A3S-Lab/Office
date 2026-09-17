@@ -59,7 +59,7 @@ move-range nesting through two levels, and current-level bullet
 `w:numberingChange` are already admitted through tip. The permanent no-clobber corpus (`bun run test:corpus:r0`) now covers
 internal bookmark-anchor hyperlinks, review comment author/text identity,
 default header/footer text, footnote and endnote reference/body identity,
-inline text content-control alias/tag/text identity, body PAGE plus
+inline text and rich-text content-control alias/tag/type/text identity, body PAGE plus
 bookmark-backed PAGEREF plus NUMPAGES plus SECTION plus SECTIONPAGES plus
 NUMWORDS plus NUMCHARS plus DATE (bare and `\@` format) plus TIME field
 kind/instruction (/target) identity, figure SEQ caption kind/id plus caption
