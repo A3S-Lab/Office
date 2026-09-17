@@ -85,6 +85,42 @@ export async function buildReviewCommentsFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: default header and footer text identity.
+ */
+export async function buildHeaderFooterFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${OFFICE_RELATIONSHIPS_NAMESPACE}"><w:body><w:p><w:r><w:t>Report body clause</w:t></w:r></w:p><w:sectPr><w:headerReference w:type="default" r:id="rIdHeader"/><w:footerReference w:type="default" r:id="rIdFooter"/></w:sectPr></w:body></w:document>`,
+    documentRelationships: [
+      ['rIdHeader', `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`, 'header1.xml'],
+      ['rIdFooter', `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`, 'footer1.xml'],
+    ],
+    headerXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Acme Report Header</w:t></w:r></w:p></w:hdr>`,
+    footerXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Confidential Footer</w:t></w:r></w:p></w:ftr>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Academic/report-shaped DOCX: footnote reference + note body identity.
+ */
+export async function buildFootnoteFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Body clause</w:t></w:r><w:r><w:footnoteReference w:id="1"/></w:r></w:p><w:sectPr/></w:body></w:document>`,
+    documentRelationships: [
+      [
+        'rIdFootnotes',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/footnotes`,
+        'footnotes.xml',
+      ],
+    ],
+    footnotesXml: `<w:footnotes xmlns:w="${WORD_NAMESPACE}"><w:footnote w:type="separator" w:id="-1"/><w:footnote w:type="continuationSeparator" w:id="0"/><w:footnote w:id="1"><w:p><w:r><w:t>Cite the warranty clause</w:t></w:r></w:p></w:footnote></w:footnotes>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Active-content fail-closed: safe custom parts may survive, VBA/signatures
  * must not be revived after a light edit + export.
  */
@@ -126,6 +162,9 @@ function writePackageSkeleton(
     relationships?: Array<[string, string, string, string?]>;
     documentRelationships?: Array<[string, string, string]>;
     commentsXml?: string;
+    headerXml?: string;
+    footerXml?: string;
+    footnotesXml?: string;
   },
 ): void {
   const overrides = [
@@ -134,6 +173,21 @@ function writePackageSkeleton(
   if (options.commentsXml) {
     overrides.push(
       '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>',
+    );
+  }
+  if (options.headerXml) {
+    overrides.push(
+      '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>',
+    );
+  }
+  if (options.footerXml) {
+    overrides.push(
+      '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>',
+    );
+  }
+  if (options.footnotesXml) {
+    overrides.push(
+      '<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>',
     );
   }
   archive.file(
@@ -147,6 +201,15 @@ function writePackageSkeleton(
   archive.file('word/document.xml', options.documentXml);
   if (options.commentsXml) {
     archive.file('word/comments.xml', options.commentsXml);
+  }
+  if (options.headerXml) {
+    archive.file('word/header1.xml', options.headerXml);
+  }
+  if (options.footerXml) {
+    archive.file('word/footer1.xml', options.footerXml);
+  }
+  if (options.footnotesXml) {
+    archive.file('word/footnotes.xml', options.footnotesXml);
   }
   const relationships = [
     ...(options.documentRelationships ?? []),

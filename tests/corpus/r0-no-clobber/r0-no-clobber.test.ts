@@ -10,6 +10,8 @@ import {
   buildBookmarksAndLinksFixture,
   buildContractTableFixture,
   buildDuplicateBookmarkFixture,
+  buildFootnoteFixture,
+  buildHeaderFooterFixture,
   buildInternalBookmarkLinkFixture,
   buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
@@ -71,6 +73,31 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.plainText).toContain('Liability clause');
     expect(result.exportedParts).toContain('word/comments.xml');
     expectIssueCodes(result.firstPassIssues, ['docx.comments']);
+  });
+
+  test('default header and footer text survive round trip', async () => {
+    const bytes = await buildHeaderFooterFixture();
+    const result = await roundTripDocx(bytes, 'report-header-footer.docx');
+
+    expect(result.identities.headerTexts).toEqual(['Acme Report Header']);
+    expect(result.identities.footerTexts).toEqual(['Confidential Footer']);
+    expect(result.identities.plainText).toContain('Report body clause');
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expectIssueCodes(result.firstPassIssues, ['docx.headers']);
+  });
+
+  test('footnote reference and note body text survive round trip', async () => {
+    const bytes = await buildFootnoteFixture();
+    const result = await roundTripDocx(bytes, 'report-footnote.docx');
+
+    expect(result.identities.footnoteTexts).toEqual([
+      'Cite the warranty clause',
+    ]);
+    expect(result.identities.plainText).toContain('Body clause');
+    expect(result.identities.plainText).toContain('Cite the warranty clause');
+    expect(result.exportedParts).toContain('word/footnotes.xml');
+    expectIssueCodes(result.firstPassIssues, ['docx.notes']);
   });
 
   test('contract table cell identities survive round trip', async () => {

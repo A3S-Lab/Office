@@ -57,9 +57,10 @@ complete; residual fail-closed edges are deeper nesting, a nested table
 beside the move, and SDT+nested-table combinations. Attributed note refs,
 move-range nesting through two levels, and current-level bullet
 `w:numberingChange` are already admitted through tip. The permanent no-clobber corpus (`bun run test:corpus:r0`) now covers
-internal bookmark-anchor hyperlinks and review comment author/text identity
-in addition to v1 bookmarks/links, track changes, contract tables,
-duplicate-bookmark diagnostics, and active-content fail-closed export. Next
+internal bookmark-anchor hyperlinks, review comment author/text identity,
+default header/footer text, and footnote reference/body identity in addition
+to v1 bookmarks/links, track changes, contract tables, duplicate-bookmark
+diagnostics, and active-content fail-closed export. Next
 R0 work is further corpus growth for representative Traditional Office
 samples, broader bounded property-revision subsets, and full PDF/UA structure
 trees / broader vector paint—not decorative art-border treadmills—then R1
