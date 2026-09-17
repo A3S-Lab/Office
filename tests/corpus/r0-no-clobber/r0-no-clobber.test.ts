@@ -20,6 +20,7 @@ import {
   buildPageRefFieldFixture,
   buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
+  buildTableOfContentsFixture,
   buildTextContentControlFixture,
 } from './fixtures';
 import {
@@ -171,6 +172,18 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.indexMainEntries).toContain('Architecture');
     expect(result.identities.plainText).toContain('Architecture');
     expectIssueCodes(result.firstPassIssues, ['docx.index']);
+  });
+
+  test('TOC options and cached entry title survive round trip', async () => {
+    const bytes = await buildTableOfContentsFixture();
+    const result = await roundTripDocx(bytes, 'report-table-of-contents.docx');
+
+    expect(result.identities.tocMinLevels).toEqual(['1']);
+    expect(result.identities.tocMaxLevels).toEqual(['3']);
+    expect(result.identities.tocHyperlinks).toEqual(['true']);
+    expect(result.identities.tocEntryTitles).toContain('Overview');
+    expect(result.identities.plainText).toContain('Overview');
+    expectIssueCodes(result.firstPassIssues, ['docx.tableOfContents']);
   });
 
   test('contract table cell identities survive round trip', async () => {

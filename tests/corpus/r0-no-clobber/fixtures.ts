@@ -195,6 +195,17 @@ export async function buildIndexFieldFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: SDT-wrapped TOC options and cached entry identity.
+ */
+export async function buildTableOfContentsFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:sdt><w:sdtContent><w:p><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-3" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r></w:p><w:p><w:pPr><w:pStyle w:val="TOC1"/><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9360"/></w:tabs></w:pPr><w:r><w:t>Overview</w:t></w:r><w:r><w:tab/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:sdtContent></w:sdt><w:p><w:pPr><w:outlineLvl w:val="0"/></w:pPr><w:r><w:t>Overview</w:t></w:r></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Active-content fail-closed: safe custom parts may survive, VBA/signatures
  * must not be revived after a light edit + export.
  */
