@@ -14,6 +14,8 @@ import {
   buildFootnoteFixture,
   buildHeaderFooterFixture,
   buildInternalBookmarkLinkFixture,
+  buildPageFieldFixture,
+  buildPageRefFieldFixture,
   buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
   buildTextContentControlFixture,
@@ -122,6 +124,31 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.contentControlTexts).toEqual(['Acme Corp']);
     expect(result.identities.plainText).toContain('Acme Corp');
     expectIssueCodes(result.firstPassIssues, ['docx.content-controls']);
+  });
+
+  test('PAGE field kind and instruction survive round trip', async () => {
+    const bytes = await buildPageFieldFixture();
+    const result = await roundTripDocx(bytes, 'report-page-field.docx');
+
+    expect(result.identities.fieldKinds).toEqual(['page']);
+    expect(result.identities.fieldInstructions).toEqual(['PAGE']);
+    expect(result.identities.plainText).toContain('Page');
+    expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
+  });
+
+  test('bookmark-backed PAGEREF kind, instruction, and target survive round trip', async () => {
+    const bytes = await buildPageRefFieldFixture();
+    const result = await roundTripDocx(bytes, 'report-pageref-field.docx');
+
+    expect(result.identities.bookmarkNames).toContain('Warranty');
+    expect(result.identities.fieldKinds).toEqual(['pageReference']);
+    expect(result.identities.fieldInstructions).toEqual([
+      'PAGEREF Warranty \\h',
+    ]);
+    expect(result.identities.fieldTargetNames).toEqual(['Warranty']);
+    expect(result.identities.plainText).toContain('Warranty clause');
+    expect(result.identities.plainText).toContain('See page');
+    expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
   });
 
   test('contract table cell identities survive round trip', async () => {
