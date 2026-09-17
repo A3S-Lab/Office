@@ -27,6 +27,9 @@ export type R0IdentitySnapshot = {
   footnoteTexts: string[];
   headerTexts: string[];
   hrefs: string[];
+  indexColumns: string[];
+  indexMainEntries: string[];
+  indexSubEntries: string[];
   plainText: string;
   tableCellTexts: string[];
 };
@@ -144,6 +147,15 @@ export function extractDocumentIdentities(
       [normalizePlainText(pageChrome.headerHtml ?? '')].filter(Boolean),
     ),
     hrefs: uniqueSorted(matchAll(html, /href="([^"]+)"/g)),
+    indexColumns: uniqueSorted(
+      matchAll(html, /data-index-columns="([^"]+)"/g),
+    ),
+    indexMainEntries: uniqueSorted(
+      matchAll(html, /data-index-main-entry="([^"]+)"/g).map(decodeHtmlAttr),
+    ),
+    indexSubEntries: uniqueSorted(
+      matchAll(html, /data-index-sub-entry="([^"]+)"/g).map(decodeHtmlAttr),
+    ),
     plainText: normalizePlainText(html),
     tableCellTexts: uniqueSorted(
       matchAll(html, /<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi).map((text) =>

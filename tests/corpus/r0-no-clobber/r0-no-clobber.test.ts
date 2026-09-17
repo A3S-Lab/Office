@@ -13,6 +13,8 @@ import {
   buildEndnoteFixture,
   buildFootnoteFixture,
   buildHeaderFooterFixture,
+  buildIndexEntryFixture,
+  buildIndexFieldFixture,
   buildInternalBookmarkLinkFixture,
   buildPageFieldFixture,
   buildPageRefFieldFixture,
@@ -149,6 +151,26 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.plainText).toContain('Warranty clause');
     expect(result.identities.plainText).toContain('See page');
     expectIssueCodes(result.firstPassIssues, ['docx.fields.body']);
+  });
+
+  test('XE index entry main and sub-entry survive round trip', async () => {
+    const bytes = await buildIndexEntryFixture();
+    const result = await roundTripDocx(bytes, 'academic-index-entry.docx');
+
+    expect(result.identities.indexMainEntries).toContain('Architecture');
+    expect(result.identities.indexSubEntries).toContain('Runtime');
+    expect(result.identities.plainText).toContain('Runtime');
+    expectIssueCodes(result.firstPassIssues, ['docx.index']);
+  });
+
+  test('INDEX field columns survive round trip', async () => {
+    const bytes = await buildIndexFieldFixture();
+    const result = await roundTripDocx(bytes, 'academic-index-field.docx');
+
+    expect(result.identities.indexColumns).toEqual(['2']);
+    expect(result.identities.indexMainEntries).toContain('Architecture');
+    expect(result.identities.plainText).toContain('Architecture');
+    expectIssueCodes(result.firstPassIssues, ['docx.index']);
   });
 
   test('contract table cell identities survive round trip', async () => {
