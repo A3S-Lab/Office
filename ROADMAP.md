@@ -53,7 +53,7 @@ plus the R1 / R2 / R3 / R4 main paths already called out.
 
 ## Remaining roadmap (product-enough bar)
 
-Tip reviewed against `@a3s-lab/office@0.154.0`. Use this section as the active
+Tip reviewed against `@a3s-lab/office@0.255.0`. Use this section as the active
 backlog; the comparison tables below remain the gap inventory.
 
 ### Cross-surface permanent gates
@@ -310,12 +310,18 @@ Still required for R0 exit:
    BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; current-level bullet `w:numberingChange` (nfc `23`) through `0.186.0`; bounded `w:footnoteReference` with numeric `w:id` in mark / break / move bodies through `0.187.0`; bounded `w:endnoteReference` with numeric `w:id` through `0.188.0`;    attributed `footnoteRef` / `endnoteRef` / `annotationRef` with numeric `w:val` through `0.189.0`;    Writer `apples` art paragraph borders paint as apple silhouettes through `0.190.0`; Writer `vine` art paragraph borders paint as curling vine silhouettes through `0.191.0`;    Writer `archedScallops` art paragraph borders paint as scallop arches through `0.192.0`; Writer `babyPacifier` art paragraph borders paint as pacifier silhouettes through `0.193.0`; Writer `babyRattle` art paragraph borders paint as rattle silhouettes through `0.194.0`; Writer `balloons3Colors` art paragraph borders paint as balloon silhouettes through `0.195.0`; Writer `balloonsHotAir` art paragraph borders paint as hot-air balloon silhouettes through `0.196.0`; Writer `cakeSlice` art paragraph borders paint as cake-slice wedges through `0.199.0`; Writer `candyCorn` art paragraph borders paint as candy-corn triangles through `0.200.0`; Writer `celticKnotwork` art paragraph borders paint as interlaced diamond motifs through `0.201.0`; Writer `certificateBanner` art paragraph borders paint as notched ribbon motifs through `0.202.0`; Writer `chainLink` art paragraph borders paint as interlaced oval links through `0.203.0`; Writer `champagneBottle` art paragraph borders paint as bottle silhouettes through `0.204.0`; Writer `checkedBarBlack` art paragraph borders paint as checkered bars through `0.205.0`; Writer `checkedBarColor` art paragraph borders paint as light checkered bars through `0.206.0`; Writer `checkered` art paragraph borders paint as 2×2 tile grids through `0.207.0`; remaining
    decorative art borders and full PDF/UA certification remain open.
 7. Continuous no-clobber corpus growth for representative Traditional Office
-   fixtures (diagnose every intentional normalization).
+   fixtures (diagnose every intentional normalization). **v1 gate lands in**
+   `tests/corpus/r0-no-clobber/` (`bun run test:corpus:r0`): bookmarks/links,
+   review track changes, contract tables, duplicate-bookmark identity
+   diagnostics, and active-content fail-closed export. Grow the corpus with
+   more representative fixtures; do not substitute decorative art-border
+   breadth for this gate.
 
 R0 exit criteria (unchanged in substance): representative fixtures reopen
 without unreported data loss; edited native structures retain identity;
 malformed inputs fail closed; pagination and export have deterministic
-structural and visual evidence.
+structural and visual evidence. The R0 no-clobber corpus v1 gate is a
+required permanent check for that exit.
 
 #### 2. R1 — Writer daily-work parity (P0/P1, next after R0 exit)
 

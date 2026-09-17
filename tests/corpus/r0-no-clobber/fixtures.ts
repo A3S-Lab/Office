@@ -1,0 +1,120 @@
+import JSZip from 'jszip';
+
+const WORD_NAMESPACE =
+  'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const CONTENT_TYPES_NAMESPACE =
+  'http://schemas.openxmlformats.org/package/2006/content-types';
+const RELATIONSHIPS_NAMESPACE =
+  'http://schemas.openxmlformats.org/package/2006/relationships';
+const OFFICE_RELATIONSHIPS_NAMESPACE =
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
+/** Minimal report-shaped DOCX: bookmark, external link, stable prose. */
+export async function buildBookmarksAndLinksFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${OFFICE_RELATIONSHIPS_NAMESPACE}"><w:body><w:p><w:bookmarkStart w:id="1" w:name="Architecture"/><w:r><w:t>Architecture overview</w:t></w:r><w:bookmarkEnd w:id="1"/></w:p><w:p><w:hyperlink r:id="rId5"><w:r><w:t>Product site</w:t></w:r></w:hyperlink></w:p><w:sectPr/></w:body></w:document>`,
+    relationships: [
+      [
+        'rId5',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/hyperlink`,
+        'https://a3s.dev/office',
+        'External',
+      ],
+    ],
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/** Review-shaped DOCX: insertion and deletion with a stable author. */
+export async function buildReviewTrackChangesFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Keep this clause. </w:t></w:r><w:ins w:id="10" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:r><w:t>Added warranty</w:t></w:r></w:ins><w:del w:id="11" w:author="Ada Reviewer" w:date="2026-09-05T01:00:00Z"><w:r><w:delText>Remove liability</w:delText></w:r></w:del></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/** Contract-shaped DOCX: simple table identities. */
+export async function buildContractTableFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:tbl><w:tr><w:tc><w:p><w:r><w:t>Party A</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Party B</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:tc><w:p><w:r><w:t>Obligation</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Payment term</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/** Duplicate bookmark names must diagnose identity normalization. */
+export async function buildDuplicateBookmarkFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:bookmarkStart w:id="1" w:name="Target"/><w:r><w:t>First</w:t></w:r><w:bookmarkEnd w:id="1"/></w:p><w:p><w:bookmarkStart w:id="2" w:name="Target"/><w:r><w:t>Second</w:t></w:r><w:bookmarkEnd w:id="2"/></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Active-content fail-closed: safe custom parts may survive, VBA/signatures
+ * must not be revived after a light edit + export.
+ */
+export async function buildActiveContentFailClosedFixture(): Promise<{
+  bytes: Uint8Array;
+  vendorPayload: Uint8Array;
+}> {
+  const vendorPayload = new TextEncoder().encode('vendor-safe-payload');
+  const archive = new JSZip();
+  archive.file(
+    '[Content_Types].xml',
+    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="${CONTENT_TYPES_NAMESPACE}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="bin" ContentType="application/octet-stream"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/vbaProject.bin" ContentType="application/vnd.ms-office.vbaProject"/><Override PartName="/_xmlsignatures/sig1.xml" ContentType="application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml"/></Types>`,
+  );
+  archive.file(
+    '_rels/.rels',
+    `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${RELATIONSHIPS_NAMESPACE}"><Relationship Id="rId1" Type="${OFFICE_RELATIONSHIPS_NAMESPACE}/officeDocument" Target="word/document.xml"/></Relationships>`,
+  );
+  archive.file(
+    'word/document.xml',
+    `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Original active-content boundary</w:t></w:r></w:p><w:sectPr/></w:body></w:document>`,
+  );
+  archive.file(
+    'word/_rels/document.xml.rels',
+    `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${RELATIONSHIPS_NAMESPACE}"><Relationship Id="rIdVendor" Type="https://a3s.dev/relationships/vendor-data" Target="vendorData/payload.bin"/></Relationships>`,
+  );
+  archive.file('word/vendorData/payload.bin', vendorPayload);
+  archive.file('word/vbaProject.bin', new TextEncoder().encode('macros'));
+  archive.file('_xmlsignatures/sig1.xml', '<Signature/>');
+  return {
+    bytes: await archive.generateAsync({ type: 'uint8array' }),
+    vendorPayload,
+  };
+}
+
+function writePackageSkeleton(
+  archive: JSZip,
+  options: {
+    documentXml: string;
+    relationships?: Array<[string, string, string, string?]>;
+  },
+): void {
+  archive.file(
+    '[Content_Types].xml',
+    `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="${CONTENT_TYPES_NAMESPACE}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`,
+  );
+  archive.file(
+    '_rels/.rels',
+    `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${RELATIONSHIPS_NAMESPACE}"><Relationship Id="rId1" Type="${OFFICE_RELATIONSHIPS_NAMESPACE}/officeDocument" Target="word/document.xml"/></Relationships>`,
+  );
+  archive.file('word/document.xml', options.documentXml);
+  const relationships = options.relationships ?? [];
+  if (relationships.length > 0) {
+    archive.file(
+      'word/_rels/document.xml.rels',
+      `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${RELATIONSHIPS_NAMESPACE}">${relationships
+        .map(([id, type, target, mode]) =>
+          mode
+            ? `<Relationship Id="${id}" Type="${type}" Target="${target}" TargetMode="${mode}"/>`
+            : `<Relationship Id="${id}" Type="${type}" Target="${target}"/>`,
+        )
+        .join('')}</Relationships>`,
+    );
+  }
+}

@@ -327,6 +327,7 @@
     "test:e2e:writer-status:check": "a3s-test check tests/e2e/word-status-bar.acl --json",
     "test:wps-layout": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-wps-layout-parity.ps1",
     "test:office-layout": "bun run test:wps-layout",
+    "test:corpus:r0": "rstest tests/corpus/r0-no-clobber/r0-no-clobber.test.ts",
     "test:watch": "rstest --watch",
     "typecheck": "tsc --noEmit"
   },
