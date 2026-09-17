@@ -121,6 +121,36 @@ export async function buildFootnoteFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Academic/report-shaped DOCX: endnote reference + note body identity.
+ */
+export async function buildEndnoteFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:r><w:t>Body with endnote</w:t></w:r><w:r><w:endnoteReference w:id="1"/></w:r></w:p><w:sectPr/></w:body></w:document>`,
+    documentRelationships: [
+      [
+        'rIdEndnotes',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/endnotes`,
+        'endnotes.xml',
+      ],
+    ],
+    endnotesXml: `<w:endnotes xmlns:w="${WORD_NAMESPACE}"><w:endnote w:type="separator" w:id="-1"/><w:endnote w:type="continuationSeparator" w:id="0"/><w:endnote w:id="1"><w:p><w:r><w:t>See appendix A</w:t></w:r></w:p></w:endnote></w:endnotes>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
+ * Contract-shaped DOCX: inline text content control alias/tag/text identity.
+ */
+export async function buildTextContentControlFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body><w:p><w:sdt><w:sdtPr><w:alias w:val="PartyName"/><w:tag w:val="party_name"/><w:id w:val="1001"/><w:text/></w:sdtPr><w:sdtContent><w:r><w:t>Acme Corp</w:t></w:r></w:sdtContent></w:sdt></w:p><w:sectPr/></w:body></w:document>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Active-content fail-closed: safe custom parts may survive, VBA/signatures
  * must not be revived after a light edit + export.
  */
@@ -165,6 +195,7 @@ function writePackageSkeleton(
     headerXml?: string;
     footerXml?: string;
     footnotesXml?: string;
+    endnotesXml?: string;
   },
 ): void {
   const overrides = [
@@ -190,6 +221,11 @@ function writePackageSkeleton(
       '<Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>',
     );
   }
+  if (options.endnotesXml) {
+    overrides.push(
+      '<Override PartName="/word/endnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml"/>',
+    );
+  }
   archive.file(
     '[Content_Types].xml',
     `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="${CONTENT_TYPES_NAMESPACE}"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${overrides.join('')}</Types>`,
@@ -210,6 +246,9 @@ function writePackageSkeleton(
   }
   if (options.footnotesXml) {
     archive.file('word/footnotes.xml', options.footnotesXml);
+  }
+  if (options.endnotesXml) {
+    archive.file('word/endnotes.xml', options.endnotesXml);
   }
   const relationships = [
     ...(options.documentRelationships ?? []),
