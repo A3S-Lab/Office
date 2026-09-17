@@ -61,11 +61,11 @@ internal bookmark-anchor hyperlinks, review comment author/text identity,
 default header/footer text, footnote and endnote reference/body identity,
 inline text content-control alias/tag/text identity, body PAGE plus
 bookmark-backed PAGEREF plus NUMPAGES plus SECTION plus SECTIONPAGES plus
-NUMWORDS field kind/instruction (/target) identity, XE index entry plus
-INDEX column identity, and TOC level/hyperlink options plus cached entry
-title identity in addition to v1 bookmarks/links, track changes, contract
-tables, duplicate-bookmark diagnostics, and active-content fail-closed
-export. Next
+NUMWORDS plus NUMCHARS plus DATE field kind/instruction (/target) identity,
+XE index entry plus INDEX column identity, and TOC level/hyperlink options
+plus cached entry title identity in addition to v1 bookmarks/links, track
+changes, contract tables, duplicate-bookmark diagnostics, and active-content
+fail-closed export. Next
 R0 work is further corpus growth for representative Traditional Office
 samples, broader bounded property-revision subsets, and full PDF/UA structure
 trees / broader vector paint—not decorative art-border treadmills—then R1
