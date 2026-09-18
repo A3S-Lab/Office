@@ -235,6 +235,7 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
     let operation = match kind {
         NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
         NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
+        NativeOfficeCollaborationArtifactKind::Spreadsheet => "find-spreadsheet-text",
         _ => "find-text",
     };
     let human = if result.matches.is_empty() {
@@ -245,10 +246,22 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
             result.match_count, result.search
         );
         for hit in &result.matches {
-            let location = match (&hit.paragraph_id, &hit.text_id) {
-                (Some(paragraph_id), Some(text_id)) => {
+            let location = match (
+                &hit.paragraph_id,
+                &hit.text_id,
+                &hit.sheet_id,
+                hit.row,
+                hit.column,
+            ) {
+                (Some(paragraph_id), Some(text_id), _, _, _) => {
                     format!(
                         "paragraph {paragraph_id} text {text_id} @{}",
+                        hit.index_utf16
+                    )
+                }
+                (_, _, Some(sheet_id), Some(row), Some(column)) => {
+                    format!(
+                        "sheet {sheet_id} row {row} column {column} @{}",
                         hit.index_utf16
                     )
                 }

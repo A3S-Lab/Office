@@ -211,11 +211,11 @@ impl NativeOfficeCollaborationStore {
         project_collaboration_document(&loaded.doc, &loaded.manifest, loaded.current_sequence)
     }
 
-    /// List text matches for Document or Markdown replicas.
+    /// List text matches for Document, Markdown, or Spreadsheet replicas.
     ///
-    /// Agents use the returned 1-based `occurrence` with optional
-    /// `document-replace-text.occurrence` or `markdown-replace-text.occurrence`,
-    /// and `matchCount` as `expectedMatches`.
+    /// Document and Markdown agents pass `matchCount` as `expectedMatches`.
+    /// Spreadsheet hits return `sheetId`, `row`, and `column` for
+    /// `spreadsheet-set-cell`; they do not imply a text-replace mutation.
     pub fn find_text(
         &self,
         search: impl Into<String>,
@@ -255,11 +255,19 @@ impl NativeOfficeCollaborationStore {
                     limit,
                 )?
             }
+            NativeOfficeCollaborationArtifactKind::Spreadsheet => {
+                mutation::spreadsheet::find_spreadsheet_text(
+                    &loaded.doc,
+                    &loaded.manifest,
+                    &search,
+                    limit,
+                )?
+            }
             other => {
                 return Err(collaboration_error(
                     "office.collaboration.kind_mismatch",
                     format!(
-                        "Collaboration text find requires a document or markdown replica, not {}.",
+                        "Collaboration text find requires a document, markdown, or spreadsheet replica, not {}.",
                         other.as_str()
                     ),
                 )

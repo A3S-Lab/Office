@@ -6,8 +6,11 @@ use super::super::{
 };
 
 mod cell;
+mod find;
 mod json;
 mod state;
+
+pub(in crate::collaboration) use find::find_spreadsheet_text;
 
 const MAX_SPREADSHEET_ROWS: u32 = 1_048_576;
 const MAX_SPREADSHEET_COLUMNS: u32 = 16_384;

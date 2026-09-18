@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Collaboration
+
+- Locate live Spreadsheet display text before editing a cell. `collab find` /
+  `office_collaboration_find` return one hit per cell (`sheetId`, `row`,
+  `column`) in sheet order. The following edit stays `spreadsheet-set-cell`;
+  there is no spreadsheet text-replace mutation.
+
 ## 0.286.0 - 2026-09-18
 
 ### Collaboration

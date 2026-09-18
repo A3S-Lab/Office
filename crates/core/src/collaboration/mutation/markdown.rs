@@ -88,6 +88,9 @@ pub(in crate::collaboration) fn find_markdown_text(
             text: search.to_owned(),
             paragraph_id: None,
             text_id: None,
+            sheet_id: None,
+            row: None,
+            column: None,
             index_utf16,
         });
     }

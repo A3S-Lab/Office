@@ -12,7 +12,7 @@ pub(in crate::collaboration) mod document;
 pub(in crate::collaboration) mod markdown;
 mod pdf;
 mod presentation;
-mod spreadsheet;
+pub(in crate::collaboration) mod spreadsheet;
 
 use document::{apply_document_mutation, validate_document_mutation};
 use markdown::{

@@ -280,6 +280,7 @@ pub(super) async fn find(input: OfficeCollaborationFindInput) -> UseResult<serde
     let operation = match kind {
         NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
         NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
+        NativeOfficeCollaborationArtifactKind::Spreadsheet => "find-spreadsheet-text",
         _ => "find-text",
     };
     Ok(json!({
