@@ -451,3 +451,26 @@ pub struct NativeOfficeCollaborationInspection {
     pub update_bytes: u64,
     pub operation_count: usize,
 }
+
+/// One Document text match in the same walk `document-replace-text` uses.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentTextMatch {
+    pub occurrence: u32,
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub paragraph_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_id: Option<String>,
+    pub index_utf16: u32,
+}
+
+/// Read-only Document text match list for a live Writer replica.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentTextFindResult {
+    pub search: String,
+    pub match_count: usize,
+    pub truncated: bool,
+    pub matches: Vec<NativeOfficeCollaborationDocumentTextMatch>,
+}

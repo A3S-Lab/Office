@@ -89,13 +89,15 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    result when the command supports it; otherwise work on an intentional copy.
    Use one atomic `batch` for dependent changes. For general find/replace, use
    `set <file> <scope> --find ... --replace ...`; use literal mode unless regex
-   captures are actually required. Locate matches first with
+   captures are actually required.    locate matches first with
    `find <file> [scope] --find ...`, then add `--occurrence <n>` (the 1-based
    index from that result) to change one match. Omitting occurrence still
    replaces every match. A missing occurrence fails before any write. For a
-   live Writer replica, keep `expectedMatches` as the conflict check on
-   `document-replace-text` and add optional `occurrence` the same way; use
-   `document-replace-paragraph` when the whole paragraph identity is known.
+   live Writer replica, locate first with `collab find <store> --find ...` or
+   MCP `office_collaboration_find`, pass that `matchCount` as
+   `expectedMatches` on `document-replace-text`, and add optional `occurrence`
+   the same way; use `document-replace-paragraph` when the whole paragraph
+   identity is known.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
    `view ... issues`. Use HTML, SVG, or screenshot only as a semantic preview.

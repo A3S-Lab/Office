@@ -157,6 +157,23 @@ impl NativeOfficeMcpServer {
     }
 
     #[tool(
+        name = "office_collaboration_find",
+        description = "List 1-based Document text matches in a durable Writer replica without writing. Use matchCount as expectedMatches and occurrence with document-replace-text.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_find(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationFindInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::find(input).await))
+    }
+
+    #[tool(
         name = "office_collaboration_diff",
         description = "Encode the complete local Yjs state or the update missing from a remote state vector",
         annotations(
@@ -732,7 +749,7 @@ impl ServerHandler for NativeOfficeMcpServer {
                 website_url: Some("https://github.com/A3S-Lab/Office".to_string()),
             },
             instructions: Some(
-                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, read current agent-visible content and stable identities with office_collaboration_read, poll office_collaboration_events with a persisted cursorSequence, prefer office_collaboration_mutate for typed local Markdown, Document, Spreadsheet cell, Presentation scene-element/z-order, or PDF changes, and apply externally delivered updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
+                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, read current agent-visible content and stable identities with office_collaboration_read, locate Document text with office_collaboration_find before document-replace-text, poll office_collaboration_events with a persisted cursorSequence, prefer office_collaboration_mutate for typed local Markdown, Document, Spreadsheet cell, Presentation scene-element/z-order, or PDF changes, and apply externally delivered updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
                     .to_string(),
             ),
             ..Default::default()

@@ -78,8 +78,9 @@ a3s-office collab mutate .a3s/notes.replica \
   --json
 
 # Document replacement edits matching ProseMirror Y.XmlText ranges in place.
-# expectedMatches must equal the current non-overlapping count. Optional
+# Locate first with collab find; pass matchCount as expectedMatches. Optional
 # occurrence (1-based) then changes only that match; omit it to replace all.
+a3s-office collab find .a3s/report.replica --find Draft --json
 a3s-office collab mutate .a3s/report.replica \
   --actor-id agent-7 --operation-id edit-44 --artifact-id report \
   --kind document --mode edit \
