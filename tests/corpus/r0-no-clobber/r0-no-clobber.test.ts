@@ -14,6 +14,7 @@ import {
   buildDateFormatFieldFixture,
   buildDuplicateBookmarkFixture,
   buildEndnoteFixture,
+  buildEvenPageFooterComplexNumPagesFieldFixture,
   buildEvenPageFooterNumPagesFieldFixture,
   buildEvenPageHeaderComplexPageFieldFixture,
   buildEvenPageHeaderFooterFixture,
@@ -341,6 +342,31 @@ describe('R0 no-clobber corpus', () => {
     ]);
     expect(result.identities.plainText).toContain(
       'Report body with even-page NUMPAGES chrome',
+    );
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expect(result.exportedParts).toContain('word/footer2.xml');
+    expect(result.firstPassIssues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['docx.headers']),
+    );
+  });
+
+  test('complex even-page footer NUMPAGES field survives round trip', async () => {
+    const bytes = await buildEvenPageFooterComplexNumPagesFieldFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'report-complex-even-page-footer-numpages-field.docx',
+    );
+
+    expect(result.identities.fieldKinds).toEqual(['numPages']);
+    expect(result.identities.fieldInstructions).toEqual(['NUMPAGES']);
+    expect(result.identities.headerTexts).toContain('Odd Continuing Header');
+    expect(result.identities.footerTexts).toEqual([
+      'Even of 14',
+      'Odd Continuing Footer',
+    ]);
+    expect(result.identities.plainText).toContain(
+      'Report body with complex even-page NUMPAGES chrome',
     );
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/footer1.xml');
