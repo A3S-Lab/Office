@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.276.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers complex header SECTION fields',
+      zh: 'R0 语料库覆盖复杂页眉 SECTION 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds complex fldChar header SECTION and footer SECTIONPAGES fixtures for Word-authored multi-section report chrome.',
+      zh: '永久无静默覆盖门禁新增复杂 fldChar 页眉 SECTION 与页脚 SECTIONPAGES 夹具，覆盖 Word 多节报告页眉页脚写法。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Complex SECTION chrome',
+          zh: '复杂 SECTION 页眉',
+        },
+        detail: {
+          en: 'Complex header SECTION keeps kind and instruction across import → export → reopen.',
+          zh: '复杂页眉 SECTION 在导入 → 导出 → 再打开后仍保留种类与指令。',
+        },
+      },
+      {
+        title: {
+          en: 'Complex SECTIONPAGES chrome',
+          zh: '复杂 SECTIONPAGES 页脚',
+        },
+        detail: {
+          en: 'Complex footer SECTIONPAGES round-trips with the same page-chrome field spans.',
+          zh: '复杂页脚 SECTIONPAGES 以相同页眉页脚字段跨度往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.275.0',
     date: '2026-09-18',
     kind: 'improved',
