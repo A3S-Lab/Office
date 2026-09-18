@@ -313,7 +313,7 @@ Still required for R0 exit:
    fixtures (diagnose every intentional normalization). **Permanent gate in**
    `tests/corpus/r0-no-clobber/` (`bun run test:corpus:r0`): bookmarks/external
    links, internal bookmark-anchor hyperlinks, review track changes, review
-   comments, default headers/footers, first-page vs default header/footer text, even-page vs default header/footer text, first-page header PAGE live fields (fldSimple and complex fldChar), even-page header PAGE live fields (fldSimple and complex fldChar), first-page footer NUMPAGES live fields, even-page footer NUMPAGES live fields,
+   comments, default headers/footers, first-page vs default header/footer text, even-page vs default header/footer text, first-page header PAGE live fields (fldSimple and complex fldChar), even-page header PAGE live fields (fldSimple and complex fldChar), first-page footer NUMPAGES live fields (fldSimple and complex fldChar), even-page footer NUMPAGES live fields,
    footnotes, endnotes, text and rich-text
    content controls, body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION,
    SECTIONPAGES, NUMWORDS, NUMCHARS, DATE (bare and `\@` format), and TIME
