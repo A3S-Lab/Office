@@ -78,7 +78,8 @@ a3s-office collab mutate .a3s/notes.replica \
   --json
 
 # Document replacement edits matching ProseMirror Y.XmlText ranges in place.
-# It fails unless the current non-overlapping match count is exactly one.
+# expectedMatches must equal the current non-overlapping count. Optional
+# occurrence (1-based) then changes only that match; omit it to replace all.
 a3s-office collab mutate .a3s/report.replica \
   --actor-id agent-7 --operation-id edit-44 --artifact-id report \
   --kind document --mode edit \
@@ -286,7 +287,8 @@ Its Document variants are `document-replace-text`,
 replacement searches within each ProseMirror `Y.XmlText`, may cross rich-text
 format runs but not XML node or inline-atom boundaries, preserves the first
 replaced character's attributes, and fails unless `expectedMatches` equals the
-current non-overlapping match count. A changed paragraph rotates its Word
+current non-overlapping match count. Optional `occurrence` then changes only
+that 1-based match; omit it to replace every match. A changed paragraph rotates its Word
 `textId` once. Complete paragraph replacement instead matches one stable
 `paragraphId`, its current `textId`, and the exact visible text returned by
 `collab read`; a concurrent edit fails closed before mutation. Paragraph

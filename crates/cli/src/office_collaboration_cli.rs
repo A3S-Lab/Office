@@ -345,7 +345,7 @@ async fn mutate(args: &[String]) -> UseResult<CommandOutput> {
                 format!("The typed collaboration mutation JSON is invalid: {error}"),
             )
             .with_suggestion(
-                "Use a closed mutation object such as {\"type\":\"document-replace-text\",\"search\":\"old\",\"replacement\":\"new\",\"expectedMatches\":1}; use document-suggestion-create in suggest mode and document-suggestion-decide in edit mode.",
+                "Use a closed mutation object such as {\"type\":\"document-replace-text\",\"search\":\"old\",\"replacement\":\"new\",\"expectedMatches\":1}; add optional 1-based \"occurrence\" to change one match after that count still matches. Use document-suggestion-create in suggest mode and document-suggestion-decide in edit mode.",
             )
         })?;
     let output_mutation = mutation.clone();
