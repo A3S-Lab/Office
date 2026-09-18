@@ -225,6 +225,15 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         delete_utf16: u32,
         insert: String,
     },
+    /// Replace an exact number of non-overlapping Markdown Y.Text matches.
+    MarkdownReplaceText {
+        search: String,
+        replacement: String,
+        expected_matches: u32,
+        /// 1-based match. Omit it to replace every match after the count check.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        occurrence: Option<u32>,
+    },
     /// Replace an exact number of non-overlapping Document Y.XmlText matches.
     DocumentReplaceText {
         search: String,
@@ -432,6 +441,17 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 index_utf16,
                 delete_utf16,
                 insert,
+            },
+            OfficeCollaborationMutation::MarkdownReplaceText {
+                search,
+                replacement,
+                expected_matches,
+                occurrence,
+            } => Self::MarkdownReplaceText {
+                search,
+                replacement,
+                expected_matches,
+                occurrence,
             },
             OfficeCollaborationMutation::DocumentReplaceText {
                 search,

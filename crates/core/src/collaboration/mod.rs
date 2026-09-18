@@ -211,11 +211,65 @@ impl NativeOfficeCollaborationStore {
         project_collaboration_document(&loaded.doc, &loaded.manifest, loaded.current_sequence)
     }
 
-    /// List Document text matches in the same walk `document-replace-text` uses.
+    /// List text matches for Document or Markdown replicas.
     ///
     /// Agents use the returned 1-based `occurrence` with optional
-    /// `document-replace-text.occurrence`, and `matchCount` as
-    /// `expectedMatches`.
+    /// `document-replace-text.occurrence` or `markdown-replace-text.occurrence`,
+    /// and `matchCount` as `expectedMatches`.
+    pub fn find_text(
+        &self,
+        search: impl Into<String>,
+        limit: usize,
+    ) -> UseResult<(
+        NativeOfficeCollaborationArtifactKind,
+        NativeOfficeCollaborationDocumentTextFindResult,
+    )> {
+        let search = search.into();
+        if !(1..=crate::MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT).contains(&limit) {
+            return Err(collaboration_error(
+                "office.collaboration.find_limit_invalid",
+                format!(
+                    "Collaboration text find limit must be from 1 through {}.",
+                    crate::MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT
+                ),
+            )
+            .with_detail("limit", limit as u64)
+            .with_detail("maximum", crate::MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT as u64));
+        }
+        let (_lock, loaded) = self.lock_and_load()?;
+        let kind = loaded.manifest.kind;
+        let result = match kind {
+            NativeOfficeCollaborationArtifactKind::Document => {
+                mutation::document::text::find_document_text(
+                    &loaded.doc,
+                    &loaded.manifest,
+                    &search,
+                    limit,
+                )?
+            }
+            NativeOfficeCollaborationArtifactKind::Markdown => {
+                mutation::markdown::find_markdown_text(
+                    &loaded.doc,
+                    &loaded.manifest,
+                    &search,
+                    limit,
+                )?
+            }
+            other => {
+                return Err(collaboration_error(
+                    "office.collaboration.kind_mismatch",
+                    format!(
+                        "Collaboration text find requires a document or markdown replica, not {}.",
+                        other.as_str()
+                    ),
+                )
+                .with_detail("kind", other.as_str()))
+            }
+        };
+        Ok((kind, result))
+    }
+
+    /// List Document text matches in the same walk `document-replace-text` uses.
     pub fn find_document_text(
         &self,
         search: impl Into<String>,

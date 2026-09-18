@@ -227,15 +227,21 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
             "--limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}"
         )));
     }
-    let result = spawn_blocking(move || {
-        NativeOfficeCollaborationStore::open(store_path)?.find_document_text(find, limit)
+    let (kind, result) = spawn_blocking(move || {
+        NativeOfficeCollaborationStore::open(store_path)?.find_text(find, limit)
     })
     .await?;
+    let kind_label = kind.as_str();
+    let operation = match kind {
+        NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
+        NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
+        _ => "find-text",
+    };
     let human = if result.matches.is_empty() {
-        format!("No Document matches for '{}'.", result.search)
+        format!("No {kind_label} matches for '{}'.", result.search)
     } else {
         let mut lines = format!(
-            "Found {} Document match(es) for '{}'.",
+            "Found {} {kind_label} match(es) for '{}'.",
             result.match_count, result.search
         );
         for hit in &result.matches {
@@ -261,7 +267,8 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
     Ok(CommandOutput::success(
         human,
         json!({
-            "operation": "find-document-text",
+            "operation": operation,
+            "kind": kind_label,
             "matches": result.match_count,
             "truncated": result.truncated,
             "result": result

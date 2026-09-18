@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Collaboration
+
+- Locate live Markdown text before replacing it. `collab find` /
+  `office_collaboration_find` work on Markdown replicas and number matches in
+  the same non-overlapping walk as `markdown-replace-text`. Agents pass
+  `matchCount` as `expectedMatches` and optional `occurrence` the same way as
+  Document `document-replace-text`.
+
 ## 0.285.0 - 2026-09-18
 
 ### Collaboration

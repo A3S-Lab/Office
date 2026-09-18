@@ -93,11 +93,11 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    `find <file> [scope] --find ...`, then add `--occurrence <n>` (the 1-based
    index from that result) to change one match. Omitting occurrence still
    replaces every match. A missing occurrence fails before any write. For a
-   live Writer replica, locate first with `collab find <store> --find ...` or
-   MCP `office_collaboration_find`, pass that `matchCount` as
-   `expectedMatches` on `document-replace-text`, and add optional `occurrence`
-   the same way; use `document-replace-paragraph` when the whole paragraph
-   identity is known.
+   live Writer or Markdown replica, locate first with `collab find <store>
+   --find ...` or MCP `office_collaboration_find`, pass that `matchCount` as
+   `expectedMatches` on `document-replace-text` or `markdown-replace-text`, and
+   add optional `occurrence` the same way; use `document-replace-paragraph`
+   when the whole paragraph identity is known.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
    `view ... issues`. Use HTML, SVG, or screenshot only as a semantic preview.

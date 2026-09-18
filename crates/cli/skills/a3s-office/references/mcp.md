@@ -56,10 +56,10 @@ Call `office_collaboration_read` before a local edit. It returns exact
 canonical Markdown source or an Office-owned Document projection with stable
 paragraph/text identities, projection-v3 comments/replies/anchors, live
 suggestions, immutable change decisions, and the state vector required for a
-fail-closed mutation. For Document text locate-edit, call
+fail-closed mutation. For Document or Markdown text locate-edit, call
 `office_collaboration_find` first and pass its `matchCount` /
-`occurrence` into `document-replace-text`. Do not decode Office
-collaboration roots in the host.
+`occurrence` into `document-replace-text` or `markdown-replace-text`. Do not
+decode Office collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
 from a browser peer:
@@ -144,11 +144,12 @@ that count first with `office_collaboration_find` (CLI `collab find`); its
 conflict check for replacing every match. Add `"occurrence": 2` to change only
 that 1-based match after the count still matches. To change one stable
 paragraph instead, use `document-replace-paragraph` with its paragraph id and
-text id. File-level Word, Spreadsheet, and Presentation edits use `office_find`
-and native `replace-text` with the same `occurrence`. Document replacement may
-cross formatting runs inside one text node, preserves the first replaced
-character's attributes, rotates the affected Word `textId` once, and never
-crosses an XML-node or inline-atom boundary:
+text id. Markdown replicas use the same find → `markdown-replace-text` path on
+the canonical Y.Text source. File-level Word, Spreadsheet, and Presentation
+edits use `office_find` and native `replace-text` with the same `occurrence`.
+Document replacement may cross formatting runs inside one text node, preserves
+the first replaced character's attributes, rotates the affected Word `textId`
+once, and never crosses an XML-node or inline-atom boundary:
 
 ```json
 {
@@ -163,6 +164,25 @@ crosses an XML-node or inline-atom boundary:
     "search": "Draft",
     "replacement": "Final",
     "expectedMatches": 1
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+```json
+{
+  "store": ".a3s/notes.replica",
+  "operationId": "agent-edit-46",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "notes",
+  "kind": "markdown",
+  "mutation": {
+    "type": "markdown-replace-text",
+    "search": "Draft",
+    "replacement": "Final",
+    "expectedMatches": 1,
+    "occurrence": 1
   },
   "ifStateVectorBase64": "..."
 }

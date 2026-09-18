@@ -104,11 +104,13 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         .to_string();
     for expected in [
         "markdown-splice",
+        "markdown-replace-text",
         "indexUtf16",
         "deleteUtf16",
         "document-replace-text",
         "document-replace-paragraph",
         "expectedMatches",
+        "occurrence",
         "document-set-page-color",
         "pageColor",
         "document-insert-paragraph",

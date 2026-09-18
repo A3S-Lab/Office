@@ -77,14 +77,19 @@ a3s-office collab mutate .a3s/notes.replica \
   --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
   --json
 
-# Document replacement edits matching ProseMirror Y.XmlText ranges in place.
-# Locate first with collab find; pass matchCount as expectedMatches. Optional
-# occurrence (1-based) then changes only that match; omit it to replace all.
+# Document or Markdown locate-then-replace. Pass matchCount as expectedMatches.
+# Optional occurrence (1-based) then changes only that match; omit it to replace all.
 a3s-office collab find .a3s/report.replica --find Draft --json
 a3s-office collab mutate .a3s/report.replica \
   --actor-id agent-7 --operation-id edit-44 --artifact-id report \
   --kind document --mode edit \
   --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' \
+  --json
+a3s-office collab find .a3s/notes.replica --find Draft --json
+a3s-office collab mutate .a3s/notes.replica \
+  --actor-id agent-7 --operation-id edit-44m --artifact-id notes \
+  --kind markdown --mode edit \
+  --mutation '{"type":"markdown-replace-text","search":"Draft","replacement":"Final","expectedMatches":1,"occurrence":1}' \
   --json
 
 # Prefer stable paragraph identity when replacing one complete plain
@@ -275,9 +280,12 @@ corrupt checkpoints, and sequence gaps are structured failures. State vectors
 and updates are bounded to 1 MiB and 64 MiB respectively.
 
 `collab mutate` is the format-aware local authorization boundary. Its Markdown
-variants are `markdown-replace` and `markdown-splice`; both update canonical
-`Y.Text`, produce a minimal incremental update, and use browser UTF-16 offsets.
-Its Document variants are `document-replace-text`,
+variants are `markdown-replace`, `markdown-splice`, and
+`markdown-replace-text`. Replace and splice update canonical `Y.Text`, produce a
+minimal incremental update, and use browser UTF-16 offsets.
+`markdown-replace-text` uses the same locate-then-replace contract as Document:
+`collab find` / `office_collaboration_find`, then `expectedMatches` plus optional
+1-based `occurrence`. Its Document variants are `document-replace-text`,
 `document-replace-paragraph`,
 `document-insert-paragraph`, `document-delete-paragraph`,
 `document-set-page-color`, `document-clear-page-color`,
