@@ -215,6 +215,9 @@ pub enum NativeOfficeCollaborationMutation {
         search: String,
         replacement: String,
         expected_matches: u32,
+        /// 1-based match. Omitted means every match after the count check.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        occurrence: Option<u32>,
     },
     /// Replace the complete visible text of one stable plain paragraph after
     /// matching its current Word text identity and exact text. This is the

@@ -19,8 +19,9 @@ pub(super) fn validate_document_mutation(
         NativeOfficeCollaborationMutation::DocumentReplaceText {
             search,
             expected_matches,
+            occurrence,
             ..
-        } => text::validate_text_replacement(search, *expected_matches),
+        } => text::validate_text_replacement(search, *expected_matches, *occurrence),
         NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
             paragraph_id,
             expected_text_id,
@@ -75,7 +76,15 @@ pub(super) fn apply_document_mutation(
             search,
             replacement,
             expected_matches,
-        } => text::replace_document_text(doc, manifest, search, replacement, *expected_matches),
+            occurrence,
+        } => text::replace_document_text(
+            doc,
+            manifest,
+            search,
+            replacement,
+            *expected_matches,
+            *occurrence,
+        ),
         NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
             paragraph_id,
             expected_text_id,

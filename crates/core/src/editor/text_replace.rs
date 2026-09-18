@@ -4,9 +4,10 @@ use a3s_use_core::{UseError, UseResult};
 use regex::Regex;
 
 use super::{
-    editor_error, node_not_found, parse_segments, NativeOfficeTextMatchMode,
-    NativeOfficeTextReplacement, NativeOfficeTextReplacementResult, MAX_NATIVE_OFFICE_TEXT_MATCHES,
-    MAX_NATIVE_OFFICE_TEXT_REPLACEMENT_OUTPUT_BYTES,
+    editor_error, node_not_found, parse_segments, NativeOfficeTextFindResult,
+    NativeOfficeTextMatchLocation, NativeOfficeTextMatchMode, NativeOfficeTextReplacement,
+    NativeOfficeTextReplacementResult, MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT,
+    MAX_NATIVE_OFFICE_TEXT_MATCHES, MAX_NATIVE_OFFICE_TEXT_REPLACEMENT_OUTPUT_BYTES,
 };
 use crate::semantic::{NativeOfficeDocument, OfficeNodeType};
 use crate::xml_edit::{
@@ -49,23 +50,82 @@ pub(super) fn replace(
     validate_scope_path(path)?;
     replacement.validate()?;
     let compiled = CompiledTextReplacement::new(replacement)?;
-    let mut accumulator = ReplacementAccumulator::default();
-    match package.kind() {
-        DocumentKind::Word => replace_word(package, path, &compiled, &mut accumulator)?,
-        DocumentKind::Spreadsheet => {
-            spreadsheet::replace(package, path, &compiled, &mut accumulator)?
-        }
-        DocumentKind::Presentation => {
-            replace_presentation(package, path, &compiled, &mut accumulator)?
+    if let Some(occurrence) = replacement.occurrence {
+        let mut preview = ReplacementAccumulator::preview();
+        dispatch(package, path, &compiled, &mut preview)?;
+        if preview.match_count < usize::try_from(occurrence).unwrap_or(usize::MAX) {
+            return Err(editor_error(
+                "use.office.text_occurrence_missing",
+                format!(
+                    "Native Office text replacement occurrence {occurrence} is outside the {} match(es) in this scope.",
+                    preview.match_count
+                ),
+            )
+            .with_detail("occurrence", u64::from(occurrence))
+            .with_detail("matches", preview.match_count)
+            .with_suggestion(
+                "Choose a 1-based occurrence inside the current scope, or omit occurrence to replace every match.",
+            ));
         }
     }
+    let mut accumulator = ReplacementAccumulator::apply(replacement.occurrence);
+    dispatch(package, path, &compiled, &mut accumulator)?;
     Ok(NativeOfficeTextReplacementResult {
         path: path.to_string(),
         mode: replacement.mode,
         match_count: accumulator.match_count,
         changed: !accumulator.changed_parts.is_empty(),
         changed_parts: accumulator.changed_parts.into_iter().collect(),
+        occurrence: replacement.occurrence,
     })
+}
+
+pub(super) fn locate(
+    package: &mut NativeOfficePackage,
+    path: &str,
+    replacement: &NativeOfficeTextReplacement,
+    limit: usize,
+) -> UseResult<NativeOfficeTextFindResult> {
+    if !(1..=MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT).contains(&limit) {
+        return Err(editor_error(
+            "use.office.text_find_limit_invalid",
+            format!(
+                "Native Office text find limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}."
+            ),
+        )
+        .with_detail("limit", limit));
+    }
+    if replacement.occurrence.is_some() {
+        return Err(editor_error(
+            "use.office.text_occurrence_invalid",
+            "Native Office text find does not accept an occurrence. Read the matches, then replace one.",
+        ));
+    }
+    validate_scope_path(path)?;
+    replacement.validate()?;
+    let compiled = CompiledTextReplacement::new(replacement)?;
+    let mut preview = ReplacementAccumulator::locate(limit);
+    dispatch(package, path, &compiled, &mut preview)?;
+    Ok(NativeOfficeTextFindResult {
+        path: path.to_string(),
+        mode: replacement.mode,
+        match_count: preview.match_count,
+        truncated: preview.truncated,
+        matches: preview.hits,
+    })
+}
+
+fn dispatch(
+    package: &mut NativeOfficePackage,
+    path: &str,
+    compiled: &CompiledTextReplacement,
+    accumulator: &mut ReplacementAccumulator,
+) -> UseResult<()> {
+    match package.kind() {
+        DocumentKind::Word => replace_word(package, path, compiled, accumulator),
+        DocumentKind::Spreadsheet => spreadsheet::replace(package, path, compiled, accumulator),
+        DocumentKind::Presentation => replace_presentation(package, path, compiled, accumulator),
+    }
 }
 
 fn validate_scope_path(path: &str) -> UseResult<()> {
@@ -87,6 +147,8 @@ pub(super) struct CompiledTextReplacement {
 pub(super) struct SegmentTransform {
     pub(super) output: Vec<String>,
     pub(super) match_count: usize,
+    pub(super) raw_matches: usize,
+    pub(super) matched_texts: Vec<String>,
     pub(super) replacement_bytes: usize,
     pub(super) changed: bool,
 }
@@ -117,7 +179,13 @@ impl CompiledTextReplacement {
         })
     }
 
-    pub(super) fn transform(&self, segments: &[String]) -> UseResult<SegmentTransform> {
+    pub(super) fn transform_in(
+        &self,
+        segments: &[String],
+        located: usize,
+        occurrence: Option<u32>,
+        multiplier: usize,
+    ) -> UseResult<SegmentTransform> {
         let boundaries = segment_boundaries(segments)?;
         let mut source = String::with_capacity(*boundaries.last().unwrap_or(&0));
         for segment in segments {
@@ -176,10 +244,20 @@ impl CompiledTextReplacement {
                 }
             }
         }
+        let raw_matches = spans.len();
+        let matched_texts = spans
+            .iter()
+            .map(|span| source[span.start..span.end].to_string())
+            .collect::<Vec<_>>();
+        if let Some(target) = occurrence {
+            spans = select_occurrence(spans, located, target, multiplier, &mut replacement_bytes)?;
+        }
         if spans.is_empty() {
             return Ok(SegmentTransform {
                 output: segments.to_vec(),
                 match_count: 0,
+                raw_matches,
+                matched_texts,
                 replacement_bytes: 0,
                 changed: false,
             });
@@ -203,10 +281,70 @@ impl CompiledTextReplacement {
         Ok(SegmentTransform {
             output,
             match_count: spans.len(),
+            raw_matches,
+            matched_texts,
             replacement_bytes,
             changed,
         })
     }
+}
+
+fn select_occurrence(
+    spans: Vec<ReplacementSpan>,
+    located: usize,
+    target: u32,
+    multiplier: usize,
+    replacement_bytes: &mut usize,
+) -> UseResult<Vec<ReplacementSpan>> {
+    if multiplier == 0 {
+        return Err(editor_error(
+            "use.office.text_occurrence_invalid",
+            "Native Office text occurrence cannot target an empty cell group.",
+        ));
+    }
+    let Some(previous) = target.checked_sub(1) else {
+        return Err(editor_error(
+            "use.office.text_occurrence_invalid",
+            "Native Office text replacement occurrence is 1-based.",
+        ));
+    };
+    let target_index = usize::try_from(previous).map_err(|_| {
+        editor_error(
+            "use.office.text_occurrence_invalid",
+            "Native Office text occurrence is outside the supported range.",
+        )
+    })?;
+    let mut kept = Vec::new();
+    let mut kept_bytes = 0_usize;
+    for (offset, span) in spans.into_iter().enumerate() {
+        let group_start = located
+            .checked_add(offset.checked_mul(multiplier).ok_or_else(|| {
+                replacement_limit_error("Native Office text match count overflowed.")
+            })?)
+            .ok_or_else(|| replacement_limit_error("Native Office text match count overflowed."))?;
+        let group_end = group_start
+            .checked_add(multiplier)
+            .ok_or_else(|| replacement_limit_error("Native Office text match count overflowed."))?;
+        if target_index >= group_start && target_index < group_end {
+            if multiplier != 1 {
+                return Err(editor_error(
+                    "use.office.text_occurrence_ambiguous",
+                    "Native Office cannot change one occurrence of a shared string used by multiple selected cells.",
+                )
+                .with_detail("occurrence", u64::from(target))
+                .with_detail("sharedUses", multiplier)
+                .with_suggestion(
+                    "Narrow the Spreadsheet path to one cell so the shared string is cloned, then target occurrence 1.",
+                ));
+            }
+            kept_bytes = kept_bytes.checked_add(span.value.len()).ok_or_else(|| {
+                replacement_limit_error("Native Office replacement output size overflowed.")
+            })?;
+            kept.push(span);
+        }
+    }
+    *replacement_bytes = kept_bytes;
+    Ok(kept)
 }
 
 fn ensure_match_slot(matches: usize) -> UseResult<()> {
@@ -390,14 +528,93 @@ fn owner_at(boundaries: &[usize], position: usize) -> Option<usize> {
     (index + 1 < boundaries.len() && position < boundaries[index + 1]).then_some(index)
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(super) struct ReplacementAccumulator {
     match_count: usize,
     replacement_bytes: usize,
     changed_parts: BTreeSet<String>,
+    writing: bool,
+    occurrence: Option<u32>,
+    located: usize,
+    collect_limit: Option<usize>,
+    hits: Vec<NativeOfficeTextMatchLocation>,
+    truncated: bool,
+    current_part: String,
 }
 
 impl ReplacementAccumulator {
+    fn preview() -> Self {
+        Self {
+            match_count: 0,
+            replacement_bytes: 0,
+            changed_parts: BTreeSet::new(),
+            writing: false,
+            occurrence: None,
+            located: 0,
+            collect_limit: None,
+            hits: Vec::new(),
+            truncated: false,
+            current_part: String::new(),
+        }
+    }
+
+    fn apply(occurrence: Option<u32>) -> Self {
+        Self {
+            writing: true,
+            occurrence,
+            ..Self::preview()
+        }
+    }
+
+    fn locate(limit: usize) -> Self {
+        Self {
+            collect_limit: Some(limit),
+            ..Self::preview()
+        }
+    }
+
+    pub(super) fn set_part(&mut self, part: &str) {
+        self.current_part = format!("/{}", part.trim_start_matches('/'));
+    }
+
+    fn record_hits(&mut self, texts: &[String], multiplier: usize, origin: usize) -> UseResult<()> {
+        let Some(limit) = self.collect_limit else {
+            return Ok(());
+        };
+        if multiplier == 0 {
+            return Ok(());
+        }
+        for (offset, text) in texts.iter().enumerate() {
+            for slot in 0..multiplier {
+                let index = origin
+                    .checked_add(offset.checked_mul(multiplier).ok_or_else(|| {
+                        replacement_limit_error("Native Office text match count overflowed.")
+                    })?)
+                    .and_then(|value| value.checked_add(slot))
+                    .ok_or_else(|| {
+                        replacement_limit_error("Native Office text match count overflowed.")
+                    })?;
+                let occurrence = u32::try_from(index.saturating_add(1)).map_err(|_| {
+                    replacement_limit_error("Native Office text match count overflowed.")
+                })?;
+                if self.hits.len() >= limit {
+                    self.truncated = true;
+                    return Ok(());
+                }
+                self.hits.push(NativeOfficeTextMatchLocation {
+                    occurrence,
+                    text: text.clone(),
+                    part: self.current_part.clone(),
+                    shared_uses: (multiplier > 1).then_some(multiplier),
+                });
+            }
+        }
+        Ok(())
+    }
+
+    pub(super) fn writing(&self) -> bool {
+        self.writing
+    }
     pub(super) fn record(
         &mut self,
         transform: &SegmentTransform,
@@ -453,7 +670,22 @@ pub(super) fn transform_text_elements(
         .iter()
         .map(|element| decoded_element_text(part, element))
         .collect::<UseResult<Vec<_>>>()?;
-    let transform = compiled.transform(&source)?;
+    let occurrence = if accumulator.writing {
+        accumulator.occurrence
+    } else {
+        None
+    };
+    let origin = accumulator.located;
+    let transform = compiled.transform_in(&source, accumulator.located, occurrence, multiplier)?;
+    accumulator.record_hits(&transform.matched_texts, multiplier, origin)?;
+    let logical = transform
+        .raw_matches
+        .checked_mul(multiplier)
+        .ok_or_else(|| replacement_limit_error("Native Office text match count overflowed."))?;
+    accumulator.located = accumulator
+        .located
+        .checked_add(logical)
+        .ok_or_else(|| replacement_limit_error("Native Office text match count overflowed."))?;
     accumulator.record(&transform, multiplier)?;
     if transform.changed {
         for ((element, before), after) in elements.iter().zip(&source).zip(&transform.output) {
@@ -502,6 +734,7 @@ fn replace_word(
         return Err(unsupported_scope(path, "Word"));
     }
     let part_name = word_scope_part(&snapshot, &requested, path)?;
+    accumulator.set_part(&part_name);
     let part = package.xml_part(&part_name)?;
     let root = index_xml(&part)?;
     let target = locate_word_scope(&root, path)?;
@@ -514,7 +747,7 @@ fn replace_word(
         accumulator,
         &mut patches,
     )?;
-    if !patches.is_empty() {
+    if accumulator.writing() && !patches.is_empty() {
         package.set_part(&part_name, apply_patches(&part, patches)?)?;
         accumulator.changed(&part_name);
     }
@@ -680,6 +913,7 @@ fn replace_presentation(
             format!("Presentation scope '{path}' has no source slide part."),
         )
     })?;
+    accumulator.set_part(part_name);
     let part = package.xml_part(part_name)?;
     let root = index_xml(&part)?;
     let target = super::presentation::locate_path(&root, path)?;
@@ -692,7 +926,7 @@ fn replace_presentation(
         accumulator,
         &mut patches,
     )?;
-    if !patches.is_empty() {
+    if accumulator.writing() && !patches.is_empty() {
         package.set_part(part_name, apply_patches(&part, patches)?)?;
         accumulator.changed(part_name);
     }
@@ -707,11 +941,12 @@ fn replace_whole_paragraph_part(
     accumulator: &mut ReplacementAccumulator,
 ) -> UseResult<()> {
     let part_name = part_name.trim_start_matches('/');
+    accumulator.set_part(part_name);
     let part = package.xml_part(part_name)?;
     let root = index_xml(&part)?;
     let mut patches = Vec::new();
     replace_element_paragraphs(&part, &root, dialect, compiled, accumulator, &mut patches)?;
-    if !patches.is_empty() {
+    if accumulator.writing() && !patches.is_empty() {
         package.set_part(part_name, apply_patches(&part, patches)?)?;
         accumulator.changed(part_name);
     }
@@ -850,7 +1085,7 @@ mod tests {
         let replacement = NativeOfficeTextReplacement::literal("alpha beta", "done").unwrap();
         let compiled = CompiledTextReplacement::new(&replacement).unwrap();
         let result = compiled
-            .transform(&["before alpha ".into(), "beta after".into()])
+            .transform_in(&["before alpha ".into(), "beta after".into()], 0, None, 1)
             .unwrap();
         assert_eq!(result.output, ["before done", " after"]);
         assert_eq!(result.match_count, 1);
@@ -865,7 +1100,7 @@ mod tests {
         .unwrap();
         let compiled = CompiledTextReplacement::new(&replacement).unwrap();
         let result = compiled
-            .transform(&["Road".into(), "map, 2026".into()])
+            .transform_in(&["Road".into(), "map, 2026".into()], 0, None, 1)
             .unwrap();
         assert_eq!(result.output, ["Roadmap (2026)", ""]);
         assert_eq!(result.match_count, 1);
@@ -888,8 +1123,47 @@ mod tests {
             NativeOfficeTextReplacement::regex(expression.as_str(), template).unwrap();
         let result = CompiledTextReplacement::new(&replacement)
             .unwrap()
-            .transform(&[String::new(), "Roadmap-42".into(), String::new()])
+            .transform_in(
+                &[String::new(), "Roadmap-42".into(), String::new()],
+                0,
+                None,
+                1,
+            )
             .unwrap();
         assert_eq!(result.output, ["", expected.as_str(), ""]);
+    }
+
+    #[test]
+    fn occurrence_selects_one_non_overlapping_match() {
+        let replacement = NativeOfficeTextReplacement::literal("alpha", "beta")
+            .unwrap()
+            .with_occurrence(2)
+            .unwrap();
+        let compiled = CompiledTextReplacement::new(&replacement).unwrap();
+        let result = compiled
+            .transform_in(&["alpha alpha".into()], 0, Some(2), 1)
+            .unwrap();
+        assert_eq!(result.output, ["alpha beta"]);
+        assert_eq!(result.match_count, 1);
+        assert_eq!(result.raw_matches, 2);
+
+        let invalid = NativeOfficeTextReplacement::literal("alpha", "beta")
+            .unwrap()
+            .with_occurrence(0)
+            .unwrap_err();
+        assert_eq!(invalid.code, "use.office.text_occurrence_invalid");
+    }
+
+    #[test]
+    fn shared_string_occurrence_stays_ambiguous_until_one_cell_owns_it() {
+        let replacement = NativeOfficeTextReplacement::literal("alpha", "beta")
+            .unwrap()
+            .with_occurrence(1)
+            .unwrap();
+        let error = CompiledTextReplacement::new(&replacement)
+            .unwrap()
+            .transform_in(&["alpha".into()], 0, Some(1), 2)
+            .unwrap_err();
+        assert_eq!(error.code, "use.office.text_occurrence_ambiguous");
     }
 }

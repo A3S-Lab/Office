@@ -1,7 +1,8 @@
 use a3s_office::{
     DocumentKind, DocumentNode, NativeOfficeCommentPosition, NativeOfficeCommentUpdate,
     NativeOfficeDocument, NativeOfficeEditor, NativeOfficeMutation, NativeOfficeTextReplacement,
-    OfficeNodeType, SpreadsheetCellValue,
+    OfficeNodeType, SpreadsheetCellValue, DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT,
+    MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT,
 };
 use a3s_use_core::{UseError, UseResult};
 
@@ -38,6 +39,7 @@ const HELP: &str = concat!(
     "usage:\n",
     "  a3s-office get <file> [path] [--depth <n>] [--json]\n",
     "  a3s-office query <file> <selector> [--json]\n",
+    "  a3s-office find <file> [path] --find <text> [--regex] [--limit <1-200>] [--json]\n",
     "  a3s-office view <file> text|annotated|outline|stats|issues|html|svg|screenshot [--type <filter>] [--limit <n>] [--output <file>] [--timeout-ms <ms>] [--json]\n",
     "  a3s-office watch <file> [--port <0-65535>] [--poll-ms <50-10000>] [--timeout-ms <ms>] [--json]\n",
     "  a3s-office raw <file> <part> [--output <xml-file>] [--json]\n",
@@ -53,7 +55,7 @@ const HELP: &str = concat!(
     "  a3s-office add <file.xlsx> <sheet> --type auto-filter --range <A1-range> [--filter <strict-json-column> ...] [--output <file>] [--json]\n",
     "  a3s-office add <file.xlsx> <sheet> --type table --name <name> --range <A1-range> --table-column <name> [--table-column <name> ...] [--filter <strict-json-column> ...] [--display-name <name>] [--header-row <true|false>] [--totals-row <true|false>] [--style none|light:<1-21>|medium:<1-28>|dark:<1-11>] [--show-first-column <true|false>] [--show-last-column <true|false>] [--show-row-stripes <true|false>] [--show-column-stripes <true|false>] [--output <file>] [--json]\n",
     "  a3s-office add-part <file> <parent> --type chart|header|footer [--output <file>] [--json]\n",
-    "  a3s-office set <file> <path> [--find <text> --replace <text> [--regex]|--text <value>|--number <value>|--boolean <true|false>|--formula <expression>|--width-emu <n>] [--author <name>] [--initials <value>] [--x-emu <i32> --y-emu <i32>] [--bold <true|false>] [--italic <true|false>] [--underline <none|single|double>] [--script <baseline|superscript|subscript>] [--strikethrough <true|false>] [--double-strikethrough <true|false>] [--text-case <none|small-caps|all-caps>] [--highlight <color>] [--language <BCP-47>] [--font-family <name>] [--font-size <points>] [--text-color <RRGGBB>] [--align <left|center|right|justify>] [--number-format <code>] [--fill <none|RRGGBB>] [--border-all <style>] [--border-color <RRGGBB>] [--border-left|--border-right|--border-top|--border-bottom <style>] [--border-left-color|--border-right-color|--border-top-color|--border-bottom-color <RRGGBB>] [--border-diagonal <style>] [--border-diagonal-color <RRGGBB>] [--border-diagonal-up <true|false>] [--border-diagonal-down <true|false>] [--vertical-align <top|center|bottom|justify|distributed>] [--wrap-text <true|false>] [--text-rotation <0..180|255>] [--indent <0..255>] [--shrink-to-fit <true|false>] [--reading-order <context|ltr|rtl>] [--merge-cells <true|false>] [--url <http|https|mailto>|--location <internal>] [--display <text>] [--tooltip <text>] [--output <file>] [--json]\n",
+    "  a3s-office set <file> <path> [--find <text> --replace <text> [--regex] [--occurrence <n>]|--text <value>|--number <value>|--boolean <true|false>|--formula <expression>|--width-emu <n>] [--author <name>] [--initials <value>] [--x-emu <i32> --y-emu <i32>] [--bold <true|false>] [--italic <true|false>] [--underline <none|single|double>] [--script <baseline|superscript|subscript>] [--strikethrough <true|false>] [--double-strikethrough <true|false>] [--text-case <none|small-caps|all-caps>] [--highlight <color>] [--language <BCP-47>] [--font-family <name>] [--font-size <points>] [--text-color <RRGGBB>] [--align <left|center|right|justify>] [--number-format <code>] [--fill <none|RRGGBB>] [--border-all <style>] [--border-color <RRGGBB>] [--border-left|--border-right|--border-top|--border-bottom <style>] [--border-left-color|--border-right-color|--border-top-color|--border-bottom-color <RRGGBB>] [--border-diagonal <style>] [--border-diagonal-color <RRGGBB>] [--border-diagonal-up <true|false>] [--border-diagonal-down <true|false>] [--vertical-align <top|center|bottom|justify|distributed>] [--wrap-text <true|false>] [--text-rotation <0..180|255>] [--indent <0..255>] [--shrink-to-fit <true|false>] [--reading-order <context|ltr|rtl>] [--merge-cells <true|false>] [--url <http|https|mailto>|--location <internal>] [--display <text>] [--tooltip <text>] [--output <file>] [--json]\n",
     "  a3s-office set <file.xlsx> <sheet/dataValidation[N]> [data-validation options from add; unspecified fields are preserved, use none or an empty value to clear optional text/formula2] [--output <file>] [--json]\n",
     "  a3s-office set <file.xlsx> <sheet/cf[N]> [conditional-format options from add; unspecified fields are preserved] [--output <file>] [--json]\n",
     "  a3s-office set <file.xlsx> <namedrange-selector> [--name <name>] [--ref <expression>] [--scope workbook|worksheet:workbook|<sheet>] [--comment <text|none>] [--volatile <true|false>] [--output <file>] [--json]\n",
@@ -79,6 +81,7 @@ pub async fn run(args: &[String]) -> UseResult<CommandOutput> {
         None | Some("help" | "--help" | "-h") => Ok(help()),
         Some("get") => get(args).await,
         Some("query") => query(args).await,
+        Some("find") => find_text(args).await,
         Some("view") => view::run(args).await,
         Some("watch") => watch::run(args).await,
         Some("raw") => raw::inspect(args).await,
@@ -116,7 +119,7 @@ fn help() -> CommandOutput {
         HELP,
         serde_json::json!({
             "commands": [
-                "get", "query", "view", "watch", "raw", "raw-set", "dump", "merge", "validate", "create", "add", "add-part", "set", "sort", "import", "recalculate", "remove", "move", "copy", "swap",
+                "get", "query", "find", "view", "watch", "raw", "raw-set", "dump", "merge", "validate", "create", "add", "add-part", "set", "sort", "import", "recalculate", "remove", "move", "copy", "swap",
                 "insert-rows", "delete-rows", "insert-columns", "delete-columns",
                 "rename-sheet", "move-sheet", "copy-sheet", "batch"
             ],
@@ -171,6 +174,68 @@ async fn query(args: &[String]) -> UseResult<CommandOutput> {
     ))
 }
 
+async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
+    let parsed = ParsedArguments::parse(args, AllowedOptions::FIND)?;
+    if !(1..=2).contains(&parsed.positionals.len()) {
+        return Err(usage_error(
+            "office native find requires <file> and an optional [path]",
+        ));
+    }
+    if parsed.replacement.is_some() || parsed.occurrence.is_some() {
+        return Err(usage_error(
+            "office native find accepts --find, not --replace or --occurrence",
+        ));
+    }
+    let find = parsed
+        .find
+        .as_deref()
+        .ok_or_else(|| usage_error("office native find requires --find <text>"))?;
+    let limit = parsed
+        .limit
+        .unwrap_or(DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT);
+    if !(1..=MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT).contains(&limit) {
+        return Err(usage_error(format!(
+            "--limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}"
+        )));
+    }
+    let probe = if parsed.regex {
+        NativeOfficeTextReplacement::regex(find, "")?
+    } else {
+        NativeOfficeTextReplacement::literal(find, "")?
+    };
+    let editor = NativeOfficeEditor::open(&parsed.positionals[0]).await?;
+    let path = parsed.positionals.get(1).map_or("/", String::as_str);
+    let result = editor.find_text(path, probe, limit)?;
+    let human = if result.matches.is_empty() {
+        format!("No matches for '{find}' in {path}.")
+    } else {
+        let mut lines = format!(
+            "Found {} match(es) for '{find}' in {path}.",
+            result.match_count
+        );
+        for hit in &result.matches {
+            lines.push_str(&format!(
+                "\n  {}: {} ({})",
+                hit.occurrence, hit.text, hit.part
+            ));
+        }
+        if result.truncated {
+            lines.push_str("\n  results truncated");
+        }
+        lines
+    };
+    Ok(CommandOutput::success(
+        human,
+        serde_json::json!({
+            "operation": "find-text",
+            "path": path,
+            "matches": result.match_count,
+            "truncated": result.truncated,
+            "result": result
+        }),
+    ))
+}
+
 async fn validate(args: &[String]) -> UseResult<CommandOutput> {
     let parsed = ParsedArguments::parse(args, AllowedOptions::NONE)?;
     if parsed.positionals.len() != 1 {
@@ -218,7 +283,11 @@ async fn set(args: &[String]) -> UseResult<CommandOutput> {
     if parsed.positionals.len() != 2 {
         return Err(usage_error("office native set requires <file> and <path>"));
     }
-    if parsed.find.is_some() || parsed.replacement.is_some() || parsed.regex {
+    if parsed.find.is_some()
+        || parsed.replacement.is_some()
+        || parsed.regex
+        || parsed.occurrence.is_some()
+    {
         return replace_text(parsed).await;
     }
     let value_count = [
@@ -695,11 +764,14 @@ async fn replace_text(parsed: ParsedArguments) -> UseResult<CommandOutput> {
         ));
     }
 
-    let replacement = if parsed.regex {
+    let mut replacement = if parsed.regex {
         NativeOfficeTextReplacement::regex(find, replacement)?
     } else {
         NativeOfficeTextReplacement::literal(find, replacement)?
     };
+    if let Some(occurrence) = parsed.occurrence {
+        replacement = replacement.with_occurrence(occurrence)?;
+    }
     let source = &parsed.positionals[0];
     let path = &parsed.positionals[1];
     let mut editor = NativeOfficeEditor::open(source).await?;
@@ -708,7 +780,18 @@ async fn replace_text(parsed: ParsedArguments) -> UseResult<CommandOutput> {
     save_editor(&mut editor, parsed.output.as_deref()).await?;
     let output_path = editor.package().path().to_path_buf();
     let in_place = output_path == source_path;
-    let human = if result.changed {
+    let human = if let Some(occurrence) = parsed.occurrence {
+        if result.changed {
+            format!(
+                "Replaced occurrence {occurrence} in {path} and saved '{}'.",
+                output_path.display()
+            )
+        } else {
+            format!(
+                "Occurrence {occurrence} in {path} already had the replacement text; no document text changed."
+            )
+        }
+    } else if result.changed {
         format!(
             "Replaced {} match(es) in {path} and saved '{}'.",
             result.match_count,

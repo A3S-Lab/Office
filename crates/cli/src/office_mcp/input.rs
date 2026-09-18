@@ -80,6 +80,21 @@ pub(super) struct OfficeQueryInput {
     pub(super) limit: Option<usize>,
 }
 
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(super) struct OfficeFindInput {
+    /// Open native Office session ID.
+    pub(super) session: String,
+    /// Semantic scope. Defaults to the document root.
+    pub(super) path: Option<String>,
+    /// Literal substring or Rust regular expression.
+    pub(super) find: String,
+    /// Explicit match mode. Literal mode is recommended for untrusted input.
+    pub(super) mode: OfficeTextMatchMode,
+    /// Maximum returned matches, from 1 through 200. Defaults to 50.
+    pub(super) limit: Option<usize>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub(super) enum OfficeView {
@@ -550,11 +565,19 @@ pub(super) struct OfficeTextReplacement {
     replace: String,
     /// Explicit match mode. Literal mode is recommended for untrusted input.
     mode: OfficeTextMatchMode,
+    /// 1-based match inside the scope. Omit it to replace every match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    occurrence: Option<u32>,
 }
 
 impl OfficeTextReplacement {
     fn into_native(self) -> UseResult<NativeOfficeTextReplacement> {
-        NativeOfficeTextReplacement::new(self.find, self.replace, self.mode.into())
+        let replacement =
+            NativeOfficeTextReplacement::new(self.find, self.replace, self.mode.into())?;
+        match self.occurrence {
+            Some(occurrence) => replacement.with_occurrence(occurrence),
+            None => Ok(replacement),
+        }
     }
 }
 

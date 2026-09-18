@@ -78,7 +78,8 @@ a3s-office collab mutate .a3s/notes.replica \
   --json
 
 # Document replacement edits matching ProseMirror Y.XmlText ranges in place.
-# It fails unless the current non-overlapping match count is exactly one.
+# expectedMatches must equal the current non-overlapping count. Optional
+# occurrence (1-based) then changes only that match; omit it to replace all.
 a3s-office collab mutate .a3s/report.replica \
   --actor-id agent-7 --operation-id edit-44 --artifact-id report \
   --kind document --mode edit \
@@ -286,7 +287,8 @@ Its Document variants are `document-replace-text`,
 replacement searches within each ProseMirror `Y.XmlText`, may cross rich-text
 format runs but not XML node or inline-atom boundaries, preserves the first
 replaced character's attributes, and fails unless `expectedMatches` equals the
-current non-overlapping match count. A changed paragraph rotates its Word
+current non-overlapping match count. Optional `occurrence` then changes only
+that 1-based match; omit it to replace every match. A changed paragraph rotates its Word
 `textId` once. Complete paragraph replacement instead matches one stable
 `paragraphId`, its current `textId`, and the exact visible text returned by
 `collab read`; a concurrent edit fails closed before mutation. Paragraph
@@ -899,7 +901,11 @@ a3s-office set report.xlsx /Sheet1/B2 --text '42' --output updated.xlsx --json
 
 # Find and replace within a semantic scope. Literal matching is the default;
 # --regex enables Rust regular expressions and $name/$1 capture expansion.
+# --occurrence N changes only that 1-based match and fails if it is absent.
 a3s-office set report.docx /body --find 'Q1 2025' --replace 'Q1 2026' --json
+# Locate matches, then change one. Occurrence numbers come from find.
+a3s-office find report.docx /body --find 'Q1 2025' --json
+a3s-office set report.docx /body --find 'Q1 2025' --replace 'Q1 2026' --occurrence 2 --json
 a3s-office set report.docx / --find 'Q([1-4]) 2025' --replace 'Q$1 2026' --regex --json
 a3s-office set workbook.xlsx /Sheet1/A1:C20 --find Draft --replace Final --json
 a3s-office set deck.pptx '/slide[1]/notes' --find internal --replace confidential --json

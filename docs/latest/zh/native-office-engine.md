@@ -42,13 +42,15 @@ a3s-office view report.docx outline --json
 a3s-office set report.docx /body \
   --find Draft \
   --replace Final \
+  --occurrence 1 \
   --json
 
 a3s-office validate report.docx --json
 a3s-office view report.docx outline --json
 ```
 
-修改命令使用临时输出和原子替换，失败时不应发布部分写入。批处理包含协议版本、限制和
+修改命令使用临时输出和原子替换，失败时不应发布部分写入。`--occurrence` 是范围内
+1 起始的命中序号；省略它会替换全部命中。序号不存在时命令在写入前失败。批处理包含协议版本、限制和
 明确操作集合，便于智能体重放与审计。
 
 ## 语义读取

@@ -2,7 +2,9 @@
 
 PDF is a browser viewer/editor boundary backed by PDFium. It owns page
 navigation, thumbnails, search, zoom, annotations, page organization, save,
-and download; it is not a native OOXML document. Use the source-checkout UI
+and download; it is not a native OOXML document and it has no file-level
+find/replace occurrence. Locate PDF changes through page organization and
+annotation mutations, not through `replace-text`. Use the source-checkout UI
 operator for user-level behavior:
 
 ```bash

@@ -183,6 +183,7 @@ fn replace_shared_strings(
         ));
     }
     let part = package.xml_part(SHARED_STRINGS_PART)?;
+    accumulator.set_part(SHARED_STRINGS_PART);
     let root = index_xml(&part)?;
     let items = direct_children(&root, "si");
     for index in usage.total.keys() {
@@ -222,6 +223,10 @@ fn replace_shared_strings(
         if *selected_count < total_count && transform.changed {
             changed_partial.push(*index);
         }
+    }
+
+    if !accumulator.writing() {
+        return Ok(SharedReplacement::default());
     }
 
     let mut clone_indices = BTreeMap::new();
@@ -286,6 +291,7 @@ fn replace_worksheet(
     compiled: &CompiledTextReplacement,
     accumulator: &mut ReplacementAccumulator,
 ) -> UseResult<()> {
+    accumulator.set_part(part_name);
     let part = package.xml_part(part_name)?;
     let root = index_xml(&part)?;
     let mut patches = Vec::new();
@@ -334,7 +340,7 @@ fn replace_worksheet(
             _ => {}
         }
     }
-    if !patches.is_empty() {
+    if accumulator.writing() && !patches.is_empty() {
         package.set_part(part_name, apply_patches(&part, patches)?)?;
         accumulator.changed(part_name);
     }

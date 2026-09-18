@@ -169,7 +169,9 @@ offsets are UTF-16 code units, matching browser Yjs; ranges that split a
 surrogate pair fail closed. Document replacement edits ProseMirror
 `Y.XmlText` directly, may span formatting runs inside that text node, preserves
 the first replaced character's marks, and fails unless `expectedMatches`
-matches current state; each changed paragraph rotates its Word `textId` once.
+matches current state. Optional `occurrence` then changes only that 1-based
+match; omit it to replace every match. Each changed paragraph rotates its Word
+`textId` once.
 `document-insert-paragraph` creates a plain paragraph before or after a stable
 paragraph identity in a bounded top-level section, nested list item, table
 cell/header, or blockquote path. `document-delete-paragraph` additionally

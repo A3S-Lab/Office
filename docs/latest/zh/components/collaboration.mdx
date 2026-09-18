@@ -781,7 +781,7 @@ a3s-office collab mutate .a3s/notes.replica \
   --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
   --json
 
-# Document：只有精确匹配当前状态时才替换。
+# Document：expectedMatches 必须等于当前非重叠命中数。可选 occurrence 再只改那一处。
 a3s-office collab mutate .a3s/report.replica \
   --actor-id agent-7 --artifact-id report --kind document --mode edit \
   --operation-id document-1 \

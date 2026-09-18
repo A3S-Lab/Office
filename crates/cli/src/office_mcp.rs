@@ -11,13 +11,14 @@ use std::path::Path;
 
 use a3s_office::{
     NativeOfficeAnnotatedOptions, NativeOfficeDocument, NativeOfficeIssueOptions,
-    NativeOfficeRenderFormat, DEFAULT_NATIVE_OFFICE_ANNOTATED_LIMIT,
-    DEFAULT_NATIVE_OFFICE_ISSUE_LIMIT,
+    NativeOfficeRenderFormat, NativeOfficeTextReplacement, DEFAULT_NATIVE_OFFICE_ANNOTATED_LIMIT,
+    DEFAULT_NATIVE_OFFICE_ISSUE_LIMIT, DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT,
+    MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT,
 };
 use a3s_use_core::{UseError, UseResult};
 use input::{
-    OfficeBatchInput, OfficeCloseInput, OfficeCreateInput, OfficeFileInput, OfficeGetInput,
-    OfficeMergeTemplateInput, OfficeOpenInput, OfficeQueryInput, OfficeRawXmlInput,
+    OfficeBatchInput, OfficeCloseInput, OfficeCreateInput, OfficeFileInput, OfficeFindInput,
+    OfficeGetInput, OfficeMergeTemplateInput, OfficeOpenInput, OfficeQueryInput, OfficeRawXmlInput,
     OfficeSaveInput, OfficeView, OfficeViewInput,
 };
 use rmcp::handler::server::{router::tool::ToolRouter, wrapper::Parameters};
@@ -412,6 +413,45 @@ impl NativeOfficeMcpServer {
                 "returned": results.len(),
                 "truncated": matches > results.len(),
                 "results": results
+            }))
+        }
+        .await;
+        Ok(tool_result(result))
+    }
+
+    #[tool(
+        name = "office_find",
+        description = "List 1-based text matches in one semantic scope without changing the document. Use the returned occurrence with replace-text.",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_find(
+        &self,
+        Parameters(input): Parameters<OfficeFindInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        let result = async {
+            let limit = input.limit.unwrap_or(DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT);
+            if !(1..=MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT).contains(&limit) {
+                return Err(UseError::new(
+                    "use.office.text_find_limit_invalid",
+                    format!(
+                        "Native Office text find limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}."
+                    ),
+                ));
+            }
+            let probe = NativeOfficeTextReplacement::new(input.find, String::new(), input.mode.into())?;
+            let (session, entry) = self.sessions.get(&input.session).await?;
+            let state = entry.lock().await;
+            state.ensure_open(&session)?;
+            let path = input.path.as_deref().unwrap_or("/");
+            let found = state.editor.find_text(path, probe, limit)?;
+            Ok(serde_json::json!({
+                "session": session,
+                "result": found
             }))
         }
         .await;

@@ -198,6 +198,7 @@ fn document_comment_mutations_fail_closed_on_conflicts_and_modes() {
                 search: "Hello".to_owned(),
                 replacement: "Changed".to_owned(),
                 expected_matches: 1,
+                occurrence: None,
             },
         ))
         .unwrap_err();

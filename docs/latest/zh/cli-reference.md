@@ -74,6 +74,7 @@ a3s-office view deck.pptx slides --json
 a3s-office set report.docx /body \
   --find Draft \
   --replace Final \
+  --occurrence 1 \
   --json
 
 a3s-office set report.docx '/body/p[1]/r[1]' \
