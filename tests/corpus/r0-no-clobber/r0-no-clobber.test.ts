@@ -15,6 +15,7 @@ import {
   buildDuplicateBookmarkFixture,
   buildEndnoteFixture,
   buildFigureCaptionFixture,
+  buildFirstPageHeaderFooterFixture,
   buildFootnoteFixture,
   buildHeaderFooterComplexDateTimeFieldFixture,
   buildHeaderFooterComplexFieldFixture,
@@ -110,6 +111,33 @@ describe('R0 no-clobber corpus', () => {
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/footer1.xml');
     expectIssueCodes(result.firstPassIssues, ['docx.headers']);
+  });
+
+  test('first-page and default header/footer text survive round trip', async () => {
+    const bytes = await buildFirstPageHeaderFooterFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'report-first-page-header-footer.docx',
+    );
+
+    expect(result.identities.headerTexts).toEqual([
+      'Acme Continuing Header',
+      'Acme Title Header',
+    ]);
+    expect(result.identities.footerTexts).toEqual([
+      'Continuing Footer',
+      'Title Footer',
+    ]);
+    expect(result.identities.plainText).toContain(
+      'Report body with first-page chrome',
+    );
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/header2.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expect(result.exportedParts).toContain('word/footer2.xml');
+    expect(result.firstPassIssues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['docx.headers']),
+    );
   });
 
   test('header PAGE and footer NUMPAGES fields survive round trip', async () => {

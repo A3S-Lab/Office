@@ -82,8 +82,14 @@ export async function roundTripDocx(
           reopened.content.html,
           reopened.content.comments ?? [],
           {
-            headerHtml: reopened.content.pageChrome?.default.headerHtml ?? '',
-            footerHtml: reopened.content.pageChrome?.default.footerHtml ?? '',
+            headerHtmls: [
+              reopened.content.pageChrome?.default.headerHtml ?? '',
+              reopened.content.pageChrome?.first.headerHtml ?? '',
+            ],
+            footerHtmls: [
+              reopened.content.pageChrome?.default.footerHtml ?? '',
+              reopened.content.pageChrome?.first.footerHtml ?? '',
+            ],
           },
         ),
         secondPassIssues: reopened.compatibility?.issues ?? [],
@@ -100,10 +106,21 @@ export async function roundTripDocx(
 export function extractDocumentIdentities(
   html: string,
   comments: readonly R0CommentIdentity[] = [],
-  pageChrome: { headerHtml?: string; footerHtml?: string } = {},
+  pageChrome: {
+    headerHtml?: string;
+    footerHtml?: string;
+    headerHtmls?: readonly string[];
+    footerHtmls?: readonly string[];
+  } = {},
 ): R0IdentitySnapshot {
-  const headerHtml = pageChrome.headerHtml ?? '';
-  const footerHtml = pageChrome.footerHtml ?? '';
+  const headerHtmls = (
+    pageChrome.headerHtmls ?? [pageChrome.headerHtml ?? '']
+  ).filter(Boolean);
+  const footerHtmls = (
+    pageChrome.footerHtmls ?? [pageChrome.footerHtml ?? '']
+  ).filter(Boolean);
+  const headerHtml = headerHtmls.join('\n');
+  const footerHtml = footerHtmls.join('\n');
   const fieldHtml = `${html}\n${headerHtml}\n${footerHtml}`;
   return {
     bookmarkNames: uniqueSorted(
@@ -155,14 +172,18 @@ export function extractDocumentIdentities(
     fieldTargetNames: uniqueSorted(
       matchAll(fieldHtml, /data-field-target-name="([^"]+)"/g),
     ),
-    footerTexts: uniqueSorted([normalizePlainText(footerHtml)].filter(Boolean)),
+    footerTexts: uniqueSorted(
+      footerHtmls.map((chunk) => normalizePlainText(chunk)).filter(Boolean),
+    ),
     footnoteTexts: uniqueSorted(
       matchAll(
         html,
         /<aside\b[^>]*data-document-note="true"[^>]*data-note-kind="footnote"[^>]*>([\s\S]*?)<\/aside>/gi,
       ).map((text) => text.replace(/<[^>]+>/g, '').trim()),
     ),
-    headerTexts: uniqueSorted([normalizePlainText(headerHtml)].filter(Boolean)),
+    headerTexts: uniqueSorted(
+      headerHtmls.map((chunk) => normalizePlainText(chunk)).filter(Boolean),
+    ),
     hrefs: uniqueSorted(matchAll(html, /href="([^"]+)"/g)),
     indexColumns: uniqueSorted(matchAll(html, /data-index-columns="([^"]+)"/g)),
     indexMainEntries: uniqueSorted(

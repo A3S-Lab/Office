@@ -14,7 +14,7 @@ Each fixture must prove:
 
 1. Import → light/no-op edit path → export → reopen does not silently drop
    critical identities (bookmarks, revision authors/text, review comments,
-   internal and external links, headers/footers, footnotes, endnotes, text and
+   internal and external links, headers/footers (including first-page variants), footnotes, endnotes, text and
    rich-text content controls, PAGE/PAGEREF/NUMPAGES/SECTION/SECTIONPAGES/NUMWORDS/
    NUMCHARS/DATE/TIME fields (including DATE `\@` format switches), header/footer
    PAGE and NUMPAGES as `fldSimple` or complex `fldChar` live fields, header DATE
@@ -28,7 +28,7 @@ Each fixture must prove:
 
 Current fixtures cover report bookmarks/external links, internal
 bookmark-anchor hyperlinks, review track changes, review comments, default
-headers/footers, footnotes, endnotes, text and rich-text content controls,
+headers/footers, first-page vs default header/footer text, footnotes, endnotes, text and rich-text content controls,
 body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS,
 NUMCHARS, DATE (bare and `\@` format), and TIME fields, header PAGE and footer
 NUMPAGES live fields (both `fldSimple` and complex `fldChar` forms), header DATE (`\@` format) and footer TIME live fields (fldSimple and complex fldChar), header SECTION and footer SECTIONPAGES live fields (fldSimple and complex fldChar), figure SEQ captions and caption REF targets, table SEQ
