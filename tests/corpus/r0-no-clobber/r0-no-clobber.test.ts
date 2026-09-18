@@ -19,6 +19,7 @@ import {
   buildEvenPageHeaderFooterFixture,
   buildEvenPageHeaderPageFieldFixture,
   buildFigureCaptionFixture,
+  buildFirstPageFooterComplexNumPagesFieldFixture,
   buildFirstPageFooterNumPagesFieldFixture,
   buildFirstPageHeaderComplexPageFieldFixture,
   buildFirstPageHeaderFooterFixture,
@@ -213,6 +214,31 @@ describe('R0 no-clobber corpus', () => {
     ]);
     expect(result.identities.plainText).toContain(
       'Report body with first-page NUMPAGES chrome',
+    );
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expect(result.exportedParts).toContain('word/footer2.xml');
+    expect(result.firstPassIssues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['docx.headers']),
+    );
+  });
+
+  test('complex first-page footer NUMPAGES field survives round trip', async () => {
+    const bytes = await buildFirstPageFooterComplexNumPagesFieldFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'report-complex-first-page-footer-numpages-field.docx',
+    );
+
+    expect(result.identities.fieldKinds).toEqual(['numPages']);
+    expect(result.identities.fieldInstructions).toEqual(['NUMPAGES']);
+    expect(result.identities.headerTexts).toContain('Acme Continuing Header');
+    expect(result.identities.footerTexts).toEqual([
+      'Continuing Footer',
+      'Title of 12',
+    ]);
+    expect(result.identities.plainText).toContain(
+      'Report body with complex first-page NUMPAGES chrome',
     );
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/footer1.xml');
