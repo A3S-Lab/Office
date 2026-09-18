@@ -58,7 +58,9 @@ paragraph/text identities, projection-v3 comments/replies/anchors, live
 suggestions, immutable change decisions, and the state vector required for a
 fail-closed mutation. For Document or Markdown text locate-edit, call
 `office_collaboration_find` first and pass its `matchCount` /
-`occurrence` into `document-replace-text` or `markdown-replace-text`. Do not
+`occurrence` into `document-replace-text` or `markdown-replace-text`. For a
+Spreadsheet replica, the same find returns one cell (`sheetId`, `row`,
+`column`); edit that coordinate with `spreadsheet-set-cell`. Do not
 decode Office collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
@@ -386,7 +388,8 @@ removes the live marks according to accept/reject semantics, and appends
 browser-compatible immutable `changeDecisions`. Exact retries are idempotent;
 a mismatched or already-differently-decided suggestion fails the whole batch.
 
-Spreadsheet cell mutations use a stable sheet identity plus zero-based
+Locate display text with `office_collaboration_find` first. Each hit is one
+cell. Spreadsheet cell mutations use a stable sheet identity plus zero-based
 coordinates. Create or recursively patch one cell with
 `spreadsheet-set-cell`; pass `expectedCell: null` only when the coordinate was
 observed blank:
