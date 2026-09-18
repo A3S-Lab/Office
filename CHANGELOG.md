@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.277.0 - 2026-09-18
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for distinct first-page vs default header and footer
+  text, covering Traditional Office title-page chrome without art-border
+  breadth.
+
 ## 0.276.0 - 2026-09-18
 
 ### Document

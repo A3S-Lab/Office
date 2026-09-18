@@ -371,14 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.276.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.277.0` grows the permanent R0 no-clobber corpus gate:
 
-- Complex (fldChar) header SECTION and footer SECTIONPAGES live field identity
-  now joins `fldSimple` SECTION chrome, page-chrome PAGE/NUMPAGES/DATE/TIME
-  fields, rich-text content controls, table/figure captions, caption REF
-  targets, body live fields, and the rest of the representative DOCX
-  round-trip corpus. Intentional normalizations stay diagnosed; VBA and
-  package signatures stay fail-closed on export (`bun run test:corpus:r0`).
+- Distinct first-page vs default header and footer text identity now joins
+  complex header SECTION / footer SECTIONPAGES chrome, page-chrome
+  PAGE/NUMPAGES/DATE/TIME fields, rich-text content controls, table/figure
+  captions, caption REF targets, body live fields, and the rest of the
+  representative DOCX round-trip corpus. Intentional normalizations stay
+  diagnosed; VBA and package signatures stay fail-closed on export
+  (`bun run test:corpus:r0`).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
