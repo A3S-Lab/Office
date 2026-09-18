@@ -318,7 +318,8 @@ Still required for R0 exit:
    SECTIONPAGES, NUMWORDS, NUMCHARS, DATE (bare and `\@` format), and TIME
    fields, header/footer PAGE and NUMPAGES (`fldSimple` and complex `fldChar`),
    header DATE (`\@` format) and footer TIME (fldSimple and complex fldChar),
-   header SECTION and footer SECTIONPAGES, figure SEQ captions and caption
+   header SECTION and footer SECTIONPAGES (`fldSimple` and complex `fldChar`),
+   figure SEQ captions and caption
    REF targets, table SEQ captions,
    XE index entries and INDEX field columns, TOC level/hyperlink options and
    cached entry titles, contract tables, duplicate-bookmark identity
