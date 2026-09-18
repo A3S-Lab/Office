@@ -106,6 +106,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
     '0.279.0',
+    '0.278.0',
     '0.277.0',
     '0.276.0',
     '0.275.0',
@@ -124,7 +125,6 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
     '0.262.0',
     '0.261.0',
     '0.260.0',
-    '0.259.0',
     '0.38.0',
     '0.1.0',
   ]);
@@ -412,20 +412,20 @@ test('routes the concise README and documentation homes to the current release s
   expect(readme).toContain('no-clobber');
   expect(readme).toContain('corpus');
   expect(readme).toContain('DOCX');
-  expect(readme).toContain('even-page');
+  expect(readme).toContain('first-page');
   expect(readme).toContain('header');
-  expect(readme).toContain('TIME');
+  expect(readme).toContain('PAGE');
   expect(readme).toContain('fail-closed');
   expect(readme).toContain('test:corpus:r0');
   expect(englishHome).toContain("## What's new on `main` (0.279.0)");
   expect(englishHome).toContain('R0 no-clobber corpus grows');
   expect(englishHome).toContain('header');
-  expect(englishHome).toContain('even-page');
+  expect(englishHome).toContain('first-page');
   expect(chineseHome).toContain('## `main` 更新内容（0.279.0）');
   expect(chineseHome).toContain('R0');
   expect(chineseHome).toContain('语料库');
   expect(chineseHome).toContain('页眉');
-  expect(chineseHome).toContain('偶数页');
+  expect(chineseHome).toContain('首页');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
