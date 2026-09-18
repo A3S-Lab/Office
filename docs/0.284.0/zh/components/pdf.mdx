@@ -1,0 +1,134 @@
+---
+title: PdfViewer
+description: PDF 数据加载、页面组织、PDFium 资源、批注与保存接口。
+---
+
+# PdfViewer
+
+`PdfViewer` 按需加载 PDF，通过 PDFium WebAssembly 渲染页面，并提供导航、搜索、
+批注、历史记录和保存能力。
+
+PDF 与其他编辑器不同，不使用受控内容对象。宿主通过明确的输入、输出接口提供并保存
+完整 `Blob`。可选的 Yjs 会话只同步类型化批注与表单覆盖层，不会把 PDF 源文件放进
+共享文档。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `collaboration` | `OfficeCollaborationSession` | 否 | — | 已初始化的 PDF Yjs 会话；不可变源文件身份必须与 `loadSource` 一致。 |
+| `presence` | `OfficeCollaborationPresence` | 否 | 无 | 发布页码与批注位置并显示远端成员；必须属于同一个 `collaboration` 会话。 |
+| `onCollaborationChange` | `(content: PdfCollaborationContent) => void` | 否 | — | 接收本地和远端协作快照；持久化时应保存 Yjs 更新，而不是覆盖快照。 |
+| `loadSource` | `() => Promise<Blob>` | 是 | — | 读取 PDF，不要求文件系统权限。 |
+| `onSave` | `(pdf: Blob) => Promise<boolean>` | 否 | — | 保存编辑后的 PDF；返回 `true` 表示成功。 |
+| `onPageExport` | `(files: readonly PdfPageOrganizationExport[]) => boolean \| Promise<boolean>` | 否 | 浏览器下载 | 保存“抽取”或“拆分”产生的文件；接收全部文件后返回 `true`。 |
+| `fileName` | `string` | 否 | `'document.pdf'` | 文件标识与下载名称。 |
+| `saveLabel` | `string` | 否 | `'Save'` | 保存按钮文字。 |
+| `sourceKey` | `string` | 否 | — | 数据版本标识；变化后会释放并重新加载数据。 |
+| `wasmUrl` | `string` | 否 | 内置 `pdfium.wasm` | PDFium WebAssembly 地址。 |
+| `worker` | `boolean` | 否 | `true` | 在 Web Worker 中运行 PDFium；宿主 CSP 无法允许 Blob Worker 时可设为 `false`。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+```tsx
+import type { PdfPageOrganizationExport } from '@a3s-lab/office/react';
+import { PdfViewer } from '@a3s-lab/office/react';
+
+async function persistPageExports(
+  files: readonly PdfPageOrganizationExport[],
+): Promise<boolean> {
+  await Promise.all(
+    files.map(({ fileName, pageCount, pdf }) =>
+      uploadPdfExport(fileName, pdf, { pageCount }),
+    ),
+  );
+  return true;
+}
+
+export function PdfPage({ file }: { file: File }) {
+  return (
+    <PdfViewer
+      fileName={file.name}
+      sourceKey={`${file.name}:${file.lastModified}`}
+      loadSource={() => Promise.resolve(file)}
+      onSave={async (pdf) => {
+        await uploadPdf(pdf);
+        return true;
+      }}
+      onPageExport={persistPageExports}
+    />
+  );
+}
+```
+
+使用 `loadSource` 接入对象存储、IndexedDB 或本地文件句柄。宿主通过 `onSave`
+管理权限、进度、版本与失败处理。PDFium 和批注控制器内部实现不是公共扩展接口。
+
+## 页面组织
+
+提供 `onSave` 后，响应式 PDF 工具栏会显示 **组织 PDF 页面**。同一个页面组织器支持
+七项操作：
+
+- **插入空白页**：在所选页后插入一张 A4 空白页。
+- **删除**：删除所选页，同时保证 PDF 至少保留一页。
+- **旋转**：以 90 度为步长向左或向右旋转所选页。
+- **重排**：通过按钮、键盘可访问控件或桌面拖放移动一页或多页。
+- **抽取**：把所选页生成一份新 PDF，不修改当前源文件。
+- **合并另一个 PDF**：把另一份 PDF 的全部页面插入当前选择之后。
+- **拆分**：在所选边界生成多份编号 PDF，不修改当前源文件。
+
+页面引擎与 `pdf-lib` 会按需加载到独立 Web Worker，与 PDFium 渲染 Worker 分离。
+插入、删除、旋转、重排或合并每次都会返回一个完整替换 `Blob`，并且只增加一条页面
+历史记录；抽取和拆分不增加历史记录。工具栏的撤销/重做遵循原生 PDF 历史优先、页面
+历史随后；页面替换成功后，下一条命令可用前会先用 PDFium 重新打开输出字节。
+
+页面操作使用明确上限：
+
+| 输入或结果 | 上限 |
+| --- | ---: |
+| 主 PDF | 256 MiB |
+| 合并 PDF | 128 MiB |
+| 每个结果的页数 | 1–4,096 |
+| 空白页宽度或高度 | 18–14,400 PDF 点 |
+
+格式损坏或加密输入会直接失败。任何页面修改都会拒绝签名 PDF，因为重写会破坏其信任
+证据。删除、重排和合并还会拒绝包含表单、大纲或标签结构的 PDF，因为当前不能安全重写
+这些文档级页面引用。抽取和拆分可以复制其中的页面，但会返回
+`pdf.pages.catalog-not-copied` 诊断，明确说明新文件没有复制文档级大纲、表单、标签、
+附件、脚本和签名。
+
+没有 `onPageExport` 时，抽取默认下载 `<stem>-extracted.pdf`，拆分默认下载
+`<stem>-part-1.pdf`、`<stem>-part-2.pdf` 等文件。宿主回调会通过每个
+`PdfPageOrganizationExport` 接收相同文件名、准确 `pageCount` 和 PDF `Blob`；返回
+`false` 或抛出错误会在组织器中保留失败状态。修改后的源字节仍归宿主所有，只有用户执行
+保存时才交给 `onSave` 持久化。
+
+启用 `collaboration` 或 `evidenceOverlay` 时，页面组织会隐藏。这两种模式都把共享审核
+记录或类型化证据绑定到不可变 PDF 源身份；修改页面字节或页码会破坏该约束。结束审核后，
+可以用结果源文件重新挂载不带这两个属性的独立 `PdfViewer`，再执行页面组织。
+
+## 实时协作
+
+宿主完成初次同步后再创建 `kind: 'pdf'` 会话，并把同一份不可变源文件交给
+`PdfViewer`。查看器会校验 SHA-256、字节数和页数，读取源批注与表单值，然后双向投影
+共享覆盖层。删除批注会写入不可逆 tombstone；远端更新不会进入本地撤销历史。
+
+当前支持 FreeText、Highlight、Underline、StrikeOut 与 Ink。Stamp、签名等依赖
+二进制上下文的类型会在宿主提供认证资源接口前明确失败。Rust API、`collab mutate`、
+标准 MCP 与 A3S Code 可以写入相同的表单值、批注、脱敏提议、页面操作提议和最终审核
+决定。原生 Highlight 使用 EmbedPDF 的 `rect.origin`、`rect.size` 与
+`segmentRects` 结构，因此标准 Yjs 更新可以直接投影到查看器。Rust、CLI/MCP、浏览器
+互操作与 `a3s-test` Playground 回归共同覆盖创建、更新、删除、乱序投递和重启恢复。
+
+当前页、缩放、搜索、选择、渲染位图、缓存和源文件字节都不进入协作模型。宿主仍负责
+传输授权，以及把合并结果保存并重新打开验证。
+
+## 页面导航
+
+桌面端左侧提供可滚动缩略图列表，并与页码输入框、PDF 视口保持同步。窄屏下同一列表
+变为可关闭抽屉，入口位于工具栏的页码控件内，不会覆盖文档内容。长文档只渲染有限的
+缩略图窗口，页面越多也不会线性增加界面成本。
+
+每个缩略图都是可聚焦按钮。`ArrowUp`、`ArrowDown` 前后翻页，`Home`、`End`
+跳到首尾。目标超出当前虚拟窗口时，挂载完成后仍会同步 `aria-current` 与 DOM 焦点。
+多个翻页请求重叠时，查看器会按顺序处理，并保留最后一次目标页请求；宿主无需协调焦点
+或页码状态。
