@@ -115,6 +115,9 @@ pub(in crate::collaboration) fn find_document_text(
             sheet_id: None,
             row: None,
             column: None,
+            container_kind: None,
+            container_id: None,
+            element_id: None,
             index_utf16: target.index_utf16,
         });
     }

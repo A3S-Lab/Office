@@ -282,6 +282,7 @@ pub(super) async fn find(input: OfficeCollaborationFindInput) -> UseResult<serde
         NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
         NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
         NativeOfficeCollaborationArtifactKind::Spreadsheet => "find-spreadsheet-text",
+        NativeOfficeCollaborationArtifactKind::Presentation => "find-presentation-text",
         _ => "find-text",
     };
     Ok(json!({

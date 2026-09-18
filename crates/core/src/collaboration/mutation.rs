@@ -11,7 +11,7 @@ use super::{
 pub(in crate::collaboration) mod document;
 pub(in crate::collaboration) mod markdown;
 mod pdf;
-mod presentation;
+pub(in crate::collaboration) mod presentation;
 pub(in crate::collaboration) mod spreadsheet;
 
 use document::{apply_document_mutation, validate_document_mutation};

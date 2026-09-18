@@ -391,6 +391,25 @@ fn typed_presentation_claims_fail_closed_after_concurrent_identity_collision() {
     assert!(error.message.contains("concurrently assigned"));
 }
 
+#[test]
+fn find_lists_presentation_element_text_by_identity() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("presentation-find");
+    let store = initialized_presentation_store(&root, 900_014);
+    let (kind, found) = store.find_text("Shared presentation", 10).unwrap();
+    assert_eq!(kind, NativeOfficeCollaborationArtifactKind::Presentation);
+    assert_eq!(found.match_count, 1);
+    assert!(!found.truncated);
+    assert_eq!(found.matches[0].occurrence, 1);
+    assert_eq!(found.matches[0].container_kind.as_deref(), Some("slide"));
+    assert_eq!(found.matches[0].container_id.as_deref(), Some("slide-1"));
+    assert_eq!(
+        found.matches[0].element_id.as_deref(),
+        Some("element-title")
+    );
+    assert_eq!(found.matches[0].index_utf16, 0);
+}
+
 fn initialized_presentation_store(root: &Path, client_id: u64) -> NativeOfficeCollaborationStore {
     let store =
         NativeOfficeCollaborationStore::create(presentation_create_request(root, client_id))

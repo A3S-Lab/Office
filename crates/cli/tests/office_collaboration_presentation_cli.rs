@@ -190,6 +190,55 @@ fn cli_manages_browser_compatible_presentation_scene_elements() {
     ));
 }
 
+#[test]
+fn cli_finds_presentation_element_text_by_identity() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("presentation-find.replica");
+    let fixture = temp.path().join("browser-presentation.update");
+    fs::write(&fixture, presentation_collaboration_fixture()).unwrap();
+    run(&[
+        "collab",
+        "join",
+        replica.to_str().unwrap(),
+        "--artifact-id",
+        "fixture-presentation",
+        "--kind",
+        "presentation",
+        "--actor-id",
+        "coding-agent-presentation-find",
+        "--actor-kind",
+        "agent",
+        "--mode",
+        "edit",
+        "--operation-id",
+        "join-browser-presentation-find",
+        "--input",
+        fixture.to_str().unwrap(),
+        "--client-id",
+        "900020",
+        "--json",
+    ]);
+
+    let found = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "Shared presentation",
+        "--json",
+    ]);
+    assert_eq!(found["data"]["operation"], "find-presentation-text");
+    assert_eq!(found["data"]["kind"], "presentation");
+    assert_eq!(found["data"]["matches"], 1);
+    assert_eq!(found["data"]["truncated"], false);
+    let hit = &found["data"]["result"]["matches"][0];
+    assert_eq!(hit["occurrence"], 1);
+    assert_eq!(hit["containerKind"], "slide");
+    assert_eq!(hit["containerId"], "slide-1");
+    assert_eq!(hit["elementId"], "element-title");
+    assert_eq!(hit["indexUtf16"], 0);
+}
+
 fn mutate(replica: &Path, operation_id: &str, mutation: JsonValue) -> JsonValue {
     let mutation = mutation.to_string();
     run(&[

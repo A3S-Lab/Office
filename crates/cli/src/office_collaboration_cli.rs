@@ -236,6 +236,7 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
         NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
         NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
         NativeOfficeCollaborationArtifactKind::Spreadsheet => "find-spreadsheet-text",
+        NativeOfficeCollaborationArtifactKind::Presentation => "find-presentation-text",
         _ => "find-text",
     };
     let human = if result.matches.is_empty() {
@@ -246,27 +247,29 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
             result.match_count, result.search
         );
         for hit in &result.matches {
-            let location = match (
-                &hit.paragraph_id,
-                &hit.text_id,
-                &hit.sheet_id,
-                hit.row,
-                hit.column,
-            ) {
-                (Some(paragraph_id), Some(text_id), _, _, _) => {
+            let location =
+                if let (Some(paragraph_id), Some(text_id)) = (&hit.paragraph_id, &hit.text_id) {
                     format!(
                         "paragraph {paragraph_id} text {text_id} @{}",
                         hit.index_utf16
                     )
-                }
-                (_, _, Some(sheet_id), Some(row), Some(column)) => {
+                } else if let (Some(sheet_id), Some(row), Some(column)) =
+                    (&hit.sheet_id, hit.row, hit.column)
+                {
                     format!(
                         "sheet {sheet_id} row {row} column {column} @{}",
                         hit.index_utf16
                     )
-                }
-                _ => format!("@{}", hit.index_utf16),
-            };
+                } else if let (Some(container_kind), Some(container_id), Some(element_id)) =
+                    (&hit.container_kind, &hit.container_id, &hit.element_id)
+                {
+                    format!(
+                        "{container_kind} {container_id} element {element_id} @{}",
+                        hit.index_utf16
+                    )
+                } else {
+                    format!("@{}", hit.index_utf16)
+                };
             lines.push_str(&format!(
                 "\n  {}: {} ({location})",
                 hit.occurrence, hit.text

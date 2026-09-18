@@ -95,6 +95,9 @@ a3s-office collab mutate .a3s/notes.replica \
 # Spreadsheet locate returns one cell coordinate. Edit with spreadsheet-set-cell.
 a3s-office collab find .a3s/book.replica --find Draft --json
 
+# Presentation locate returns one scene element. Edit with presentation-update-element.
+a3s-office collab find .a3s/deck.replica --find Roadmap --json
+
 # Prefer stable paragraph identity when replacing one complete plain
 # paragraph observed through `collab read`.
 a3s-office collab mutate .a3s/report.replica \

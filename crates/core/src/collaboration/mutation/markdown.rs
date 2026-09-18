@@ -91,6 +91,9 @@ pub(in crate::collaboration) fn find_markdown_text(
             sheet_id: None,
             row: None,
             column: None,
+            container_kind: None,
+            container_id: None,
+            element_id: None,
             index_utf16,
         });
     }

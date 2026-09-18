@@ -8,6 +8,10 @@
   `office_collaboration_find` return one hit per cell (`sheetId`, `row`,
   `column`) in sheet order. The following edit stays `spreadsheet-set-cell`;
   there is no spreadsheet text-replace mutation.
+- Locate live Presentation element text before updating a scene object.
+  `collab find` / `office_collaboration_find` return one hit per active element
+  (`containerKind`, `containerId`, `elementId`) in slide, master, then layout
+  order. The following edit stays `presentation-update-element`.
 
 ## 0.286.0 - 2026-09-18
 
