@@ -371,10 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.274.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.275.0` grows the permanent R0 no-clobber corpus gate:
 
-- Complex (fldChar) Header DATE (`\@` format) and footer TIME live field identity now joins
-  complex and `fldSimple` page-chrome PAGE/NUMPAGES fields, rich-text content
+- Header SECTION and footer SECTIONPAGES live field identity now joins complex
+  and `fldSimple` page-chrome PAGE/NUMPAGES/DATE/TIME fields, rich-text content
   controls, table/figure captions, caption REF targets, body live fields, and
   the rest of the representative DOCX round-trip corpus. Intentional
   normalizations stay diagnosed; VBA and package signatures stay fail-closed on

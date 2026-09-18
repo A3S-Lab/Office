@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.275.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers header SECTION and SECTIONPAGES',
+      zh: 'R0 语料库覆盖页眉 SECTION 与 SECTIONPAGES',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds header SECTION and footer SECTIONPAGES live-field fixtures for multi-section report chrome.',
+      zh: '永久无静默覆盖门禁新增页眉 SECTION 与页脚 SECTIONPAGES 实时字段夹具，覆盖多节报告页眉页脚。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Header SECTION identity',
+          zh: '页眉 SECTION 身份',
+        },
+        detail: {
+          en: 'Header SECTION keeps kind and instruction across import → export → reopen.',
+          zh: '页眉 SECTION 在导入 → 导出 → 再打开后仍保留种类与指令。',
+        },
+      },
+      {
+        title: {
+          en: 'Footer SECTIONPAGES identity',
+          zh: '页脚 SECTIONPAGES 身份',
+        },
+        detail: {
+          en: 'Footer SECTIONPAGES live fields round-trip with the same page-chrome field spans.',
+          zh: '页脚 SECTIONPAGES 实时字段以相同页眉页脚字段跨度往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.274.0',
     date: '2026-09-18',
     kind: 'improved',

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.275.0 - 2026-09-18
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for header SECTION and footer SECTIONPAGES live-field
+  identity, covering multi-section report chrome without art-border breadth.
+
 ## 0.274.0 - 2026-09-18
 
 ### Document
