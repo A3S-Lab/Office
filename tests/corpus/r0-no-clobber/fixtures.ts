@@ -295,6 +295,30 @@ export async function buildEvenPageFooterNumPagesFieldFixture(): Promise<Uint8Ar
 }
 
 /**
+ * Report-shaped DOCX: complex (fldChar) even-page footer NUMPAGES vs default footer.
+ */
+export async function buildEvenPageFooterComplexNumPagesFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${OFFICE_RELATIONSHIPS_NAMESPACE}"><w:body><w:p><w:r><w:t>Report body with complex even-page NUMPAGES chrome</w:t></w:r></w:p><w:sectPr><w:headerReference w:type="default" r:id="rIdHeader"/><w:footerReference w:type="default" r:id="rIdFooter"/><w:footerReference w:type="even" r:id="rIdEvenFooter"/></w:sectPr></w:body></w:document>`,
+    documentRelationships: [
+      ['rIdHeader', `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`, 'header1.xml'],
+      ['rIdFooter', `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`, 'footer1.xml'],
+      [
+        'rIdEvenFooter',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`,
+        'footer2.xml',
+      ],
+    ],
+    headerXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Odd Continuing Header</w:t></w:r></w:p></w:hdr>`,
+    footerXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Odd Continuing Footer</w:t></w:r></w:p></w:ftr>`,
+    firstFooterXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Even of </w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>14</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`,
+    settingsXml: `<w:settings xmlns:w="${WORD_NAMESPACE}"><w:evenAndOddHeaders/></w:settings>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Report-shaped DOCX: distinct even-page vs default header/footer text.
  */
 export async function buildEvenPageHeaderFooterFixture(): Promise<Uint8Array> {
