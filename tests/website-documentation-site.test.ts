@@ -106,6 +106,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
     '0.281.0',
+    '0.280.0',
     '0.279.0',
     '0.278.0',
     '0.277.0',
@@ -124,7 +125,6 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
     '0.264.0',
     '0.263.0',
     '0.262.0',
-    '0.261.0',
     '0.38.0',
     '0.1.0',
   ]);
@@ -424,7 +424,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(chineseHome).toContain('## `main` 更新内容（0.281.0）');
   expect(chineseHome).toContain('R0');
   expect(chineseHome).toContain('语料库');
-  expect(chineseHome).toContain('页眉');
+  expect(chineseHome).toContain('页脚');
   expect(chineseHome).toContain('首页');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
