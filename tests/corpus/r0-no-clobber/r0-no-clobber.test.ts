@@ -14,6 +14,7 @@ import {
   buildDateFormatFieldFixture,
   buildDuplicateBookmarkFixture,
   buildEndnoteFixture,
+  buildEvenPageHeaderFooterFixture,
   buildFigureCaptionFixture,
   buildFirstPageHeaderFooterFixture,
   buildFootnoteFixture,
@@ -130,6 +131,33 @@ describe('R0 no-clobber corpus', () => {
     ]);
     expect(result.identities.plainText).toContain(
       'Report body with first-page chrome',
+    );
+    expect(result.exportedParts).toContain('word/header1.xml');
+    expect(result.exportedParts).toContain('word/header2.xml');
+    expect(result.exportedParts).toContain('word/footer1.xml');
+    expect(result.exportedParts).toContain('word/footer2.xml');
+    expect(result.firstPassIssues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['docx.headers']),
+    );
+  });
+
+  test('even-page and default header/footer text survive round trip', async () => {
+    const bytes = await buildEvenPageHeaderFooterFixture();
+    const result = await roundTripDocx(
+      bytes,
+      'report-even-page-header-footer.docx',
+    );
+
+    expect(result.identities.headerTexts).toEqual([
+      'Even Page Header',
+      'Odd Page Header',
+    ]);
+    expect(result.identities.footerTexts).toEqual([
+      'Even Page Footer',
+      'Odd Page Footer',
+    ]);
+    expect(result.identities.plainText).toContain(
+      'Report body with even-page chrome',
     );
     expect(result.exportedParts).toContain('word/header1.xml');
     expect(result.exportedParts).toContain('word/header2.xml');

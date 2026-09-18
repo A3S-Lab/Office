@@ -131,6 +131,36 @@ export async function buildFirstPageHeaderFooterFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: distinct even-page vs default header/footer text.
+ */
+export async function buildEvenPageHeaderFooterFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${OFFICE_RELATIONSHIPS_NAMESPACE}"><w:body><w:p><w:r><w:t>Report body with even-page chrome</w:t></w:r></w:p><w:sectPr><w:headerReference w:type="default" r:id="rIdHeader"/><w:headerReference w:type="even" r:id="rIdEvenHeader"/><w:footerReference w:type="default" r:id="rIdFooter"/><w:footerReference w:type="even" r:id="rIdEvenFooter"/></w:sectPr></w:body></w:document>`,
+    documentRelationships: [
+      ['rIdHeader', `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`, 'header1.xml'],
+      [
+        'rIdEvenHeader',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`,
+        'header2.xml',
+      ],
+      ['rIdFooter', `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`, 'footer1.xml'],
+      [
+        'rIdEvenFooter',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`,
+        'footer2.xml',
+      ],
+    ],
+    headerXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Odd Page Header</w:t></w:r></w:p></w:hdr>`,
+    firstHeaderXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Even Page Header</w:t></w:r></w:p></w:hdr>`,
+    footerXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Odd Page Footer</w:t></w:r></w:p></w:ftr>`,
+    firstFooterXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Even Page Footer</w:t></w:r></w:p></w:ftr>`,
+    settingsXml: `<w:settings xmlns:w="${WORD_NAMESPACE}"><w:evenAndOddHeaders/></w:settings>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Report-shaped DOCX: header PAGE + footer NUMPAGES live field identity.
  */
 export async function buildHeaderFooterFieldFixture(): Promise<Uint8Array> {
@@ -514,6 +544,7 @@ function writePackageSkeleton(
     footerXml?: string;
     firstHeaderXml?: string;
     firstFooterXml?: string;
+    settingsXml?: string;
     footnotesXml?: string;
     endnotesXml?: string;
   },
@@ -544,6 +575,11 @@ function writePackageSkeleton(
   if (options.firstFooterXml) {
     overrides.push(
       '<Override PartName="/word/footer2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>',
+    );
+  }
+  if (options.settingsXml) {
+    overrides.push(
+      '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>',
     );
   }
   if (options.footnotesXml) {
@@ -580,6 +616,9 @@ function writePackageSkeleton(
   if (options.firstFooterXml) {
     archive.file('word/footer2.xml', options.firstFooterXml);
   }
+  if (options.settingsXml) {
+    archive.file('word/settings.xml', options.settingsXml);
+  }
   if (options.footnotesXml) {
     archive.file('word/footnotes.xml', options.footnotesXml);
   }
@@ -590,6 +629,13 @@ function writePackageSkeleton(
     ...(options.documentRelationships ?? []),
     ...(options.relationships ?? []),
   ];
+  if (options.settingsXml) {
+    relationships.unshift([
+      'rIdSettings',
+      `${OFFICE_RELATIONSHIPS_NAMESPACE}/settings`,
+      'settings.xml',
+    ]);
+  }
   if (relationships.length > 0) {
     archive.file(
       'word/_rels/document.xml.rels',
