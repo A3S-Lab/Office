@@ -41,7 +41,9 @@ General replacement is literal by default and may span rich-text runs. Add
 `--regex` for Rust regex with capture expansion. `/` covers all slide and notes
 text; a slide, object, table-cell, paragraph, or run path narrows the visible
 slide content, while `/slide[N]/notes` targets speaker notes explicitly. A
-slide scope does not implicitly alter its notes. Zero matches are an unchanged
+slide scope does not implicitly alter its notes. Add `--occurrence <n>` to
+change one match in that scope's existing walk order. A missing occurrence
+fails before writing. Zero matches without `--occurrence` are an unchanged
 success.
 
 Character formatting targets a run path; alignment targets its paragraph.

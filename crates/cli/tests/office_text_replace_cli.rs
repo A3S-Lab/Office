@@ -232,6 +232,86 @@ fn native_cli_rejects_ambiguous_replacement_options_without_writing() {
     assert!(!provider.exists());
 }
 
+#[test]
+fn native_cli_replaces_one_occurrence_and_rejects_a_missing_one() {
+    let temp = tempfile::tempdir().unwrap();
+    let provider = temp.path().join("must-not-be-invoked");
+    let word = temp.path().join("occurrence.docx");
+    create(&provider, &word);
+    run(
+        &provider,
+        &[
+            "set",
+            word.to_str().unwrap(),
+            "/body/p[1]",
+            "--text",
+            "alpha and alpha",
+            "--json",
+        ],
+    );
+    let before = std::fs::read(&word).unwrap();
+    let found = run(
+        &provider,
+        &[
+            "find",
+            word.to_str().unwrap(),
+            "/body",
+            "--find",
+            "alpha",
+            "--json",
+        ],
+    );
+    assert_eq!(found["data"]["matches"], 2);
+    assert_eq!(found["data"]["result"]["matches"][1]["occurrence"], 2);
+    assert_eq!(std::fs::read(&word).unwrap(), before);
+    let missing = run_failure(
+        &provider,
+        &[
+            "set",
+            word.to_str().unwrap(),
+            "/body",
+            "--find",
+            "alpha",
+            "--replace",
+            "beta",
+            "--occurrence",
+            "3",
+            "--json",
+        ],
+    );
+    assert_eq!(
+        missing["error"]["code"],
+        "use.office.text_occurrence_missing"
+    );
+    assert_eq!(std::fs::read(&word).unwrap(), before);
+
+    let replaced = run(
+        &provider,
+        &[
+            "set",
+            word.to_str().unwrap(),
+            "/body",
+            "--find",
+            "alpha",
+            "--replace",
+            "beta",
+            "--occurrence",
+            "2",
+            "--json",
+        ],
+    );
+    assert_eq!(replaced["data"]["matches"], 1);
+    assert_eq!(replaced["data"]["changed"], true);
+    assert_eq!(replaced["data"]["result"]["occurrence"], 2);
+    assert_eq!(
+        run(
+            &provider,
+            &["get", word.to_str().unwrap(), "/body/p[1]", "--json"],
+        )["data"]["node"]["text"],
+        "alpha and beta"
+    );
+}
+
 #[tokio::test]
 async fn native_standard_mcp_applies_and_persists_typed_text_replacement() {
     const TIMEOUT: Duration = Duration::from_secs(15);

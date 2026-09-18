@@ -377,3 +377,56 @@ fn zero_matches_are_explicit_and_failed_batches_roll_back_prior_replacements() {
     assert_eq!(error.code, "use.office.mutation_path_unsupported");
     assert_eq!(editor.package().content_sha256(), before);
 }
+
+#[test]
+fn occurrence_replaces_one_match_and_missing_occurrence_does_not_write() {
+    let mut package = package(DocumentKind::Word);
+    package
+        .set_part(
+            "word/document.xml",
+            br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>alpha and alpha</w:t></w:r></w:p><w:sectPr/></w:body></w:document>"#.to_vec(),
+        )
+        .unwrap();
+    let mut editor = NativeOfficeEditor::from_package(package).unwrap();
+    let before = editor.package().content_sha256();
+    let found = editor
+        .find_text(
+            "/body",
+            NativeOfficeTextReplacement::literal("alpha", "").unwrap(),
+            50,
+        )
+        .unwrap();
+    assert_eq!(found.match_count, 2);
+    assert!(!found.truncated);
+    assert_eq!(found.matches[0].occurrence, 1);
+    assert_eq!(found.matches[1].occurrence, 2);
+    assert_eq!(found.matches[1].text, "alpha");
+    assert_eq!(editor.package().content_sha256(), before);
+
+    let missing = editor
+        .replace_text(
+            "/body",
+            NativeOfficeTextReplacement::literal("alpha", "beta")
+                .unwrap()
+                .with_occurrence(3)
+                .unwrap(),
+        )
+        .unwrap_err();
+    assert_eq!(missing.code, "use.office.text_occurrence_missing");
+    assert_eq!(editor.package().content_sha256(), before);
+
+    let second = editor
+        .replace_text(
+            "/body",
+            NativeOfficeTextReplacement::literal("alpha", "beta")
+                .unwrap()
+                .with_occurrence(2)
+                .unwrap(),
+        )
+        .unwrap();
+    assert_eq!(second.match_count, 1);
+    assert_eq!(second.occurrence, Some(2));
+    assert!(second.changed);
+    assert!(part_text(editor.package(), "word/document.xml").contains("alpha and beta"));
+    assert!(!part_text(editor.package(), "word/document.xml").contains("beta and beta"));
+}

@@ -119,6 +119,7 @@ pub(super) struct ParsedArguments {
     pub data: Option<String>,
     pub force: bool,
     pub regex: bool,
+    pub occurrence: Option<u32>,
 }
 
 impl ParsedArguments {
@@ -162,6 +163,10 @@ impl ParsedArguments {
                 }
                 "--replace" if allowed.replacement => {
                     set_string_option(&mut parsed.replacement, args, index, "--replace")?;
+                    index += 2;
+                }
+                "--occurrence" if allowed.occurrence => {
+                    set_u32_option(&mut parsed.occurrence, args, index, "--occurrence")?;
                     index += 2;
                 }
                 "--number" if allowed.number => {
@@ -933,6 +938,7 @@ pub(super) struct AllowedOptions {
     data: bool,
     force: bool,
     regex: bool,
+    occurrence: bool,
     data_validation: bool,
     named_range: bool,
     conditional_formatting: bool,
@@ -1001,6 +1007,7 @@ impl AllowedOptions {
         data: false,
         force: false,
         regex: false,
+        occurrence: false,
         data_validation: false,
         named_range: false,
         conditional_formatting: false,
@@ -1009,6 +1016,12 @@ impl AllowedOptions {
     };
     pub const GET: Self = Self {
         depth: true,
+        ..Self::NONE
+    };
+    pub const FIND: Self = Self {
+        find: true,
+        regex: true,
+        limit: true,
         ..Self::NONE
     };
     pub const VIEW: Self = Self {
@@ -1059,6 +1072,7 @@ impl AllowedOptions {
         y_emu: true,
         width_emu: true,
         regex: true,
+        occurrence: true,
         data_validation: true,
         named_range: true,
         conditional_formatting: true,

@@ -89,7 +89,10 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    result when the command supports it; otherwise work on an intentional copy.
    Use one atomic `batch` for dependent changes. For general find/replace, use
    `set <file> <scope> --find ... --replace ...`; use literal mode unless regex
-   captures are actually required.
+   captures are actually required. Locate matches first with
+   `find <file> [scope] --find ...`, then add `--occurrence <n>` (the 1-based
+   index from that result) to change one match. Omitting occurrence still
+   replaces every match. A missing occurrence fails before any write.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
    `view ... issues`. Use HTML, SVG, or screenshot only as a semantic preview.

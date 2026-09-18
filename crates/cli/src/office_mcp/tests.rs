@@ -33,6 +33,7 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
             "office_collaboration_mutate",
             "office_collaboration_read",
             "office_create",
+            "office_find",
             "office_get",
             "office_install_compat",
             "office_list",
@@ -57,6 +58,7 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
         "office_validate",
         "office_list",
         "office_get",
+        "office_find",
         "office_query",
         "office_raw_xml",
         "office_collaboration_diff",
@@ -680,7 +682,14 @@ fn office_batch_schema_exposes_typed_spreadsheet_named_ranges() {
 fn office_batch_schema_exposes_typed_text_replacement() {
     let schema = schemars::schema_for!(OfficeBatchInput);
     let encoded = serde_json::to_string(&schema).unwrap();
-    for expected in ["replace-text", "find", "replace", "literal", "regex"] {
+    for expected in [
+        "replace-text",
+        "find",
+        "replace",
+        "literal",
+        "regex",
+        "occurrence",
+    ] {
         assert!(encoded.contains(expected), "missing {expected}");
     }
 
@@ -705,6 +714,7 @@ fn office_batch_schema_exposes_typed_text_replacement() {
                 mode: NativeOfficeTextMatchMode::Regex,
                 ref find,
                 ref replace,
+                ..
             },
             ..
         } if find == "Q([1-4]) 2025" && replace == "Q$1 2026"

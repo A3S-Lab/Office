@@ -23,6 +23,8 @@ Use its typed tools rather than passing shell command strings:
 
 - `office_validate` checks one file without opening a session.
 - `office_create` and `office_open` register bounded in-memory sessions.
+- `office_find` lists 1-based text matches in a scope without writing. Pass
+  that `occurrence` to `replace-text`.
 - `office_get`, `office_query`, and `office_view` read the current session.
 - `office_apply_batch` applies typed mutations atomically in memory.
 - `office_raw_xml` inspects one bounded XML part.
@@ -134,10 +136,15 @@ UTF-16 code-unit offsets and may not split a surrogate pair:
 ```
 
 Document exact replacement edits ProseMirror `Y.XmlText` in place and fails
-unless `expectedMatches` equals the current non-overlapping match count. It may
-cross formatting runs inside one text node, preserves the first replaced
-character's attributes, rotates the affected Word `textId` once, and never
-crosses an XML-node or inline-atom boundary:
+unless `expectedMatches` equals the current non-overlapping match count. That
+count is the conflict check for replacing every match. Add `"occurrence": 2`
+to change only that 1-based match after the count still matches. To change one
+stable paragraph instead, use `document-replace-paragraph` with its paragraph
+id and text id. File-level Word, Spreadsheet, and Presentation edits use
+`office_find` and native `replace-text` with the same `occurrence`. Document
+replacement may cross formatting runs inside one text node, preserves the first
+replaced character's attributes, rotates the affected Word `textId` once, and
+never crosses an XML-node or inline-atom boundary:
 
 ```json
 {
@@ -1029,7 +1036,13 @@ explicit and prefer `literal` for ordinary text:
 ```
 
 The batch receipt includes `textReplacements` with `matchCount`, `changed`, and
-`changedParts`. Zero matches are successful and unchanged. Regex matches must
+`changedParts`. Add `"occurrence": 2` to change only that 1-based match in the
+scope's existing walk order. Omit `occurrence` to replace every match. A
+missing occurrence fails the batch before writing and returns
+`use.office.text_occurrence_missing`. A Spreadsheet shared string used by more
+than one selected cell returns `use.office.text_occurrence_ambiguous`; narrow
+the path to one cell first. Zero matches without `occurrence` are successful
+and unchanged. Regex matches must
 consume text. Spreadsheet cell/range scopes protect unselected shared-string
 references; Word and Presentation replacements preserve split-run formatting.
 

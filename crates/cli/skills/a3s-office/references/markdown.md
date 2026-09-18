@@ -28,7 +28,8 @@ correct. On phone widths, set the viewport explicitly before the action and
 capture both the selected compact pane and the final accessibility tree.
 
 For collaboration, use `a3s use office collab mutate` with the Markdown
-operation contract from the MCP reference. Markdown splice offsets are UTF-16
-code units; inspect the replica state first and keep the operation ID stable on
-retry. Do not treat a rendered preview as proof that the persisted Markdown
-text is correct: read the replica back after the mutation.
+operation contract from the MCP reference. Locate a Markdown edit with
+`markdown-splice`: `indexUtf16` and `deleteUtf16` are UTF-16 code units, not a
+whole-document rewrite. Inspect the replica state first and keep the operation
+ID stable on retry. Do not treat a rendered preview as proof that the persisted
+Markdown text is correct: read the replica back after the mutation.

@@ -254,10 +254,13 @@ milestones.
 11. Render output is bounded while it is composed, contains no source path or
     timestamp, never fetches an external relationship, and never emits document
     text as executable markup, style, or script.
-12. General find/replace is single pass and path-scoped. Zero matches are
-    reported as an unchanged success; a scoped Spreadsheet replacement never
-    mutates cells outside the requested worksheet or A1 range through a shared
-    string alias.
+12. General find/replace is single pass and path-scoped. An optional 1-based
+    `occurrence` changes only that match and fails before writing when the
+    occurrence is missing. Omit it and zero matches are reported as an unchanged
+    success. A scoped Spreadsheet replacement never mutates cells outside the
+    requested worksheet or A1 range through a shared string alias. Targeting one
+    occurrence inside a shared string used by multiple selected cells fails
+    closed; narrow the path to one cell first.
 
 ## Delivery gates
 
@@ -430,13 +433,17 @@ notes path or root is selected.
 
 Find expressions are limited to 64 KiB, replacement input to 1 MiB, semantic
 matches to 100,000, expanded replacement output to 64 MiB, and Spreadsheet
-range or observed-scope cells to 100,000. Receipts contain the scope,
-literal/regex mode, `matchCount`, `changed`, and sorted `changedParts`; batch
-receipts are additive under `textReplacements`. Zero matches do not dirty an
-in-place document. XML-forbidden output, invalid regex, limit overflow, path or
-cell-type errors, and failed post-mutation validation roll back the complete
-batch. Tests cover strict and transitional Word, Spreadsheet, and Presentation,
-split runs, unknown XML, partial shared-string aliases, notes, zero matches,
+range or observed-scope cells to 100,000. Optional `occurrence` is 1-based in
+that same walk and is omitted from receipts unless the caller set it. Receipts
+contain the scope, literal/regex mode, `matchCount`, `changed`, and sorted
+`changedParts`; batch receipts are additive under `textReplacements`. With
+`occurrence`, `matchCount` is the number of replacements applied. Zero matches
+without `occurrence` do not dirty an in-place document. A missing or ambiguous
+occurrence rolls back with the rest of a failed batch. XML-forbidden output,
+invalid regex, limit overflow, path or cell-type errors, and failed
+post-mutation validation roll back the complete batch. Tests cover strict and
+transitional Word, Spreadsheet, and Presentation, split runs, unknown XML,
+partial shared-string aliases, notes, zero matches,
 rollback, the CLI on all formats, and a complete unsaved/save/close standard
 MCP lifecycle with an unusable OfficeCLI provider path.
 

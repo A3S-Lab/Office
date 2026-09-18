@@ -48,6 +48,7 @@ fn typed_nested_document_mutations_converge_and_rotate_all_word_identities() {
                 search: "Nested target".to_owned(),
                 replacement: "Native nested".to_owned(),
                 expected_matches: 1,
+                occurrence: None,
             },
         ))
         .unwrap();

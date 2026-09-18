@@ -11,7 +11,11 @@ use super::identity::{
 
 const MAX_DOCUMENT_TEXT_REPLACEMENTS: u32 = 4_096;
 
-pub(super) fn validate_text_replacement(search: &str, expected_matches: u32) -> UseResult<()> {
+pub(super) fn validate_text_replacement(
+    search: &str,
+    expected_matches: u32,
+    occurrence: Option<u32>,
+) -> UseResult<()> {
     if search.is_empty() {
         return Err(collaboration_error(
             "office.collaboration.mutation_invalid",
@@ -31,6 +35,18 @@ pub(super) fn validate_text_replacement(search: &str, expected_matches: u32) -> 
             MAX_DOCUMENT_TEXT_REPLACEMENTS as u64,
         ));
     }
+    if let Some(occurrence) = occurrence {
+        if !(1..=expected_matches).contains(&occurrence) {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_invalid",
+                format!(
+                    "Document text replacement occurrence must be from 1 through the expected match count {expected_matches}."
+                ),
+            )
+            .with_detail("occurrence", u64::from(occurrence))
+            .with_detail("expectedMatches", expected_matches as u64));
+        }
+    }
     Ok(())
 }
 
@@ -40,6 +56,7 @@ pub(super) fn replace_document_text(
     search: &str,
     replacement: &str,
     expected_matches: u32,
+    occurrence: Option<u32>,
 ) -> UseResult<()> {
     let root = format!("{}.document.content", manifest.namespace);
     let fragment = doc.get_or_insert_xml_fragment(root);
@@ -70,6 +87,28 @@ pub(super) fn replace_document_text(
         .with_detail("actualMatches", actual_matches as u64)
         .with_detail("expectedMatches", expected_matches as u64));
     }
+    let replacements = if let Some(occurrence) = occurrence {
+        let Some(previous) = occurrence.checked_sub(1) else {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_invalid",
+                "Document text replacement occurrence is 1-based.",
+            ));
+        };
+        let index = usize::try_from(previous).map_err(|_| {
+            collaboration_error(
+                "office.collaboration.mutation_invalid",
+                "Document text replacement occurrence is outside the supported range.",
+            )
+        })?;
+        vec![replacements.into_iter().nth(index).ok_or_else(|| {
+            collaboration_error(
+                "office.collaboration.mutation_invalid",
+                "Document text replacement occurrence is outside the current matches.",
+            )
+        })?]
+    } else {
+        replacements
+    };
     if search == replacement {
         return Ok(());
     }
@@ -253,16 +292,19 @@ mod tests {
                 search: String::new(),
                 replacement: "value".to_owned(),
                 expected_matches: 1,
+                occurrence: None,
             },
             NativeOfficeCollaborationMutation::DocumentReplaceText {
                 search: "value".to_owned(),
                 replacement: "next".to_owned(),
                 expected_matches: 0,
+                occurrence: None,
             },
             NativeOfficeCollaborationMutation::DocumentReplaceText {
                 search: "value".to_owned(),
                 replacement: "next".to_owned(),
                 expected_matches: MAX_DOCUMENT_TEXT_REPLACEMENTS + 1,
+                occurrence: None,
             },
         ] {
             let error = super::super::validate_document_mutation(&mutation).unwrap_err();
@@ -293,7 +335,7 @@ mod tests {
         };
         let manifest = manifest();
 
-        replace_document_text(&doc, &manifest, "bold", "strong", 2).unwrap();
+        replace_document_text(&doc, &manifest, "bold", "strong", 2, None).unwrap();
 
         let transaction = doc.transact();
         let chunks = text.diff(&transaction, |_| ());
@@ -308,6 +350,29 @@ mod tests {
             paragraph.get_attribute(&transaction, "textId"),
             Some(Out::Any(Any::String(value))) if value.as_ref() == "00000003"
         ));
+    }
+
+    #[test]
+    fn occurrence_replaces_only_the_selected_document_match() {
+        let doc = new_replica_document(
+            7,
+            "a3s.office",
+            NativeOfficeCollaborationArtifactKind::Document,
+        );
+        let fragment = doc.get_or_insert_xml_fragment("a3s.office.document.content");
+        let text = {
+            let mut transaction = doc.transact_mut();
+            let paragraph =
+                fragment.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+            paragraph.insert_attribute(&mut transaction, "paragraphId", "00000001");
+            paragraph.insert_attribute(&mut transaction, "textId", "00000002");
+            paragraph.push_back(&mut transaction, XmlTextPrelim::new("plain bold bold end"))
+        };
+
+        replace_document_text(&doc, &manifest(), "bold", "strong", 2, Some(2)).unwrap();
+
+        let transaction = doc.transact();
+        assert_eq!(text.get_string(&transaction), "plain bold strong end");
     }
 
     #[test]
@@ -345,7 +410,7 @@ mod tests {
             (outer_row, inner_row, paragraph, text)
         };
 
-        replace_document_text(&doc, &manifest(), "Nested", "Shared", 1).unwrap();
+        replace_document_text(&doc, &manifest(), "Nested", "Shared", 1, None).unwrap();
 
         let transaction = doc.transact();
         assert_eq!(text.get_string(&transaction), "Shared text");
@@ -384,7 +449,7 @@ mod tests {
         };
 
         let error =
-            replace_document_text(&doc, &manifest(), "Unchanged", "Changed", 1).unwrap_err();
+            replace_document_text(&doc, &manifest(), "Unchanged", "Changed", 1, None).unwrap_err();
         assert_eq!(error.code, "office.collaboration.content_invalid");
         assert_eq!(text.get_string(&doc.transact()), "Unchanged");
     }

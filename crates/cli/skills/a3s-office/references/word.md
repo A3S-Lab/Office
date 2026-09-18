@@ -44,7 +44,12 @@ includes the main document, headers, footers, footnotes, endnotes, and legacy
 comments. Use `/body`, a header/footer, paragraph, run, table/cell, hyperlink,
 or comment path to keep the edit narrower. Matches may span runs; replacement
 text uses the first matched run's formatting and does not flatten later runs.
-Zero matches return an unchanged success.
+Add `--occurrence <n>` to change only the nth non-overlapping match returned
+by `find` for that same scope. Omit it to replace every match. Occurrence `0`,
+or an occurrence past the matches in the scope, fails with
+`use.office.text_occurrence_invalid` or `use.office.text_occurrence_missing`
+and does not write. Zero matches without `--occurrence` return an unchanged
+success.
 
 Character formatting targets a run returned by `get --depth 2`. Paragraph
 alignment targets the paragraph itself. Supported typed properties are bold,

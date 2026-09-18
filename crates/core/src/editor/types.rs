@@ -538,6 +538,8 @@ pub const MAX_NATIVE_OFFICE_FIND_BYTES: usize = 64 * 1024;
 pub const MAX_NATIVE_OFFICE_REPLACEMENT_BYTES: usize = 1024 * 1024;
 /// Maximum semantic matches accepted in one native Office replacement.
 pub const MAX_NATIVE_OFFICE_TEXT_MATCHES: usize = 100_000;
+pub const DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT: usize = 50;
+pub const MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT: usize = 200;
 /// Maximum expanded replacement bytes accepted in one native Office operation.
 pub const MAX_NATIVE_OFFICE_TEXT_REPLACEMENT_OUTPUT_BYTES: usize = 64 * 1024 * 1024;
 /// Maximum Spreadsheet cells addressable by one replacement scope.
@@ -553,6 +555,9 @@ pub struct NativeOfficeTextReplacement {
     pub find: String,
     pub replace: String,
     pub mode: NativeOfficeTextMatchMode,
+    /// 1-based match inside the scope. Omitted means every match.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occurrence: Option<u32>,
 }
 
 impl NativeOfficeTextReplacement {
@@ -575,9 +580,17 @@ impl NativeOfficeTextReplacement {
             find: find.into(),
             replace: replace.into(),
             mode,
+            occurrence: None,
         };
         replacement.validate()?;
         Ok(replacement)
+    }
+
+    /// Restricts this replacement to one 1-based match in scope order.
+    pub fn with_occurrence(mut self, occurrence: u32) -> UseResult<Self> {
+        self.occurrence = Some(occurrence);
+        self.validate()?;
+        Ok(self)
     }
 
     pub(crate) fn validate(&self) -> UseResult<()> {
@@ -617,6 +630,18 @@ impl NativeOfficeTextReplacement {
                 ));
             }
         }
+        if let Some(occurrence) = self.occurrence {
+            let max = u32::try_from(MAX_NATIVE_OFFICE_TEXT_MATCHES).unwrap_or(u32::MAX);
+            if !(1..=max).contains(&occurrence) {
+                return Err(super::editor_error(
+                    "use.office.text_occurrence_invalid",
+                    format!(
+                        "Native Office text replacement occurrence must be from 1 through {max}."
+                    ),
+                )
+                .with_detail("occurrence", u64::from(occurrence)));
+            }
+        }
         Ok(())
     }
 }
@@ -647,6 +672,33 @@ pub struct NativeOfficeTextReplacementResult {
     pub match_count: usize,
     pub changed: bool,
     pub changed_parts: Vec<String>,
+    /// Present when the caller targeted one match. `match_count` is then the
+    /// number of replacements applied, not the number of matches located.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occurrence: Option<u32>,
+}
+
+/// One non-overlapping match in the same order `replace-text` uses.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeTextMatchLocation {
+    pub occurrence: u32,
+    pub text: String,
+    pub part: String,
+    /// Present when this match is one use of a shared string selected more than once.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shared_uses: Option<usize>,
+}
+
+/// Read-only match list for a native text scope.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeTextFindResult {
+    pub path: String,
+    pub mode: NativeOfficeTextMatchMode,
+    pub match_count: usize,
+    pub truncated: bool,
+    pub matches: Vec<NativeOfficeTextMatchLocation>,
 }
 
 /// Typed in-process mutation supported by an atomic native batch.

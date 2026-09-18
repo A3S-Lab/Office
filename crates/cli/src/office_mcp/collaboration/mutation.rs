@@ -230,6 +230,9 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         search: String,
         replacement: String,
         expected_matches: u32,
+        /// 1-based match. Omit it to replace every match after the count check.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        occurrence: Option<u32>,
     },
     /// Replace one stable plain paragraph after matching its exact current identity and text.
     DocumentReplaceParagraph {
@@ -434,10 +437,12 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 search,
                 replacement,
                 expected_matches,
+                occurrence,
             } => Self::DocumentReplaceText {
                 search,
                 replacement,
                 expected_matches,
+                occurrence,
             },
             OfficeCollaborationMutation::DocumentReplaceParagraph {
                 paragraph_id,

@@ -68,7 +68,11 @@ General replacement accepts `/`, one worksheet, one cell, or a rectangular A1
 range and edits string cells only. Literal matching is the default; add
 `--regex` for Rust regex and capture expansion. A scoped edit of a shared rich
 string clones and redirects only selected cells when references exist outside
-the scope. Rich runs and unknown XML survive, and phonetic text is excluded.
+the scope. Add `--occurrence <n>` to change one match. A shared string used by
+more than one selected cell cannot host a single occurrence; narrow the path
+to that cell first, which clones the string, then use occurrence 1. The error
+is `use.office.text_occurrence_ambiguous` and nothing is written. Rich runs and
+unknown XML survive, and phonetic text is excluded.
 Numeric, boolean, formula, and error values are not coerced. Zero matches are
 reported as an unchanged success.
 

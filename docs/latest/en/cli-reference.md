@@ -899,7 +899,11 @@ a3s-office set report.xlsx /Sheet1/B2 --text '42' --output updated.xlsx --json
 
 # Find and replace within a semantic scope. Literal matching is the default;
 # --regex enables Rust regular expressions and $name/$1 capture expansion.
+# --occurrence N changes only that 1-based match and fails if it is absent.
 a3s-office set report.docx /body --find 'Q1 2025' --replace 'Q1 2026' --json
+# Locate matches, then change one. Occurrence numbers come from find.
+a3s-office find report.docx /body --find 'Q1 2025' --json
+a3s-office set report.docx /body --find 'Q1 2025' --replace 'Q1 2026' --occurrence 2 --json
 a3s-office set report.docx / --find 'Q([1-4]) 2025' --replace 'Q$1 2026' --regex --json
 a3s-office set workbook.xlsx /Sheet1/A1:C20 --find Draft --replace Final --json
 a3s-office set deck.pptx '/slide[1]/notes' --find internal --replace confidential --json

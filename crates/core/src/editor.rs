@@ -37,24 +37,26 @@ pub use types::{
     NativeOfficeCommentUpdate, NativeOfficeHighlightColor, NativeOfficeHorizontalAlignment,
     NativeOfficeHyperlink, NativeOfficeHyperlinkTarget, NativeOfficeImage, NativeOfficeImageFormat,
     NativeOfficeImageMetadata, NativeOfficeInsertPosition, NativeOfficeMutation,
-    NativeOfficeRgbColor, NativeOfficeSwapResult, NativeOfficeTextCase, NativeOfficeTextFormat,
-    NativeOfficeTextMatchMode, NativeOfficeTextReplacement, NativeOfficeTextReplacementResult,
-    NativeOfficeTextScript, NativeOfficeUnderline, NativeSpreadsheetAutoFilter,
-    NativeSpreadsheetBorder, NativeSpreadsheetBorderLine, NativeSpreadsheetBorderStyle,
-    NativeSpreadsheetCellFormat, NativeSpreadsheetConditionalFormat,
-    NativeSpreadsheetConditionalFormatIconSet, NativeSpreadsheetConditionalFormatOperator,
-    NativeSpreadsheetConditionalFormatRule, NativeSpreadsheetConditionalFormatThreshold,
-    NativeSpreadsheetConditionalFormatThresholdKind, NativeSpreadsheetConditionalFormatTimePeriod,
-    NativeSpreadsheetDataValidation, NativeSpreadsheetDataValidationErrorStyle,
-    NativeSpreadsheetDataValidationOperator, NativeSpreadsheetDataValidationType,
-    NativeSpreadsheetDelimitedFormat, NativeSpreadsheetDelimitedImport,
-    NativeSpreadsheetDifferentialFormat, NativeSpreadsheetDynamicFilter, NativeSpreadsheetFill,
-    NativeSpreadsheetFilterColumn, NativeSpreadsheetFilterCriteria, NativeSpreadsheetFrozenPane,
-    NativeSpreadsheetImportResult, NativeSpreadsheetNamedRange, NativeSpreadsheetNamedRangeScope,
-    NativeSpreadsheetReadingOrder, NativeSpreadsheetSort, NativeSpreadsheetSortDirection,
-    NativeSpreadsheetSortKey, NativeSpreadsheetTable, NativeSpreadsheetTableColumn,
-    NativeSpreadsheetTableStyle, NativeSpreadsheetVerticalAlignment, SpreadsheetCellValue,
-    MAX_NATIVE_OFFICE_FIND_BYTES, MAX_NATIVE_OFFICE_REPLACEMENT_BYTES,
+    NativeOfficeRgbColor, NativeOfficeSwapResult, NativeOfficeTextCase, NativeOfficeTextFindResult,
+    NativeOfficeTextFormat, NativeOfficeTextMatchLocation, NativeOfficeTextMatchMode,
+    NativeOfficeTextReplacement, NativeOfficeTextReplacementResult, NativeOfficeTextScript,
+    NativeOfficeUnderline, NativeSpreadsheetAutoFilter, NativeSpreadsheetBorder,
+    NativeSpreadsheetBorderLine, NativeSpreadsheetBorderStyle, NativeSpreadsheetCellFormat,
+    NativeSpreadsheetConditionalFormat, NativeSpreadsheetConditionalFormatIconSet,
+    NativeSpreadsheetConditionalFormatOperator, NativeSpreadsheetConditionalFormatRule,
+    NativeSpreadsheetConditionalFormatThreshold, NativeSpreadsheetConditionalFormatThresholdKind,
+    NativeSpreadsheetConditionalFormatTimePeriod, NativeSpreadsheetDataValidation,
+    NativeSpreadsheetDataValidationErrorStyle, NativeSpreadsheetDataValidationOperator,
+    NativeSpreadsheetDataValidationType, NativeSpreadsheetDelimitedFormat,
+    NativeSpreadsheetDelimitedImport, NativeSpreadsheetDifferentialFormat,
+    NativeSpreadsheetDynamicFilter, NativeSpreadsheetFill, NativeSpreadsheetFilterColumn,
+    NativeSpreadsheetFilterCriteria, NativeSpreadsheetFrozenPane, NativeSpreadsheetImportResult,
+    NativeSpreadsheetNamedRange, NativeSpreadsheetNamedRangeScope, NativeSpreadsheetReadingOrder,
+    NativeSpreadsheetSort, NativeSpreadsheetSortDirection, NativeSpreadsheetSortKey,
+    NativeSpreadsheetTable, NativeSpreadsheetTableColumn, NativeSpreadsheetTableStyle,
+    NativeSpreadsheetVerticalAlignment, SpreadsheetCellValue,
+    DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT, MAX_NATIVE_OFFICE_FIND_BYTES,
+    MAX_NATIVE_OFFICE_REPLACEMENT_BYTES, MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT,
     MAX_NATIVE_OFFICE_TEXT_MATCHES, MAX_NATIVE_OFFICE_TEXT_REPLACEMENT_OUTPUT_BYTES,
     MAX_NATIVE_OFFICE_TEXT_SCOPE_CELLS, MAX_NATIVE_SPREADSHEET_IMPORT_BYTES,
     MAX_NATIVE_SPREADSHEET_IMPORT_CELLS,
@@ -105,6 +107,16 @@ impl NativeOfficeEditor {
             text: text.into(),
         }])?;
         Ok(())
+    }
+
+    pub fn find_text(
+        &self,
+        path: impl Into<String>,
+        replacement: NativeOfficeTextReplacement,
+        limit: usize,
+    ) -> UseResult<NativeOfficeTextFindResult> {
+        let mut package = self.package.clone();
+        text_replace::locate(&mut package, &path.into(), &replacement, limit)
     }
 
     /// Replaces bounded text matches within one semantic document scope.
