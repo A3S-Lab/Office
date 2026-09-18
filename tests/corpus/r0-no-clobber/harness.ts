@@ -85,10 +85,12 @@ export async function roundTripDocx(
             headerHtmls: [
               reopened.content.pageChrome?.default.headerHtml ?? '',
               reopened.content.pageChrome?.first.headerHtml ?? '',
+              reopened.content.pageChrome?.even.headerHtml ?? '',
             ],
             footerHtmls: [
               reopened.content.pageChrome?.default.footerHtml ?? '',
               reopened.content.pageChrome?.first.footerHtml ?? '',
+              reopened.content.pageChrome?.even.footerHtml ?? '',
             ],
           },
         ),
