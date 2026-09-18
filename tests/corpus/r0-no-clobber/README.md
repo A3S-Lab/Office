@@ -28,7 +28,7 @@ Each fixture must prove:
 
 Current fixtures cover report bookmarks/external links, internal
 bookmark-anchor hyperlinks, review track changes, review comments, default
-headers/footers, first-page vs default header/footer text, even-page vs default header/footer text, first-page header PAGE live fields, even-page header PAGE live fields, footnotes, endnotes, text and rich-text content controls,
+headers/footers, first-page vs default header/footer text, even-page vs default header/footer text, first-page header PAGE live fields, even-page header PAGE live fields, first-page footer NUMPAGES live fields, footnotes, endnotes, text and rich-text content controls,
 body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION, SECTIONPAGES, NUMWORDS,
 NUMCHARS, DATE (bare and `\@` format), and TIME fields, header PAGE and footer
 NUMPAGES live fields (both `fldSimple` and complex `fldChar` forms), header DATE (`\@` format) and footer TIME live fields (fldSimple and complex fldChar), header SECTION and footer SECTIONPAGES live fields (fldSimple and complex fldChar), figure SEQ captions and caption REF targets, table SEQ
