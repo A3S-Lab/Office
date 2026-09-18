@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.278.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers even-page header and footer text',
+      zh: 'R0 语料库覆盖偶数页页眉页脚文本',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds distinct even-page vs default header and footer text fixtures for Traditional Office facing-page chrome.',
+      zh: '永久无静默覆盖门禁新增独立偶数页与默认页眉/页脚文本夹具，覆盖传统 Office 对开页页眉页脚。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Even-page chrome identity',
+          zh: '偶数页页眉页脚身份',
+        },
+        detail: {
+          en: 'Even-page header and footer text stay distinct from default chrome across import → export → reopen.',
+          zh: '偶数页页眉与页脚文本在导入 → 导出 → 再打开后仍与默认页眉页脚区分。',
+        },
+      },
+      {
+        title: {
+          en: 'Default chrome stays',
+          zh: '默认页眉页脚保留',
+        },
+        detail: {
+          en: 'Odd/default header and footer text round-trip beside the even-page variants.',
+          zh: '奇数/默认页眉与页脚文本与偶数页变体一起往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.277.0',
     date: '2026-09-18',
     kind: 'improved',
