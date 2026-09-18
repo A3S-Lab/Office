@@ -208,6 +208,18 @@ pub enum NativeOfficeCollaborationMutation {
         insert: String,
     },
     /// Replace an exact number of non-overlapping text matches inside the
+    /// canonical Markdown Y.Text. Locate first with `collab find` /
+    /// `office_collaboration_find`, then pass `matchCount` as
+    /// `expectedMatches` and optional 1-based `occurrence`.
+    MarkdownReplaceText {
+        search: String,
+        replacement: String,
+        expected_matches: u32,
+        /// 1-based match. Omitted means every match after the count check.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        occurrence: Option<u32>,
+    },
+    /// Replace an exact number of non-overlapping text matches inside the
     /// canonical ProseMirror `Y.XmlFragment`. Matches may span formatting
     /// runs inside one `Y.XmlText`, but never cross an embedded object or XML
     /// text-node boundary.

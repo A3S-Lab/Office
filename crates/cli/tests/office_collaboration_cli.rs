@@ -553,6 +553,101 @@ fn cli_finds_document_text_matches_before_replace() {
 }
 
 #[test]
+fn cli_finds_markdown_text_matches_before_replace() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("markdown-find.replica");
+    let input = temp.path().join("browser-markdown.update");
+    fs::write(&input, STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap()).unwrap();
+    run(&[
+        "collab",
+        "join",
+        replica.to_str().unwrap(),
+        "--artifact-id",
+        "fixture-markdown",
+        "--kind",
+        "markdown",
+        "--actor-id",
+        "coding-agent-md-find",
+        "--actor-kind",
+        "agent",
+        "--mode",
+        "edit",
+        "--operation-id",
+        "join-browser-markdown-find-1",
+        "--input",
+        input.to_str().unwrap(),
+        "--client-id",
+        "900019",
+        "--json",
+    ]);
+
+    let seeded = run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"markdown-replace","markdown":"one Draft two Draft"}"#,
+        "--actor-id",
+        "coding-agent-md-find",
+        "--operation-id",
+        "markdown-find-seed-1",
+        "--artifact-id",
+        "fixture-markdown",
+        "--kind",
+        "markdown",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(seeded["data"]["action"], "mutated");
+
+    let found = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "Draft",
+        "--json",
+    ]);
+    assert_eq!(found["data"]["operation"], "find-markdown-text");
+    assert_eq!(found["data"]["kind"], "markdown");
+    assert_eq!(found["data"]["matches"], 2);
+    assert_eq!(found["data"]["result"]["matches"][0]["occurrence"], 1);
+    assert_eq!(found["data"]["result"]["matches"][1]["occurrence"], 2);
+
+    let replaced = run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"markdown-replace-text","search":"Draft","replacement":"Final","expectedMatches":2,"occurrence":2}"#,
+        "--actor-id",
+        "coding-agent-md-find",
+        "--operation-id",
+        "markdown-find-replace-1",
+        "--artifact-id",
+        "fixture-markdown",
+        "--kind",
+        "markdown",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(replaced["data"]["action"], "mutated");
+
+    let after = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "Draft",
+        "--json",
+    ]);
+    assert_eq!(after["data"]["matches"], 1);
+    assert_eq!(after["data"]["result"]["matches"][0]["occurrence"], 1);
+}
+
+#[test]
 fn cli_operation_replay_survives_checkpoint_and_leave() {
     let temp = tempfile::tempdir().unwrap();
     let replica = temp.path().join("agent.replica");

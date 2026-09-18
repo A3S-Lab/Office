@@ -124,7 +124,7 @@ pub(super) struct OfficeCollaborationStoreInput {
 pub(super) struct OfficeCollaborationFindInput {
     /// Existing durable collaboration replica directory.
     pub(super) store: String,
-    /// Exact literal text to locate in the live Document walk.
+    /// Exact literal text to locate in Document or Markdown collaboration text.
     pub(super) find: String,
     /// Maximum matches returned in the list. Defaults to 50; hard max 200.
     /// `matchCount` still reports the full walk count.
@@ -269,16 +269,22 @@ pub(super) async fn find(input: OfficeCollaborationFindInput) -> UseResult<serde
         return Err(UseError::new(
             "office.collaboration.find_limit_invalid",
             format!(
-                "Document text find limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}."
+                "Collaboration text find limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}."
             ),
         ));
     }
-    let result = run_blocking(move || {
-        NativeOfficeCollaborationStore::open(input.store)?.find_document_text(input.find, limit)
+    let (kind, result) = run_blocking(move || {
+        NativeOfficeCollaborationStore::open(input.store)?.find_text(input.find, limit)
     })
     .await?;
+    let operation = match kind {
+        NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
+        NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
+        _ => "find-text",
+    };
     Ok(json!({
-        "operation": "find-document-text",
+        "operation": operation,
+        "kind": kind.as_str(),
         "matches": result.match_count,
         "truncated": result.truncated,
         "result": result
@@ -644,11 +650,13 @@ mod tests {
         for expected in [
             "markdown-replace",
             "markdown-splice",
+            "markdown-replace-text",
             "indexUtf16",
             "deleteUtf16",
             "document-replace-text",
             "document-replace-paragraph",
             "expectedMatches",
+            "occurrence",
             "document-set-page-color",
             "pageColor",
             "document-clear-page-color",

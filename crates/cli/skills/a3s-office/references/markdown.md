@@ -28,8 +28,13 @@ correct. On phone widths, set the viewport explicitly before the action and
 capture both the selected compact pane and the final accessibility tree.
 
 For collaboration, use `a3s use office collab mutate` with the Markdown
-operation contract from the MCP reference. Locate a Markdown edit with
-`markdown-splice`: `indexUtf16` and `deleteUtf16` are UTF-16 code units, not a
-whole-document rewrite. Inspect the replica state first and keep the operation
+operation contract from the MCP reference. Prefer locate-then-replace:
+
+1. `collab find <store> --find ...` or MCP `office_collaboration_find`
+2. Pass that `matchCount` as `expectedMatches` on `markdown-replace-text`
+3. Add optional `occurrence` (1-based from find) to change one match
+
+Keep `markdown-splice` for known UTF-16 ranges and `markdown-replace` for a
+whole-source rewrite. Inspect the replica state first and keep the operation
 ID stable on retry. Do not treat a rendered preview as proof that the persisted
 Markdown text is correct: read the replica back after the mutation.
