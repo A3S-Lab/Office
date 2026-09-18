@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.279.0 - 2026-09-18
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for first-page header PAGE live-field identity,
+  covering Traditional Office title-page page-number chrome without art-border
+  breadth.
+
+### Spreadsheet
+
+- Match the in-cell editor font stack to Fortune canvas glyphs so typed text
+  aligns with painted cell content during edit.
+
 ## 0.278.0 - 2026-09-18
 
 ### Document

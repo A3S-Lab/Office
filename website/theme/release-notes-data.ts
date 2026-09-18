@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.279.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'spreadsheet', 'documentation'],
+    title: {
+      en: 'R0 corpus covers first-page header PAGE fields',
+      zh: 'R0 语料库覆盖首页页眉 PAGE 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds first-page header PAGE live-field fixtures for Traditional Office title-page page numbers, and the spreadsheet in-cell editor matches canvas glyphs.',
+      zh: '永久无静默覆盖门禁新增首页页眉 PAGE 实时字段夹具，覆盖传统 Office 标题页页码；表格单元格内编辑器与画布字形一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First-page PAGE identity',
+          zh: '首页 PAGE 身份',
+        },
+        detail: {
+          en: 'Title-page header PAGE fields stay live across import → export → reopen.',
+          zh: '标题页页眉 PAGE 字段在导入 → 导出 → 再打开后仍保持实时身份。',
+        },
+      },
+      {
+        title: {
+          en: 'In-cell font match',
+          zh: '单元格内字体对齐',
+        },
+        detail: {
+          en: 'Spreadsheet in-cell editor font stack matches Fortune canvas glyphs while editing.',
+          zh: '表格单元格内编辑器字体栈在编辑时与 Fortune 画布字形一致。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.278.0',
     date: '2026-09-18',
     kind: 'improved',
