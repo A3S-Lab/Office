@@ -151,13 +151,13 @@
 
 .work-spreadsheet-editor .luckysheet-cell-input {
   /* Override Fortune’s inline height:100% so flex align-items can center. */
+  font: inherit;
   height: auto !important;
   min-height: 1.15em;
   max-height: 100%;
   line-height: 1.15;
   align-self: stretch;
   width: 100% !important;
-  font: inherit;
 }
 
 .work-spreadsheet-editor .luckysheet-cell-selected {
