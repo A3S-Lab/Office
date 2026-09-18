@@ -42,11 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.283.0）
+## `main` 更新内容（0.284.0）
 
-R0 无静默覆盖语料库覆盖复杂首页页眉 PAGE 实时字段:
+原生文本可以只改一处命中，R0 无静默覆盖语料库覆盖复杂首页和偶数页页脚 NUMPAGES 实时字段:
 
-- 复杂（fldChar）首页页眉 PAGE 字段身份加入永久代表性 DOCX 往返门禁（`bun run test:corpus:r0`）。
+- `find` 与 `office_find` 给出 1-based 序号。`--occurrence` 只改那一处，序号不存在时在写入前失败。
+- 复杂（fldChar）首页和偶数页页脚 NUMPAGES 字段身份加入永久代表性 DOCX 往返门禁（`bun run test:corpus:r0`）。
 
 
 

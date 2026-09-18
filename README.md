@@ -371,16 +371,18 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.283.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.284.0` adds one-match text location and closes the first/even
+PAGE and NUMPAGES corpus matrix:
 
-- Complex (fldChar) first-page header PAGE live-field identity now joins
-  fldSimple first-page PAGE, even-page footer NUMPAGES, even-page and
-  first-page header PAGE chrome, even/first-page text chrome, complex SECTION
-  fields, page-chrome PAGE/NUMPAGES/DATE/TIME fields, rich-text content
-  controls, table/figure captions, caption REF targets, body live fields, and
-  the rest of the representative DOCX round-trip corpus. Intentional
-  normalizations stay diagnosed; VBA and package signatures stay fail-closed on
-  export (`bun run test:corpus:r0`).
+- `find` / `office_find` number matches in the same walk as replace-all.
+  `--occurrence` and `replace-text.occurrence` change one match and fail
+  closed before write when the occurrence is missing or a shared string is
+  used by more than one selected cell. Live `document-replace-text` keeps
+  `expectedMatches` and accepts the same optional occurrence.
+- Complex (fldChar) first-page and even-page footer NUMPAGES live-field
+  identity now joins the permanent no-clobber representative DOCX round-trip corpus.
+  Intentional normalizations stay diagnosed; VBA and package signatures stay
+  fail-closed on export (`bun run test:corpus:r0`).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

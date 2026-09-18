@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.284.0 - 2026-09-18
+
+### Native editing
+
+- Locate one text match before replacing it. `find` and MCP `office_find`
+  list 1-based matches in the same non-overlapping walk as replace-all. CLI
+  `--occurrence` and `replace-text.occurrence` change only that match. A
+  missing occurrence, or a Spreadsheet shared string used by more than one
+  selected cell, fails before write. Live `document-replace-text` keeps
+  `expectedMatches` as the conflict check and accepts the same optional
+  occurrence.
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  complex (fldChar) first-page footer NUMPAGES and complex even-page footer
+  NUMPAGES live-field identity. This closes the first/even PAGE and NUMPAGES
+  matrix without art-border breadth.
+
 ## 0.283.0 - 2026-09-18
 
 ### Document

@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.284.0',
+    date: '2026-09-18',
+    kind: 'new',
+    surfaces: ['writer', 'spreadsheet', 'presentation', 'documentation'],
+    title: {
+      en: 'Locate one text match before replacing it',
+      zh: '定位后再替换一处文本',
+    },
+    summary: {
+      en: 'File editors and live Writer can change one numbered match. The R0 corpus also closes complex first-page and even-page footer NUMPAGES.',
+      zh: '文件编辑器和实时 Writer 可以只改一处编号命中。R0 语料库同时补齐复杂首页和偶数页页脚 NUMPAGES。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Same walk, one occurrence',
+          zh: '同一遍历，一处命中',
+        },
+        detail: {
+          en: 'find and office_find number matches. --occurrence and replace-text.occurrence change only that match.',
+          zh: 'find 与 office_find 给命中编号。--occurrence 和 replace-text.occurrence 只改那一处。',
+        },
+      },
+      {
+        title: {
+          en: 'Fail closed before write',
+          zh: '写入前失败',
+        },
+        detail: {
+          en: 'A missing occurrence or a shared string used by multiple selected cells does not write.',
+          zh: '序号不存在，或共享字符串被多个选中单元格共用时，不会写入。',
+        },
+      },
+      {
+        title: {
+          en: 'Footer NUMPAGES matrix',
+          zh: '页脚 NUMPAGES 矩阵',
+        },
+        detail: {
+          en: 'Complex fldChar first-page and even-page footer NUMPAGES join the permanent no-clobber gate.',
+          zh: '复杂 fldChar 首页和偶数页页脚 NUMPAGES 进入永久无静默覆盖门禁。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.283.0',
     date: '2026-09-18',
     kind: 'improved',

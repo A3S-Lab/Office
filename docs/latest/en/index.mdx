@@ -44,11 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.283.0)
+## What's new on `main` (0.284.0)
 
-R0 no-clobber corpus grows for complex first-page header PAGE live fields:
+Native text edits can target one occurrence, and the R0 no-clobber corpus grows for complex first-page and even-page footer NUMPAGES live fields:
 
-- Complex (fldChar) first-page header PAGE field identity joins the permanent representative DOCX round-trip gate (`bun run test:corpus:r0`).
+- `find` and `office_find` list 1-based matches. `--occurrence` changes one match and fails closed before write when that occurrence is missing.
+- Complex (fldChar) first-page and even-page footer NUMPAGES field identity joins the permanent representative DOCX round-trip gate (`bun run test:corpus:r0`).
 
 
 
