@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.286.0',
+    date: '2026-09-18',
+    kind: 'new',
+    surfaces: ['markdown', 'documentation'],
+    title: {
+      en: 'Locate live Markdown text before replacing it',
+      zh: '定位后再替换实时 Markdown 文本',
+    },
+    summary: {
+      en: 'collab find and office_collaboration_find work on Markdown replicas with the same walk as markdown-replace-text.',
+      zh: 'collab find 与 office_collaboration_find 支持 Markdown 副本，遍历与 markdown-replace-text 一致。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Same contract as Document',
+          zh: '与 Document 同一约定',
+        },
+        detail: {
+          en: 'Pass matchCount as expectedMatches and optional occurrence to change one match.',
+          zh: '把 matchCount 作为 expectedMatches，可选 occurrence 只改那一处。',
+        },
+      },
+      {
+        title: {
+          en: 'UTF-16 source offsets',
+          zh: 'UTF-16 源码偏移',
+        },
+        detail: {
+          en: 'Hits report indexUtf16 on the canonical Markdown Y.Text source.',
+          zh: '命中报告规范 Markdown Y.Text 源上的 indexUtf16。',
+        },
+      },
+      {
+        title: {
+          en: 'Keep splice for known ranges',
+          zh: '已知范围仍用 splice',
+        },
+        detail: {
+          en: 'markdown-splice remains for explicit UTF-16 ranges; markdown-replace still rewrites the whole source.',
+          zh: '明确的 UTF-16 范围仍用 markdown-splice；整源重写仍用 markdown-replace。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.285.0',
     date: '2026-09-18',
     kind: 'new',

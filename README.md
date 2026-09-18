@@ -371,13 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.285.0` adds live Writer text location for CLI, Skill, and MCP:
+Version `0.286.0` extends live text location to Markdown collaboration for CLI,
+Skill, and MCP:
 
-- `collab find` / `office_collaboration_find` number matches in the same walk
-  as `document-replace-text`. Pass `matchCount` as `expectedMatches` and
-  optional `occurrence` to change one match. Hits include `paragraphId`,
-  `textId`, and `indexUtf16` when available so agents do not scan a full
-  projection just to locate text.
+- `collab find` / `office_collaboration_find` work on Markdown replicas and
+  number matches in the same walk as `markdown-replace-text`. Pass `matchCount`
+  as `expectedMatches` and optional `occurrence` to change one match, the same
+  contract as Document `document-replace-text`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

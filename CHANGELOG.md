@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.286.0 - 2026-09-18
 
 ### Collaboration
 
