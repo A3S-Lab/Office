@@ -35,7 +35,7 @@ Use its typed tools rather than passing shell command strings:
 - `office_install_compat` prepares the optional pinned compatibility provider;
   in Code it must pass parent confirmation before network access.
 - `office_collaboration_create`, `office_collaboration_inspect`,
-  `office_collaboration_read`,
+  `office_collaboration_read`, `office_collaboration_find`,
   `office_collaboration_diff`, `office_collaboration_events`,
   `office_collaboration_apply`, `office_collaboration_mutate`, and
   `office_collaboration_checkpoint` expose a durable Yjs/Yrs replica without
@@ -56,7 +56,9 @@ Call `office_collaboration_read` before a local edit. It returns exact
 canonical Markdown source or an Office-owned Document projection with stable
 paragraph/text identities, projection-v3 comments/replies/anchors, live
 suggestions, immutable change decisions, and the state vector required for a
-fail-closed mutation. Do not decode Office
+fail-closed mutation. For Document text locate-edit, call
+`office_collaboration_find` first and pass its `matchCount` /
+`occurrence` into `document-replace-text`. Do not decode Office
 collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
@@ -136,15 +138,17 @@ UTF-16 code-unit offsets and may not split a surrogate pair:
 ```
 
 Document exact replacement edits ProseMirror `Y.XmlText` in place and fails
-unless `expectedMatches` equals the current non-overlapping match count. That
-count is the conflict check for replacing every match. Add `"occurrence": 2`
-to change only that 1-based match after the count still matches. To change one
-stable paragraph instead, use `document-replace-paragraph` with its paragraph
-id and text id. File-level Word, Spreadsheet, and Presentation edits use
-`office_find` and native `replace-text` with the same `occurrence`. Document
-replacement may cross formatting runs inside one text node, preserves the first
-replaced character's attributes, rotates the affected Word `textId` once, and
-never crosses an XML-node or inline-atom boundary:
+unless `expectedMatches` equals the current non-overlapping match count. Locate
+that count first with `office_collaboration_find` (CLI `collab find`); its
+1-based `occurrence` values match `document-replace-text`. That count is the
+conflict check for replacing every match. Add `"occurrence": 2` to change only
+that 1-based match after the count still matches. To change one stable
+paragraph instead, use `document-replace-paragraph` with its paragraph id and
+text id. File-level Word, Spreadsheet, and Presentation edits use `office_find`
+and native `replace-text` with the same `occurrence`. Document replacement may
+cross formatting runs inside one text node, preserves the first replaced
+character's attributes, rotates the affected Word `textId` once, and never
+crosses an XML-node or inline-atom boundary:
 
 ```json
 {

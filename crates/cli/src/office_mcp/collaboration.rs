@@ -7,8 +7,8 @@ use a3s_office::{
     NativeOfficeCollaborationEventsRequest, NativeOfficeCollaborationInspection,
     NativeOfficeCollaborationMode, NativeOfficeCollaborationMutationRequest,
     NativeOfficeCollaborationProjection, NativeOfficeCollaborationStore,
-    MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
-    MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
+    DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT, MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
+    MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES, MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT,
 };
 use a3s_use_core::{UseError, UseResult};
 use base64::engine::general_purpose::STANDARD;
@@ -117,6 +117,18 @@ pub(super) struct OfficeCollaborationCreateInput {
 pub(super) struct OfficeCollaborationStoreInput {
     /// Existing durable collaboration replica directory.
     pub(super) store: String,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(super) struct OfficeCollaborationFindInput {
+    /// Existing durable collaboration replica directory.
+    pub(super) store: String,
+    /// Exact literal text to locate in the live Document walk.
+    pub(super) find: String,
+    /// Maximum matches returned in the list. Defaults to 50; hard max 200.
+    /// `matchCount` still reports the full walk count.
+    pub(super) limit: Option<usize>,
 }
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
@@ -249,6 +261,28 @@ pub(super) async fn read(input: OfficeCollaborationStoreInput) -> UseResult<serd
     let projection =
         run_blocking(move || NativeOfficeCollaborationStore::open(input.store)?.project()).await?;
     projection_value(projection)
+}
+
+pub(super) async fn find(input: OfficeCollaborationFindInput) -> UseResult<serde_json::Value> {
+    let limit = input.limit.unwrap_or(DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT);
+    if !(1..=MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT).contains(&limit) {
+        return Err(UseError::new(
+            "office.collaboration.find_limit_invalid",
+            format!(
+                "Document text find limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}."
+            ),
+        ));
+    }
+    let result = run_blocking(move || {
+        NativeOfficeCollaborationStore::open(input.store)?.find_document_text(input.find, limit)
+    })
+    .await?;
+    Ok(json!({
+        "operation": "find-document-text",
+        "matches": result.match_count,
+        "truncated": result.truncated,
+        "result": result
+    }))
 }
 
 pub(super) async fn diff(input: OfficeCollaborationDiffInput) -> UseResult<serde_json::Value> {

@@ -49,10 +49,10 @@ by `find` for that same scope. Omit it to replace every match. Occurrence `0`,
 or an occurrence past the matches in the scope, fails with
 `use.office.text_occurrence_invalid` or `use.office.text_occurrence_missing`
 and does not write. Zero matches without `--occurrence` return an unchanged
-success. Live Writer text uses `collab mutate` `document-replace-text`:
-`expectedMatches` must still equal the current count, and optional
-`occurrence` then changes one match. Prefer `document-replace-paragraph` for
-one complete plain paragraph.
+success. Live Writer text: locate with `collab find <store> --find ...` (or MCP
+`office_collaboration_find`), pass that `matchCount` as `expectedMatches` on
+`document-replace-text`, and optional `occurrence` to change one match. Prefer
+`document-replace-paragraph` for one complete plain paragraph.
 
 Character formatting targets a run returned by `get --depth 2`. Paragraph
 alignment targets the paragraph itself. Supported typed properties are bold,

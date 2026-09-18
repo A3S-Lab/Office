@@ -10,8 +10,9 @@ use a3s_office::{
     NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationCheckpointRequest,
     NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationMode,
     NativeOfficeCollaborationMutation, NativeOfficeCollaborationMutationRequest,
-    NativeOfficeCollaborationStore, MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
-    MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES,
+    NativeOfficeCollaborationStore, DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT,
+    MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
+    MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES, MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT,
 };
 use a3s_use_core::UseResult;
 use base64::engine::general_purpose::STANDARD;
@@ -33,6 +34,7 @@ const HELP: &str = concat!(
     "  a3s-office collab join <store> --artifact-id <id> --kind <kind> --actor-id <id> --operation-id <id> --input <update.bin> [create options] [--json]\n",
     "  a3s-office collab inspect <store> [--json]\n",
     "  a3s-office collab read <store> [--json]\n",
+    "  a3s-office collab find <store> --find <text> [--limit <1..200>] [--json]\n",
     "  a3s-office collab diff <store> [--state-vector <base64>|--state-vector-input <file>] [--output <update.bin>] [--json]\n",
     "  a3s-office collab sync-step1 <store> [--output <message.bin>] [--json]\n",
     "  a3s-office collab encode-update --input <update.bin> [--output <message.bin>] [--json]\n",
@@ -45,6 +47,7 @@ const HELP: &str = concat!(
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
     "Typed mutations: markdown-replace/splice; document-replace-text/paragraph; document-insert/delete-paragraph; document-comment-create/reply/set-resolved/delete; document-suggestion-create/decide; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
+    "Document find lists 1-based matches in the same walk as document-replace-text; pass matchCount as expectedMatches and optional occurrence to change one match.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
@@ -66,6 +69,7 @@ pub(crate) async fn run(args: &[String]) -> UseResult<CommandOutput> {
         Some("join") => create(&filtered, true).await,
         Some("inspect") => inspect(&filtered).await,
         Some("read" | "project") => project(&filtered).await,
+        Some("find") => find_text(&filtered).await,
         Some("diff" | "synchronize" | "sync") => diff(&filtered).await,
         Some("sync-step1") => sync_step1(&filtered).await,
         Some("encode-update") => encode_update(&filtered).await,
@@ -202,6 +206,66 @@ async fn project(args: &[String]) -> UseResult<CommandOutput> {
             projection.sequence
         ),
         data,
+    ))
+}
+
+async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
+    let parsed = ParsedOptions::parse(args)?;
+    parsed.reject_unknown(&["find", "limit"])?;
+    let store_path = parsed.one_positional("collaboration replica path")?;
+    let find = parsed.required("find")?.to_owned();
+    let limit = match parsed.value("limit")? {
+        Some(value) => value.parse::<usize>().map_err(|_| {
+            usage_error(format!(
+                "--limit requires an integer from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}, received '{value}'"
+            ))
+        })?,
+        None => DEFAULT_NATIVE_OFFICE_TEXT_FIND_LIMIT,
+    };
+    if !(1..=MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT).contains(&limit) {
+        return Err(usage_error(format!(
+            "--limit must be from 1 through {MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT}"
+        )));
+    }
+    let result = spawn_blocking(move || {
+        NativeOfficeCollaborationStore::open(store_path)?.find_document_text(find, limit)
+    })
+    .await?;
+    let human = if result.matches.is_empty() {
+        format!("No Document matches for '{}'.", result.search)
+    } else {
+        let mut lines = format!(
+            "Found {} Document match(es) for '{}'.",
+            result.match_count, result.search
+        );
+        for hit in &result.matches {
+            let location = match (&hit.paragraph_id, &hit.text_id) {
+                (Some(paragraph_id), Some(text_id)) => {
+                    format!(
+                        "paragraph {paragraph_id} text {text_id} @{}",
+                        hit.index_utf16
+                    )
+                }
+                _ => format!("@{}", hit.index_utf16),
+            };
+            lines.push_str(&format!(
+                "\n  {}: {} ({location})",
+                hit.occurrence, hit.text
+            ));
+        }
+        if result.truncated {
+            lines.push_str("\n  results truncated");
+        }
+        lines
+    };
+    Ok(CommandOutput::success(
+        human,
+        json!({
+            "operation": "find-document-text",
+            "matches": result.match_count,
+            "truncated": result.truncated,
+            "result": result
+        }),
     ))
 }
 
@@ -650,7 +714,7 @@ fn help() -> CommandOutput {
     CommandOutput::success(
         HELP,
         json!({
-            "commands": ["create", "join", "inspect", "read", "diff", "sync-step1", "encode-update", "handle-message", "session", "apply", "mutate", "watch", "checkpoint", "leave"],
+            "commands": ["create", "join", "inspect", "read", "find", "diff", "sync-step1", "encode-update", "handle-message", "session", "apply", "mutate", "watch", "checkpoint", "leave"],
             "encoding": "yjs-v1",
             "syncProtocol": "y-sync-v1",
             "formats": ["document", "markdown", "spreadsheet", "presentation", "pdf"],

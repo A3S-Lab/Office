@@ -2,11 +2,14 @@ use a3s_use_core::UseResult;
 use yrs::types::Attrs;
 use yrs::{Any, Out, ReadTxn, Text, Transact, Xml, XmlElementRef, XmlFragment, XmlOut, XmlTextRef};
 
-use super::super::super::{collaboration_error, NativeOfficeCollaborationManifest};
+use super::super::super::{
+    collaboration_error, NativeOfficeCollaborationDocumentTextFindResult,
+    NativeOfficeCollaborationDocumentTextMatch, NativeOfficeCollaborationManifest,
+};
 use super::super::utf16_len;
 use super::identity::{
     ancestor_table_rows, paragraph_text_id_rotations, table_row_text_id_rotations,
-    ROW_TEXT_ID_ATTRIBUTE,
+    PARAGRAPH_ID_ATTRIBUTE, ROW_TEXT_ID_ATTRIBUTE, TEXT_ID_ATTRIBUTE,
 };
 
 const MAX_DOCUMENT_TEXT_REPLACEMENTS: u32 = 4_096;
@@ -50,6 +53,76 @@ pub(super) fn validate_text_replacement(
     Ok(())
 }
 
+/// List Document text matches in the same non-overlapping walk replace uses.
+pub(in crate::collaboration) fn find_document_text(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+    search: &str,
+    limit: usize,
+) -> UseResult<NativeOfficeCollaborationDocumentTextFindResult> {
+    if search.is_empty() {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_invalid",
+            "Document text find requires a non-empty search string.",
+        ));
+    }
+    if limit == 0 {
+        return Err(collaboration_error(
+            "office.collaboration.find_limit_invalid",
+            "Document text find limit must be at least 1.",
+        ));
+    }
+    let root = format!("{}.document.content", manifest.namespace);
+    let fragment = doc.get_or_insert_xml_fragment(root);
+    let transaction = doc.transact();
+    let delete_utf16 = utf16_len(search)?;
+    let mut replacements = Vec::new();
+    for node in fragment.successors(&transaction) {
+        let XmlOut::Text(text) = node else {
+            continue;
+        };
+        collect_text_replacements(&text, &transaction, search, delete_utf16, &mut replacements)?;
+        if replacements.len() > MAX_DOCUMENT_TEXT_REPLACEMENTS as usize {
+            break;
+        }
+    }
+    let match_count = if replacements.len() > MAX_DOCUMENT_TEXT_REPLACEMENTS as usize {
+        MAX_DOCUMENT_TEXT_REPLACEMENTS as usize
+    } else {
+        replacements.len()
+    };
+    let truncated = match_count > limit;
+    let mut matches = Vec::new();
+    for (index, target) in replacements.into_iter().take(limit).enumerate() {
+        let occurrence = u32::try_from(index + 1).map_err(|_| {
+            collaboration_error(
+                "office.collaboration.mutation_too_large",
+                "Document text find exceeded the supported occurrence range.",
+            )
+        })?;
+        let (paragraph_id, text_id) = match target.text.parent() {
+            Some(XmlOut::Element(parent)) => (
+                xml_string_attribute(&parent, &transaction, PARAGRAPH_ID_ATTRIBUTE),
+                xml_string_attribute(&parent, &transaction, TEXT_ID_ATTRIBUTE),
+            ),
+            _ => (None, None),
+        };
+        matches.push(NativeOfficeCollaborationDocumentTextMatch {
+            occurrence,
+            text: search.to_owned(),
+            paragraph_id,
+            text_id,
+            index_utf16: target.index_utf16,
+        });
+    }
+    Ok(NativeOfficeCollaborationDocumentTextFindResult {
+        search: search.to_owned(),
+        match_count,
+        truncated,
+        matches,
+    })
+}
+
 pub(super) fn replace_document_text(
     doc: &yrs::Doc,
     manifest: &NativeOfficeCollaborationManifest,
@@ -82,7 +155,7 @@ pub(super) fn replace_document_text(
             ),
         )
         .with_suggestion(
-            "Read the latest collaborative Document state and retry with an exact search value and match count.",
+            "Find Document text matches first, then retry with an exact search value and match count.",
         )
         .with_detail("actualMatches", actual_matches as u64)
         .with_detail("expectedMatches", expected_matches as u64));
@@ -161,6 +234,17 @@ pub(super) fn replace_document_text(
         row.insert_attribute(&mut transaction, ROW_TEXT_ID_ATTRIBUTE, next_text_id);
     }
     Ok(())
+}
+
+fn xml_string_attribute<T: ReadTxn>(
+    element: &XmlElementRef,
+    transaction: &T,
+    name: &str,
+) -> Option<String> {
+    match element.get_attribute(transaction, name) {
+        Some(Out::Any(Any::String(value))) => Some(value.to_string()),
+        _ => None,
+    }
 }
 
 fn collect_text_replacements<T: ReadTxn>(
@@ -373,6 +457,41 @@ mod tests {
 
         let transaction = doc.transact();
         assert_eq!(text.get_string(&transaction), "plain bold strong end");
+    }
+
+    #[test]
+    fn find_lists_matches_in_the_same_order_as_replace() {
+        let doc = new_replica_document(
+            7,
+            "a3s.office",
+            NativeOfficeCollaborationArtifactKind::Document,
+        );
+        let fragment = doc.get_or_insert_xml_fragment("a3s.office.document.content");
+        {
+            let mut transaction = doc.transact_mut();
+            let paragraph =
+                fragment.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+            paragraph.insert_attribute(&mut transaction, "paragraphId", "00000001");
+            paragraph.insert_attribute(&mut transaction, "textId", "00000002");
+            paragraph.push_back(&mut transaction, XmlTextPrelim::new("plain bold bold end"));
+        }
+
+        let found = find_document_text(&doc, &manifest(), "bold", 50).unwrap();
+        assert_eq!(found.match_count, 2);
+        assert!(!found.truncated);
+        assert_eq!(found.matches.len(), 2);
+        assert_eq!(found.matches[0].occurrence, 1);
+        assert_eq!(found.matches[0].paragraph_id.as_deref(), Some("00000001"));
+        assert_eq!(found.matches[0].text_id.as_deref(), Some("00000002"));
+        assert_eq!(found.matches[0].index_utf16, 6);
+        assert_eq!(found.matches[1].occurrence, 2);
+        assert_eq!(found.matches[1].index_utf16, 11);
+
+        let limited = find_document_text(&doc, &manifest(), "bold", 1).unwrap();
+        assert_eq!(limited.match_count, 2);
+        assert!(limited.truncated);
+        assert_eq!(limited.matches.len(), 1);
+        assert_eq!(limited.matches[0].occurrence, 1);
     }
 
     #[test]

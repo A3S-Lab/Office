@@ -211,6 +211,42 @@ impl NativeOfficeCollaborationStore {
         project_collaboration_document(&loaded.doc, &loaded.manifest, loaded.current_sequence)
     }
 
+    /// List Document text matches in the same walk `document-replace-text` uses.
+    ///
+    /// Agents use the returned 1-based `occurrence` with optional
+    /// `document-replace-text.occurrence`, and `matchCount` as
+    /// `expectedMatches`.
+    pub fn find_document_text(
+        &self,
+        search: impl Into<String>,
+        limit: usize,
+    ) -> UseResult<NativeOfficeCollaborationDocumentTextFindResult> {
+        let search = search.into();
+        if !(1..=crate::MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT).contains(&limit) {
+            return Err(collaboration_error(
+                "office.collaboration.find_limit_invalid",
+                format!(
+                    "Document text find limit must be from 1 through {}.",
+                    crate::MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT
+                ),
+            )
+            .with_detail("limit", limit as u64)
+            .with_detail("maximum", crate::MAX_NATIVE_OFFICE_TEXT_FIND_LIMIT as u64));
+        }
+        let (_lock, loaded) = self.lock_and_load()?;
+        if loaded.manifest.kind != NativeOfficeCollaborationArtifactKind::Document {
+            return Err(collaboration_error(
+                "office.collaboration.kind_mismatch",
+                format!(
+                    "Document text find requires a document replica, not {}.",
+                    loaded.manifest.kind.as_str()
+                ),
+            )
+            .with_detail("kind", loaded.manifest.kind.as_str()));
+        }
+        mutation::document::text::find_document_text(&loaded.doc, &loaded.manifest, &search, limit)
+    }
+
     /// Read a bounded, resumable batch of durable collaboration updates.
     ///
     /// A missing cursor starts at the current sequence so callers can begin

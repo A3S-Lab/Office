@@ -486,6 +486,73 @@ fn cli_applies_typed_document_text_option_and_paragraph_mutations() {
 }
 
 #[test]
+fn cli_finds_document_text_matches_before_replace() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("document-find.replica");
+    let input = temp.path().join("browser-document.update");
+    fs::write(&input, STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap()).unwrap();
+    run(&[
+        "collab",
+        "join",
+        replica.to_str().unwrap(),
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--actor-id",
+        "coding-agent-find",
+        "--actor-kind",
+        "agent",
+        "--mode",
+        "edit",
+        "--operation-id",
+        "join-browser-document-find-1",
+        "--input",
+        input.to_str().unwrap(),
+        "--client-id",
+        "900018",
+        "--json",
+    ]);
+
+    let found = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "Hello",
+        "--json",
+    ]);
+    assert_eq!(found["data"]["operation"], "find-document-text");
+    assert_eq!(found["data"]["matches"], 1);
+    assert_eq!(found["data"]["truncated"], false);
+    assert_eq!(found["data"]["result"]["matches"][0]["occurrence"], 1);
+    assert_eq!(
+        found["data"]["result"]["matches"][0]["paragraphId"],
+        "00000001"
+    );
+
+    let replaced = run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"document-replace-text","search":"Hello","replacement":"Found","expectedMatches":1,"occurrence":1}"#,
+        "--actor-id",
+        "coding-agent-find",
+        "--operation-id",
+        "document-find-replace-1",
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(replaced["data"]["action"], "mutated");
+}
+
+#[test]
 fn cli_operation_replay_survives_checkpoint_and_leave() {
     let temp = tempfile::tempdir().unwrap();
     let replica = temp.path().join("agent.replica");

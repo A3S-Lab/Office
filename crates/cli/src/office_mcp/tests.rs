@@ -29,6 +29,7 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
             "office_collaboration_create",
             "office_collaboration_diff",
             "office_collaboration_events",
+            "office_collaboration_find",
             "office_collaboration_inspect",
             "office_collaboration_mutate",
             "office_collaboration_read",
@@ -63,6 +64,7 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
         "office_raw_xml",
         "office_collaboration_diff",
         "office_collaboration_events",
+        "office_collaboration_find",
         "office_collaboration_inspect",
         "office_collaboration_read",
     ] {
