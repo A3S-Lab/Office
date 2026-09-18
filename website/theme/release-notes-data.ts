@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.280.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers even-page header PAGE fields',
+      zh: 'R0 语料库覆盖偶数页页眉 PAGE 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds even-page header PAGE live-field fixtures for Traditional Office facing-page page numbers.',
+      zh: '永久无静默覆盖门禁新增偶数页页眉 PAGE 实时字段夹具，覆盖传统 Office 对开页页码。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Even-page PAGE identity',
+          zh: '偶数页 PAGE 身份',
+        },
+        detail: {
+          en: 'Facing-page header PAGE fields stay live across import → export → reopen.',
+          zh: '对开页页眉 PAGE 字段在导入 → 导出 → 再打开后仍保持实时身份。',
+        },
+      },
+      {
+        title: {
+          en: 'Odd chrome stays',
+          zh: '奇数页页眉保留',
+        },
+        detail: {
+          en: 'Odd/default header text round-trips beside the even-page PAGE variant.',
+          zh: '奇数/默认页眉文本与偶数页 PAGE 变体一起往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.279.0',
     date: '2026-09-18',
     kind: 'improved',

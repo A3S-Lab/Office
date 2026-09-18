@@ -371,16 +371,15 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.279.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.280.0` grows the permanent R0 no-clobber corpus gate:
 
-- First-page header PAGE live-field identity now joins even-page chrome,
-  first-page text chrome, complex SECTION fields, page-chrome
-  PAGE/NUMPAGES/DATE/TIME fields, rich-text content controls, table/figure
-  captions, caption REF targets, body live fields, and the rest of the
-  representative DOCX round-trip corpus. Intentional normalizations stay
+- Even-page header PAGE live-field identity now joins first-page PAGE chrome,
+  even-page text chrome, first-page text chrome, complex SECTION fields,
+  page-chrome PAGE/NUMPAGES/DATE/TIME fields, rich-text content controls,
+  table/figure captions, caption REF targets, body live fields, and the rest of
+  the representative DOCX round-trip corpus. Intentional normalizations stay
   diagnosed; VBA and package signatures stay fail-closed on export
-  (`bun run test:corpus:r0`). The in-cell spreadsheet editor also matches the
-  Fortune canvas font stack during edit.
+  (`bun run test:corpus:r0`).
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

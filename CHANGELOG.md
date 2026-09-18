@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.280.0 - 2026-09-18
+
+### Document
+
+- Grow the permanent R0 no-clobber corpus (`bun run test:corpus:r0`) with
+  representative fixtures for even-page header PAGE live-field identity,
+  covering Traditional Office facing-page page-number chrome without art-border
+  breadth.
+
 ## 0.279.0 - 2026-09-18
 
 ### Document
