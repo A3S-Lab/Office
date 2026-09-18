@@ -154,6 +154,29 @@ export async function buildFirstPageHeaderPageFieldFixture(): Promise<Uint8Array
 }
 
 /**
+ * Report-shaped DOCX: first-page footer NUMPAGES field vs default footer text.
+ */
+export async function buildFirstPageFooterNumPagesFieldFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${OFFICE_RELATIONSHIPS_NAMESPACE}"><w:body><w:p><w:r><w:t>Report body with first-page NUMPAGES chrome</w:t></w:r></w:p><w:sectPr><w:headerReference w:type="default" r:id="rIdHeader"/><w:footerReference w:type="default" r:id="rIdFooter"/><w:footerReference w:type="first" r:id="rIdFirstFooter"/><w:titlePg/></w:sectPr></w:body></w:document>`,
+    documentRelationships: [
+      ['rIdHeader', `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`, 'header1.xml'],
+      ['rIdFooter', `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`, 'footer1.xml'],
+      [
+        'rIdFirstFooter',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`,
+        'footer2.xml',
+      ],
+    ],
+    headerXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Acme Continuing Header</w:t></w:r></w:p></w:hdr>`,
+    footerXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Continuing Footer</w:t></w:r></w:p></w:ftr>`,
+    firstFooterXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Title of </w:t></w:r><w:fldSimple w:instr="NUMPAGES"><w:r><w:t>12</w:t></w:r></w:fldSimple></w:p></w:ftr>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Report-shaped DOCX: even-page header PAGE field vs default header text.
  */
 export async function buildEvenPageHeaderPageFieldFixture(): Promise<Uint8Array> {
