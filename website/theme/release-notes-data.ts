@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.283.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers complex first-page header PAGE fields',
+      zh: 'R0 语料库覆盖复杂首页页眉 PAGE 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds complex (fldChar) first-page header PAGE live-field fixtures for Word-authored title-page chrome.',
+      zh: '永久无静默覆盖门禁新增复杂（fldChar）首页页眉 PAGE 实时字段夹具，覆盖 Word 编写的标题页页眉。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Complex first-page PAGE identity',
+          zh: '复杂首页 PAGE 身份',
+        },
+        detail: {
+          en: 'Title-page header PAGE fields authored as fldChar stay live across import → export → reopen.',
+          zh: '以 fldChar 编写的标题页页眉 PAGE 字段在导入 → 导出 → 再打开后仍保持实时身份。',
+        },
+      },
+      {
+        title: {
+          en: 'Continuing header stays',
+          zh: '后续页眉保留',
+        },
+        detail: {
+          en: 'Default header text round-trips beside the complex first-page PAGE variant.',
+          zh: '默认页眉文本与复杂首页 PAGE 变体一起往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.282.0',
     date: '2026-09-18',
     kind: 'improved',
