@@ -159,14 +159,10 @@ test('Spreadsheet row/column header hover stays translucent so canvas glyphs sta
   );
   expect(hoverRule?.[1]).toMatch(/transparent/);
   expect(hoverRule?.[1]).not.toMatch(/--work-spreadsheet-chrome-hover/);
-  const rowSelected = css.match(
-    /\.fortune-row-header-selected \{([^}]+)\}/,
-  );
+  const rowSelected = css.match(/\.fortune-row-header-selected \{([^}]+)\}/);
   expect(rowSelected?.[1]).toMatch(/transparent/);
   expect(rowSelected?.[1]).not.toMatch(/--work-spreadsheet-chrome-active/);
-  const colSelected = css.match(
-    /\.fortune-col-header-selected \{([^}]+)\}/,
-  );
+  const colSelected = css.match(/\.fortune-col-header-selected \{([^}]+)\}/);
   expect(colSelected?.[1]).toMatch(/transparent/);
   expect(colSelected?.[1]).not.toMatch(/--work-spreadsheet-chrome-active/);
 });
