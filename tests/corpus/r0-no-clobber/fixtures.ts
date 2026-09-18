@@ -102,6 +102,35 @@ export async function buildHeaderFooterFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Report-shaped DOCX: distinct first-page vs default header/footer text.
+ */
+export async function buildFirstPageHeaderFooterFixture(): Promise<Uint8Array> {
+  const archive = new JSZip();
+  writePackageSkeleton(archive, {
+    documentXml: `<w:document xmlns:w="${WORD_NAMESPACE}" xmlns:r="${OFFICE_RELATIONSHIPS_NAMESPACE}"><w:body><w:p><w:r><w:t>Report body with first-page chrome</w:t></w:r></w:p><w:sectPr><w:headerReference w:type="default" r:id="rIdHeader"/><w:headerReference w:type="first" r:id="rIdFirstHeader"/><w:footerReference w:type="default" r:id="rIdFooter"/><w:footerReference w:type="first" r:id="rIdFirstFooter"/><w:titlePg/></w:sectPr></w:body></w:document>`,
+    documentRelationships: [
+      ['rIdHeader', `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`, 'header1.xml'],
+      [
+        'rIdFirstHeader',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/header`,
+        'header2.xml',
+      ],
+      ['rIdFooter', `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`, 'footer1.xml'],
+      [
+        'rIdFirstFooter',
+        `${OFFICE_RELATIONSHIPS_NAMESPACE}/footer`,
+        'footer2.xml',
+      ],
+    ],
+    headerXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Acme Continuing Header</w:t></w:r></w:p></w:hdr>`,
+    firstHeaderXml: `<w:hdr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Acme Title Header</w:t></w:r></w:p></w:hdr>`,
+    footerXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Continuing Footer</w:t></w:r></w:p></w:ftr>`,
+    firstFooterXml: `<w:ftr xmlns:w="${WORD_NAMESPACE}"><w:p><w:r><w:t>Title Footer</w:t></w:r></w:p></w:ftr>`,
+  });
+  return archive.generateAsync({ type: 'uint8array' });
+}
+
+/**
  * Report-shaped DOCX: header PAGE + footer NUMPAGES live field identity.
  */
 export async function buildHeaderFooterFieldFixture(): Promise<Uint8Array> {
@@ -483,6 +512,8 @@ function writePackageSkeleton(
     commentsXml?: string;
     headerXml?: string;
     footerXml?: string;
+    firstHeaderXml?: string;
+    firstFooterXml?: string;
     footnotesXml?: string;
     endnotesXml?: string;
   },
@@ -500,9 +531,19 @@ function writePackageSkeleton(
       '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>',
     );
   }
+  if (options.firstHeaderXml) {
+    overrides.push(
+      '<Override PartName="/word/header2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>',
+    );
+  }
   if (options.footerXml) {
     overrides.push(
       '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>',
+    );
+  }
+  if (options.firstFooterXml) {
+    overrides.push(
+      '<Override PartName="/word/footer2.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>',
     );
   }
   if (options.footnotesXml) {
@@ -530,8 +571,14 @@ function writePackageSkeleton(
   if (options.headerXml) {
     archive.file('word/header1.xml', options.headerXml);
   }
+  if (options.firstHeaderXml) {
+    archive.file('word/header2.xml', options.firstHeaderXml);
+  }
   if (options.footerXml) {
     archive.file('word/footer1.xml', options.footerXml);
+  }
+  if (options.firstFooterXml) {
+    archive.file('word/footer2.xml', options.firstFooterXml);
   }
   if (options.footnotesXml) {
     archive.file('word/footnotes.xml', options.footnotesXml);

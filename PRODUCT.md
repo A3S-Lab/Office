@@ -58,7 +58,7 @@ beside the move, and SDT+nested-table combinations. Attributed note refs,
 move-range nesting through two levels, and current-level bullet
 `w:numberingChange` are already admitted through tip. The permanent no-clobber corpus (`bun run test:corpus:r0`) now covers
 internal bookmark-anchor hyperlinks, review comment author/text identity,
-default header/footer text, footnote and endnote reference/body identity,
+default header/footer text, first-page vs default header/footer text, footnote and endnote reference/body identity,
 inline text and rich-text content-control alias/tag/type/text identity, body PAGE plus
 bookmark-backed PAGEREF plus NUMPAGES plus SECTION plus SECTIONPAGES plus
 NUMWORDS plus NUMCHARS plus DATE (bare and `\@` format) plus TIME field
