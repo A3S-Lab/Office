@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.285.0',
+    date: '2026-09-18',
+    kind: 'new',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'Locate live Writer text before replacing it',
+      zh: '定位后再替换实时 Writer 文本',
+    },
+    summary: {
+      en: 'collab find and office_collaboration_find list 1-based matches in the same walk as document-replace-text.',
+      zh: 'collab find 与 office_collaboration_find 给出与 document-replace-text 同一遍历的 1-based 命中。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Same walk as replace',
+          zh: '与替换同一遍历',
+        },
+        detail: {
+          en: 'Pass matchCount as expectedMatches and optional occurrence to change one match.',
+          zh: '把 matchCount 作为 expectedMatches，可选 occurrence 只改那一处。',
+        },
+      },
+      {
+        title: {
+          en: 'Stable paragraph hints',
+          zh: '稳定段落提示',
+        },
+        detail: {
+          en: 'Hits include paragraphId, textId, and indexUtf16 when available.',
+          zh: '命中在可用时包含 paragraphId、textId 与 indexUtf16。',
+        },
+      },
+      {
+        title: {
+          en: 'No full projection scan',
+          zh: '无需扫完整投影',
+        },
+        detail: {
+          en: 'Agents locate text without decoding the whole collaboration projection first.',
+          zh: '代理不必先解码整份协作投影就能定位文本。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.284.0',
     date: '2026-09-18',
     kind: 'new',

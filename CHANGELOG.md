@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.285.0 - 2026-09-18
+
+### Collaboration
+
+- Locate live Writer text before replacing it. `collab find` and MCP
+  `office_collaboration_find` list 1-based matches in the same walk as
+  `document-replace-text`. Agents pass `matchCount` as `expectedMatches` and
+  optional `occurrence` without decoding a full projection. Each hit includes
+  `paragraphId`, `textId`, and `indexUtf16` when available.
+
 ## 0.284.0 - 2026-09-18
 
 ### Native editing

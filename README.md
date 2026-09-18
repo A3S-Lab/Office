@@ -371,18 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.284.0` adds one-match text location and closes the first/even
-PAGE and NUMPAGES corpus matrix:
+Version `0.285.0` adds live Writer text location for CLI, Skill, and MCP:
 
-- `find` / `office_find` number matches in the same walk as replace-all.
-  `--occurrence` and `replace-text.occurrence` change one match and fail
-  closed before write when the occurrence is missing or a shared string is
-  used by more than one selected cell. Live `document-replace-text` keeps
-  `expectedMatches` and accepts the same optional occurrence.
-- Complex (fldChar) first-page and even-page footer NUMPAGES live-field
-  identity now joins the permanent no-clobber representative DOCX round-trip corpus.
-  Intentional normalizations stay diagnosed; VBA and package signatures stay
-  fail-closed on export (`bun run test:corpus:r0`).
+- `collab find` / `office_collaboration_find` number matches in the same walk
+  as `document-replace-text`. Pass `matchCount` as `expectedMatches` and
+  optional `occurrence` to change one match. Hits include `paragraphId`,
+  `textId`, and `indexUtf16` when available so agents do not scan a full
+  projection just to locate text.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
