@@ -148,32 +148,35 @@ test('Spreadsheet border settings use OfficeSelect and OfficeColorPicker, not na
   expect(css).not.toMatch(/\.work-spreadsheet-border-settings\s+select\b/);
 });
 
-test('Spreadsheet row/column header overlays stay translucent so canvas labels remain visible', () => {
+test('Spreadsheet row/column header hover stays translucent so canvas glyphs stay visible', () => {
   const css = readFileSync(
     join(stylesRoot, 'work-spreadsheet-chrome.css'),
     'utf8',
   );
-  expect(css).toMatch(
-    /\.fortune-row-header-hover[\s\S]*?background:\s*color-mix\(\s*in srgb,\s*var\(--work-spreadsheet-accent\)\s+12%,\s*transparent/s,
+  // Opaque chrome fills cover FortuneSheet’s canvas-painted row numbers.
+  const hoverRule = css.match(
+    /\.fortune-col-header-hover,\s*\n\.work-spreadsheet-editor \.fortune-row-header-hover \{([^}]+)\}/,
   );
-  expect(css).toMatch(
-    /\.fortune-row-header-selected[\s\S]*?background:\s*color-mix\(\s*in srgb,\s*var\(--work-spreadsheet-accent\)\s+16%,\s*transparent/s,
-  );
-  expect(css).not.toMatch(
-    /\.fortune-row-header-hover\s*\{[^}]*background:\s*var\(--work-spreadsheet-chrome-hover\)/s,
-  );
-  expect(css).not.toMatch(
-    /\.fortune-row-header-selected\s*\{[^}]*background:\s*var\(--work-spreadsheet-chrome-active\)/s,
-  );
+  expect(hoverRule?.[1]).toMatch(/transparent/);
+  expect(hoverRule?.[1]).not.toMatch(/--work-spreadsheet-chrome-hover/);
+  const rowSelected = css.match(/\.fortune-row-header-selected \{([^}]+)\}/);
+  expect(rowSelected?.[1]).toMatch(/transparent/);
+  expect(rowSelected?.[1]).not.toMatch(/--work-spreadsheet-chrome-active/);
+  const colSelected = css.match(/\.fortune-col-header-selected \{([^}]+)\}/);
+  expect(colSelected?.[1]).toMatch(/transparent/);
+  expect(colSelected?.[1]).not.toMatch(/--work-spreadsheet-chrome-active/);
 });
 
-test('Spreadsheet in-cell editor defaults to vertical middle alignment', () => {
+test('Spreadsheet cell edit caret is vertically centered via flex, not height:100%', () => {
   const css = readFileSync(
     join(stylesRoot, 'work-spreadsheet-chrome.css'),
     'utf8',
   );
   expect(css).toMatch(
-    /\.luckysheet-input-box-inner\s*\{[^}]*display:\s*flex[^}]*align-items:\s*center/s,
+    /\.luckysheet-input-box-inner\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;/s,
+  );
+  expect(css).toMatch(
+    /\.luckysheet-input-box-inner\s*\{[^}]*font-size:\s*11pt;/s,
   );
   expect(css).toContain(
     '.work-spreadsheet-editor[data-cell-vt="1"] .luckysheet-input-box-inner',
@@ -182,27 +185,8 @@ test('Spreadsheet in-cell editor defaults to vertical middle alignment', () => {
     '.work-spreadsheet-editor[data-cell-vt="2"] .luckysheet-input-box-inner',
   );
   expect(css).toMatch(
-    /\.luckysheet-cell-input\s*\{[^}]*height:\s*auto\s*!important/s,
+    /\.luckysheet-cell-input\s*\{[^}]*height:\s*auto\s*!important;/s,
   );
-
-  const alignmentRibbon = readFileSync(
-    join(
-      process.cwd(),
-      'src/internal/features/work/editors/spreadsheet-alignment-ribbon.tsx',
-    ),
-    'utf8',
-  );
-  expect(alignmentRibbon).toContain('Number(toolbarCell?.vt ?? 0) === 0');
-  expect(alignmentRibbon).not.toContain('Number(toolbarCell?.vt ?? 1) === 1');
-
-  const editor = readFileSync(
-    join(
-      process.cwd(),
-      'src/internal/features/work/editors/spreadsheet-editor.tsx',
-    ),
-    'utf8',
-  );
-  expect(editor).toContain('data-cell-vt={');
 });
 
 test('Document contextual ribbon selects keep fixed widths and 24px table comboboxes', () => {

@@ -92,28 +92,33 @@
 
 .work-spreadsheet-editor .fortune-col-header-selected {
   border-bottom-color: var(--work-spreadsheet-accent);
-  /* Translucent only: opaque fills hide canvas-painted column letters. */
+  /* Translucent only — opaque chrome fills cover canvas-painted letters. */
   background: color-mix(
     in srgb,
     var(--work-spreadsheet-accent) 16%,
     transparent
   );
+  color: color-mix(in srgb, var(--work-spreadsheet-accent) 82%, var(--a3s-ink));
+  font-weight: 650;
 }
 
 .work-spreadsheet-editor .fortune-row-header-selected {
   border-right-color: var(--work-spreadsheet-accent);
-  /* Translucent only: opaque fills hide canvas-painted row numbers. */
+  /* Translucent only — opaque chrome fills cover canvas-painted row numbers
+     (hover looked like the serial “folded” into a dark block). */
   background: color-mix(
     in srgb,
     var(--work-spreadsheet-accent) 16%,
     transparent
   );
+  color: color-mix(in srgb, var(--work-spreadsheet-accent) 82%, var(--a3s-ink));
+  font-weight: 650;
 }
 
 .work-spreadsheet-editor .fortune-col-header-hover,
 .work-spreadsheet-editor .fortune-row-header-hover {
-  /* Match Fortune's translucent hover so index labels stay readable on
-     light and dark panels (opaque --a3s-panel fills read as black). */
+  /* Must stay translucent: these are absolute overlays above the canvas
+     glyphs. Opaque panel fills hid every hovered row/column index. */
   background: color-mix(
     in srgb,
     var(--work-spreadsheet-accent) 12%,
@@ -121,12 +126,19 @@
   );
 }
 
-/* In-cell editor: Fortune paints vt via alignItems on the inner box, but the
-   default stylesheet never makes that box a flex container, so the caret
-   sticks to the top. Default to middle (Fortune normalizedCellAttr vt "0"). */
+/* Cell edit overlay: Fortune applies alignItems for vt middle/bottom, but the
+   input-box-inner was not a flex container and .luckysheet-cell-input used
+   height:100%, so the caret sat flush against the top edge. Default to middle
+   (Fortune normalizedCellAttr vt "0"). */
 .work-spreadsheet-editor .luckysheet-input-box-inner {
   display: flex;
   align-items: center;
+  box-sizing: border-box;
+  /* Match canvas defaultFontSize (11) — Fortune’s 13px arial made the caret
+     sit optically higher than painted cell glyphs. Cell-level fs still wins
+     via Fortune’s inline getStyleByCell. */
+  font-family: var(--a3s-ui-font);
+  font-size: 11pt;
 }
 
 .work-spreadsheet-editor[data-cell-vt="1"] .luckysheet-input-box-inner {
@@ -138,9 +150,13 @@
 }
 
 .work-spreadsheet-editor .luckysheet-cell-input {
-  /* Shrink to content height so the flex parent can vertically center it. */
+  /* Override Fortune’s inline height:100% so flex align-items can center. */
+  font: inherit;
   height: auto !important;
+  min-height: 1.15em;
   max-height: 100%;
+  line-height: 1.15;
+  align-self: stretch;
   width: 100% !important;
 }
 
