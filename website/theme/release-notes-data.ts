@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.281.0',
+    date: '2026-09-18',
+    kind: 'improved',
+    surfaces: ['writer', 'documentation'],
+    title: {
+      en: 'R0 corpus covers first-page footer NUMPAGES fields',
+      zh: 'R0 语料库覆盖首页页脚 NUMPAGES 字段',
+    },
+    summary: {
+      en: 'The permanent no-clobber gate adds first-page footer NUMPAGES live-field fixtures for Traditional Office title-page page-of-total chrome.',
+      zh: '永久无静默覆盖门禁新增首页页脚 NUMPAGES 实时字段夹具，覆盖传统 Office 标题页总页数页脚。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'First-page NUMPAGES identity',
+          zh: '首页 NUMPAGES 身份',
+        },
+        detail: {
+          en: 'Title-page footer NUMPAGES fields stay live across import → export → reopen.',
+          zh: '标题页页脚 NUMPAGES 字段在导入 → 导出 → 再打开后仍保持实时身份。',
+        },
+      },
+      {
+        title: {
+          en: 'Continuing footer stays',
+          zh: '后续页脚保留',
+        },
+        detail: {
+          en: 'Default footer text round-trips beside the first-page NUMPAGES variant.',
+          zh: '默认页脚文本与首页 NUMPAGES 变体一起往返。',
+        },
+      },
+      {
+        title: {
+          en: 'Same gate command',
+          zh: '同一门禁命令',
+        },
+        detail: {
+          en: 'Run bun run test:corpus:r0. No art-border breadth growth.',
+          zh: '运行 bun run test:corpus:r0。不扩展装饰性 PDF 边框覆盖面。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.280.0',
     date: '2026-09-18',
     kind: 'improved',
