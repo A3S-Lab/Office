@@ -133,7 +133,7 @@ test('navigates from a remote roster row and leaves focus in the editor', async 
   }
 });
 
-test('fails closed when presence is not paired with the exact editor session', () => {
+test('allows presence without a session and fails closed on kind or artifact mismatch', () => {
   const fixture = collaborationPresenceFixture();
   const otherArtifact = createOfficeCollaborationSession({
     actor: { id: 'grace', name: 'Grace', color: '#047857' },

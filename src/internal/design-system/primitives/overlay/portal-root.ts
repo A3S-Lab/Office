@@ -7,13 +7,6 @@ export function officeOverlayPortalRoot(
   return ownerDocument.body;
 }
 
-export function officeFloatingPortalRoot(
-  ownerDocument: Document,
-  ...anchors: Array<Element | null | undefined>
-): HTMLElement {
-  return officeOverlayPortalRoot(ownerDocument, ...anchors);
-}
-
 function resolveOfficeOverlayPortalRoot(
   ownerDocument: Document,
   anchors: Array<Element | null | undefined>,
@@ -84,7 +77,9 @@ function clipsFixedOverlay(element: HTMLElement): boolean {
   ) {
     return true;
   }
-  return style.willChange.split(',').some((value) =>
-    ['transform', 'filter', 'perspective', 'contain'].includes(value.trim()),
-  );
+  return style.willChange
+    .split(',')
+    .some((value) =>
+      ['transform', 'filter', 'perspective', 'contain'].includes(value.trim()),
+    );
 }
