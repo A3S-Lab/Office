@@ -176,6 +176,41 @@ fn averageif_expands_the_average_window_from_the_average_range_top_left() {
     }));
 }
 
+#[test]
+fn row_and_column_follow_a_single_cell_reference() {
+    let request = SpreadsheetCalculationRequest {
+        protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+        kind: "spreadsheetCalculation".into(),
+        request_id: 11,
+        revision: 1,
+        document_revision: 1,
+        sheets: vec![SpreadsheetInputSheet {
+            id: "sheet-1".into(),
+            name: "Sheet 1".into(),
+            cells: vec![
+                input_formula(0, 0, "=ROW()"),
+                input_formula(0, 1, "=COLUMN()"),
+                input_formula(1, 0, "=ROW(C4)"),
+                input_formula(1, 1, "=COLUMN($B$2)"),
+                input_formula(2, 0, "=ROW(A1:B2)"),
+            ],
+            tables: vec![],
+        }],
+        targets: Vec::new(),
+    };
+
+    let result = calculate_spreadsheet(&request).unwrap();
+    assert_eq!(calculated(&result, 0, 0), number(1.0));
+    assert_eq!(calculated(&result, 0, 1), number(2.0));
+    assert_eq!(calculated(&result, 1, 0), number(4.0));
+    assert_eq!(calculated(&result, 1, 1), number(2.0));
+    assert!(result.issues.iter().any(|issue| {
+        issue.code == "office.kernel.spreadsheet.formula_unsupported"
+            && issue.message.contains("ROW")
+            && issue.message.contains("single cell")
+    }));
+}
+
 fn calculated(
     result: &a3s_office_web_kernel::SpreadsheetCalculationResult,
     row: u32,

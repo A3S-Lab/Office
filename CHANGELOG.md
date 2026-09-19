@@ -6,6 +6,8 @@
 
 - CLI, Skill, and MCP list every closed native formula, including `SUBTOTAL`,
   so agents recalculate a supported function in one native batch.
+- Browser `ROW` and `COLUMN` accept one single cell, matching the native
+  registry, and still reject ranges that the browser kernel cannot spill.
 
 ## 0.291.0 - 2026-09-19
 
