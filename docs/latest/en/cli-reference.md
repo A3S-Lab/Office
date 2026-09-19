@@ -710,9 +710,10 @@ closed on mutation.
 Native Spreadsheet formula calculation builds a deterministic bounded
 dependency graph across worksheets, ranges, spills, and workbook- or
 worksheet-scoped names. The closed built-in registry implements
-`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA`, `ABS`, `SQRT`, `POWER`,
-`MOD`, `ROUND`, `IF`, `IFERROR`, `AND`, `OR`, `NOT`, `CONCAT`,
-`CONCATENATE`, `ROW`, `COLUMN`, `SEQUENCE`, `TRANSPOSE`, `PI`, and `NA`.
+`SUM`, `SUMIF`, `AVERAGE`, `AVERAGEIF`, `MIN`, `MAX`, `COUNT`, `COUNTIF`,
+`COUNTA`, `ABS`, `SQRT`, `POWER`, `MOD`, `ROUND`, `IF`, `IFERROR`, `AND`,
+`OR`, `NOT`, `CONCAT`, `CONCATENATE`, `ROW`, `COLUMN`, `SEQUENCE`,
+`TRANSPOSE`, `PI`, and `NA`.
 Operators and typed blank, number, text, boolean, and Spreadsheet error values
 participate in scalar or rectangular array calculation.
 

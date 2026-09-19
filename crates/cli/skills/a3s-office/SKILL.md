@@ -301,8 +301,10 @@ available.
   compute a cached value implicitly. When fresh results are required, use
   `office native recalculate` or the typed
   `recalculate-spreadsheet-formulas` mutation. The closed native function
-  registry must reject unsupported functions instead of falling back to code
-  execution.
+  registry includes `SUMIF`, `COUNTIF`, and `AVERAGEIF`. Write the formula,
+  then recalculate in that same native batch. The registry must reject
+  unsupported functions instead of falling back to code execution or the
+  compatibility route.
 - Treat dynamic-array spill children as read-only calculated output. Find and
   edit or remove the formula anchor whose `formulaRef` contains the child;
   recalculation, cache writes, spill cleanup, and every sibling mutation in
