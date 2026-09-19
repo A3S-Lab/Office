@@ -1,5 +1,6 @@
 mod aggregate;
 mod array;
+mod average_if;
 mod count_if;
 mod criterion;
 mod lazy;
@@ -20,6 +21,7 @@ use aggregate::{
     subtotal, Aggregate,
 };
 use array::{row_or_column, sequence, transpose};
+use average_if::average_if;
 use count_if::count_if;
 use lazy::{evaluate_if, evaluate_if_error};
 use sum_if::sum_if;
@@ -81,6 +83,7 @@ pub(super) fn evaluate_function(
         BuiltinFunction::Sum => aggregate(context, &values, Aggregate::Sum),
         BuiltinFunction::SumIf => sum_if(context, &values),
         BuiltinFunction::CountIf => count_if(context, &values),
+        BuiltinFunction::AverageIf => average_if(context, &values),
         BuiltinFunction::Subtotal => subtotal(context, &values),
         BuiltinFunction::Average => aggregate(context, &values, Aggregate::Average),
         BuiltinFunction::Minimum => aggregate(context, &values, Aggregate::Minimum),
