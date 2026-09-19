@@ -1,6 +1,7 @@
 mod aggregate;
 mod array;
 mod lazy;
+mod sum_if;
 
 use a3s_use_core::UseResult;
 
@@ -18,6 +19,7 @@ use aggregate::{
 };
 use array::{row_or_column, sequence, transpose};
 use lazy::{evaluate_if, evaluate_if_error};
+use sum_if::sum_if;
 
 pub(super) fn evaluate_function(
     context: &mut EvaluationContext<'_>,
@@ -74,6 +76,7 @@ pub(super) fn evaluate_function(
     let values = evaluate_arguments(context, arguments, current)?;
     match function {
         BuiltinFunction::Sum => aggregate(context, &values, Aggregate::Sum),
+        BuiltinFunction::SumIf => sum_if(context, &values),
         BuiltinFunction::Subtotal => subtotal(context, &values),
         BuiltinFunction::Average => aggregate(context, &values, Aggregate::Average),
         BuiltinFunction::Minimum => aggregate(context, &values, Aggregate::Minimum),

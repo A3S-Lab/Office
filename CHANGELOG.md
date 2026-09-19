@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Spreadsheet
+
+- `SUMIF` sums the criteria range, or the same-shaped block anchored at the
+  sum range's top-left cell. Wildcard criteria fail closed instead of
+  returning a partial sum.
+
 ## 0.288.0 - 2026-09-19
 
 ### Editors
