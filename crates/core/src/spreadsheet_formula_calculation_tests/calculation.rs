@@ -937,3 +937,94 @@ async fn calculation_countif_rejects_wildcard_criteria() {
         "use.office.spreadsheet_formula_countif_criteria_unsupported"
     );
 }
+
+#[tokio::test]
+async fn calculation_averageif_aligns_the_average_window_to_the_criteria_shape() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut editor = NativeOfficeEditor::create(temp.path().join("averageif.xlsx"))
+        .await
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A1", text("apple"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A2", text("pear"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A3", text("APPLE"))
+        .unwrap();
+    editor.set_cell_value("/Sheet1/B1", number("1")).unwrap();
+    editor
+        .set_cell_value("/Sheet1/B2", number("100"))
+        .unwrap();
+    editor.set_cell_value("/Sheet1/B3", number("2")).unwrap();
+    editor.set_cell_value("/Sheet1/C1", number("4")).unwrap();
+    editor.set_cell_value("/Sheet1/C2", number("8")).unwrap();
+    editor
+        .set_cell_value("/Sheet1/C3", number("16"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/D1", formula("AVERAGEIF(A1:A3,\"apple\",C1)"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/E1", formula("AVERAGEIF(B1:B3,\">2\")"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/F1", formula("AVERAGEIF(A1:A3,\"missing\")"))
+        .unwrap();
+
+    let calculation = editor
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap();
+    let value = |path: &str| {
+        calculation
+            .cells
+            .iter()
+            .find(|cell| cell.cell.path() == path)
+            .unwrap()
+            .value
+            .clone()
+    };
+    assert_eq!(
+        value("/Sheet1/D1"),
+        SpreadsheetFormulaValue::Number {
+            value: "10".into()
+        }
+    );
+    assert_eq!(
+        value("/Sheet1/E1"),
+        SpreadsheetFormulaValue::Number {
+            value: "100".into()
+        }
+    );
+    assert_eq!(
+        value("/Sheet1/F1"),
+        SpreadsheetFormulaValue::error(SpreadsheetFormulaErrorLiteral::DivisionByZero)
+    );
+}
+
+#[tokio::test]
+async fn calculation_averageif_rejects_wildcard_criteria() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut editor = NativeOfficeEditor::create(temp.path().join("averageif-wildcard.xlsx"))
+        .await
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A1", text("apple"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/B1", formula("AVERAGEIF(A1,\"a*\")"))
+        .unwrap();
+
+    assert_eq!(
+        editor
+            .snapshot()
+            .unwrap()
+            .calculate_spreadsheet_formulas()
+            .unwrap_err()
+            .code,
+        "use.office.spreadsheet_formula_averageif_criteria_unsupported"
+    );
+}
