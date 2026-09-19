@@ -409,6 +409,10 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
             "spreadsheet reference missing {listed}"
         );
     }
+    assert!(
+        encoded.contains("does not calculate until"),
+        "set-cell-value schema must say formulas stay uncalculated, {encoded}"
+    );
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",
