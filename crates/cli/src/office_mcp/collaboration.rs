@@ -124,7 +124,8 @@ pub(super) struct OfficeCollaborationStoreInput {
 pub(super) struct OfficeCollaborationFindInput {
     /// Existing durable collaboration replica directory.
     pub(super) store: String,
-    /// Exact literal text to locate in Document or Markdown collaboration text.
+    /// Exact literal text to locate. Document and Markdown matches feed
+    /// replace-text. Spreadsheet matches name the cell for `spreadsheet-set-cell`.
     pub(super) find: String,
     /// Maximum matches returned in the list. Defaults to 50; hard max 200.
     /// `matchCount` still reports the full walk count.
@@ -280,6 +281,7 @@ pub(super) async fn find(input: OfficeCollaborationFindInput) -> UseResult<serde
     let operation = match kind {
         NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
         NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
+        NativeOfficeCollaborationArtifactKind::Spreadsheet => "find-spreadsheet-text",
         _ => "find-text",
     };
     Ok(json!({

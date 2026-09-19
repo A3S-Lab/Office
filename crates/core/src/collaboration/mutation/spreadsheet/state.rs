@@ -373,6 +373,34 @@ fn read_row_lengths<T: yrs::ReadTxn>(values: &ArrayRef, transaction: &T) -> UseR
     Ok(result)
 }
 
+pub(super) fn ordered_sheet_ids(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<Vec<String>> {
+    let sheets = doc.get_or_insert_map(format!("{}.{}", manifest.namespace, SHEETS_ROOT));
+    let order = doc.get_or_insert_array(format!("{}.spreadsheet.sheet-order", manifest.namespace));
+    let transaction = doc.transact();
+    let present: HashSet<String> = sheets.keys(&transaction).map(str::to_owned).collect();
+    let mut ids = Vec::new();
+    let mut seen = HashSet::new();
+    for value in order.iter(&transaction) {
+        let Out::Any(Any::String(id)) = value else {
+            continue;
+        };
+        let id = id.to_string();
+        if present.contains(&id) && seen.insert(id.clone()) {
+            ids.push(id);
+        }
+    }
+    let mut rest = present
+        .into_iter()
+        .filter(|id| seen.insert(id.clone()))
+        .collect::<Vec<_>>();
+    rest.sort();
+    ids.extend(rest);
+    Ok(ids)
+}
+
 fn encode_coordinate(row: u32, column: u32) -> String {
     format!("{row}:{column}")
 }

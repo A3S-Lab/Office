@@ -33,8 +33,10 @@ a3s use office native view workbook.xlsx issues --type content --json
 
 ## Collaborative Cell Gestures
 
-For a durable Yjs/Yrs Spreadsheet replica, use `spreadsheet-set-cell` or
-`spreadsheet-delete-cell` for one guarded coordinate. Use
+For a durable Yjs/Yrs Spreadsheet replica, locate display text first with
+`collab find <store> --find ...` or MCP `office_collaboration_find`. Each hit
+is one cell (`sheetId`, `row`, `column`) in sheet order. Then use
+`spreadsheet-set-cell` or `spreadsheet-delete-cell` at that coordinate. Use
 `spreadsheet-batch-cells` for one paste, fill, or other bounded gesture over 1
 to 4,096 distinct coordinates in the same stable sheet ID. A present
 `nextCell` recursively sets or creates the cell; `nextCell: null` requires the

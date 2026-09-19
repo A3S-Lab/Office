@@ -592,6 +592,39 @@ fn typed_spreadsheet_mutations_reject_malformed_browser_roots_before_writing() {
     assert_eq!(after.document_state_sha256, before.document_state_sha256);
 }
 
+#[test]
+fn find_lists_spreadsheet_display_text_by_coordinate() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("spreadsheet-find");
+    let store = initialized_spreadsheet_store(&root);
+    store
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-find-seed",
+            NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+                sheet_id: "sheet-empty".to_owned(),
+                row: 2,
+                column: 3,
+                expected_cell: None,
+                next_cell: json!({ "v": "Draft note", "m": "Draft note" }),
+            },
+        ))
+        .unwrap();
+
+    let (kind, found) = store.find_text("Draft", 10).unwrap();
+    assert_eq!(kind, NativeOfficeCollaborationArtifactKind::Spreadsheet);
+    assert_eq!(found.match_count, 1);
+    assert!(!found.truncated);
+    assert_eq!(found.matches[0].occurrence, 1);
+    assert_eq!(found.matches[0].sheet_id.as_deref(), Some("sheet-empty"));
+    assert_eq!(found.matches[0].row, Some(2));
+    assert_eq!(found.matches[0].column, Some(3));
+    assert_eq!(found.matches[0].index_utf16, 0);
+
+    let limited = store.find_text("Draft", 1).unwrap().1;
+    assert_eq!(limited.match_count, 1);
+    assert!(!limited.truncated);
+}
+
 fn initialized_spreadsheet_store(root: &Path) -> NativeOfficeCollaborationStore {
     let store = NativeOfficeCollaborationStore::create(spreadsheet_create_request(root)).unwrap();
     store

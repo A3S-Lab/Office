@@ -112,6 +112,9 @@ pub(in crate::collaboration) fn find_document_text(
             text: search.to_owned(),
             paragraph_id,
             text_id,
+            sheet_id: None,
+            row: None,
+            column: None,
             index_utf16: target.index_utf16,
         });
     }

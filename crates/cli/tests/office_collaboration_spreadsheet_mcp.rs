@@ -157,6 +157,27 @@ async fn mcp_sets_creates_and_deletes_browser_compatible_spreadsheet_cells() {
     assert_ne!(batch["result"]["isError"], true, "{batch}");
     assert_eq!(batch["result"]["structuredContent"]["sequence"], 2);
 
+    let found = call(
+        &mut stdin,
+        &mut stdout,
+        20,
+        "office_collaboration_find",
+        serde_json::json!({
+            "store": replica.to_str().unwrap(),
+            "find": "MCP batch"
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(found["result"]["isError"], true, "{found}");
+    let found = &found["result"]["structuredContent"];
+    assert_eq!(found["operation"], "find-spreadsheet-text");
+    assert_eq!(found["kind"], "spreadsheet");
+    assert_eq!(found["matches"], 1);
+    assert_eq!(found["result"]["matches"][0]["sheetId"], "sheet-data");
+    assert_eq!(found["result"]["matches"][0]["row"], 3);
+    assert_eq!(found["result"]["matches"][0]["column"], 4);
+
     let create = call(
         &mut stdin,
         &mut stdout,
