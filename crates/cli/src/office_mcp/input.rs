@@ -812,7 +812,11 @@ pub(super) enum OfficeMutation {
         path: String,
         value: OfficeCellValue,
     },
-    /// Calculate supported formulas, including SUMIF, COUNTIF, and AVERAGEIF, and write cached values and dynamic spills.
+    /// Calculate supported formulas and write cached values and dynamic spills.
+    /// Closed registry: `ABS`, `AND`, `AVERAGE`, `AVERAGEIF`, `COLUMN`, `CONCAT`,
+    /// `CONCATENATE`, `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `MAX`, `MIN`,
+    /// `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`,
+    /// `SUBTOTAL`, `SUM`, `SUMIF`, `TRANSPOSE`.
     RecalculateSpreadsheetFormulas,
     AddSpreadsheetTable {
         /// Existing Spreadsheet worksheet path such as `/Sheet1`.
