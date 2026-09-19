@@ -126,6 +126,7 @@ pub(super) struct OfficeCollaborationFindInput {
     pub(super) store: String,
     /// Exact literal text to locate. Document and Markdown matches feed
     /// replace-text. Spreadsheet matches name the cell for `spreadsheet-set-cell`.
+    /// Presentation matches feed `presentation-replace-text`.
     pub(super) find: String,
     /// Maximum matches returned in the list. Defaults to 50; hard max 200.
     /// `matchCount` still reports the full walk count.
