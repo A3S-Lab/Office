@@ -82,6 +82,48 @@ fn sumif_expands_the_sum_window_from_the_sum_range_top_left() {
     }));
 }
 
+#[test]
+fn countif_counts_matching_cells_and_rejects_wildcards() {
+    let request = SpreadsheetCalculationRequest {
+        protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+        kind: "spreadsheetCalculation".into(),
+        request_id: 9,
+        revision: 1,
+        document_revision: 1,
+        sheets: vec![SpreadsheetInputSheet {
+            id: "sheet-1".into(),
+            name: "Sheet 1".into(),
+            cells: vec![
+                input_value(0, 0, text("apple")),
+                input_value(1, 0, text("pear")),
+                input_value(2, 0, text("APPLE")),
+                input_value(0, 1, number(1.0)),
+                input_value(1, 1, number(100.0)),
+                input_value(2, 1, number(2.0)),
+                input_formula(0, 3, "=COUNTIF(A1:A3,\"apple\")"),
+                input_formula(0, 4, "=COUNTIF(B1:B3,\">2\")"),
+                input_formula(1, 3, "=COUNTIF(A1,\"a*\")"),
+            ],
+            tables: vec![],
+        }],
+        targets: Vec::new(),
+    };
+
+    let result = calculate_spreadsheet(&request).unwrap();
+    assert_eq!(
+        calculated(&result, 0, 3),
+        SpreadsheetValue::Number { value: 2.0 }
+    );
+    assert_eq!(
+        calculated(&result, 0, 4),
+        SpreadsheetValue::Number { value: 1.0 }
+    );
+    assert!(result.issues.iter().any(|issue| {
+        issue.code == "office.kernel.spreadsheet.formula_unsupported"
+            && issue.message.contains("wildcard")
+    }));
+}
+
 fn calculated(
     result: &a3s_office_web_kernel::SpreadsheetCalculationResult,
     row: u32,

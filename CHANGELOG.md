@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Spreadsheet
+
+- `COUNTIF` counts cells in one criteria rectangle. Comparison and fail-closed
+  wildcard rules match `SUMIF`.
+
 ## 0.289.0 - 2026-09-19
 
 ### Spreadsheet

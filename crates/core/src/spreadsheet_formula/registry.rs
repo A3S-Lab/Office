@@ -47,6 +47,7 @@ struct FunctionEntry {
 pub(super) enum BuiltinFunction {
     Sum,
     SumIf,
+    CountIf,
     Subtotal,
     Average,
     Minimum,
@@ -91,6 +92,13 @@ impl Default for SpreadsheetFormulaFunctionRegistry {
                 Some(3),
                 SpreadsheetFormulaFunctionReturnKind::Scalar,
                 BuiltinFunction::SumIf,
+            ),
+            (
+                "COUNTIF",
+                2,
+                Some(2),
+                SpreadsheetFormulaFunctionReturnKind::Scalar,
+                BuiltinFunction::CountIf,
             ),
             (
                 "SUBTOTAL",
