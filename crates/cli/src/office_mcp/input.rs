@@ -212,10 +212,20 @@ pub(super) struct OfficeMergeTemplateInput {
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub(super) enum OfficeCellValue {
-    Text { value: String },
-    Number { value: String },
-    Boolean { value: bool },
-    Formula { expression: String },
+    Text {
+        value: String,
+    },
+    Number {
+        value: String,
+    },
+    Boolean {
+        value: bool,
+    },
+    /// Expression stored without calculating. Pair it with
+    /// `recalculate-spreadsheet-formulas` in the same batch.
+    Formula {
+        expression: String,
+    },
 }
 
 impl From<OfficeCellValue> for SpreadsheetCellValue {
@@ -808,6 +818,8 @@ pub(super) enum OfficeMutation {
         #[serde(rename = "widthEmu")]
         width_emu: u64,
     },
+    /// Set a cell. A formula is stored only and does not calculate until
+    /// `recalculate-spreadsheet-formulas` in the same batch.
     SetCellValue {
         path: String,
         value: OfficeCellValue,
