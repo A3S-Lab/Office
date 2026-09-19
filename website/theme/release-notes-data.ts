@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.289.0',
+    date: '2026-09-19',
+    kind: 'new',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Calculate SUMIF from the criteria range shape',
+      zh: '按条件区域形状计算 SUMIF',
+    },
+    summary: {
+      en: 'SUMIF expands the sum window from the sum range top-left to match the criteria range. Wildcard criteria fail closed.',
+      zh: 'SUMIF 从求和区域左上角按条件区域形状展开。通配符条件失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Top-left alignment',
+          zh: '左上角对齐',
+        },
+        detail: {
+          en: 'SUMIF(A1:A3,"apple",C1) reads C1:C3, not only C1.',
+          zh: 'SUMIF(A1:A3,"apple",C1) 读取 C1:C3，而不是只读 C1。',
+        },
+      },
+      {
+        title: {
+          en: 'Wildcards fail closed',
+          zh: '通配符失败关闭',
+        },
+        detail: {
+          en: 'Unescaped * and ? criteria are rejected instead of returning a wrong total.',
+          zh: '未转义的 * 和 ? 会被拒绝，而不是返回错误的和。',
+        },
+      },
+      {
+        title: {
+          en: 'Both calculation engines',
+          zh: '两个计算引擎一致',
+        },
+        detail: {
+          en: 'Native recalculation and the browser kernel use the same window. Omitting the sum range sums the criteria range.',
+          zh: '原生重算和浏览器内核使用同一窗口。省略求和区域时，对条件区域本身求和。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.288.0',
     date: '2026-09-19',
     kind: 'new',

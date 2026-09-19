@@ -371,16 +371,13 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.288.0` lets a host bind the live Document editor without clipping
-menus:
+Version `0.289.0` calculates `SUMIF` from the criteria range shape:
 
-- `onEditorReady` receives the mounted TipTap editor. `defaultCommentsOpen`
-  opens the comment pane. Host extensions stay mounted during collaboration.
-- Ribbon and selection popovers escape a clipped host onto a theme-preserving
-  floating root. Dialogs stay inside the office root so the editor surface
-  remains inert.
-- Presence can be projected without a CRDT session. A kind or artifact
-  mismatch still fails closed.
+- The sum window matches the criteria range and starts at the sum range's
+  top-left cell. `SUMIF(A1:A3,"apple",C1)` reads `C1:C3`.
+- Omitting the sum range sums the criteria range itself.
+- Unescaped `*` and `?` criteria fail closed instead of returning a partial
+  sum. Native and browser calculation use the same rule.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
