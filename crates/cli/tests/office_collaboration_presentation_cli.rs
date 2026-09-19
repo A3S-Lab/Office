@@ -314,7 +314,10 @@ fn cli_replaces_one_presentation_text_match() {
         "--json",
     ]);
     assert_eq!(after["data"]["matches"], 1);
-    assert_eq!(after["data"]["result"]["matches"][0]["elementId"], "element-title");
+    assert_eq!(
+        after["data"]["result"]["matches"][0]["elementId"],
+        "element-title"
+    );
 }
 
 fn mutate(replica: &Path, operation_id: &str, mutation: JsonValue) -> JsonValue {
