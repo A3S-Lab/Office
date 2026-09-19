@@ -1,7 +1,10 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Dialog } from '../src/internal/design-system/primitives';
-import { officeOverlayPortalRoot } from '../src/internal/design-system/primitives/overlay/portal-root';
+import {
+  officeFloatingPortalRoot,
+  officeOverlayPortalRoot,
+} from '../src/internal/design-system/primitives/overlay/portal-root';
 import { OfficeSelect } from '../src/internal/features/work/editors/office-select';
 
 test('Dialog-hosted OfficeSelect portals into the dialog focus scope', () => {
@@ -55,15 +58,36 @@ test('office overlay portal stays inside an office root that clips itself', () =
   host.remove();
 });
 
-test('office overlay portal escapes a clipped host outside the office root', () => {
+test('office overlay portal stays inside the editor when a host ancestor clips', () => {
   const frame = document.createElement('div');
   frame.style.overflow = 'hidden';
   const host = document.createElement('div');
   host.setAttribute('data-a3s-office', '');
+  host.setAttribute('data-theme', 'light');
   const anchor = document.createElement('button');
   host.append(anchor);
   frame.append(host);
   document.body.append(frame);
-  expect(officeOverlayPortalRoot(document, anchor)).toBe(document.body);
+  expect(officeOverlayPortalRoot(document, anchor)).toBe(host);
   frame.remove();
+});
+
+test('office floating portal keeps the office theme outside a clipped host', () => {
+  const frame = document.createElement('div');
+  frame.style.overflow = 'hidden';
+  const host = document.createElement('div');
+  host.setAttribute('data-a3s-office', '');
+  host.setAttribute('data-theme', 'dark');
+  const anchor = document.createElement('button');
+  host.append(anchor);
+  frame.append(host);
+  document.body.append(frame);
+  const root = officeFloatingPortalRoot(document, anchor);
+  expect(root.classList.contains('a3s-office')).toBe(true);
+  expect(root.classList.contains('a3s-office-floating-root')).toBe(true);
+  expect(root.getAttribute('data-theme')).toBe('dark');
+  expect(root.parentElement).toBe(document.body);
+  expect(root).not.toBe(host);
+  frame.remove();
+  root.remove();
 });

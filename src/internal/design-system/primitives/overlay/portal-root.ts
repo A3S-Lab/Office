@@ -2,9 +2,16 @@ export function officeOverlayPortalRoot(
   ownerDocument: Document,
   ...anchors: Array<Element | null | undefined>
 ): HTMLElement {
+  return resolveOfficeOverlayPortalRoot(ownerDocument, anchors);
+}
+
+export function officeFloatingPortalRoot(
+  ownerDocument: Document,
+  ...anchors: Array<Element | null | undefined>
+): HTMLElement {
   const root = resolveOfficeOverlayPortalRoot(ownerDocument, anchors);
   if (!shouldEscapeClippedPortal(root)) return root;
-  return ownerDocument.body;
+  return floatingThemeRoot(ownerDocument, root);
 }
 
 function resolveOfficeOverlayPortalRoot(
@@ -35,7 +42,7 @@ function shouldEscapeClippedPortal(root: HTMLElement): boolean {
   if (root.getAttribute('role') === 'dialog') return false;
   const ownerDocument = root.ownerDocument;
   // `.a3s-office` is overflow:hidden by design. Only a host outside that root
-  // should move overlays to document.body.
+  // moves floating overlays onto a theme-preserving root. Dialogs stay put.
   let node = root.parentElement;
   while (
     node &&
@@ -46,6 +53,26 @@ function shouldEscapeClippedPortal(root: HTMLElement): boolean {
     node = node.parentElement;
   }
   return false;
+}
+
+function floatingThemeRoot(
+  ownerDocument: Document,
+  source: HTMLElement,
+): HTMLElement {
+  const existing = ownerDocument.body.querySelector<HTMLElement>(
+    ':scope > .a3s-office-floating-root',
+  );
+  const root = existing ?? ownerDocument.createElement('div');
+  root.className = 'a3s-office a3s-office-floating-root';
+  root.setAttribute('data-a3s-office', '');
+  root.setAttribute(
+    'data-theme',
+    source.getAttribute('data-theme') ??
+      source.closest('[data-theme]')?.getAttribute('data-theme') ??
+      'system',
+  );
+  if (!existing) ownerDocument.body.append(root);
+  return root;
 }
 
 function clipsFixedOverlay(element: HTMLElement): boolean {
