@@ -175,7 +175,9 @@ export interface DocumentEditorProps {
   layoutFonts?: readonly WorkDocumentLayoutFont[];
   fileActions?: readonly WorkOfficeFileAction[];
   getSelectionMenuItems?: WorkGetDocumentSelectionMenuItems;
+  defaultCommentsOpen?: boolean;
   onChange: (content: WorkDocumentContent) => void;
+  onEditorReady?: (editor: Editor) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
   onReviewConflict?: (event: WorkDocumentReviewConflictEvent) => void;
 }
@@ -322,12 +324,14 @@ function DocumentEditorSurface({
   extensions = EMPTY_DOCUMENT_EXTENSIONS,
   preview: requestedPreview,
   defaultRibbonCollapsed = false,
+  defaultCommentsOpen = false,
   saveStatus = '已自动保存',
   kernelWasmUrl,
   layoutFonts = EMPTY_DOCUMENT_LAYOUT_FONTS,
   fileActions,
   getSelectionMenuItems,
   onChange,
+  onEditorReady,
   onAgentRequest,
   onReviewConflict,
 }: DocumentEditorSurfaceProps) {
@@ -486,7 +490,7 @@ function DocumentEditorSurface({
         Placeholder.configure({ placeholder: '在这里开始输入…' }),
         DocumentPagination,
       ],
-      collaboration ? EMPTY_DOCUMENT_EXTENSIONS : extensions,
+      extensions,
     );
     recordDocumentEditorMeasure(
       'a3s-office.document.editor-extensions',
@@ -742,6 +746,7 @@ function DocumentEditorSurface({
     },
     onCreate: ({ editor: current }) => {
       editorRef.current = current;
+      onEditorReady?.(current);
       publishedDocumentRef.current = current.state.doc;
       const mountedAt = documentEditorNow();
       const detachedMountAt = editorDetachedMountAtRef.current;
@@ -848,6 +853,7 @@ function DocumentEditorSurface({
   const documentComments = useDocumentComments({
     actor: collaboration?.actor,
     contentRef,
+    defaultOpen: defaultCommentsOpen,
     deleteOwnOnly: commentOnly,
     editor,
     enabled: canCommentDocument,

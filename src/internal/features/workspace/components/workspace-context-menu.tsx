@@ -10,7 +10,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { officeOverlayPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
+import { officeFloatingPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
 import { matchesAriaKeyShortcuts } from '../../../keyboard-shortcuts';
 import type { WorkspaceContextMenuAnchorBounds } from './workspace-text-control-selection';
 
@@ -385,7 +385,7 @@ function contextMenuPortalRoot(
 ): HTMLElement {
   const elementAtPoint = ownerDocument.elementFromPoint?.(x, y);
   const activeElement = ownerDocument.activeElement;
-  return officeOverlayPortalRoot(
+  return officeFloatingPortalRoot(
     ownerDocument,
     elementAtPoint,
     activeElement instanceof Element ? activeElement : null,

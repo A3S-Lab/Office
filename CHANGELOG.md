@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Editors
+
+- Document hosts can open the comment pane with `defaultCommentsOpen` and
+  receive the mounted TipTap editor from `onEditorReady`.
+- Ribbon and selection popovers escape a clipped host ancestor onto a
+  theme-preserving floating root. Dialogs stay inside `[data-a3s-office]` so
+  the editor surface remains inert.
+- A host may project collaboration presence without binding the CRDT session.
+  Kind mismatches still fail closed.
+
 ## 0.287.0 - 2026-09-19
 
 ### Collaboration

@@ -288,6 +288,25 @@
   min-width: 0;
 }
 
+.a3s-office.a3s-office-floating-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  display: block;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+  pointer-events: none;
+}
+
+.a3s-office.a3s-office-floating-root > * {
+  pointer-events: auto;
+}
+
 .ds-popover-panel[data-floating="true"] {
   top: 0;
   left: 0;

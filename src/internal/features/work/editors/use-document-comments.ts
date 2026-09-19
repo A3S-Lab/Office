@@ -34,6 +34,7 @@ export interface DocumentCommentsController {
 export function useDocumentComments({
   actor,
   contentRef,
+  defaultOpen = false,
   deleteOwnOnly = false,
   editor,
   enabled = true,
@@ -41,13 +42,18 @@ export function useDocumentComments({
 }: {
   actor?: WorkOfficeCollaborationActor;
   contentRef: { current: WorkDocumentContent };
+  defaultOpen?: boolean;
   deleteOwnOnly?: boolean;
   editor: Editor | null;
   enabled?: boolean;
   onBeforeDraft?: () => void;
 }): DocumentCommentsController {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState<DocumentCommentDraft | null>(null);
+
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
 
   useEffect(
     () => () => {

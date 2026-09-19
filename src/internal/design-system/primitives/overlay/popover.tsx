@@ -14,7 +14,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { officeOverlayPortalRoot } from './portal-root';
+import { officeFloatingPortalRoot } from './portal-root';
 
 export type PopoverTriggerProps = {
   ref: RefCallback<HTMLButtonElement>;
@@ -399,7 +399,7 @@ export function Popover({
             >
               {panel}
             </div>,
-            officeOverlayPortalRoot(
+            officeFloatingPortalRoot(
               document,
               rootRef.current,
               triggerRef.current,

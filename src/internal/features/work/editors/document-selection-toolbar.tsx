@@ -9,7 +9,7 @@ import {
   MessageSquarePlus,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
-import { officeOverlayPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
+import { officeFloatingPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   documentFontFamilyOptionsForValue,
@@ -86,7 +86,7 @@ export function DocumentSelectionToolbar({
       updateDelay={80}
       resizeDelay={60}
       appendTo={() =>
-        officeOverlayPortalRoot(editor.view.dom.ownerDocument, editor.view.dom)
+        officeFloatingPortalRoot(editor.view.dom.ownerDocument, editor.view.dom)
       }
       options={bubbleMenuOptions}
       shouldShow={({ element, state, view }) => {
