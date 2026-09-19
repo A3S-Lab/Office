@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.290.0 - 2026-09-19
 
 ### Spreadsheet
 

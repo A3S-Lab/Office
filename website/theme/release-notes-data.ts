@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.290.0',
+    date: '2026-09-19',
+    kind: 'new',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Count cells with COUNTIF',
+      zh: '用 COUNTIF 统计单元格',
+    },
+    summary: {
+      en: 'COUNTIF counts matches in one rectangle. It uses the same comparison and fail-closed wildcard rules as SUMIF.',
+      zh: 'COUNTIF 统计一个矩形里的匹配单元格。比较规则和失败关闭的通配符与 SUMIF 相同。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Same criteria contract',
+          zh: '同一套条件规则',
+        },
+        detail: {
+          en: 'Comparisons, blanks, and case-insensitive text match SUMIF. There is no second range to realign.',
+          zh: '比较、空白和大小写不敏感的文本与 SUMIF 一致。没有第二段区域需要对齐。',
+        },
+      },
+      {
+        title: {
+          en: 'Counts matches',
+          zh: '统计匹配个数',
+        },
+        detail: {
+          en: 'COUNTIF(A1:A3,"apple") counts apple and APPLE. COUNTIF(B1:B3,">2") counts only numbers above 2.',
+          zh: 'COUNTIF(A1:A3,"apple") 计入 apple 和 APPLE。COUNTIF(B1:B3,">2") 只计入大于 2 的数字。',
+        },
+      },
+      {
+        title: {
+          en: 'Wildcards fail closed',
+          zh: '通配符失败关闭',
+        },
+        detail: {
+          en: 'Unescaped * and ? are rejected in both the native engine and the browser kernel.',
+          zh: '未转义的 * 和 ? 在原生引擎和浏览器内核中都会被拒绝。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.289.0',
     date: '2026-09-19',
     kind: 'new',
