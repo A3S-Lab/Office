@@ -371,13 +371,16 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.286.0` extends live text location to Markdown collaboration for CLI,
-Skill, and MCP:
+Version `0.287.0` locates Spreadsheet cells and Presentation text before
+live edits for CLI, Skill, and MCP:
 
-- `collab find` / `office_collaboration_find` work on Markdown replicas and
-  number matches in the same walk as `markdown-replace-text`. Pass `matchCount`
-  as `expectedMatches` and optional `occurrence` to change one match, the same
-  contract as Document `document-replace-text`.
+- Spreadsheet `collab find` / `office_collaboration_find` return one hit per
+  cell (`sheetId`, `row`, `column`). The following edit stays
+  `spreadsheet-set-cell`.
+- Presentation find returns `containerKind`, `containerId`, and `elementId`.
+  Pass `matchCount` as `expectedMatches` and optional `occurrence` to
+  `presentation-replace-text`, which writes only the scene-element `text`
+  field. Geometry stays on `presentation-update-element`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

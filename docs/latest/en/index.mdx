@@ -44,11 +44,12 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.286.0)
+## What's new on `main` (0.287.0)
 
-Live Markdown text location for CLI, Skill, and MCP:
+Live Spreadsheet and Presentation location for CLI, Skill, and MCP:
 
-- `collab find` and `office_collaboration_find` work on Markdown replicas and list 1-based matches in the same walk as `markdown-replace-text`. Pass `matchCount` as `expectedMatches` and optional `occurrence` to change one match.
+- Spreadsheet `collab find` returns one hit per cell (`sheetId`, `row`, `column`) for `spreadsheet-set-cell`.
+- Presentation find returns `containerKind`, `containerId`, and `elementId`. Pass `matchCount` as `expectedMatches` and optional `occurrence` to `presentation-replace-text`.
 
 
 

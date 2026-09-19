@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.287.0',
+    date: '2026-09-19',
+    kind: 'new',
+    surfaces: ['spreadsheet', 'presentation', 'documentation'],
+    title: {
+      en: 'Locate Spreadsheet cells and Presentation text before editing',
+      zh: '定位表格单元格与演示文稿文本后再编辑',
+    },
+    summary: {
+      en: 'collab find names the Spreadsheet cell for spreadsheet-set-cell and numbers Presentation matches for presentation-replace-text.',
+      zh: 'collab find 给出表格单元格供 spreadsheet-set-cell，并为 presentation-replace-text 编号演示文稿匹配。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'One hit per Spreadsheet cell',
+          zh: '每个表格单元格一条命中',
+        },
+        detail: {
+          en: 'Hits return sheetId, row, and column. There is no spreadsheet text-replace mutation.',
+          zh: '命中返回 sheetId、row、column。没有表格文本替换变更。',
+        },
+      },
+      {
+        title: {
+          en: 'Replace one Presentation span',
+          zh: '只替换一处演示文稿文本',
+        },
+        detail: {
+          en: 'Pass matchCount as expectedMatches and optional occurrence. presentation-replace-text writes only the scene-element text field.',
+          zh: '把 matchCount 作为 expectedMatches，可选 occurrence。presentation-replace-text 只写场景元素的 text 字段。',
+        },
+      },
+      {
+        title: {
+          en: 'Geometry stays a separate edit',
+          zh: '几何仍是另一次编辑',
+        },
+        detail: {
+          en: 'presentation-update-element still owns geometry and fields other than the matched text.',
+          zh: '几何和其他字段仍由 presentation-update-element 修改。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.286.0',
     date: '2026-09-18',
     kind: 'new',

@@ -42,11 +42,12 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.286.0）
+## `main` 更新内容（0.287.0）
 
-实时 Markdown 文本定位覆盖 CLI、Skill 与 MCP:
+实时表格单元格与演示文稿文本定位覆盖 CLI、Skill 与 MCP:
 
-- `collab find` 与 `office_collaboration_find` 支持 Markdown 副本，给出与 `markdown-replace-text` 同一遍历的 1-based 序号。把 `matchCount` 作为 `expectedMatches`，可选 `occurrence` 只改那一处。
+- 表格 `collab find` 每个单元格一条命中（`sheetId`、`row`、`column`），后续编辑仍用 `spreadsheet-set-cell`。
+- 演示文稿命中返回 `containerKind`、`containerId`、`elementId`。把 `matchCount` 作为 `expectedMatches`，可选 `occurrence` 交给 `presentation-replace-text`。
 
 
 
