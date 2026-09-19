@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Spreadsheet
+
+- CLI, Skill, and MCP name `SUMIF`, `COUNTIF`, and `AVERAGEIF` in the closed
+  recalculation registry, so agents calculate them in one native batch.
+
 ## 0.291.0 - 2026-09-19
 
 ### Spreadsheet

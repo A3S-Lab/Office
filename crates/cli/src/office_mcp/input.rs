@@ -812,7 +812,7 @@ pub(super) enum OfficeMutation {
         path: String,
         value: OfficeCellValue,
     },
-    /// Calculate supported formulas and write cached values and dynamic spills.
+    /// Calculate supported formulas, including SUMIF, COUNTIF, and AVERAGEIF, and write cached values and dynamic spills.
     RecalculateSpreadsheetFormulas,
     AddSpreadsheetTable {
         /// Existing Spreadsheet worksheet path such as `/Sheet1`.

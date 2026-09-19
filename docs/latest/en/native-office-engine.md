@@ -320,10 +320,11 @@ The native calculation subsystem builds a deterministic graph across
 worksheets, ranges, spills, and workbook- or worksheet-scoped names.
 `NativeOfficeDocument::formula_dependency_graph`,
 `calculate_spreadsheet_formulas`, and the registry-aware calculation variant
-are read-only. The closed default registry implements `SUM`, `AVERAGE`, `MIN`,
-`MAX`, `COUNT`, `COUNTA`, `ABS`, `SQRT`, `POWER`, `MOD`, `ROUND`, `IF`,
-`IFERROR`, `AND`, `OR`, `NOT`, `CONCAT`, `CONCATENATE`, `ROW`, `COLUMN`,
-`SEQUENCE`, `TRANSPOSE`, `PI`, and `NA`, together with ordinary operators,
+are read-only. The closed default registry implements `SUM`, `SUMIF`,
+`AVERAGE`, `AVERAGEIF`, `MIN`, `MAX`, `COUNT`, `COUNTIF`, `COUNTA`, `ABS`,
+`SQRT`, `POWER`, `MOD`, `ROUND`, `IF`, `IFERROR`, `AND`, `OR`, `NOT`,
+`CONCAT`, `CONCATENATE`, `ROW`, `COLUMN`, `SEQUENCE`, `TRANSPOSE`, `PI`, and
+`NA`, together with ordinary operators,
 typed errors, scalar/array broadcasting, spill references, and dynamic-array
 results.
 

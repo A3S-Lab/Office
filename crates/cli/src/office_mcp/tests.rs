@@ -398,6 +398,9 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
         encoded.contains("recalculate-spreadsheet-formulas"),
         "{encoded}"
     );
+    assert!(encoded.contains("SUMIF"), "{encoded}");
+    assert!(encoded.contains("COUNTIF"), "{encoded}");
+    assert!(encoded.contains("AVERAGEIF"), "{encoded}");
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",
