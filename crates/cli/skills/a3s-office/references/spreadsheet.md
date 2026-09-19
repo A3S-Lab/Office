@@ -73,6 +73,11 @@ Unescaped `*` and `?` criteria fail closed: native recalculation returns
 `use.office.spreadsheet_formula_sumif_criteria_unsupported`, and the browser
 kernel records `office.kernel.spreadsheet.formula_unsupported`.
 
+`COUNTIF(range, criteria)` counts cells in that same one rectangle. It uses
+the same comparison and fail-closed wildcard rules. Native recalculation
+returns `use.office.spreadsheet_formula_countif_criteria_unsupported`; the
+browser kernel records `office.kernel.spreadsheet.formula_unsupported`.
+
 General replacement accepts `/`, one worksheet, one cell, or a rectangular A1
 range and edits string cells only. Literal matching is the default; add
 `--regex` for Rust regex and capture expansion. A scoped edit of a shared rich

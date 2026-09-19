@@ -862,3 +862,78 @@ async fn calculation_sumif_rejects_wildcard_criteria() {
         "use.office.spreadsheet_formula_sumif_criteria_unsupported"
     );
 }
+
+#[tokio::test]
+async fn calculation_countif_counts_matches_in_the_criteria_rectangle() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut editor = NativeOfficeEditor::create(temp.path().join("countif.xlsx"))
+        .await
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A1", text("apple"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A2", text("pear"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A3", text("APPLE"))
+        .unwrap();
+    editor.set_cell_value("/Sheet1/B1", number("1")).unwrap();
+    editor
+        .set_cell_value("/Sheet1/B2", number("100"))
+        .unwrap();
+    editor.set_cell_value("/Sheet1/B3", number("2")).unwrap();
+    editor
+        .set_cell_value("/Sheet1/C1", formula("COUNTIF(A1:A3,\"apple\")"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/D1", formula("COUNTIF(B1:B3,\">2\")"))
+        .unwrap();
+
+    let calculation = editor
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap();
+    let value = |path: &str| {
+        calculation
+            .cells
+            .iter()
+            .find(|cell| cell.cell.path() == path)
+            .unwrap()
+            .value
+            .clone()
+    };
+    assert_eq!(
+        value("/Sheet1/C1"),
+        SpreadsheetFormulaValue::Number { value: "2".into() }
+    );
+    assert_eq!(
+        value("/Sheet1/D1"),
+        SpreadsheetFormulaValue::Number { value: "1".into() }
+    );
+}
+
+#[tokio::test]
+async fn calculation_countif_rejects_wildcard_criteria() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut editor = NativeOfficeEditor::create(temp.path().join("countif-wildcard.xlsx"))
+        .await
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A1", text("apple"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/B1", formula("COUNTIF(A1,\"a*\")"))
+        .unwrap();
+
+    assert_eq!(
+        editor
+            .snapshot()
+            .unwrap()
+            .calculate_spreadsheet_formulas()
+            .unwrap_err()
+            .code,
+        "use.office.spreadsheet_formula_countif_criteria_unsupported"
+    );
+}

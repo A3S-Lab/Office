@@ -32,6 +32,10 @@ impl SpreadsheetEvaluator<'_> {
             validate_arity(&normalized, arguments.len(), 2, Some(3))?;
             return self.evaluate_sum_if(arguments, current);
         }
+        if normalized == "COUNTIF" {
+            validate_arity(&normalized, arguments.len(), 2, Some(2))?;
+            return self.evaluate_count_if(arguments, current);
+        }
         let (minimum, maximum) = function_arity(&normalized).ok_or_else(|| {
             unsupported(format!("Formula function '{normalized}' is not supported."))
         })?;
@@ -136,13 +140,14 @@ impl SpreadsheetEvaluator<'_> {
         arguments: &[Option<SpreadsheetFormulaExpression>],
         current: &CellKey,
     ) -> Result<EvaluatedValue, EvaluationFailure> {
-        let criteria_range = sum_if_argument(arguments, 0)?;
-        let criterion = sum_if_argument(arguments, 1)?;
-        let criteria_area = self.sum_if_rectangle(criteria_range, current)?;
-        ensure_sum_if_criterion(criterion)?;
-        let criterion = parse_sum_if_criterion(self.evaluate_expression(criterion, current)?)?;
+        let criteria_range = conditional_argument("SUMIF", arguments, 0)?;
+        let criterion = conditional_argument("SUMIF", arguments, 1)?;
+        let criteria_area = self.conditional_rectangle("SUMIF", criteria_range, current)?;
+        ensure_conditional_criterion("SUMIF", criterion)?;
+        let criterion =
+            parse_conditional_criterion("SUMIF", self.evaluate_expression(criterion, current)?)?;
         let sum_anchor = match arguments.get(2).and_then(Option::as_ref) {
-            Some(sum_range) => self.sum_if_rectangle(sum_range, current)?,
+            Some(sum_range) => self.conditional_rectangle("SUMIF", sum_range, current)?,
             None => criteria_area,
         };
         let row_span = criteria_area
@@ -211,17 +216,66 @@ impl SpreadsheetEvaluator<'_> {
         Ok(EvaluatedValue::Scalar(finite_number(sum)))
     }
 
-    fn sum_if_rectangle(
+    fn evaluate_count_if(
+        &mut self,
+        arguments: &[Option<SpreadsheetFormulaExpression>],
+        current: &CellKey,
+    ) -> Result<EvaluatedValue, EvaluationFailure> {
+        let criteria_range = conditional_argument("COUNTIF", arguments, 0)?;
+        let criterion = conditional_argument("COUNTIF", arguments, 1)?;
+        let criteria_area = self.conditional_rectangle("COUNTIF", criteria_range, current)?;
+        ensure_conditional_criterion("COUNTIF", criterion)?;
+        let criterion =
+            parse_conditional_criterion("COUNTIF", self.evaluate_expression(criterion, current)?)?;
+        let row_span = criteria_area
+            .end_row
+            .checked_sub(criteria_area.start_row)
+            .ok_or_else(|| unsupported("COUNTIF criteria range is not a rectangle."))?;
+        let column_span = criteria_area
+            .end_column
+            .checked_sub(criteria_area.start_column)
+            .ok_or_else(|| unsupported("COUNTIF criteria range is not a rectangle."))?;
+        let rows = usize::try_from(row_span + 1)
+            .map_err(|_| unsupported("COUNTIF criteria range is outside supported limits."))?;
+        let columns = usize::try_from(column_span + 1)
+            .map_err(|_| unsupported("COUNTIF criteria range is outside supported limits."))?;
+        let cells = rows
+            .checked_mul(columns)
+            .ok_or_else(|| unsupported("COUNTIF criteria range is outside supported limits."))?;
+        if cells > MAX_SPREADSHEET_CELLS {
+            return Err(unsupported(format!(
+                "COUNTIF supports at most {MAX_SPREADSHEET_CELLS} criteria cells."
+            )));
+        }
+
+        let mut count = 0.0_f64;
+        for row_offset in 0..=row_span {
+            for column_offset in 0..=column_span {
+                let value = self.evaluate_dependency(&CellKey {
+                    sheet: criteria_area.sheet,
+                    row: criteria_area.start_row + row_offset,
+                    column: criteria_area.start_column + column_offset,
+                })?;
+                if criterion.matches(&value) {
+                    count += 1.0;
+                }
+            }
+        }
+        Ok(EvaluatedValue::Scalar(finite_number(count)))
+    }
+
+    fn conditional_rectangle(
         &self,
+        name: &str,
         expression: &SpreadsheetFormulaExpression,
         current: &CellKey,
     ) -> Result<SumIfRectangle, EvaluationFailure> {
         match &expression.kind {
             SpreadsheetFormulaExpressionKind::Parenthesized(inner) => {
-                self.sum_if_rectangle(inner, current)
+                self.conditional_rectangle(name, inner, current)
             }
             SpreadsheetFormulaExpressionKind::Reference(_) => {
-                let key = self.sum_if_endpoint(expression, current)?;
+                let key = self.conditional_endpoint(name, expression, current)?;
                 Ok(SumIfRectangle {
                     sheet: key.sheet,
                     start_row: key.row,
@@ -235,12 +289,12 @@ impl SpreadsheetEvaluator<'_> {
                 left,
                 right,
             } => {
-                let left = self.sum_if_endpoint(left, current)?;
-                let right = self.sum_if_endpoint(right, current)?;
+                let left = self.conditional_endpoint(name, left, current)?;
+                let right = self.conditional_endpoint(name, right, current)?;
                 if left.sheet != right.sheet {
-                    return Err(unsupported(
-                        "A SUMIF range cannot span multiple worksheets.",
-                    ));
+                    return Err(unsupported(format!(
+                        "A {name} range cannot span multiple worksheets."
+                    )));
                 }
                 Ok(SumIfRectangle {
                     sheet: left.sheet,
@@ -250,23 +304,28 @@ impl SpreadsheetEvaluator<'_> {
                     end_column: left.column.max(right.column),
                 })
             }
-            _ => Err(unsupported("SUMIF ranges must be one worksheet rectangle.")),
+            _ => Err(unsupported(format!(
+                "{name} ranges must be one worksheet rectangle."
+            ))),
         }
     }
 
-    fn sum_if_endpoint(
+    fn conditional_endpoint(
         &self,
+        name: &str,
         expression: &SpreadsheetFormulaExpression,
         current: &CellKey,
     ) -> Result<CellKey, EvaluationFailure> {
         match &expression.kind {
             SpreadsheetFormulaExpressionKind::Parenthesized(inner) => {
-                self.sum_if_endpoint(inner, current)
+                self.conditional_endpoint(name, inner, current)
             }
             SpreadsheetFormulaExpressionKind::Reference(reference) => {
                 self.reference_key(reference, current.sheet)
             }
-            _ => Err(unsupported("SUMIF ranges must be one worksheet rectangle.")),
+            _ => Err(unsupported(format!(
+                "{name} ranges must be one worksheet rectangle."
+            ))),
         }
     }
 
@@ -633,6 +692,7 @@ fn function_arity(name: &str) -> Option<(usize, Option<usize>)> {
         | "CONCATENATE" => (1, Some(255)),
         "SUBTOTAL" => (2, Some(255)),
         "SUMIF" => (2, Some(3)),
+        "COUNTIF" => (2, Some(2)),
         "ABS" | "SQRT" | "NOT" => (1, Some(1)),
         "POWER" | "MOD" | "ROUND" => (2, Some(2)),
         "ROW" | "COLUMN" => (0, Some(0)),
@@ -677,30 +737,34 @@ struct SumIfRectangle {
     end_column: u32,
 }
 
-fn sum_if_argument(
-    arguments: &[Option<SpreadsheetFormulaExpression>],
+fn conditional_argument<'a>(
+    name: &str,
+    arguments: &'a [Option<SpreadsheetFormulaExpression>],
     index: usize,
-) -> Result<&SpreadsheetFormulaExpression, EvaluationFailure> {
+) -> Result<&'a SpreadsheetFormulaExpression, EvaluationFailure> {
     arguments
         .get(index)
         .and_then(Option::as_ref)
-        .ok_or_else(|| unsupported("SUMIF requires a criteria range and a criterion."))
+        .ok_or_else(|| unsupported(format!("{name} requires a criteria range and a criterion.")))
 }
 
-fn ensure_sum_if_criterion(
+fn ensure_conditional_criterion(
+    name: &str,
     expression: &SpreadsheetFormulaExpression,
 ) -> Result<(), EvaluationFailure> {
     match &expression.kind {
-        SpreadsheetFormulaExpressionKind::Parenthesized(inner) => ensure_sum_if_criterion(inner),
+        SpreadsheetFormulaExpressionKind::Parenthesized(inner) => {
+            ensure_conditional_criterion(name, inner)
+        }
         SpreadsheetFormulaExpressionKind::Binary {
             operator: SpreadsheetFormulaBinaryOperator::Range,
             ..
         }
         | SpreadsheetFormulaExpressionKind::StructuredReference { .. }
         | SpreadsheetFormulaExpressionKind::Name { .. }
-        | SpreadsheetFormulaExpressionKind::Array { .. } => Err(unsupported(
-            "SUMIF criteria must be one value, not a range.",
-        )),
+        | SpreadsheetFormulaExpressionKind::Array { .. } => Err(unsupported(format!(
+            "{name} criteria must be one value, not a range."
+        ))),
         _ => Ok(()),
     }
 }
@@ -738,26 +802,29 @@ impl SumIfCriterion {
     }
 }
 
-fn parse_sum_if_criterion(value: SpreadsheetValue) -> Result<SumIfCriterion, EvaluationFailure> {
+fn parse_conditional_criterion(
+    name: &str,
+    value: SpreadsheetValue,
+) -> Result<SumIfCriterion, EvaluationFailure> {
     match value {
         SpreadsheetValue::Error { value } => Err(unsupported(format!(
-            "SUMIF criteria cannot be the error {value}."
+            "{name} criteria cannot be the error {value}."
         ))),
         SpreadsheetValue::Blank => Ok(SumIfCriterion::Blank),
         SpreadsheetValue::Boolean { value } => Ok(SumIfCriterion::Boolean(value)),
         SpreadsheetValue::Number { value } => {
             Ok(SumIfCriterion::Number(SumIfCompare::Equal, value))
         }
-        SpreadsheetValue::Text { value } => parse_sum_if_text(&value),
+        SpreadsheetValue::Text { value } => parse_conditional_text(name, &value),
     }
 }
 
-fn parse_sum_if_text(value: &str) -> Result<SumIfCriterion, EvaluationFailure> {
+fn parse_conditional_text(name: &str, value: &str) -> Result<SumIfCriterion, EvaluationFailure> {
     let (compare, operand) = split_sum_if_compare(value);
     if sum_if_contains_wildcard(operand) {
-        return Err(unsupported(
-            "SUMIF wildcard criteria are not calculated. Pass an exact value or a numeric comparison.",
-        ));
+        return Err(unsupported(format!(
+            "{name} wildcard criteria are not calculated. Pass an exact value or a numeric comparison."
+        )));
     }
     let operand = unescape_sum_if_literal(operand);
     if operand.is_empty() && compare == SumIfCompare::Equal {
