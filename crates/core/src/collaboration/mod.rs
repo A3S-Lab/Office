@@ -215,8 +215,8 @@ impl NativeOfficeCollaborationStore {
     ///
     /// Document and Markdown agents pass `matchCount` as `expectedMatches`.
     /// Spreadsheet hits return `sheetId`, `row`, and `column` for
-    /// `spreadsheet-set-cell`. Presentation hits return `containerKind`,
-    /// `containerId`, and `elementId` for `presentation-update-element`.
+    /// `spreadsheet-set-cell`. Presentation hits return container identity for
+    /// `presentation-replace-text`; geometry still uses `presentation-update-element`.
     pub fn find_text(
         &self,
         search: impl Into<String>,

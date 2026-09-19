@@ -95,8 +95,13 @@ a3s-office collab mutate .a3s/notes.replica \
 # Spreadsheet locate returns one cell coordinate. Edit with spreadsheet-set-cell.
 a3s-office collab find .a3s/book.replica --find Draft --json
 
-# Presentation locate returns one scene element. Edit with presentation-update-element.
+# Presentation locate, then replace only the matched scene-element text.
 a3s-office collab find .a3s/deck.replica --find Roadmap --json
+a3s-office collab mutate .a3s/deck.replica \
+  --actor-id agent-7 --operation-id edit-45p --artifact-id deck \
+  --kind presentation --mode edit \
+  --mutation '{"type":"presentation-replace-text","search":"Roadmap","replacement":"Plan","expectedMatches":1,"occurrence":1}' \
+  --json
 
 # Prefer stable paragraph identity when replacing one complete plain
 # paragraph observed through `collab read`.

@@ -368,6 +368,14 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_after_element_id: Option<String>,
         after_element_id: Option<String>,
     },
+    /// Replace non-overlapping matches in scene-element text fields only.
+    PresentationReplaceText {
+        search: String,
+        replacement: String,
+        expected_matches: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        occurrence: Option<u32>,
+    },
     /// Create one supported portable PDF annotation with a stable ID.
     PdfCreateAnnotation {
         annotation_id: String,
@@ -666,6 +674,17 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 element_id,
                 expected_after_element_id,
                 after_element_id,
+            },
+            OfficeCollaborationMutation::PresentationReplaceText {
+                search,
+                replacement,
+                expected_matches,
+                occurrence,
+            } => Self::PresentationReplaceText {
+                search,
+                replacement,
+                expected_matches,
+                occurrence,
             },
             OfficeCollaborationMutation::PdfCreateAnnotation {
                 annotation_id,

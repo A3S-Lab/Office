@@ -239,6 +239,84 @@ fn cli_finds_presentation_element_text_by_identity() {
     assert_eq!(hit["indexUtf16"], 0);
 }
 
+#[test]
+fn cli_replaces_one_presentation_text_match() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("presentation-replace.replica");
+    let fixture = temp.path().join("browser-presentation.update");
+    fs::write(&fixture, presentation_collaboration_fixture()).unwrap();
+    run(&[
+        "collab",
+        "join",
+        replica.to_str().unwrap(),
+        "--artifact-id",
+        "fixture-presentation",
+        "--kind",
+        "presentation",
+        "--actor-id",
+        "coding-agent-presentation-replace",
+        "--actor-kind",
+        "agent",
+        "--mode",
+        "edit",
+        "--operation-id",
+        "join-browser-presentation-replace",
+        "--input",
+        fixture.to_str().unwrap(),
+        "--client-id",
+        "900021",
+        "--json",
+    ]);
+
+    let found = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "presentation",
+        "--json",
+    ]);
+    let count = found["data"]["matches"].as_u64().unwrap();
+    let mutation = json!({
+        "type": "presentation-replace-text",
+        "search": "presentation",
+        "replacement": "deck",
+        "expectedMatches": count,
+        "occurrence": 1
+    })
+    .to_string();
+    let replaced = run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        mutation.as_str(),
+        "--actor-id",
+        "coding-agent-presentation-replace",
+        "--operation-id",
+        "presentation-replace-text-1",
+        "--artifact-id",
+        "fixture-presentation",
+        "--kind",
+        "presentation",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(replaced["data"]["action"], "mutated");
+
+    let after = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "Shared deck",
+        "--json",
+    ]);
+    assert_eq!(after["data"]["matches"], 1);
+    assert_eq!(after["data"]["result"]["matches"][0]["elementId"], "element-title");
+}
+
 fn mutate(replica: &Path, operation_id: &str, mutation: JsonValue) -> JsonValue {
     let mutation = mutation.to_string();
     run(&[

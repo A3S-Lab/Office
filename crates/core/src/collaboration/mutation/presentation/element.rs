@@ -2,6 +2,7 @@ use a3s_use_core::UseResult;
 use serde_json::Value as JsonValue;
 use yrs::{Array, Map, MapPrelim, Transact};
 
+use super::find::{replace_presentation_text, validate_presentation_text_replacement};
 use super::json::{
     assert_compatible_element, canonical_json, element_field_patches, json_equal, json_to_any,
     validate_element_input, validate_presentation_identifier, PresentationElementPatch,
@@ -62,6 +63,12 @@ pub(super) fn validate_element_mutation(
             validate_element_input(expected_element, "expected scene element")?;
             Ok(())
         }
+        NativeOfficeCollaborationMutation::PresentationReplaceText {
+            search,
+            expected_matches,
+            occurrence,
+            ..
+        } => validate_presentation_text_replacement(search, *expected_matches, *occurrence),
         _ => Err(invalid_presentation_mutation(
             "The supplied mutation is not a Presentation scene-element mutation.",
         )),
@@ -112,6 +119,19 @@ pub(super) fn apply_element_mutation(
             *container_kind,
             container_id,
             expected_element,
+        ),
+        NativeOfficeCollaborationMutation::PresentationReplaceText {
+            search,
+            replacement,
+            expected_matches,
+            occurrence,
+        } => replace_presentation_text(
+            doc,
+            manifest,
+            search,
+            replacement,
+            *expected_matches,
+            *occurrence,
         ),
         _ => Err(invalid_presentation_mutation(
             "The supplied mutation is not a Presentation scene-element mutation.",
@@ -322,6 +342,48 @@ fn delete_element(
         ));
     }
     Ok(())
+}
+
+pub(super) fn write_element_text(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+    container_kind: NativeOfficeCollaborationPresentationContainerKind,
+    container_id: &str,
+    element_id: &str,
+    next_text: &str,
+) -> UseResult<()> {
+    let state = read_element_state(doc, manifest, container_kind, container_id)?;
+    let record = state.records.get(element_id).ok_or_else(|| {
+        presentation_match_conflict(format!(
+            "Presentation scene element ID '{element_id}' does not exist."
+        ))
+    })?;
+    if record.tombstoned {
+        return Err(presentation_match_conflict(format!(
+            "Presentation scene element ID '{element_id}' was deleted."
+        )));
+    }
+    let current = record
+        .value
+        .get("text")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+    if current == next_text {
+        return Ok(());
+    }
+    let mut next = record.value.clone();
+    if let Some(object) = next.as_object_mut() {
+        object.insert("text".to_owned(), JsonValue::String(next_text.to_owned()));
+    }
+    update_element(
+        doc,
+        manifest,
+        container_kind,
+        container_id,
+        element_id,
+        &record.value,
+        &next,
+    )
 }
 
 fn validate_container_id(value: &str) -> UseResult<()> {
