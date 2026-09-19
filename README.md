@@ -371,16 +371,16 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.287.0` locates Spreadsheet cells and Presentation text before
-live edits for CLI, Skill, and MCP:
+Version `0.288.0` lets a host bind the live Document editor without clipping
+menus:
 
-- Spreadsheet `collab find` / `office_collaboration_find` return one hit per
-  cell (`sheetId`, `row`, `column`). The following edit stays
-  `spreadsheet-set-cell`.
-- Presentation find returns `containerKind`, `containerId`, and `elementId`.
-  Pass `matchCount` as `expectedMatches` and optional `occurrence` to
-  `presentation-replace-text`, which writes only the scene-element `text`
-  field. Geometry stays on `presentation-update-element`.
+- `onEditorReady` receives the mounted TipTap editor. `defaultCommentsOpen`
+  opens the comment pane. Host extensions stay mounted during collaboration.
+- Ribbon and selection popovers escape a clipped host onto a theme-preserving
+  floating root. Dialogs stay inside the office root so the editor surface
+  remains inert.
+- Presence can be projected without a CRDT session. A kind or artifact
+  mismatch still fails closed.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

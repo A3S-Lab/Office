@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.288.0',
+    date: '2026-09-19',
+    kind: 'new',
+    surfaces: ['shared', 'writer', 'documentation'],
+    title: {
+      en: 'Bind the live Document editor without clipping menus',
+      zh: '绑定实时文档编辑器且不裁剪菜单',
+    },
+    summary: {
+      en: 'Hosts receive the mounted editor, keep their extensions, and floating menus escape a clipped host without leaving the office theme.',
+      zh: '宿主拿到已挂载的编辑器并保留扩展；功能区菜单逃出裁剪宿主时仍留在办公主题里。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Live editor hook',
+          zh: '实时编辑器钩子',
+        },
+        detail: {
+          en: 'onEditorReady receives the mounted TipTap editor. defaultCommentsOpen opens the comment pane.',
+          zh: 'onEditorReady 收到已挂载的 TipTap 编辑器。defaultCommentsOpen 打开评论栏。',
+        },
+      },
+      {
+        title: {
+          en: 'Menus keep the office theme',
+          zh: '菜单仍使用办公主题',
+        },
+        detail: {
+          en: 'Ribbon and selection popovers escape a clipped host onto a theme-preserving root. Dialogs stay inside the office root.',
+          zh: '功能区菜单逃到仍保留主题的浮层根。对话框留在办公根节点内。',
+        },
+      },
+      {
+        title: {
+          en: 'Presence without a session',
+          zh: 'Presence 可以不绑会话',
+        },
+        detail: {
+          en: 'A host may project presence without binding the CRDT session. Kind or artifact mismatches still fail closed.',
+          zh: '宿主可以不绑 CRDT 会话就投影 presence。kind 或 artifact 对不上仍然失败关闭。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.287.0',
     date: '2026-09-19',
     kind: 'new',
