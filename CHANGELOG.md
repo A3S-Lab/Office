@@ -6,8 +6,9 @@
 
 - Document hosts can open the comment pane with `defaultCommentsOpen` and
   receive the mounted TipTap editor from `onEditorReady`.
-- Ribbon and selection popovers escape a clipped `[data-a3s-office]` ancestor
-  onto `document.body` so task-workspace overflow does not cut them off.
+- Ribbon and selection popovers escape to `document.body` only when a host
+  ancestor outside `[data-a3s-office]` clips them. The office root's own
+  overflow stays the portal target, so dialogs still inert the editor surface.
 - A host may project collaboration presence without binding the CRDT session.
   Kind mismatches still fail closed.
 

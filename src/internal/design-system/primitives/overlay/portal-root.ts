@@ -34,10 +34,9 @@ function closestOfficeOverlayRoot(anchor: Element | null | undefined) {
 function shouldEscapeClippedPortal(root: HTMLElement): boolean {
   if (root.getAttribute('role') === 'dialog') return false;
   const ownerDocument = root.ownerDocument;
-  if (root === ownerDocument.body || root === ownerDocument.documentElement) {
-    return false;
-  }
-  let node: HTMLElement | null = root;
+  // `.a3s-office` is overflow:hidden by design. Only a host outside that root
+  // should move overlays to document.body.
+  let node = root.parentElement;
   while (
     node &&
     node !== ownerDocument.body &&

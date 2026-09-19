@@ -44,13 +44,26 @@ test('office overlay portal prefers the modal dialog focus root', () => {
   host.remove();
 });
 
-test('office overlay portal escapes a clipped office root onto document.body', () => {
+test('office overlay portal stays inside an office root that clips itself', () => {
   const host = document.createElement('div');
   host.setAttribute('data-a3s-office', '');
   host.style.overflow = 'hidden';
   const anchor = document.createElement('button');
   host.append(anchor);
   document.body.append(host);
-  expect(officeOverlayPortalRoot(document, anchor)).toBe(document.body);
+  expect(officeOverlayPortalRoot(document, anchor)).toBe(host);
   host.remove();
+});
+
+test('office overlay portal escapes a clipped host outside the office root', () => {
+  const frame = document.createElement('div');
+  frame.style.overflow = 'hidden';
+  const host = document.createElement('div');
+  host.setAttribute('data-a3s-office', '');
+  const anchor = document.createElement('button');
+  host.append(anchor);
+  frame.append(host);
+  document.body.append(frame);
+  expect(officeOverlayPortalRoot(document, anchor)).toBe(document.body);
+  frame.remove();
 });
