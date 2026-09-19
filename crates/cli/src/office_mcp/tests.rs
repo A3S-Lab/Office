@@ -398,9 +398,17 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
         encoded.contains("recalculate-spreadsheet-formulas"),
         "{encoded}"
     );
-    assert!(encoded.contains("SUMIF"), "{encoded}");
-    assert!(encoded.contains("COUNTIF"), "{encoded}");
-    assert!(encoded.contains("AVERAGEIF"), "{encoded}");
+    let skill = include_str!("../../skills/a3s-office/SKILL.md");
+    let spreadsheet = include_str!("../../skills/a3s-office/references/spreadsheet.md");
+    for definition in a3s_office::SpreadsheetFormulaFunctionRegistry::default().definitions() {
+        let listed = format!("`{}`", definition.name);
+        assert!(encoded.contains(&listed), "schema missing {listed}");
+        assert!(skill.contains(&listed), "skill missing {listed}");
+        assert!(
+            spreadsheet.contains(&listed),
+            "spreadsheet reference missing {listed}"
+        );
+    }
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",

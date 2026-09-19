@@ -110,10 +110,11 @@ Run `office native recalculate` in place or with `--output` to build the
 dependency graph, calculate supported formulas, and atomically write typed
 cached values and dynamic-array spills. The same operation is available as the
 `recalculate-spreadsheet-formulas` batch/MCP mutation and as read-only or
-writeback Rust APIs. Supported functions are `SUM`, `SUMIF`, `AVERAGE`,
-`AVERAGEIF`, `MIN`, `MAX`, `COUNT`, `COUNTIF`, `COUNTA`, `ABS`, `SQRT`,
-`POWER`, `MOD`, `ROUND`, `IF`, `IFERROR`, `AND`, `OR`, `NOT`, `CONCAT`,
-`CONCATENATE`, `ROW`, `COLUMN`, `SEQUENCE`, `TRANSPOSE`, `PI`, and `NA`. Cross-sheet ranges, scoped names, typed errors,
+writeback Rust APIs. Supported functions are `ABS`, `AND`, `AVERAGE`,
+`AVERAGEIF`, `COLUMN`, `CONCAT`, `CONCATENATE`, `COUNT`, `COUNTA`, `COUNTIF`,
+`IF`, `IFERROR`, `MAX`, `MIN`, `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`,
+`ROUND`, `ROW`, `SEQUENCE`, `SQRT`, `SUBTOTAL`, `SUM`, `SUMIF`, and
+`TRANSPOSE`. Cross-sheet ranges, scoped names, typed errors,
 array broadcasting, spill references, and ordinary Excel operators are
 supported. ListObject structured references resolve a table `name` or
 `displayName`: `Sales[Qty]` selects one data column,
