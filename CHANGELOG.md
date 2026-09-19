@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Spreadsheet
+
+- `AVERAGEIF` averages the numeric cells in the criteria range, or in the
+  same-shaped block anchored at the average range's top-left cell. No numeric
+  match is `#DIV/0!`. Wildcard criteria fail closed.
+
 ## 0.290.0 - 2026-09-19
 
 ### Spreadsheet

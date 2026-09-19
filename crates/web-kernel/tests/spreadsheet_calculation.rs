@@ -124,6 +124,58 @@ fn countif_counts_matching_cells_and_rejects_wildcards() {
     }));
 }
 
+#[test]
+fn averageif_expands_the_average_window_from_the_average_range_top_left() {
+    let request = SpreadsheetCalculationRequest {
+        protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+        kind: "spreadsheetCalculation".into(),
+        request_id: 10,
+        revision: 1,
+        document_revision: 1,
+        sheets: vec![SpreadsheetInputSheet {
+            id: "sheet-1".into(),
+            name: "Sheet 1".into(),
+            cells: vec![
+                input_value(0, 0, text("apple")),
+                input_value(1, 0, text("pear")),
+                input_value(2, 0, text("APPLE")),
+                input_value(0, 1, number(1.0)),
+                input_value(1, 1, number(100.0)),
+                input_value(2, 1, number(2.0)),
+                input_value(0, 2, number(4.0)),
+                input_value(1, 2, number(8.0)),
+                input_value(2, 2, number(16.0)),
+                input_formula(0, 3, "=AVERAGEIF(A1:A3,\"apple\",C1)"),
+                input_formula(0, 4, "=AVERAGEIF(B1:B3,\">2\")"),
+                input_formula(1, 3, "=AVERAGEIF(A1:A3,\"missing\")"),
+                input_formula(1, 4, "=AVERAGEIF(A1,\"a*\")"),
+            ],
+            tables: vec![],
+        }],
+        targets: Vec::new(),
+    };
+
+    let result = calculate_spreadsheet(&request).unwrap();
+    assert_eq!(
+        calculated(&result, 0, 3),
+        SpreadsheetValue::Number { value: 10.0 }
+    );
+    assert_eq!(
+        calculated(&result, 0, 4),
+        SpreadsheetValue::Number { value: 100.0 }
+    );
+    assert_eq!(
+        calculated(&result, 1, 3),
+        SpreadsheetValue::Error {
+            value: "#DIV/0!".into()
+        }
+    );
+    assert!(result.issues.iter().any(|issue| {
+        issue.code == "office.kernel.spreadsheet.formula_unsupported"
+            && issue.message.contains("wildcard")
+    }));
+}
+
 fn calculated(
     result: &a3s_office_web_kernel::SpreadsheetCalculationResult,
     row: u32,

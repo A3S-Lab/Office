@@ -3,6 +3,9 @@ use a3s_office_formula_parser::{
     SpreadsheetFormulaExpressionKind,
 };
 
+use super::conditional::{
+    conditional_argument, ensure_conditional_criterion, parse_conditional_criterion, SumIfRectangle,
+};
 use super::value::{
     finite_number, scalar_boolean, scalar_number, scalar_text, unsupported, value_error,
     EvaluatedValue,
@@ -35,6 +38,10 @@ impl SpreadsheetEvaluator<'_> {
         if normalized == "COUNTIF" {
             validate_arity(&normalized, arguments.len(), 2, Some(2))?;
             return self.evaluate_count_if(arguments, current);
+        }
+        if normalized == "AVERAGEIF" {
+            validate_arity(&normalized, arguments.len(), 2, Some(3))?;
+            return self.evaluate_average_if(arguments, current);
         }
         let (minimum, maximum) = function_arity(&normalized).ok_or_else(|| {
             unsupported(format!("Formula function '{normalized}' is not supported."))
@@ -262,6 +269,103 @@ impl SpreadsheetEvaluator<'_> {
             }
         }
         Ok(EvaluatedValue::Scalar(finite_number(count)))
+    }
+
+    fn evaluate_average_if(
+        &mut self,
+        arguments: &[Option<SpreadsheetFormulaExpression>],
+        current: &CellKey,
+    ) -> Result<EvaluatedValue, EvaluationFailure> {
+        let criteria_range = conditional_argument("AVERAGEIF", arguments, 0)?;
+        let criterion = conditional_argument("AVERAGEIF", arguments, 1)?;
+        let criteria_area = self.conditional_rectangle("AVERAGEIF", criteria_range, current)?;
+        ensure_conditional_criterion("AVERAGEIF", criterion)?;
+        let criterion = parse_conditional_criterion(
+            "AVERAGEIF",
+            self.evaluate_expression(criterion, current)?,
+        )?;
+        let average_anchor = match arguments.get(2).and_then(Option::as_ref) {
+            Some(average_range) => {
+                self.conditional_rectangle("AVERAGEIF", average_range, current)?
+            }
+            None => criteria_area,
+        };
+        let row_span = criteria_area
+            .end_row
+            .checked_sub(criteria_area.start_row)
+            .ok_or_else(|| unsupported("AVERAGEIF criteria range is not a rectangle."))?;
+        let column_span = criteria_area
+            .end_column
+            .checked_sub(criteria_area.start_column)
+            .ok_or_else(|| unsupported("AVERAGEIF criteria range is not a rectangle."))?;
+        let rows = usize::try_from(row_span + 1)
+            .map_err(|_| unsupported("AVERAGEIF criteria range is outside supported limits."))?;
+        let columns = usize::try_from(column_span + 1)
+            .map_err(|_| unsupported("AVERAGEIF criteria range is outside supported limits."))?;
+        let cells = rows
+            .checked_mul(columns)
+            .ok_or_else(|| unsupported("AVERAGEIF criteria range is outside supported limits."))?;
+        if cells > MAX_SPREADSHEET_CELLS {
+            return Err(unsupported(format!(
+                "AVERAGEIF supports at most {MAX_SPREADSHEET_CELLS} criteria cells."
+            )));
+        }
+        let average_end_row = average_anchor
+            .start_row
+            .checked_add(row_span)
+            .ok_or_else(|| {
+                unsupported("AVERAGEIF average range extends past the worksheet row limit.")
+            })?;
+        let average_end_column = average_anchor
+            .start_column
+            .checked_add(column_span)
+            .ok_or_else(|| {
+                unsupported("AVERAGEIF average range extends past the worksheet column limit.")
+            })?;
+        if average_end_row >= MAX_SPREADSHEET_ROWS || average_end_column >= MAX_SPREADSHEET_COLUMNS
+        {
+            return Err(unsupported(
+                "AVERAGEIF average range extends past the worksheet limits.",
+            ));
+        }
+
+        let mut sum = 0.0_f64;
+        let mut count = 0.0_f64;
+        for row_offset in 0..=row_span {
+            for column_offset in 0..=column_span {
+                let criteria_value = self.evaluate_dependency(&CellKey {
+                    sheet: criteria_area.sheet,
+                    row: criteria_area.start_row + row_offset,
+                    column: criteria_area.start_column + column_offset,
+                })?;
+                if !criterion.matches(&criteria_value) {
+                    continue;
+                }
+                let averaged = self.evaluate_dependency(&CellKey {
+                    sheet: average_anchor.sheet,
+                    row: average_anchor.start_row + row_offset,
+                    column: average_anchor.start_column + column_offset,
+                })?;
+                match averaged {
+                    SpreadsheetValue::Number { value } => {
+                        sum += value;
+                        count += 1.0;
+                    }
+                    SpreadsheetValue::Error { .. } => {
+                        return Ok(EvaluatedValue::Scalar(averaged));
+                    }
+                    SpreadsheetValue::Blank
+                    | SpreadsheetValue::Text { .. }
+                    | SpreadsheetValue::Boolean { .. } => {}
+                }
+            }
+        }
+        if count == 0.0 {
+            return Ok(EvaluatedValue::Scalar(SpreadsheetValue::error(
+                SpreadsheetFormulaErrorLiteral::DivisionByZero,
+            )));
+        }
+        Ok(EvaluatedValue::Scalar(finite_number(sum / count)))
     }
 
     fn conditional_rectangle(
@@ -693,6 +797,7 @@ fn function_arity(name: &str) -> Option<(usize, Option<usize>)> {
         "SUBTOTAL" => (2, Some(255)),
         "SUMIF" => (2, Some(3)),
         "COUNTIF" => (2, Some(2)),
+        "AVERAGEIF" => (2, Some(3)),
         "ABS" | "SQRT" | "NOT" => (1, Some(1)),
         "POWER" | "MOD" | "ROUND" => (2, Some(2)),
         "ROW" | "COLUMN" => (0, Some(0)),
@@ -725,207 +830,5 @@ fn normalize_function_name(name: &str) -> String {
             return normalized;
         };
         normalized = stripped;
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-struct SumIfRectangle {
-    sheet: usize,
-    start_row: u32,
-    start_column: u32,
-    end_row: u32,
-    end_column: u32,
-}
-
-fn conditional_argument<'a>(
-    name: &str,
-    arguments: &'a [Option<SpreadsheetFormulaExpression>],
-    index: usize,
-) -> Result<&'a SpreadsheetFormulaExpression, EvaluationFailure> {
-    arguments
-        .get(index)
-        .and_then(Option::as_ref)
-        .ok_or_else(|| unsupported(format!("{name} requires a criteria range and a criterion.")))
-}
-
-fn ensure_conditional_criterion(
-    name: &str,
-    expression: &SpreadsheetFormulaExpression,
-) -> Result<(), EvaluationFailure> {
-    match &expression.kind {
-        SpreadsheetFormulaExpressionKind::Parenthesized(inner) => {
-            ensure_conditional_criterion(name, inner)
-        }
-        SpreadsheetFormulaExpressionKind::Binary {
-            operator: SpreadsheetFormulaBinaryOperator::Range,
-            ..
-        }
-        | SpreadsheetFormulaExpressionKind::StructuredReference { .. }
-        | SpreadsheetFormulaExpressionKind::Name { .. }
-        | SpreadsheetFormulaExpressionKind::Array { .. } => Err(unsupported(format!(
-            "{name} criteria must be one value, not a range."
-        ))),
-        _ => Ok(()),
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum SumIfCompare {
-    Equal,
-    NotEqual,
-    Greater,
-    GreaterOrEqual,
-    Less,
-    LessOrEqual,
-}
-
-enum SumIfCriterion {
-    Number(SumIfCompare, f64),
-    Text(SumIfCompare, String),
-    Boolean(bool),
-    Blank,
-}
-
-impl SumIfCriterion {
-    fn matches(&self, value: &SpreadsheetValue) -> bool {
-        if matches!(value, SpreadsheetValue::Error { .. }) {
-            return false;
-        }
-        match self {
-            Self::Blank => matches!(value, SpreadsheetValue::Blank),
-            Self::Boolean(expected) => {
-                matches!(value, SpreadsheetValue::Boolean { value } if value == expected)
-            }
-            Self::Number(compare, expected) => sum_if_number_matches(value, *compare, *expected),
-            Self::Text(compare, expected) => sum_if_text_matches(value, *compare, expected),
-        }
-    }
-}
-
-fn parse_conditional_criterion(
-    name: &str,
-    value: SpreadsheetValue,
-) -> Result<SumIfCriterion, EvaluationFailure> {
-    match value {
-        SpreadsheetValue::Error { value } => Err(unsupported(format!(
-            "{name} criteria cannot be the error {value}."
-        ))),
-        SpreadsheetValue::Blank => Ok(SumIfCriterion::Blank),
-        SpreadsheetValue::Boolean { value } => Ok(SumIfCriterion::Boolean(value)),
-        SpreadsheetValue::Number { value } => {
-            Ok(SumIfCriterion::Number(SumIfCompare::Equal, value))
-        }
-        SpreadsheetValue::Text { value } => parse_conditional_text(name, &value),
-    }
-}
-
-fn parse_conditional_text(name: &str, value: &str) -> Result<SumIfCriterion, EvaluationFailure> {
-    let (compare, operand) = split_sum_if_compare(value);
-    if sum_if_contains_wildcard(operand) {
-        return Err(unsupported(format!(
-            "{name} wildcard criteria are not calculated. Pass an exact value or a numeric comparison."
-        )));
-    }
-    let operand = unescape_sum_if_literal(operand);
-    if operand.is_empty() && compare == SumIfCompare::Equal {
-        return Ok(SumIfCriterion::Blank);
-    }
-    if let Some(number) = operand
-        .parse::<f64>()
-        .ok()
-        .filter(|number| number.is_finite())
-    {
-        return Ok(SumIfCriterion::Number(compare, number));
-    }
-    Ok(SumIfCriterion::Text(compare, operand))
-}
-
-fn split_sum_if_compare(value: &str) -> (SumIfCompare, &str) {
-    if let Some(rest) = value.strip_prefix(">=") {
-        (SumIfCompare::GreaterOrEqual, rest)
-    } else if let Some(rest) = value.strip_prefix("<=") {
-        (SumIfCompare::LessOrEqual, rest)
-    } else if let Some(rest) = value.strip_prefix("<>") {
-        (SumIfCompare::NotEqual, rest)
-    } else if let Some(rest) = value.strip_prefix('>') {
-        (SumIfCompare::Greater, rest)
-    } else if let Some(rest) = value.strip_prefix('<') {
-        (SumIfCompare::Less, rest)
-    } else if let Some(rest) = value.strip_prefix('=') {
-        (SumIfCompare::Equal, rest)
-    } else {
-        (SumIfCompare::Equal, value)
-    }
-}
-
-fn sum_if_contains_wildcard(value: &str) -> bool {
-    let mut characters = value.chars();
-    while let Some(character) = characters.next() {
-        if character == '~' {
-            characters.next();
-            continue;
-        }
-        if character == '*' || character == '?' {
-            return true;
-        }
-    }
-    false
-}
-
-fn unescape_sum_if_literal(value: &str) -> String {
-    let mut characters = value.chars();
-    let mut literal = String::new();
-    while let Some(character) = characters.next() {
-        if character == '~' {
-            if let Some(escaped) = characters.next() {
-                literal.push(escaped);
-            }
-            continue;
-        }
-        literal.push(character);
-    }
-    literal
-}
-
-fn sum_if_number_matches(value: &SpreadsheetValue, compare: SumIfCompare, expected: f64) -> bool {
-    match value {
-        SpreadsheetValue::Number { value } => sum_if_compare_numbers(*value, expected, compare),
-        SpreadsheetValue::Blank
-        | SpreadsheetValue::Text { .. }
-        | SpreadsheetValue::Boolean { .. } => compare == SumIfCompare::NotEqual,
-        SpreadsheetValue::Error { .. } => false,
-    }
-}
-
-fn sum_if_text_matches(value: &SpreadsheetValue, compare: SumIfCompare, expected: &str) -> bool {
-    let actual = match value {
-        SpreadsheetValue::Text { value } => value.as_str(),
-        SpreadsheetValue::Blank => "",
-        SpreadsheetValue::Number { .. } | SpreadsheetValue::Boolean { .. } => {
-            return compare == SumIfCompare::NotEqual;
-        }
-        SpreadsheetValue::Error { .. } => return false,
-    };
-    let ordering = actual
-        .to_ascii_lowercase()
-        .cmp(&expected.to_ascii_lowercase());
-    match compare {
-        SumIfCompare::Equal => ordering.is_eq(),
-        SumIfCompare::NotEqual => ordering.is_ne(),
-        SumIfCompare::Greater => ordering.is_gt(),
-        SumIfCompare::GreaterOrEqual => ordering.is_ge(),
-        SumIfCompare::Less => ordering.is_lt(),
-        SumIfCompare::LessOrEqual => ordering.is_le(),
-    }
-}
-
-fn sum_if_compare_numbers(actual: f64, expected: f64, compare: SumIfCompare) -> bool {
-    match compare {
-        SumIfCompare::Equal => actual == expected,
-        SumIfCompare::NotEqual => actual != expected,
-        SumIfCompare::Greater => actual > expected,
-        SumIfCompare::GreaterOrEqual => actual >= expected,
-        SumIfCompare::Less => actual < expected,
-        SumIfCompare::LessOrEqual => actual <= expected,
     }
 }

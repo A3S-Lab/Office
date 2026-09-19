@@ -48,6 +48,7 @@ pub(super) enum BuiltinFunction {
     Sum,
     SumIf,
     CountIf,
+    AverageIf,
     Subtotal,
     Average,
     Minimum,
@@ -99,6 +100,13 @@ impl Default for SpreadsheetFormulaFunctionRegistry {
                 Some(2),
                 SpreadsheetFormulaFunctionReturnKind::Scalar,
                 BuiltinFunction::CountIf,
+            ),
+            (
+                "AVERAGEIF",
+                2,
+                Some(3),
+                SpreadsheetFormulaFunctionReturnKind::Scalar,
+                BuiltinFunction::AverageIf,
             ),
             (
                 "SUBTOTAL",

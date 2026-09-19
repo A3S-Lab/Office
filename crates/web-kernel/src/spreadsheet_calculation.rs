@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{KernelError, OFFICE_KERNEL_PROTOCOL_VERSION};
 
+mod conditional;
 mod evaluate;
 mod functions;
 mod session;

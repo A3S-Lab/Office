@@ -78,6 +78,15 @@ the same comparison and fail-closed wildcard rules. Native recalculation
 returns `use.office.spreadsheet_formula_countif_criteria_unsupported`; the
 browser kernel records `office.kernel.spreadsheet.formula_unsupported`.
 
+`AVERAGEIF(range, criteria, [average_range])` averages numeric cells in the
+same-shaped block anchored at `average_range`'s top-left cell.
+`AVERAGEIF(A1:A3,"apple",C1)` reads `C1:C3`. Omitting `average_range` averages
+numeric cells in the criteria range. Text and blanks are ignored, and no
+numeric match is `#DIV/0!`. Unescaped `*` and `?` fail closed: native
+recalculation returns
+`use.office.spreadsheet_formula_averageif_criteria_unsupported`, and the
+browser kernel records `office.kernel.spreadsheet.formula_unsupported`.
+
 General replacement accepts `/`, one worksheet, one cell, or a rectangular A1
 range and edits string cells only. Literal matching is the default; add
 `--regex` for Rust regex and capture expansion. A scoped edit of a shared rich

@@ -24,6 +24,12 @@ pub(super) const COUNT_IF: CriteriaCall = CriteriaCall {
     range_code: "use.office.spreadsheet_formula_countif_range_unsupported",
 };
 
+pub(super) const AVERAGE_IF: CriteriaCall = CriteriaCall {
+    name: "AVERAGEIF",
+    criteria_code: "use.office.spreadsheet_formula_averageif_criteria_unsupported",
+    range_code: "use.office.spreadsheet_formula_averageif_range_unsupported",
+};
+
 pub(super) fn one_rectangle(
     value: &EvalValue,
     role: &str,
