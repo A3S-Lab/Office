@@ -679,9 +679,9 @@ sibling mutation. `Table[Column]`, contiguous table column ranges, common
 table-local current-row references from inside a table are supported.
 Spreadsheet error results remain typed cell values. Dynamic-array spill
 children are read-only; mutate their formula anchor. The closed native registry
-includes `SUMIF`, `COUNTIF`, and `AVERAGEIF`. Its full list and limits are in
-[spreadsheet.md](spreadsheet.md#values-and-formulas); the server never invokes
-a shell, script runtime, or external workbook.
+is the same list as [spreadsheet.md](spreadsheet.md#values-and-formulas),
+including `SUBTOTAL`. The server never invokes a shell, script runtime, or
+external workbook.
 
 Spreadsheet merged cells use the separate `merge-cells` and `unmerge-cells`
 mutations:
