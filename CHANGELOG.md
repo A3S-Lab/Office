@@ -6,6 +6,8 @@
 
 - CLI, Skill, and MCP list every closed native formula, including `SUBTOTAL`,
   so agents recalculate a supported function in one native batch.
+- An unevaluated formula issue points at CLI `recalculate` or MCP
+  `recalculate-spreadsheet-formulas` instead of another spreadsheet engine.
 
 ## 0.291.0 - 2026-09-19
 
