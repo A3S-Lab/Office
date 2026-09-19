@@ -66,6 +66,13 @@ a3s use office native query workbook.xlsx comment --json
 a3s use office native remove workbook.xlsx /Sheet1/B2/comment --json
 ```
 
+`SUMIF(range, criteria, [sum_range])` uses the criteria range's shape. The
+sum window starts at `sum_range`'s top-left cell, so `SUMIF(A1:A3,"apple",C1)`
+reads `C1:C3`, not only `C1`. Omitting `sum_range` sums the criteria range.
+Unescaped `*` and `?` criteria fail closed: native recalculation returns
+`use.office.spreadsheet_formula_sumif_criteria_unsupported`, and the browser
+kernel records `office.kernel.spreadsheet.formula_unsupported`.
+
 General replacement accepts `/`, one worksheet, one cell, or a rectangular A1
 range and edits string cells only. Literal matching is the default; add
 `--regex` for Rust regex and capture expansion. A scoped edit of a shared rich

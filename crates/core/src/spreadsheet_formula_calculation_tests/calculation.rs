@@ -778,3 +778,87 @@ async fn table_geometry_changes_clear_formula_and_chart_caches() {
     assert!(chart_xml.contains("<c:f>Sales[Qty]</c:f>"));
     assert!(!chart_xml.contains("numCache"));
 }
+
+#[tokio::test]
+async fn calculation_sumif_aligns_the_sum_window_to_the_criteria_shape() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut editor = NativeOfficeEditor::create(temp.path().join("sumif.xlsx"))
+        .await
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A1", text("apple"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A2", text("pear"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A3", text("APPLE"))
+        .unwrap();
+    editor.set_cell_value("/Sheet1/B1", number("1")).unwrap();
+    editor
+        .set_cell_value("/Sheet1/B2", number("100"))
+        .unwrap();
+    editor.set_cell_value("/Sheet1/B3", number("2")).unwrap();
+    editor.set_cell_value("/Sheet1/C1", number("4")).unwrap();
+    editor.set_cell_value("/Sheet1/C2", number("8")).unwrap();
+    editor
+        .set_cell_value("/Sheet1/C3", number("16"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/D1", formula("SUMIF(A1:A3,\"apple\",C1)"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/E1", formula("SUMIF(B1:B3,\">2\")"))
+        .unwrap();
+
+    let calculation = editor
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap();
+    let value = |path: &str| {
+        calculation
+            .cells
+            .iter()
+            .find(|cell| cell.cell.path() == path)
+            .unwrap()
+            .value
+            .clone()
+    };
+    assert_eq!(
+        value("/Sheet1/D1"),
+        SpreadsheetFormulaValue::Number {
+            value: "20".into()
+        }
+    );
+    assert_eq!(
+        value("/Sheet1/E1"),
+        SpreadsheetFormulaValue::Number {
+            value: "100".into()
+        }
+    );
+}
+
+#[tokio::test]
+async fn calculation_sumif_rejects_wildcard_criteria() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut editor = NativeOfficeEditor::create(temp.path().join("sumif-wildcard.xlsx"))
+        .await
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/A1", text("apple"))
+        .unwrap();
+    editor
+        .set_cell_value("/Sheet1/B1", formula("SUMIF(A1,\"a*\")"))
+        .unwrap();
+
+    assert_eq!(
+        editor
+            .snapshot()
+            .unwrap()
+            .calculate_spreadsheet_formulas()
+            .unwrap_err()
+            .code,
+        "use.office.spreadsheet_formula_sumif_criteria_unsupported"
+    );
+}

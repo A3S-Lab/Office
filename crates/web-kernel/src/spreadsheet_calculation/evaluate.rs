@@ -229,7 +229,7 @@ impl SpreadsheetEvaluator<'_> {
         Ok(())
     }
 
-    fn reference_key(
+    pub(super) fn reference_key(
         &self,
         reference: &SpreadsheetFormulaReference,
         default_sheet: usize,
