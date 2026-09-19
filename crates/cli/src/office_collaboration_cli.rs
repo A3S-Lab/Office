@@ -46,8 +46,8 @@ const HELP: &str = concat!(
     "  a3s-office collab checkpoint <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
-    "Typed mutations: markdown-replace/splice; document-replace-text/paragraph; document-insert/delete-paragraph; document-comment-create/reply/set-resolved/delete; document-suggestion-create/decide; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
-    "Document find lists 1-based matches in the same walk as document-replace-text; pass matchCount as expectedMatches and optional occurrence to change one match.\n",
+    "Typed mutations: markdown-replace/splice/replace-text; document-replace-text/paragraph; document-insert/delete-paragraph; document-comment-create/reply/set-resolved/delete; document-suggestion-create/decide; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element/replace-text; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
+    "Document, Markdown, Spreadsheet, and Presentation find list 1-based matches. Pass matchCount as expectedMatches and optional occurrence to document-replace-text, markdown-replace-text, or presentation-replace-text. Spreadsheet hits name the cell for spreadsheet-set-cell.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
@@ -236,6 +236,7 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
         NativeOfficeCollaborationArtifactKind::Document => "find-document-text",
         NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
         NativeOfficeCollaborationArtifactKind::Spreadsheet => "find-spreadsheet-text",
+        NativeOfficeCollaborationArtifactKind::Presentation => "find-presentation-text",
         _ => "find-text",
     };
     let human = if result.matches.is_empty() {
@@ -246,27 +247,29 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
             result.match_count, result.search
         );
         for hit in &result.matches {
-            let location = match (
-                &hit.paragraph_id,
-                &hit.text_id,
-                &hit.sheet_id,
-                hit.row,
-                hit.column,
-            ) {
-                (Some(paragraph_id), Some(text_id), _, _, _) => {
+            let location =
+                if let (Some(paragraph_id), Some(text_id)) = (&hit.paragraph_id, &hit.text_id) {
                     format!(
                         "paragraph {paragraph_id} text {text_id} @{}",
                         hit.index_utf16
                     )
-                }
-                (_, _, Some(sheet_id), Some(row), Some(column)) => {
+                } else if let (Some(sheet_id), Some(row), Some(column)) =
+                    (&hit.sheet_id, hit.row, hit.column)
+                {
                     format!(
                         "sheet {sheet_id} row {row} column {column} @{}",
                         hit.index_utf16
                     )
-                }
-                _ => format!("@{}", hit.index_utf16),
-            };
+                } else if let (Some(container_kind), Some(container_id), Some(element_id)) =
+                    (&hit.container_kind, &hit.container_id, &hit.element_id)
+                {
+                    format!(
+                        "{container_kind} {container_id} element {element_id} @{}",
+                        hit.index_utf16
+                    )
+                } else {
+                    format!("@{}", hit.index_utf16)
+                };
             lines.push_str(&format!(
                 "\n  {}: {} ({location})",
                 hit.occurrence, hit.text

@@ -99,7 +99,12 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    add optional `occurrence` the same way; use `document-replace-paragraph`
    when the whole paragraph identity is known. For a live Spreadsheet replica,
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
-   `spreadsheet-set-cell` rather than a text-replace mutation.
+   `spreadsheet-set-cell` rather than a text-replace mutation. For a live
+   Presentation replica, `collab find` returns `containerKind`, `containerId`,
+   and `elementId`. Pass that `matchCount` as `expectedMatches` on
+   `presentation-replace-text`, and add optional `occurrence` the same way, to
+   change only the matched text; use `presentation-update-element` when other
+   scene fields change.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
    `view ... issues`. Use HTML, SVG, or screenshot only as a semantic preview.

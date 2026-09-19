@@ -468,6 +468,12 @@ pub struct NativeOfficeCollaborationDocumentTextMatch {
     pub row: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub column: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub container_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub element_id: Option<String>,
     pub index_utf16: u32,
 }
 

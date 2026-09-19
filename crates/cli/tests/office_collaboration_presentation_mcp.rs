@@ -78,6 +78,26 @@ async fn mcp_manages_browser_compatible_presentation_scene_elements() {
     .await;
     assert_ne!(created["result"]["isError"], true, "{created}");
 
+    let found = call(
+        &mut stdin,
+        &mut stdout,
+        20,
+        "office_collaboration_find",
+        serde_json::json!({
+            "store": replica.to_str().unwrap(),
+            "find": "Shared presentation"
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(found["result"]["isError"], true, "{found}");
+    let found = &found["result"]["structuredContent"];
+    assert_eq!(found["operation"], "find-presentation-text");
+    assert_eq!(found["kind"], "presentation");
+    assert_eq!(found["matches"], 1);
+    assert_eq!(found["result"]["matches"][0]["elementId"], "element-title");
+    assert_eq!(found["result"]["matches"][0]["containerId"], "slide-1");
+
     let expected = presentation_slide_title_element();
     let mut next = expected.clone();
     next["text"] = serde_json::json!("MCP shared title");

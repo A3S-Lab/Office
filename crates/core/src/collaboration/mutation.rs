@@ -11,7 +11,7 @@ use super::{
 pub(in crate::collaboration) mod document;
 pub(in crate::collaboration) mod markdown;
 mod pdf;
-mod presentation;
+pub(in crate::collaboration) mod presentation;
 pub(in crate::collaboration) mod spreadsheet;
 
 use document::{apply_document_mutation, validate_document_mutation};
@@ -89,7 +89,8 @@ pub(super) fn validate_mutation_contract(
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
-        | NativeOfficeCollaborationMutation::PresentationMoveElement { .. } => {
+        | NativeOfficeCollaborationMutation::PresentationMoveElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationReplaceText { .. } => {
             NativeOfficeCollaborationArtifactKind::Presentation
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
@@ -231,7 +232,8 @@ pub(super) fn apply_mutation(
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
-        | NativeOfficeCollaborationMutation::PresentationMoveElement { .. } => {
+        | NativeOfficeCollaborationMutation::PresentationMoveElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationReplaceText { .. } => {
             apply_presentation_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }

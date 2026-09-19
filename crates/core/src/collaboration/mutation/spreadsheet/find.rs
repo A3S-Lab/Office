@@ -71,6 +71,9 @@ pub(in crate::collaboration) fn find_spreadsheet_text(
                 sheet_id: Some(sheet_id.clone()),
                 row: Some(row),
                 column: Some(column),
+                container_kind: None,
+                container_id: None,
+                element_id: None,
                 index_utf16: utf16_len(&display[..byte_index])?,
             });
         }

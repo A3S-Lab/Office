@@ -386,6 +386,18 @@ pub enum NativeOfficeCollaborationMutation {
         expected_after_element_id: Option<String>,
         after_element_id: Option<String>,
     },
+    /// Replace non-overlapping matches inside scene-element `text` fields.
+    /// Locate first with `collab find` / `office_collaboration_find`, then pass
+    /// `matchCount` as `expectedMatches` and optional 1-based `occurrence`.
+    /// Only the `text` field is written; geometry and other fields stay put.
+    PresentationReplaceText {
+        search: String,
+        replacement: String,
+        expected_matches: u32,
+        /// 1-based match. Omitted means every match after the count check.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        occurrence: Option<u32>,
+    },
     /// Create one portable PDF annotation with a caller-owned stable ID.
     /// Native creation always records `source: "created"` and accepts only
     /// annotation types supported by the browser projection.

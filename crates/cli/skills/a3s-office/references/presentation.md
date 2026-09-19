@@ -81,9 +81,13 @@ charts/media, animations, transitions, and theme fidelity remain incomplete.
 ## Shared Scene Elements
 
 The durable Yjs/Yrs collaboration replica is separate from an OOXML editing
-session. After joining a browser-initialized `presentation` replica, use
-`collab mutate` or `office_collaboration_mutate` for scene objects instead of
-editing internal Yjs roots. `presentation-create-element` accepts one complete
+session. After joining a browser-initialized `presentation` replica, locate
+element text first with `collab find <store> --find ...` or MCP
+`office_collaboration_find`. Each hit is one non-overlapping match in an
+active element (`containerKind`, `containerId`, `elementId`). Pass
+`matchCount` as `expectedMatches` on `presentation-replace-text` to change
+only that text; add `occurrence` to change one match. Use `collab mutate` or
+`office_collaboration_mutate`. `presentation-create-element` accepts one complete
 element in a stable `slide`, `master`, or `layout` container and may include an
 active `afterElementId`. `presentation-update-element` requires the complete
 observed and desired objects and merges only unrelated top-level field changes.

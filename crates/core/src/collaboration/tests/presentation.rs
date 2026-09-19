@@ -391,6 +391,70 @@ fn typed_presentation_claims_fail_closed_after_concurrent_identity_collision() {
     assert!(error.message.contains("concurrently assigned"));
 }
 
+#[test]
+fn find_lists_presentation_element_text_by_identity() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("presentation-find");
+    let store = initialized_presentation_store(&root, 900_014);
+    let (kind, found) = store.find_text("Shared presentation", 10).unwrap();
+    assert_eq!(kind, NativeOfficeCollaborationArtifactKind::Presentation);
+    assert_eq!(found.match_count, 1);
+    assert!(!found.truncated);
+    assert_eq!(found.matches[0].occurrence, 1);
+    assert_eq!(found.matches[0].container_kind.as_deref(), Some("slide"));
+    assert_eq!(found.matches[0].container_id.as_deref(), Some("slide-1"));
+    assert_eq!(
+        found.matches[0].element_id.as_deref(),
+        Some("element-title")
+    );
+    assert_eq!(found.matches[0].index_utf16, 0);
+}
+
+#[test]
+fn replace_presentation_text_changes_only_the_matched_span() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("presentation-replace-text");
+    let store = initialized_presentation_store(&root, 900_015);
+    let (kind, found) = store.find_text("presentation", 10).unwrap();
+    assert_eq!(kind, NativeOfficeCollaborationArtifactKind::Presentation);
+    store
+        .mutate(presentation_mutation_request(
+            "replace-live-title",
+            NativeOfficeCollaborationMutation::PresentationReplaceText {
+                search: "presentation".to_owned(),
+                replacement: "deck".to_owned(),
+                expected_matches: found.match_count as u32,
+                occurrence: Some(1),
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        presentation_element_string(&store, "slides", "slide-1", "element-title", "text")
+            .as_deref(),
+        Some("Shared deck")
+    );
+    assert_eq!(
+        presentation_element_number(&store, "slides", "slide-1", "element-title", "x"),
+        Some(10.0)
+    );
+
+    let conflict = store
+        .mutate(presentation_mutation_request(
+            "replace-stale-count",
+            NativeOfficeCollaborationMutation::PresentationReplaceText {
+                search: "presentation".to_owned(),
+                replacement: "slides".to_owned(),
+                expected_matches: 1,
+                occurrence: None,
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(
+        conflict.code,
+        "office.collaboration.mutation_match_conflict"
+    );
+}
+
 fn initialized_presentation_store(root: &Path, client_id: u64) -> NativeOfficeCollaborationStore {
     let store =
         NativeOfficeCollaborationStore::create(presentation_create_request(root, client_id))

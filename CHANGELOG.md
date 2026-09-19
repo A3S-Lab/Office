@@ -8,6 +8,12 @@
   `office_collaboration_find` return one hit per cell (`sheetId`, `row`,
   `column`) in sheet order. The following edit stays `spreadsheet-set-cell`;
   there is no spreadsheet text-replace mutation.
+- Locate live Presentation text, then replace only that span.
+  `collab find` / `office_collaboration_find` number non-overlapping matches
+  and return `containerKind`, `containerId`, and `elementId`.
+  `presentation-replace-text` uses that `matchCount` as `expectedMatches` and
+  optional `occurrence`, and writes only the scene-element `text` field.
+  Geometry and other fields still use `presentation-update-element`.
 
 ## 0.286.0 - 2026-09-18
 

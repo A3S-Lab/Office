@@ -60,7 +60,10 @@ fail-closed mutation. For Document or Markdown text locate-edit, call
 `office_collaboration_find` first and pass its `matchCount` /
 `occurrence` into `document-replace-text` or `markdown-replace-text`. For a
 Spreadsheet replica, the same find returns one cell (`sheetId`, `row`,
-`column`); edit that coordinate with `spreadsheet-set-cell`. Do not
+`column`); edit that coordinate with `spreadsheet-set-cell`. For a
+Presentation replica, pass that same count to `presentation-replace-text`;
+it rewrites only the matched scene-element text. Use
+`presentation-update-element` when geometry or other fields change. Do not
 decode Office collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
@@ -499,6 +502,8 @@ active element in the container:
 
 Creation appends a canonical immutable claim. An identical retry is a no-op;
 different same-ID content, a tombstoned ID, or a missing anchor fails closed.
+Locate the scene element with `office_collaboration_find` before changing it.
+`presentation-replace-text` changes only the matched text.
 `presentation-update-element` accepts `elementId` plus complete
 `expectedElement` and `nextElement` values. It writes only changed top-level
 fields, merges unrelated concurrent fields, and rejects a stale same-field

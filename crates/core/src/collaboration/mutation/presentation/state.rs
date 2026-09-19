@@ -364,6 +364,45 @@ fn parsed_container_kind(
     }
 }
 
+pub(super) fn ordered_container_ids(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+    kind: NativeOfficeCollaborationPresentationContainerKind,
+) -> UseResult<Vec<String>> {
+    let containers = doc.get_or_insert_map(format!(
+        "{}.presentation.{}",
+        manifest.namespace,
+        container_collection(kind)
+    ));
+    let order_name = match kind {
+        NativeOfficeCollaborationPresentationContainerKind::Slide => "slide-order",
+        NativeOfficeCollaborationPresentationContainerKind::Master => "master-order",
+        NativeOfficeCollaborationPresentationContainerKind::Layout => "layout-order",
+    };
+    let order =
+        doc.get_or_insert_array(format!("{}.presentation.{order_name}", manifest.namespace));
+    let transaction = doc.transact();
+    let present: HashSet<String> = containers.keys(&transaction).map(str::to_owned).collect();
+    let mut ids = Vec::new();
+    let mut seen = HashSet::new();
+    for value in order.iter(&transaction) {
+        let Out::Any(Any::String(id)) = value else {
+            continue;
+        };
+        let id = id.to_string();
+        if present.contains(&id) && seen.insert(id.clone()) {
+            ids.push(id);
+        }
+    }
+    let mut rest = present
+        .into_iter()
+        .filter(|id| seen.insert(id.clone()))
+        .collect::<Vec<_>>();
+    rest.sort();
+    ids.extend(rest);
+    Ok(ids)
+}
+
 fn container_collection(value: NativeOfficeCollaborationPresentationContainerKind) -> &'static str {
     match value {
         NativeOfficeCollaborationPresentationContainerKind::Slide => "slides",

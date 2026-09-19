@@ -6,9 +6,12 @@ use super::super::{
 };
 
 mod element;
+mod find;
 mod json;
 mod order;
 mod state;
+
+pub(in crate::collaboration) use find::find_presentation_text;
 
 pub(super) fn validate_presentation_mutation(
     mutation: &NativeOfficeCollaborationMutation,
