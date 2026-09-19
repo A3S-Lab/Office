@@ -371,13 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.290.0` counts cells with `COUNTIF`:
+Version `0.291.0` averages numeric cells with `AVERAGEIF`:
 
-- `COUNTIF(range, criteria)` uses one rectangle and the same comparison rules
-  as `SUMIF`.
-- `COUNTIF(A1:A3,"apple")` counts `apple` and `APPLE`.
-- Unescaped `*` and `?` criteria fail closed instead of returning a partial
-  count. Native and browser calculation use the same rule.
+- `AVERAGEIF(A1:A3,"apple",C1)` reads `C1:C3` and is 10, not only `C1`.
+- Text and blanks are ignored. No numeric match is `#DIV/0!`.
+- Unescaped `*` and `?` criteria fail closed in both calculation engines.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

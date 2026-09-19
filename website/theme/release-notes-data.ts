@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.291.0',
+    date: '2026-09-19',
+    kind: 'new',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Average numeric cells with AVERAGEIF',
+      zh: '用 AVERAGEIF 对数字求平均',
+    },
+    summary: {
+      en: 'AVERAGEIF averages the criteria range, or the same-shaped block anchored at the average range top-left. No numeric match is #DIV/0!. Wildcards fail closed.',
+      zh: 'AVERAGEIF 对条件区域求平均，或对锚定在平均区域左上角、形状相同的区块求平均。没有数字匹配时是 #DIV/0!。通配符失败关闭。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Top-left alignment',
+          zh: '左上角对齐',
+        },
+        detail: {
+          en: 'AVERAGEIF(A1:A3,"apple",C1) reads C1:C3 and is 10, not only C1.',
+          zh: 'AVERAGEIF(A1:A3,"apple",C1) 读取 C1:C3，结果是 10，而不是只读 C1。',
+        },
+      },
+      {
+        title: {
+          en: 'Empty average is #DIV/0!',
+          zh: '没有数字时是 #DIV/0!',
+        },
+        detail: {
+          en: 'Text and blanks are ignored. Zero numeric matches is division by zero, not a partial average.',
+          zh: '文本和空白不计入。没有任何数字匹配时是除零，而不是不完整的平均值。',
+        },
+      },
+      {
+        title: {
+          en: 'Wildcards fail closed',
+          zh: '通配符失败关闭',
+        },
+        detail: {
+          en: 'Unescaped * and ? are rejected in both the native engine and the browser kernel.',
+          zh: '未转义的 * 和 ? 在原生引擎和浏览器内核中都会被拒绝。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.290.0',
     date: '2026-09-19',
     kind: 'new',
