@@ -43,3 +43,14 @@ test('office overlay portal prefers the modal dialog focus root', () => {
   expect(root.classList.contains('ds-dialog')).toBe(true);
   host.remove();
 });
+
+test('office overlay portal escapes a clipped office root onto document.body', () => {
+  const host = document.createElement('div');
+  host.setAttribute('data-a3s-office', '');
+  host.style.overflow = 'hidden';
+  const anchor = document.createElement('button');
+  host.append(anchor);
+  document.body.append(host);
+  expect(officeOverlayPortalRoot(document, anchor)).toBe(document.body);
+  host.remove();
+});

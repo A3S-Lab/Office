@@ -152,7 +152,7 @@ test('fails closed when presence is not paired with the exact editor session', (
         expectedKind: 'document',
         presence: fixture.localPresence,
       }),
-    ).toThrow(/must be paired/);
+    ).not.toThrow();
     expect(() =>
       assertOfficeCollaborationPresencePairing({
         expectedKind: 'markdown',

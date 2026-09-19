@@ -103,15 +103,16 @@ export function assertOfficeCollaborationPresencePairing({
   session?: WorkOfficeCollaborationSession;
 }): void {
   if (!presence) return;
-  if (!session) {
+  const local = presence.local();
+  if (local.artifactKind !== expectedKind) {
     throw new WorkOfficeCollaborationError(
-      'office.collaboration.presence_invalid',
-      'Office editor presence must be paired with its collaboration session.',
+      'office.collaboration.kind_mismatch',
+      `Office editor presence and collaboration must both target '${expectedKind}'.`,
     );
   }
-
-  const local = presence.local();
-  if (session.kind !== expectedKind || local.artifactKind !== expectedKind) {
+  // Presence-only hosts project Awareness without binding the CRDT session.
+  if (!session) return;
+  if (session.kind !== expectedKind) {
     throw new WorkOfficeCollaborationError(
       'office.collaboration.kind_mismatch',
       `Office editor presence and collaboration must both target '${expectedKind}'.`,
