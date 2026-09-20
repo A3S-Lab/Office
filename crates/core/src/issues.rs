@@ -199,7 +199,7 @@ impl<'a> IssueScanner<'a> {
                 NativeOfficeIssueSubtype::FormulaNotEvaluated,
                 NativeOfficeIssueSeverity::Warning,
                 "Formula has no cached result and requires recalculation.",
-                "Run `a3s use office native recalculate` or open the workbook in a conforming spreadsheet engine.",
+                "Run CLI `recalculate` or MCP `recalculate-spreadsheet-formulas`. Do not calculate the formula outside the native engine.",
             )
         } else {
             return;

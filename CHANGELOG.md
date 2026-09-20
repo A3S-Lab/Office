@@ -8,6 +8,8 @@
   so agents recalculate a supported function in one native batch.
 - MCP `set-cell-value` states that a formula is stored only and must be paired
   with `recalculate-spreadsheet-formulas` in the same batch.
+- An unevaluated formula issue points at CLI `recalculate` or MCP
+  `recalculate-spreadsheet-formulas` instead of another spreadsheet engine.
 
 ## 0.291.0 - 2026-09-19
 
