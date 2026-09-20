@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.294.0 - 2026-09-20
+
 ### Spreadsheet
 
 - Unsupported formula functions return an agent-directed suggestion to stay on
