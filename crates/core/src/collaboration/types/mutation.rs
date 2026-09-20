@@ -223,6 +223,12 @@ pub enum NativeOfficeCollaborationMutation {
     /// canonical ProseMirror `Y.XmlFragment`. Matches may span formatting
     /// runs inside one `Y.XmlText`, but never cross an embedded object or XML
     /// text-node boundary.
+    ///
+    /// Locate first with `collab find` / `office_collaboration_find`, then pass
+    /// `matchCount` as `expectedMatches` and optional 1-based `occurrence`.
+    /// Optional find-hit anchors (`paragraphId`, `textId`, `indexUtf16`) make
+    /// the selected occurrence place-safe under concurrent peers; omit them to
+    /// keep the count-only contract.
     DocumentReplaceText {
         search: String,
         replacement: String,
@@ -230,6 +236,15 @@ pub enum NativeOfficeCollaborationMutation {
         /// 1-based match. Omitted means every match after the count check.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         occurrence: Option<u32>,
+        /// Optional paragraph identity from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        paragraph_id: Option<String>,
+        /// Optional Word text identity from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text_id: Option<String>,
+        /// Optional UTF-16 start index from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Replace the complete visible text of one stable plain paragraph after
     /// matching its current Word text identity and exact text. This is the
@@ -389,6 +404,9 @@ pub enum NativeOfficeCollaborationMutation {
     /// Replace non-overlapping matches inside scene-element `text` fields.
     /// Locate first with `collab find` / `office_collaboration_find`, then pass
     /// `matchCount` as `expectedMatches` and optional 1-based `occurrence`.
+    /// Optional find-hit anchors (`containerKind`, `containerId`, `elementId`,
+    /// `indexUtf16`) make the selected occurrence place-safe under concurrent
+    /// peers; omit them to keep the count-only contract.
     /// Only the `text` field is written; geometry and other fields stay put.
     PresentationReplaceText {
         search: String,
@@ -397,6 +415,18 @@ pub enum NativeOfficeCollaborationMutation {
         /// 1-based match. Omitted means every match after the count check.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         occurrence: Option<u32>,
+        /// Optional scene-container kind from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        container_kind: Option<NativeOfficeCollaborationPresentationContainerKind>,
+        /// Optional scene-container identity from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        container_id: Option<String>,
+        /// Optional scene-element identity from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        element_id: Option<String>,
+        /// Optional UTF-16 start index from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Create one portable PDF annotation with a caller-owned stable ID.
     /// Native creation always records `source: "created"` and accepts only

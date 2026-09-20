@@ -409,6 +409,9 @@ fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
             replacement: "🦀".to_owned(),
             expected_matches: 1,
             occurrence: None,
+            paragraph_id: None,
+            text_id: None,
+            index_utf16: None,
         },
     );
     let replaced = store.mutate(replace_request.clone()).unwrap();
@@ -516,6 +519,9 @@ fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
                 replacement: "document".to_owned(),
                 expected_matches: 2,
                 occurrence: None,
+                paragraph_id: None,
+                text_id: None,
+                index_utf16: None,
             },
         ))
         .unwrap_err();

@@ -67,8 +67,20 @@ pub(super) fn validate_element_mutation(
             search,
             expected_matches,
             occurrence,
+            container_kind,
+            container_id,
+            element_id,
+            index_utf16,
             ..
-        } => validate_presentation_text_replacement(search, *expected_matches, *occurrence),
+        } => validate_presentation_text_replacement(
+            search,
+            *expected_matches,
+            *occurrence,
+            *container_kind,
+            container_id.as_deref(),
+            element_id.as_deref(),
+            *index_utf16,
+        ),
         _ => Err(invalid_presentation_mutation(
             "The supplied mutation is not a Presentation scene-element mutation.",
         )),
@@ -125,6 +137,10 @@ pub(super) fn apply_element_mutation(
             replacement,
             expected_matches,
             occurrence,
+            container_kind,
+            container_id,
+            element_id,
+            index_utf16,
         } => replace_presentation_text(
             doc,
             manifest,
@@ -132,6 +148,10 @@ pub(super) fn apply_element_mutation(
             replacement,
             *expected_matches,
             *occurrence,
+            *container_kind,
+            container_id.as_deref(),
+            element_id.as_deref(),
+            *index_utf16,
         ),
         _ => Err(invalid_presentation_mutation(
             "The supplied mutation is not a Presentation scene-element mutation.",

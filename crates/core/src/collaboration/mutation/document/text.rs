@@ -18,6 +18,9 @@ pub(super) fn validate_text_replacement(
     search: &str,
     expected_matches: u32,
     occurrence: Option<u32>,
+    paragraph_id: Option<&str>,
+    text_id: Option<&str>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     if search.is_empty() {
         return Err(collaboration_error(
@@ -49,6 +52,33 @@ pub(super) fn validate_text_replacement(
             .with_detail("occurrence", u64::from(occurrence))
             .with_detail("expectedMatches", expected_matches as u64));
         }
+    }
+    if let Some(paragraph_id) = paragraph_id {
+        if paragraph_id.is_empty() {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_invalid",
+                "Document text replacement paragraphId must be non-empty when supplied.",
+            ));
+        }
+    }
+    if let Some(text_id) = text_id {
+        if text_id.is_empty() {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_invalid",
+                "Document text replacement textId must be non-empty when supplied.",
+            ));
+        }
+    }
+    let has_anchors = paragraph_id.is_some() || text_id.is_some() || index_utf16.is_some();
+    if has_anchors && occurrence.is_none() && expected_matches != 1 {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_invalid",
+            "Document text replacement identity anchors require occurrence or expectedMatches=1 so one match is selected.",
+        )
+        .with_suggestion(
+            "Pass occurrence from office_collaboration_find / collab find, or set expectedMatches to 1.",
+        )
+        .with_detail("expectedMatches", expected_matches as u64));
     }
     Ok(())
 }
@@ -136,6 +166,9 @@ pub(super) fn replace_document_text(
     replacement: &str,
     expected_matches: u32,
     occurrence: Option<u32>,
+    paragraph_id: Option<&str>,
+    text_id: Option<&str>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     let root = format!("{}.document.content", manifest.namespace);
     let fragment = doc.get_or_insert_xml_fragment(root);
@@ -188,6 +221,60 @@ pub(super) fn replace_document_text(
     } else {
         replacements
     };
+    for replacement_target in &replacements {
+        let (actual_paragraph_id, actual_text_id) = match replacement_target.text.parent() {
+            Some(XmlOut::Element(parent)) => (
+                xml_string_attribute(&parent, &transaction, PARAGRAPH_ID_ATTRIBUTE),
+                xml_string_attribute(&parent, &transaction, TEXT_ID_ATTRIBUTE),
+            ),
+            _ => (None, None),
+        };
+        if let Some(expected_paragraph_id) = paragraph_id {
+            if actual_paragraph_id.as_deref() != Some(expected_paragraph_id) {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Document text replacement paragraphId no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Document text matches again, then retry replace-text with the current paragraphId, textId, and indexUtf16.",
+                )
+                .with_detail("expectedParagraphId", expected_paragraph_id.to_owned())
+                .with_detail(
+                    "actualParagraphId",
+                    actual_paragraph_id.unwrap_or_default(),
+                ));
+            }
+        }
+        if let Some(expected_text_id) = text_id {
+            if actual_text_id.as_deref() != Some(expected_text_id) {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Document text replacement textId no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Document text matches again, then retry replace-text with the current paragraphId, textId, and indexUtf16.",
+                )
+                .with_detail("expectedTextId", expected_text_id.to_owned())
+                .with_detail("actualTextId", actual_text_id.unwrap_or_default()));
+            }
+        }
+        if let Some(expected_index_utf16) = index_utf16 {
+            if replacement_target.index_utf16 != expected_index_utf16 {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Document text replacement indexUtf16 no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Document text matches again, then retry replace-text with the current paragraphId, textId, and indexUtf16.",
+                )
+                .with_detail("expectedIndexUtf16", u64::from(expected_index_utf16))
+                .with_detail(
+                    "actualIndexUtf16",
+                    u64::from(replacement_target.index_utf16),
+                ));
+            }
+        }
+    }
     if search == replacement {
         return Ok(());
     }
@@ -383,23 +470,94 @@ mod tests {
                 replacement: "value".to_owned(),
                 expected_matches: 1,
                 occurrence: None,
+                paragraph_id: None,
+                text_id: None,
+                index_utf16: None,
             },
             NativeOfficeCollaborationMutation::DocumentReplaceText {
                 search: "value".to_owned(),
                 replacement: "next".to_owned(),
                 expected_matches: 0,
                 occurrence: None,
+                paragraph_id: None,
+                text_id: None,
+                index_utf16: None,
             },
             NativeOfficeCollaborationMutation::DocumentReplaceText {
                 search: "value".to_owned(),
                 replacement: "next".to_owned(),
                 expected_matches: MAX_DOCUMENT_TEXT_REPLACEMENTS + 1,
                 occurrence: None,
+                paragraph_id: None,
+                text_id: None,
+                index_utf16: None,
+            },
+            NativeOfficeCollaborationMutation::DocumentReplaceText {
+                search: "value".to_owned(),
+                replacement: "next".to_owned(),
+                expected_matches: 2,
+                occurrence: None,
+                paragraph_id: Some("00000001".to_owned()),
+                text_id: None,
+                index_utf16: None,
             },
         ] {
             let error = super::super::validate_document_mutation(&mutation).unwrap_err();
             assert_eq!(error.code, "office.collaboration.mutation_invalid");
         }
+    }
+
+    #[test]
+    fn identity_anchors_accept_matching_find_hit_and_reject_drift() {
+        let doc = new_replica_document(
+            7,
+            "a3s.office",
+            NativeOfficeCollaborationArtifactKind::Document,
+        );
+        let fragment = doc.get_or_insert_xml_fragment("a3s.office.document.content");
+        {
+            let mut transaction = doc.transact_mut();
+            let first = fragment.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+            first.insert_attribute(&mut transaction, "paragraphId", "00000001");
+            first.insert_attribute(&mut transaction, "textId", "00000002");
+            first.push_back(&mut transaction, XmlTextPrelim::new("alpha bold"));
+            let second = fragment.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+            second.insert_attribute(&mut transaction, "paragraphId", "00000003");
+            second.insert_attribute(&mut transaction, "textId", "00000004");
+            second.push_back(&mut transaction, XmlTextPrelim::new("beta bold"));
+        }
+        let manifest = manifest();
+
+        replace_document_text(
+            &doc,
+            &manifest,
+            "bold",
+            "strong",
+            2,
+            Some(2),
+            Some("00000003"),
+            Some("00000004"),
+            Some(5),
+        )
+        .unwrap();
+
+        let drifted = replace_document_text(
+            &doc,
+            &manifest,
+            "strong",
+            "final",
+            1,
+            Some(1),
+            Some("00000001"),
+            Some("00000002"),
+            Some(6),
+        )
+        .unwrap_err();
+        assert_eq!(drifted.code, "office.collaboration.mutation_match_conflict");
+        assert!(drifted
+            .suggestion
+            .as_deref()
+            .is_some_and(|value| value.contains("Find Document text matches again")));
     }
 
     #[test]
@@ -425,7 +583,8 @@ mod tests {
         };
         let manifest = manifest();
 
-        replace_document_text(&doc, &manifest, "bold", "strong", 2, None).unwrap();
+        replace_document_text(&doc, &manifest, "bold", "strong", 2, None, None, None, None)
+            .unwrap();
 
         let transaction = doc.transact();
         let chunks = text.diff(&transaction, |_| ());
@@ -459,7 +618,18 @@ mod tests {
             paragraph.push_back(&mut transaction, XmlTextPrelim::new("plain bold bold end"))
         };
 
-        replace_document_text(&doc, &manifest(), "bold", "strong", 2, Some(2)).unwrap();
+        replace_document_text(
+            &doc,
+            &manifest(),
+            "bold",
+            "strong",
+            2,
+            Some(2),
+            None,
+            None,
+            None,
+        )
+        .unwrap();
 
         let transaction = doc.transact();
         assert_eq!(text.get_string(&transaction), "plain bold strong end");
@@ -535,7 +705,18 @@ mod tests {
             (outer_row, inner_row, paragraph, text)
         };
 
-        replace_document_text(&doc, &manifest(), "Nested", "Shared", 1, None).unwrap();
+        replace_document_text(
+            &doc,
+            &manifest(),
+            "Nested",
+            "Shared",
+            1,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
 
         let transaction = doc.transact();
         assert_eq!(text.get_string(&transaction), "Shared text");
@@ -573,8 +754,18 @@ mod tests {
             paragraph.push_back(&mut transaction, XmlTextPrelim::new("Unchanged"))
         };
 
-        let error =
-            replace_document_text(&doc, &manifest(), "Unchanged", "Changed", 1, None).unwrap_err();
+        let error = replace_document_text(
+            &doc,
+            &manifest(),
+            "Unchanged",
+            "Changed",
+            1,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap_err();
         assert_eq!(error.code, "office.collaboration.content_invalid");
         assert_eq!(text.get_string(&doc.transact()), "Unchanged");
     }

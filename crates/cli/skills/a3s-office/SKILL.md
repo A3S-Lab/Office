@@ -96,15 +96,17 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    live Writer or Markdown replica, locate first with `collab find <store>
    --find ...` or MCP `office_collaboration_find`, pass that `matchCount` as
    `expectedMatches` on `document-replace-text` or `markdown-replace-text`, and
-   add optional `occurrence` the same way; use `document-replace-paragraph`
-   when the whole paragraph identity is known. For a live Spreadsheet replica,
+   add optional `occurrence` the same way. For Writer under concurrent peers,
+   also pass the hit's `paragraphId`, `textId`, and `indexUtf16` so a drifted
+   span fails closed; use `document-replace-paragraph` when the whole paragraph
+   identity is known. For a live Spreadsheet replica,
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
    `spreadsheet-set-cell` rather than a text-replace mutation. For a live
    Presentation replica, `collab find` returns `containerKind`, `containerId`,
    and `elementId`. Pass that `matchCount` as `expectedMatches` on
-   `presentation-replace-text`, and add optional `occurrence` the same way, to
-   change only the matched text; use `presentation-update-element` when other
-   scene fields change.
+   `presentation-replace-text`, and add optional `occurrence` plus those
+   identity fields the same way, to change only the matched text; use
+   `presentation-update-element` when other scene fields change.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
    `view ... issues`. For native OOXML Spreadsheet sessions, filter issues with

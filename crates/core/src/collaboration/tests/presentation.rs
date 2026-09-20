@@ -425,6 +425,10 @@ fn replace_presentation_text_changes_only_the_matched_span() {
                 replacement: "deck".to_owned(),
                 expected_matches: found.match_count as u32,
                 occurrence: Some(1),
+                container_kind: None,
+                container_id: None,
+                element_id: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
@@ -446,6 +450,10 @@ fn replace_presentation_text_changes_only_the_matched_span() {
                 replacement: "slides".to_owned(),
                 expected_matches: 1,
                 occurrence: None,
+                container_kind: None,
+                container_id: None,
+                element_id: None,
+                index_utf16: None,
             },
         ))
         .unwrap_err();

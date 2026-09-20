@@ -238,6 +238,8 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         occurrence: Option<u32>,
     },
     /// Replace an exact number of non-overlapping Document Y.XmlText matches.
+    /// Optional find-hit anchors (`paragraphId`, `textId`, `indexUtf16`) make
+    /// the selected occurrence place-safe under concurrent peers.
     DocumentReplaceText {
         search: String,
         replacement: String,
@@ -245,6 +247,12 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         /// 1-based match. Omit it to replace every match after the count check.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         occurrence: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        paragraph_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Replace one stable plain paragraph after matching its exact current identity and text.
     DocumentReplaceParagraph {
@@ -377,12 +385,21 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         after_element_id: Option<String>,
     },
     /// Replace non-overlapping matches in scene-element text fields only.
+    /// Optional find-hit anchors keep the selected occurrence place-safe.
     PresentationReplaceText {
         search: String,
         replacement: String,
         expected_matches: u32,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         occurrence: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        container_kind: Option<OfficeCollaborationPresentationContainerKind>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        container_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        element_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Create one supported portable PDF annotation with a stable ID.
     PdfCreateAnnotation {
@@ -474,11 +491,17 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 replacement,
                 expected_matches,
                 occurrence,
+                paragraph_id,
+                text_id,
+                index_utf16,
             } => Self::DocumentReplaceText {
                 search,
                 replacement,
                 expected_matches,
                 occurrence,
+                paragraph_id,
+                text_id,
+                index_utf16,
             },
             OfficeCollaborationMutation::DocumentReplaceParagraph {
                 paragraph_id,
@@ -688,11 +711,19 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 replacement,
                 expected_matches,
                 occurrence,
+                container_kind,
+                container_id,
+                element_id,
+                index_utf16,
             } => Self::PresentationReplaceText {
                 search,
                 replacement,
                 expected_matches,
                 occurrence,
+                container_kind: container_kind.map(Into::into),
+                container_id,
+                element_id,
+                index_utf16,
             },
             OfficeCollaborationMutation::PdfCreateAnnotation {
                 annotation_id,

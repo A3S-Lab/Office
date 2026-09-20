@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Collaboration
+
+- `document-replace-text` and `presentation-replace-text` accept optional find-hit
+  identity anchors so locate-then-edit stays place-safe under concurrent peers.
+- MCP schema, Skill guidance, and fail-closed suggestions state the same
+  re-find recovery contract for hosts that cannot read Skill references.
+
 ## 0.300.0 - 2026-09-20
 
 ### Spreadsheet
