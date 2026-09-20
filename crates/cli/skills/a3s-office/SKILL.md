@@ -313,10 +313,11 @@ available.
   `NOT`, `OR`, `PI`, `POWER`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`, `SUBTOTAL`,
   `SUM`, `SUMIF`, and `TRANSPOSE`. Write the formula, then recalculate in that
   same native batch. Call functions with bare names; sheet or workbook
-  qualifiers are not calculated. External-workbook references and unsupported
-  structured references fail closed with agent-directed suggestions: rewrite to
-  in-workbook ranges/values, or use supported ListObject forms / sheet A1
-  ranges. The registry must reject unsupported functions
+  qualifiers are not calculated. External-workbook references, unsupported
+  structured references, and 3D named references (`Sheet1:Sheet2!Name`) fail
+  closed with agent-directed suggestions: rewrite to in-workbook ranges/values,
+  use supported ListObject forms / sheet A1 ranges, or resolve names with a
+  single sheet or workbook scope. The registry must reject unsupported functions
   instead of falling back to code execution or the compatibility route.
   `SUMIF`/`COUNTIF`/`AVERAGEIF` accept one exact value or a numeric comparison
   such as `">=10"`; unescaped `*` / `?` wildcards fail closed. `SUMIF` and

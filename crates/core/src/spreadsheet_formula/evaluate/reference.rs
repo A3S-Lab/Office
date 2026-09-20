@@ -159,6 +159,9 @@ impl EvaluationContext<'_> {
                         "Native calculation does not resolve a name through 3D qualifier '{}'.",
                         qualifier_label(qualifier)
                     ),
+                )
+                .with_suggestion(
+                    "Resolve names with a single sheet scope or workbook scope (no Sheet1:Sheet2!Name). Rewrite to in-workbook ranges or a non-3D defined name; recalculate in-process; do not evaluate the formula outside the native engine.",
                 ));
             }
             let Some(sheet) = self.sheet_position(&qualifier.worksheet) else {

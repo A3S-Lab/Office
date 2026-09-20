@@ -129,6 +129,29 @@ async fn calculation_rejects_cycles_and_unregistered_functions_without_mutation(
             "Use a supported ListObject form: Table[Column], contiguous column ranges, #All/#Data/#Headers/#Totals when those rows exist, or table-local [@Column] only inside the table. Fix missing table/column/header/totals or rewrite to sheet A1 ranges; do not invent Excel structured-reference dialects or calculate outside the native engine."
         )
     );
+
+    let mut named_3d = NativeOfficeEditor::create(temp.path().join("named-3d.xlsx"))
+        .await
+        .unwrap();
+    named_3d.add_worksheet("Sheet2").unwrap();
+    named_3d
+        .set_cell_value("/Sheet1/A1", formula("Sheet1:Sheet2!Revenue"))
+        .unwrap();
+    let named_3d_error = named_3d
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
+    assert_eq!(
+        named_3d_error.code,
+        "use.office.spreadsheet_formula_named_reference_unsupported"
+    );
+    assert_eq!(
+        named_3d_error.suggestion.as_deref(),
+        Some(
+            "Resolve names with a single sheet scope or workbook scope (no Sheet1:Sheet2!Name). Rewrite to in-workbook ranges or a non-3D defined name; recalculate in-process; do not evaluate the formula outside the native engine."
+        )
+    );
 }
 
 #[tokio::test]
