@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.299.0 - 2026-09-20
+
 ### Spreadsheet
 
 - Three-dimensional named references (`Sheet1:Sheet2!Name`) fail closed with an

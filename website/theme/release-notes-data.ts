@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.299.0',
+    date: '2026-09-20',
+    kind: 'improved',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: '3D named references guide agents in-process',
+      zh: '三维命名引用引导智能体留在进程内',
+    },
+    summary: {
+      en: 'Three-dimensional named references fail closed with a single-sheet/workbook-scope suggestion, and MCP recalculate schema states the same contract.',
+      zh: '三维命名引用会失败关闭并提示使用单工作表或工作簿作用域，MCP 重算 schema 声明同一约定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Sheet1:Sheet2!Name stays closed',
+          zh: 'Sheet1:Sheet2!Name 保持关闭',
+        },
+        detail: {
+          en: '3D name qualifiers suggest rewriting to single-sheet or workbook-scoped names and recalculating in-process.',
+          zh: '三维名称限定符会提示改写为单工作表或工作簿作用域名称，并在进程内重算。',
+        },
+      },
+      {
+        title: {
+          en: 'No invented 3D name dialects',
+          zh: '不发明三维名称方言',
+        },
+        detail: {
+          en: 'Agents rewrite to supported scopes or in-workbook A1 ranges instead of evaluating outside the native engine.',
+          zh: '智能体重写为受支持的作用域或工作簿内 A1 区域，而不是在原生引擎外求值。',
+        },
+      },
+      {
+        title: {
+          en: 'MCP schema carries the contract',
+          zh: 'MCP schema 承载约定',
+        },
+        detail: {
+          en: 'recalculate-spreadsheet-formulas documents 3D named-reference recovery for hosts that cannot read Skill references.',
+          zh: 'recalculate-spreadsheet-formulas 声明三维命名引用的恢复约定，供无法读取 Skill 参考文件的宿主使用。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.298.0',
     date: '2026-09-20',
     kind: 'improved',
