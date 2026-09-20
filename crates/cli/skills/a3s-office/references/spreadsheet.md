@@ -130,8 +130,10 @@ remain typed cell results. Circular dependencies, unsupported or qualified
 functions, missing tables, columns, or requested header/totals rows, disjoint
 or non-canonical structured-reference forms, and external-workbook reads fail
 with stable errors and leave the complete mutation batch unchanged. Unsupported
-functions include an agent-directed suggestion to stay on the closed registry
-and recalculate in-process. No shell, script runtime, or external workbook is
+functions, qualified function calls, external-workbook references, and
+unsupported structured references include agent-directed suggestions to stay on
+the closed registry / in-workbook ranges / supported ListObject forms and
+recalculate in-process. No shell, script runtime, or external workbook is
 invoked. Limits are 8,192 formula
 characters, depth 128 across both AST and nested named-reference resolution,
 8,192 AST nodes, 100,000 reference areas per value, 100,000 graph formulas,

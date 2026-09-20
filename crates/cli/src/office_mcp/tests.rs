@@ -425,6 +425,14 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
         encoded.contains("Call functions with bare names"),
         "recalculate schema must say function calls stay bare, {encoded}"
     );
+    assert!(
+        encoded.contains("External-workbook reads"),
+        "recalculate schema must say external workbook reads fail closed, {encoded}"
+    );
+    assert!(
+        encoded.contains("supported ListObject forms"),
+        "recalculate schema must say supported ListObject forms, {encoded}"
+    );
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",

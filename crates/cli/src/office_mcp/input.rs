@@ -829,7 +829,9 @@ pub(super) enum OfficeMutation {
     /// `CONCATENATE`, `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `MAX`, `MIN`,
     /// `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`,
     /// `SUBTOTAL`, `SUM`, `SUMIF`, `TRANSPOSE`. Call functions with bare names;
-    /// sheet or workbook qualifiers are not calculated.
+    /// sheet or workbook qualifiers are not calculated. External-workbook reads
+    /// and unsupported structured references fail closed with agent-directed
+    /// suggestions; stay on in-workbook ranges or supported ListObject forms.
     RecalculateSpreadsheetFormulas,
     AddSpreadsheetTable {
         /// Existing Spreadsheet worksheet path such as `/Sheet1`.

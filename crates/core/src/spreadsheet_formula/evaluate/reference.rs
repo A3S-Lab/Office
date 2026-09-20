@@ -49,13 +49,19 @@ impl EvaluationContext<'_> {
                     "use.office.spreadsheet_formula_external_reference_unsupported",
                     error.message,
                 )
-                .with_detail("reference", reference))
+                .with_detail("reference", reference)
+                .with_suggestion(
+                    "Rewrite the formula to in-workbook sheet ranges or values. Native calculation never opens other workbooks. Recalculate in-process; do not evaluate the formula outside the native engine.",
+                ))
             }
             Err(error) => Err(calculation_error(
                 "use.office.spreadsheet_formula_structured_reference_unsupported",
                 error.message,
             )
-            .with_detail("reference", reference)),
+            .with_detail("reference", reference)
+            .with_suggestion(
+                "Use a supported ListObject form: Table[Column], contiguous column ranges, #All/#Data/#Headers/#Totals when those rows exist, or table-local [@Column] only inside the table. Fix missing table/column/header/totals or rewrite to sheet A1 ranges; do not invent Excel structured-reference dialects or calculate outside the native engine.",
+            )),
         }
     }
 
@@ -140,6 +146,9 @@ impl EvaluationContext<'_> {
                     "Native calculation never opens external reference '{}'.",
                     qualifier.map_or_else(|| name.to_string(), qualifier_label)
                 ),
+            )
+            .with_suggestion(
+                "Rewrite the formula to in-workbook sheet ranges or values. Native calculation never opens other workbooks. Recalculate in-process; do not evaluate the formula outside the native engine.",
             ));
         }
         let explicit_scope = if let Some(qualifier) = qualifier {
@@ -503,6 +512,9 @@ impl EvaluationContext<'_> {
                     "Native calculation never opens external reference '{}'.",
                     qualifier_label(qualifier)
                 ),
+            )
+            .with_suggestion(
+                "Rewrite the formula to in-workbook sheet ranges or values. Native calculation never opens other workbooks. Recalculate in-process; do not evaluate the formula outside the native engine.",
             ));
         }
         let Some(start) = self.sheet_position(&qualifier.worksheet) else {
