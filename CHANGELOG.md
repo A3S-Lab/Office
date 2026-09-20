@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Spreadsheet
+
+- Closed-registry function arity mismatches fail closed with an agent-directed
+  suggestion to match the documented argument count and recalculate in-process.
+- MCP `recalculate-spreadsheet-formulas` and Skill guidance state the same
+  recovery contract for hosts that cannot read Skill references.
+
 ## 0.299.0 - 2026-09-20
 
 ### Spreadsheet

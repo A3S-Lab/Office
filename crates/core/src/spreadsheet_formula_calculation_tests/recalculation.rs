@@ -152,6 +152,28 @@ async fn calculation_rejects_cycles_and_unregistered_functions_without_mutation(
             "Resolve names with a single sheet scope or workbook scope (no Sheet1:Sheet2!Name). Rewrite to in-workbook ranges or a non-3D defined name; recalculate in-process; do not evaluate the formula outside the native engine."
         )
     );
+
+    let mut arity = NativeOfficeEditor::create(temp.path().join("arity.xlsx"))
+        .await
+        .unwrap();
+    arity
+        .set_cell_value("/Sheet1/A1", formula("SUM()"))
+        .unwrap();
+    let arity_error = arity
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
+    assert_eq!(
+        arity_error.code,
+        "use.office.spreadsheet_formula_function_arity"
+    );
+    assert_eq!(
+        arity_error.suggestion.as_deref(),
+        Some(
+            "Match the closed-registry argument count for this function. Recalculate in-process; do not pad, omit, or evaluate arguments outside the native engine."
+        )
+    );
 }
 
 #[tokio::test]

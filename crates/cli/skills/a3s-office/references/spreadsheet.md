@@ -128,13 +128,14 @@ Spill children are read-only; update or remove the anchor instead. A blocked
 spill produces typed `#SPILL!`, while formula error values such as `#DIV/0!`
 remain typed cell results. Circular dependencies, unsupported or qualified
 functions, missing tables, columns, or requested header/totals rows, disjoint
-or non-canonical structured-reference forms, external-workbook reads, and 3D
-named references fail with stable errors and leave the complete mutation batch
-unchanged. Unsupported functions, qualified function calls, external-workbook
-references, unsupported structured references, and 3D named references include
-agent-directed suggestions to stay on the closed registry / in-workbook ranges /
-supported ListObject forms / single-sheet or workbook-scoped names and
-recalculate in-process. No shell, script runtime, or external workbook is
+or non-canonical structured-reference forms, external-workbook reads, 3D named
+references, and closed-registry arity mismatches fail with stable errors and leave
+the complete mutation batch unchanged. Unsupported functions, qualified function
+calls, external-workbook references, unsupported structured references, 3D named
+references, and wrong argument counts include agent-directed suggestions to stay
+on the closed registry / in-workbook ranges / supported ListObject forms /
+single-sheet or workbook-scoped names / documented arities and recalculate
+in-process. No shell, script runtime, or external workbook is
 invoked. Limits are 8,192 formula
 characters, depth 128 across both AST and nested named-reference resolution,
 8,192 AST nodes, 100,000 reference areas per value, 100,000 graph formulas,

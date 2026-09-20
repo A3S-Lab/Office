@@ -276,10 +276,41 @@ async fn standard_mcp_recalculates_formulas_atomically_without_officecli() {
         "Resolve names with a single sheet scope or workbook scope (no Sheet1:Sheet2!Name). Rewrite to in-workbook ranges or a non-3D defined name; recalculate in-process; do not evaluate the formula outside the native engine."
     );
 
-    call(
+    let arity = call(
         &mut stdin,
         &mut stdout,
         11,
+        "office_apply_batch",
+        serde_json::json!({
+            "session": "workbook",
+            "mutations": [
+                {
+                    "operation": "set-cell-value",
+                    "path": "/Sheet1/J1",
+                    "value": { "type": "formula", "expression": "SUM()" }
+                },
+                {
+                    "operation": "recalculate-spreadsheet-formulas"
+                }
+            ]
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_eq!(arity["result"]["isError"], true, "{arity}");
+    assert_eq!(
+        arity["result"]["structuredContent"]["code"],
+        "use.office.spreadsheet_formula_function_arity"
+    );
+    assert_eq!(
+        arity["result"]["structuredContent"]["suggestion"],
+        "Match the closed-registry argument count for this function. Recalculate in-process; do not pad, omit, or evaluate arguments outside the native engine."
+    );
+
+    call(
+        &mut stdin,
+        &mut stdout,
+        12,
         "office_close",
         serde_json::json!({"session":"workbook","discard":true}),
         TIMEOUT,

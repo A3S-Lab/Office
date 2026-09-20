@@ -67,7 +67,10 @@ pub(super) fn evaluate_function(
             ),
         )
         .with_detail("function", definition.name.clone())
-        .with_detail("arguments", arguments.len()));
+        .with_detail("arguments", arguments.len())
+        .with_suggestion(
+            "Match the closed-registry argument count for this function. Recalculate in-process; do not pad, omit, or evaluate arguments outside the native engine.",
+        ));
     }
     let function = context.registry.function(name).ok_or_else(|| {
         calculation_error(
