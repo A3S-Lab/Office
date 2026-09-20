@@ -83,8 +83,6 @@ impl SpreadsheetEvaluator<'_> {
             "CONCAT" | "CONCATENATE" => concatenate(&values),
             "PI" => finite_number(std::f64::consts::PI),
             "NA" => SpreadsheetValue::error(SpreadsheetFormulaErrorLiteral::NotAvailable),
-            "TRUE" => SpreadsheetValue::Boolean { value: true },
-            "FALSE" => SpreadsheetValue::Boolean { value: false },
             _ => {
                 return Err(unsupported(format!(
                     "Formula function '{normalized}' is not supported."
@@ -836,7 +834,7 @@ fn function_arity(name: &str) -> Option<(usize, Option<usize>)> {
         "AVERAGEIF" => (2, Some(3)),
         "ABS" | "SQRT" | "NOT" => (1, Some(1)),
         "POWER" | "MOD" | "ROUND" => (2, Some(2)),
-        "FALSE" | "PI" | "NA" | "TRUE" => (0, Some(0)),
+        "PI" | "NA" => (0, Some(0)),
         _ => return None,
     })
 }
