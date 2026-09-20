@@ -226,7 +226,7 @@ impl NativeOfficeMcpServer {
 
     #[tool(
         name = "office_collaboration_mutate",
-        description = "Idempotently apply one authorized format-aware Office collaboration mutation; supports Markdown UTF-16 edits, fail-closed stable Document text/paragraph/options, Spreadsheet cells, Presentation scene elements and z-order, PDF form values, and append-only PDF redaction/page-operation review",
+        description = "Idempotently apply one authorized format-aware Office collaboration mutation; supports Markdown UTF-16 edits, fail-closed stable Document text/paragraph/options, Spreadsheet cells (formula writes need cached v/m beside f; no recalculate-spreadsheet-formulas), Presentation scene elements and z-order, PDF form values, and append-only PDF redaction/page-operation review",
         annotations(
             read_only_hint = false,
             destructive_hint = false,
