@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.300.0 - 2026-09-20
+
 ### Spreadsheet
 
 - Closed-registry function arity mismatches fail closed with an agent-directed

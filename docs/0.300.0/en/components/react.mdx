@@ -1,0 +1,137 @@
+---
+title: React
+description: Use A3S Office as controlled React components.
+---
+
+# React
+
+Import components from `@a3s-lab/office/react`. Keep the content value in the
+host and pass the complete next value back through state or an application
+store.
+
+```tsx title="DocumentPage.tsx"
+import { useState } from 'react';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+import '@a3s-lab/office/styles.css';
+
+const initialContent: DocumentContent = {
+  type: 'document',
+  html: '<h1>Project brief</h1><p>Start editing here.</p>',
+  pageSize: 'a4',
+};
+
+export function DocumentPage() {
+  const [content, setContent] = useState(initialContent);
+
+  return (
+    <div style={{ height: '100vh', minHeight: 0 }}>
+      <DocumentEditor
+        content={content}
+        onChange={setContent}
+        theme="light"
+      />
+    </div>
+  );
+}
+```
+
+The rich-text surfaces are composition-aware controlled components. Document,
+visual Markdown, and Presentation text keep IME pre-edit text inside the editor
+and call `onChange` only with the settled committed value. If a new controlled
+value arrives during composition, reconciliation waits until composition ends;
+the host can use the ordinary immediate state-update pattern shown above.
+
+## Host-owned file actions
+
+Document, Markdown, Spreadsheet, and Presentation editors accept a
+`fileActions` array. The host owns persistence and destructive behavior; A3S
+Office owns the accessible menu, focus movement, grouping, and presentation.
+Each `OfficeFileAction.icon` may be any React node from the host icon system.
+When it is omitted, the menu uses a neutral file glyph instead of leaving an
+empty icon cell. Set `danger: true` for an irreversible action, and use
+`separatorBefore` to keep export or destructive groups easy to scan.
+
+```tsx
+import type { OfficeFileAction } from '@a3s-lab/office/react';
+import { PresentationEditor } from '@a3s-lab/office/react';
+import { AppIcon } from './app-icon';
+
+const fileActions: readonly OfficeFileAction[] = [
+  {
+    id: 'save',
+    label: 'Save now',
+    icon: <AppIcon name="save" />,
+    disabled: !dirty,
+    onSelect: saveNow,
+  },
+  {
+    id: 'export-pdf',
+    label: 'Export PDF',
+    icon: <AppIcon name="pdf" />,
+    separatorBefore: true,
+    onSelect: exportPdf,
+  },
+  {
+    id: 'delete',
+    label: 'Delete presentation',
+    icon: <AppIcon name="trash" />,
+    danger: true,
+    separatorBefore: true,
+    onSelect: confirmDelete,
+  },
+];
+
+<PresentationEditor
+  content={content}
+  fileActions={fileActions}
+  onChange={setContent}
+  preview={false}
+/>;
+```
+
+Disabled actions remain readable but are skipped by arrow-key and edge focus.
+Opening the menu with the keyboard places focus on the first enabled action;
+Escape restores focus to the **File** trigger.
+
+Editor implementations are code-split. Use `preloadOfficeEditor(kind)` before
+an anticipated navigation when the host wants to remove the first-open delay.
+
+```tsx
+import { preloadOfficeEditor } from '@a3s-lab/office/react';
+
+<button onPointerEnter={() => void preloadOfficeEditor('spreadsheet')}>
+  Open workbook
+</button>;
+```
+
+PDF runtime assets are intentionally opt-in because the colocated PDFium
+WebAssembly binary is about 4.4 MiB before transfer compression. Use the option
+only for a high-confidence intent such as focus or hover on an explicit PDF
+action. Pass the same custom URL to `PdfViewer` when the host does not use the
+packaged default.
+
+```tsx
+import { PdfViewer, preloadOfficeEditor } from '@a3s-lab/office/react';
+
+const pdfiumUrl = '/assets/pdfium.wasm';
+
+<button
+  onFocus={() =>
+    void preloadOfficeEditor('pdf', {
+      pdfWasmUrl: pdfiumUrl,
+      preloadRuntimeAssets: true,
+    })
+  }
+>
+  Open PDF
+</button>;
+
+<PdfViewer loadSource={loadPdf} wasmUrl={pdfiumUrl} />;
+```
+
+The preload resolves after the editor module and any successful runtime request
+complete. Runtime warming is best effort: a failed request does not block
+editor opening, and a later call retries it. The helper does not instantiate
+PDFium or keep a hidden viewer alive; Worker-side compilation and document
+initialization still happen when `PdfViewer` mounts.
