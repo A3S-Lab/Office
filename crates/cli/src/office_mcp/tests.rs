@@ -433,6 +433,10 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
         encoded.contains("supported ListObject forms"),
         "recalculate schema must say supported ListObject forms, {encoded}"
     );
+    assert!(
+        encoded.contains("3D named references"),
+        "recalculate schema must say 3D named references fail closed, {encoded}"
+    );
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",

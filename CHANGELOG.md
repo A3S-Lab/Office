@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Spreadsheet
+
+- Three-dimensional named references (`Sheet1:Sheet2!Name`) fail closed with an
+  agent-directed suggestion to use single-sheet or workbook scope and
+  recalculate in-process.
+- MCP `recalculate-spreadsheet-formulas` and Skill guidance state the same
+  recovery contract for hosts that cannot read Skill references.
+
 ## 0.298.0 - 2026-09-20
 
 ### Spreadsheet

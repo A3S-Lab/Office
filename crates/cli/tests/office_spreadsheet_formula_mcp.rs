@@ -245,10 +245,41 @@ async fn standard_mcp_recalculates_formulas_atomically_without_officecli() {
         "Rewrite the formula to in-workbook sheet ranges or values. Native calculation never opens other workbooks. Recalculate in-process; do not evaluate the formula outside the native engine."
     );
 
-    call(
+    let named_3d = call(
         &mut stdin,
         &mut stdout,
         10,
+        "office_apply_batch",
+        serde_json::json!({
+            "session": "workbook",
+            "mutations": [
+                {
+                    "operation": "set-cell-value",
+                    "path": "/Sheet1/I1",
+                    "value": { "type": "formula", "expression": "Sheet1:Sheet2!Revenue" }
+                },
+                {
+                    "operation": "recalculate-spreadsheet-formulas"
+                }
+            ]
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_eq!(named_3d["result"]["isError"], true, "{named_3d}");
+    assert_eq!(
+        named_3d["result"]["structuredContent"]["code"],
+        "use.office.spreadsheet_formula_named_reference_unsupported"
+    );
+    assert_eq!(
+        named_3d["result"]["structuredContent"]["suggestion"],
+        "Resolve names with a single sheet scope or workbook scope (no Sheet1:Sheet2!Name). Rewrite to in-workbook ranges or a non-3D defined name; recalculate in-process; do not evaluate the formula outside the native engine."
+    );
+
+    call(
+        &mut stdin,
+        &mut stdout,
+        11,
         "office_close",
         serde_json::json!({"session":"workbook","discard":true}),
         TIMEOUT,
