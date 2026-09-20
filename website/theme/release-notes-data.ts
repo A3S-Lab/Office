@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.297.0',
+    date: '2026-09-20',
+    kind: 'improved',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Qualified formula calls stay on bare names',
+      zh: '限定公式调用留在无限定符名称',
+    },
+    summary: {
+      en: 'Sheet- or workbook-qualified function calls fail closed with a bare-name suggestion, and MCP recalculate schema states the same contract.',
+      zh: '带工作表或工作簿限定符的函数调用会失败关闭并提示使用无限定符名称，MCP 重算 schema 声明同一约定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Agent-directed qualified-function errors',
+          zh: '面向智能体的限定函数错误',
+        },
+        detail: {
+          en: 'Calls such as Sheet1!SUM(...) suggest bare closed-registry names and in-process recalculation instead of shelling out.',
+          zh: '类似 Sheet1!SUM(...) 的调用会提示使用无限定符的关闭注册表名称并在进程内重算，而不是改走 shell。',
+        },
+      },
+      {
+        title: {
+          en: 'Bare names only on recalculate',
+          zh: '重算只接受无限定符名称',
+        },
+        detail: {
+          en: 'Native calculation rejects sheet or workbook qualifiers on function calls so agents rewrite to bare SUM, IF, and peers.',
+          zh: '原生重算拒绝函数调用上的工作表或工作簿限定符，引导智能体重写为无限定符的 SUM、IF 等。',
+        },
+      },
+      {
+        title: {
+          en: 'MCP schema carries the contract',
+          zh: 'MCP schema 承载约定',
+        },
+        detail: {
+          en: 'recalculate-spreadsheet-formulas documents that function calls must be bare names for hosts that cannot read Skill references.',
+          zh: 'recalculate-spreadsheet-formulas 声明函数调用必须是无限定符名称，供无法读取 Skill 参考文件的宿主使用。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.296.0',
     date: '2026-09-20',
     kind: 'fixed',

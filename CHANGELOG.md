@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.297.0 - 2026-09-20
+
 ### Spreadsheet
 
 - Sheet- or workbook-qualified function calls fail closed with an agent-directed
