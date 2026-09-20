@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.295.0 - 2026-09-20
+
 ### Spreadsheet
 
 - `SUMIF` / `COUNTIF` / `AVERAGEIF` wildcard and shape failures return

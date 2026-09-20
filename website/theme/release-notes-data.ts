@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.295.0',
+    date: '2026-09-20',
+    kind: 'improved',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Conditional formulas stay on the native agent path',
+      zh: '条件公式留在原生智能体路径',
+    },
+    summary: {
+      en: '*IF wildcard failures suggest exact criteria, Skill separates native verify from collab writes, and MCP named ranges resolve on recalculate.',
+      zh: '*IF 通配符失败会提示精确条件，Skill 区分原生验证与协作写入，MCP 命名区域在重算时解析。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Agent-directed *IF criteria errors',
+          zh: '面向智能体的 *IF 条件错误',
+        },
+        detail: {
+          en: 'SUMIF, COUNTIF, and AVERAGEIF wildcard or shape failures suggest exact or numeric criteria and stay in-process instead of shelling out.',
+          zh: 'SUMIF、COUNTIF 与 AVERAGEIF 的通配符或范围形状失败会提示使用精确值或数值比较，并留在进程内，而不是改走 shell。',
+        },
+      },
+      {
+        title: {
+          en: 'Native verify vs collaboration writes',
+          zh: '原生验证与协作写入分开',
+        },
+        detail: {
+          en: 'Skill guidance separates native OOXML recalculate and formulaCached checks from live collaboration spreadsheet cell writes.',
+          zh: 'Skill 指引区分原生 OOXML 重算与 formulaCached 检查，以及实时协作表格单元格写入。',
+        },
+      },
+      {
+        title: {
+          en: 'Named ranges resolve on recalculate',
+          zh: '命名区域在重算时解析',
+        },
+        detail: {
+          en: 'MCP named-range mutations state that referenced names resolve only during recalculate-spreadsheet-formulas in the same batch.',
+          zh: 'MCP 命名区域变更声明引用名称只在同一批处理中的 recalculate-spreadsheet-formulas 期间解析。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.294.0',
     date: '2026-09-20',
     kind: 'improved',
