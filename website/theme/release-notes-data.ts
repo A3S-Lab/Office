@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.294.0',
+    date: '2026-09-20',
+    kind: 'improved',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Unsupported formulas stay on the native agent path',
+      zh: '未支持公式留在原生智能体路径',
+    },
+    summary: {
+      en: 'Unsupported functions suggest the closed registry, MCP import marks inferred formulas as stored-only, and Skill verification names formulaCached for use workers.',
+      zh: '未注册函数会提示关闭注册表，MCP 导入声明推断公式只存储，Skill 验证点名 formulaCached，供 use worker 使用。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Agent-directed unsupported-function errors',
+          zh: '面向智能体的未支持函数错误',
+        },
+        detail: {
+          en: 'Recalculation failures for unknown functions suggest staying on the closed registry and recalculating in-process instead of shelling out.',
+          zh: '未知函数的重算失败会提示留在关闭注册表并在进程内重算，而不是改走 shell。',
+        },
+      },
+      {
+        title: {
+          en: 'Import formulas stay stored-only',
+          zh: '导入公式只存储',
+        },
+        detail: {
+          en: 'MCP import-spreadsheet-delimited states that inferred formulas need recalculate-spreadsheet-formulas in the same batch.',
+          zh: 'MCP import-spreadsheet-delimited 声明推断公式需要在同一批处理中执行 recalculate-spreadsheet-formulas。',
+        },
+      },
+      {
+        title: {
+          en: 'Skill verify loop for use workers',
+          zh: '面向 use worker 的 Skill 验证环',
+        },
+        detail: {
+          en: 'SKILL.md names formula_not_evaluated and formulaCached so hosts that cannot read Skill references still close the write → recalculate loop.',
+          zh: 'SKILL.md 点名 formula_not_evaluated 与 formulaCached，让无法读取 Skill 参考文件的宿主也能闭合写入 → 重算环。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.293.0',
     date: '2026-09-20',
     kind: 'fixed',

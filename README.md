@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.293.0` rejects browser `TRUE()` and `FALSE()` like the native registry:
+Version `0.294.0` keeps unsupported spreadsheet formulas on the native agent path:
 
-- `TRUE()` and `FALSE()` fail closed instead of returning booleans.
-- Boolean literals `TRUE` and `FALSE` without parentheses still parse.
-- Agents get the same closed-registry path in the browser and native engines.
+- Unsupported functions return a suggestion to stay on the closed registry and recalculate in-process.
+- MCP delimited import states inferred formulas stay stored-only until recalculation.
+- Skill verification names `formula_not_evaluated` / `formulaCached` for use workers.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
