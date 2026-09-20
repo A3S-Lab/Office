@@ -437,6 +437,10 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
         encoded.contains("3D named references"),
         "recalculate schema must say 3D named references fail closed, {encoded}"
     );
+    assert!(
+        encoded.contains("closed-registry argument count"),
+        "recalculate schema must say closed-registry argument count, {encoded}"
+    );
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",

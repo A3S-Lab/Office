@@ -95,6 +95,9 @@ fn argument(arguments: &[EvalValue], index: usize) -> UseResult<&EvalValue> {
             "use.office.spreadsheet_formula_function_arity",
             "AVERAGEIF requires a criteria range and a criterion.",
         )
+        .with_suggestion(
+            "Match the closed-registry argument count for this function. Recalculate in-process; do not pad, omit, or evaluate arguments outside the native engine.",
+        )
     })
 }
 

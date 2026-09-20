@@ -317,7 +317,9 @@ available.
   structured references, and 3D named references (`Sheet1:Sheet2!Name`) fail
   closed with agent-directed suggestions: rewrite to in-workbook ranges/values,
   use supported ListObject forms / sheet A1 ranges, or resolve names with a
-  single sheet or workbook scope. The registry must reject unsupported functions
+  single sheet or workbook scope. Wrong argument counts fail closed with an
+  agent-directed suggestion to match closed-registry arity. The registry must
+  reject unsupported functions
   instead of falling back to code execution or the compatibility route.
   `SUMIF`/`COUNTIF`/`AVERAGEIF` accept one exact value or a numeric comparison
   such as `">=10"`; unescaped `*` / `?` wildcards fail closed. `SUMIF` and
