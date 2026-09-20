@@ -351,7 +351,7 @@
           {
             "row": 0,
             "column": 0,
-            "formula": "=IF(TRUE(),ROUND(SQRT(9)+ABS(-2),0),0)",
+            "formula": "=IF(TRUE,ROUND(SQRT(9)+ABS(-2),0),0)",
             "value": { "kind": "blank" }
           },
           {

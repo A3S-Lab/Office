@@ -14,6 +14,8 @@
   `recalculate-spreadsheet-formulas` instead of another spreadsheet engine.
 - Browser `ROW` and `COLUMN` accept one single cell, matching the native
   registry, and still reject ranges that the browser kernel cannot spill.
+- Browser `TRUE()` and `FALSE()` fail closed like the closed native registry.
+  Boolean literals `TRUE` and `FALSE` without parentheses still parse.
 
 ## 0.291.0 - 2026-09-19
 
