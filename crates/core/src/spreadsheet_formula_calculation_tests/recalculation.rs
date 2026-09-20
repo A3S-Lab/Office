@@ -45,14 +45,20 @@ async fn calculation_rejects_cycles_and_unregistered_functions_without_mutation(
     unsupported
         .set_cell_value("/Sheet1/A1", formula("SHELL(\"echo unsafe\")"))
         .unwrap();
+    let unsupported_error = unsupported
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
     assert_eq!(
-        unsupported
-            .snapshot()
-            .unwrap()
-            .calculate_spreadsheet_formulas()
-            .unwrap_err()
-            .code,
+        unsupported_error.code,
         "use.office.spreadsheet_formula_function_unsupported"
+    );
+    assert_eq!(
+        unsupported_error.suggestion.as_deref(),
+        Some(
+            "Use a closed-registry function listed on recalculate-spreadsheet-formulas. Do not calculate the formula outside the native engine."
+        )
     );
 }
 

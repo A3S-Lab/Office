@@ -129,8 +129,10 @@ spill produces typed `#SPILL!`, while formula error values such as `#DIV/0!`
 remain typed cell results. Circular dependencies, unsupported or qualified
 functions, missing tables, columns, or requested header/totals rows, disjoint
 or non-canonical structured-reference forms, and external-workbook reads fail
-with stable errors and leave the complete mutation batch unchanged. No shell,
-script runtime, or external workbook is invoked. Limits are 8,192 formula
+with stable errors and leave the complete mutation batch unchanged. Unsupported
+functions include an agent-directed suggestion to stay on the closed registry
+and recalculate in-process. No shell, script runtime, or external workbook is
+invoked. Limits are 8,192 formula
 characters, depth 128 across both AST and nested named-reference resolution,
 8,192 AST nodes, 100,000 reference areas per value, 100,000 graph formulas,
 1,000,000 dependency edges, 1,000,000 graph reference visits, 100,000
