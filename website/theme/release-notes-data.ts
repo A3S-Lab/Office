@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.296.0',
+    date: '2026-09-20',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Collab formula writes require cached values',
+      zh: '协作公式写入需要缓存值',
+    },
+    summary: {
+      en: 'Collaboration Spreadsheet cells that write f without v/m fail closed, and MCP schema points agents at cached values instead of recalculate-spreadsheet-formulas.',
+      zh: '协作表格写入 f 却缺少 v/m 时会失败关闭，MCP schema 引导智能体使用缓存值，而不是 recalculate-spreadsheet-formulas。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Fail closed without cached v/m',
+          zh: '缺少缓存 v/m 时失败关闭',
+        },
+        detail: {
+          en: 'Live replica nextCell writes that include f must also supply cached v and m, or the mutation is rejected.',
+          zh: '实时副本 nextCell 写入若包含 f，还必须提供缓存的 v 与 m，否则变更会被拒绝。',
+        },
+      },
+      {
+        title: {
+          en: 'Agent-directed collab formula suggestion',
+          zh: '面向智能体的协作公式提示',
+        },
+        detail: {
+          en: 'The error suggests writing explicit cached v/m with f on spreadsheet-set-cell or spreadsheet-batch-cells.',
+          zh: '错误会提示在 spreadsheet-set-cell 或 spreadsheet-batch-cells 上同时写入显式缓存的 v/m 与 f。',
+        },
+      },
+      {
+        title: {
+          en: 'MCP schema carries the contract',
+          zh: 'MCP schema 承载约定',
+        },
+        detail: {
+          en: 'spreadsheet-set-cell, spreadsheet-batch-cells, and office_collaboration_mutate state that collaboration replicas do not recalculate formulas.',
+          zh: 'spreadsheet-set-cell、spreadsheet-batch-cells 与 office_collaboration_mutate 声明协作副本不会重算公式。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.295.0',
     date: '2026-09-20',
     kind: 'improved',
