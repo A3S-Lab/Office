@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.298.0 - 2026-09-20
+
 ### Spreadsheet
 
 - External-workbook references and unsupported ListObject structured references
