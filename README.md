@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.297.0` keeps native formula calls on the bare closed registry:
+Version `0.298.0` keeps external and structured formula errors agent-usable:
 
-- Sheet- or workbook-qualified function calls fail closed with an in-process suggestion.
-- MCP `recalculate-spreadsheet-formulas` requires bare function names for use workers.
-- Agents stay on in-process recalculation instead of shelling out.
+- External-workbook and unsupported ListObject references fail closed with an in-process suggestion.
+- MCP `recalculate-spreadsheet-formulas` states the same recovery contract for use workers.
+- Agents stay on in-workbook ranges or supported table forms instead of opening other workbooks.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

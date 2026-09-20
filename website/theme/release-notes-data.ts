@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.298.0',
+    date: '2026-09-20',
+    kind: 'improved',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'External and structured refs guide agents in-process',
+      zh: '外部与结构化引用引导智能体留在进程内',
+    },
+    summary: {
+      en: 'External-workbook and unsupported ListObject structured references fail closed with recovery suggestions, and MCP recalculate schema states the same contract.',
+      zh: '外部工作簿与不受支持的 ListObject 结构化引用会失败关闭并给出恢复提示，MCP 重算 schema 声明同一约定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'External workbook reads stay closed',
+          zh: '外部工作簿读取保持关闭',
+        },
+        detail: {
+          en: 'Formulas such as \'[Book.xlsx]Sheet1\'!A1 suggest rewriting to in-workbook ranges or values and recalculating in-process.',
+          zh: '类似 \'[Book.xlsx]Sheet1\'!A1 的公式会提示改写为工作簿内区域或值，并在进程内重算。',
+        },
+      },
+      {
+        title: {
+          en: 'Unsupported structured refs explain recovery',
+          zh: '不受支持的结构化引用说明恢复路径',
+        },
+        detail: {
+          en: 'Missing table rows or out-of-table [@Column] forms point agents at supported ListObject shapes or sheet A1 ranges.',
+          zh: '缺失表行或表外 [@Column] 形式会引导智能体使用受支持的 ListObject 形态或工作表 A1 区域。',
+        },
+      },
+      {
+        title: {
+          en: 'MCP schema carries the contract',
+          zh: 'MCP schema 承载约定',
+        },
+        detail: {
+          en: 'recalculate-spreadsheet-formulas documents external and structured-reference recovery for hosts that cannot read Skill references.',
+          zh: 'recalculate-spreadsheet-formulas 声明外部与结构化引用的恢复约定，供无法读取 Skill 参考文件的宿主使用。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.297.0',
     date: '2026-09-20',
     kind: 'improved',
