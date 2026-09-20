@@ -56,8 +56,8 @@ export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
           zh: '外部工作簿读取保持关闭',
         },
         detail: {
-          en: 'Formulas such as \'[Book.xlsx]Sheet1\'!A1 suggest rewriting to in-workbook ranges or values and recalculating in-process.',
-          zh: '类似 \'[Book.xlsx]Sheet1\'!A1 的公式会提示改写为工作簿内区域或值，并在进程内重算。',
+          en: "Formulas such as '[Book.xlsx]Sheet1'!A1 suggest rewriting to in-workbook ranges or values and recalculating in-process.",
+          zh: "类似 '[Book.xlsx]Sheet1'!A1 的公式会提示改写为工作簿内区域或值，并在进程内重算。",
         },
       },
       {
