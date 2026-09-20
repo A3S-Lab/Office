@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.293.0 - 2026-09-20
+
 ### Spreadsheet
 
 - Browser `TRUE()` and `FALSE()` fail closed like the closed native registry.

@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.292.0` accepts a single cell in browser `ROW` and `COLUMN`:
+Version `0.293.0` rejects browser `TRUE()` and `FALSE()` like the native registry:
 
-- `ROW()` and `COLUMN()` still return the current cell's 1-based index.
-- `ROW(C4)` is 4 and `COLUMN($B$2)` is 2, matching the native registry.
-- Ranges such as `ROW(A1:B2)` fail closed; the browser kernel does not spill.
+- `TRUE()` and `FALSE()` fail closed instead of returning booleans.
+- Boolean literals `TRUE` and `FALSE` without parentheses still parse.
+- Agents get the same closed-registry path in the browser and native engines.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

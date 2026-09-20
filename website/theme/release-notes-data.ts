@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.293.0',
+    date: '2026-09-20',
+    kind: 'fixed',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Browser TRUE() and FALSE() fail closed',
+      zh: '浏览器 TRUE() 与 FALSE() 失败关闭',
+    },
+    summary: {
+      en: 'Browser TRUE() and FALSE() now match the closed native registry. Boolean literals without parentheses still parse.',
+      zh: '浏览器里的 TRUE() 与 FALSE() 现在与关闭的原生注册表对齐。无括号的布尔字面量仍可解析。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'No browser-only functions',
+          zh: '没有浏览器独有函数',
+        },
+        detail: {
+          en: 'TRUE() and FALSE() fail closed instead of returning booleans only in the browser kernel.',
+          zh: 'TRUE() 和 FALSE() 失败关闭，而不是只在浏览器内核返回布尔值。',
+        },
+      },
+      {
+        title: {
+          en: 'Literals still work',
+          zh: '字面量仍然可用',
+        },
+        detail: {
+          en: 'IF(TRUE,1,0) keeps working because TRUE without parentheses is a boolean literal.',
+          zh: 'IF(TRUE,1,0) 仍然可用，因为无括号的 TRUE 是布尔字面量。',
+        },
+      },
+      {
+        title: {
+          en: 'Same agent path',
+          zh: '同一条智能体路径',
+        },
+        detail: {
+          en: 'Native CLI and MCP recalculation already rejected these functions. The browser kernel matches that contract.',
+          zh: '原生 CLI 与 MCP 重算本来就会拒绝这些函数。浏览器内核现在与之对齐。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.292.0',
     date: '2026-09-20',
     kind: 'improved',
