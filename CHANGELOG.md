@@ -10,6 +10,8 @@
   with `recalculate-spreadsheet-formulas` in the same batch.
 - An unevaluated formula issue points at CLI `recalculate` or MCP
   `recalculate-spreadsheet-formulas` instead of another spreadsheet engine.
+- Browser `ROW` and `COLUMN` accept one single cell, matching the native
+  registry, and still reject ranges that the browser kernel cannot spill.
 
 ## 0.291.0 - 2026-09-19
 

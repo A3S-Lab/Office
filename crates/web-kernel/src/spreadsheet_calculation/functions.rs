@@ -1,6 +1,6 @@
 use a3s_office_formula_parser::{
     SpreadsheetFormulaBinaryOperator, SpreadsheetFormulaErrorLiteral, SpreadsheetFormulaExpression,
-    SpreadsheetFormulaExpressionKind,
+    SpreadsheetFormulaExpressionKind, SpreadsheetFormulaReference, SpreadsheetFormulaReferenceKind,
 };
 
 use super::conditional::{
@@ -43,6 +43,10 @@ impl SpreadsheetEvaluator<'_> {
             validate_arity(&normalized, arguments.len(), 2, Some(3))?;
             return self.evaluate_average_if(arguments, current);
         }
+        if normalized == "ROW" || normalized == "COLUMN" {
+            validate_arity(&normalized, arguments.len(), 0, Some(1))?;
+            return self.evaluate_row_or_column(normalized == "ROW", arguments, current);
+        }
         let (minimum, maximum) = function_arity(&normalized).ok_or_else(|| {
             unsupported(format!("Formula function '{normalized}' is not supported."))
         })?;
@@ -77,8 +81,6 @@ impl SpreadsheetEvaluator<'_> {
             "OR" => logical_aggregate(&values, false),
             "NOT" => logical_not(&values),
             "CONCAT" | "CONCATENATE" => concatenate(&values),
-            "ROW" => row_or_column(current, true),
-            "COLUMN" => row_or_column(current, false),
             "PI" => finite_number(std::f64::consts::PI),
             "NA" => SpreadsheetValue::error(SpreadsheetFormulaErrorLiteral::NotAvailable),
             "TRUE" => SpreadsheetValue::Boolean { value: true },
@@ -445,6 +447,26 @@ impl SpreadsheetEvaluator<'_> {
             None => Ok(EvaluatedValue::Scalar(absent)),
         }
     }
+
+    fn evaluate_row_or_column(
+        &self,
+        row: bool,
+        arguments: &[Option<SpreadsheetFormulaExpression>],
+        current: &CellKey,
+    ) -> Result<EvaluatedValue, EvaluationFailure> {
+        let name = if row { "ROW" } else { "COLUMN" };
+        let Some(argument) = arguments.first().and_then(Option::as_ref) else {
+            return Ok(EvaluatedValue::Scalar(row_or_column(current, row)));
+        };
+        let Some(reference) = single_cell_reference(argument) else {
+            return Err(unsupported(format!(
+                "Formula function '{name}' in the browser kernel accepts one single cell, not a range."
+            )));
+        };
+        let key = self.reference_key(reference, current.sheet)?;
+        let value = if row { key.row + 1 } else { key.column + 1 };
+        Ok(EvaluatedValue::Scalar(finite_number(f64::from(value))))
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -768,6 +790,20 @@ fn concatenate(values: &[EvaluatedValue]) -> SpreadsheetValue {
     SpreadsheetValue::Text { value: output }
 }
 
+fn single_cell_reference(
+    expression: &SpreadsheetFormulaExpression,
+) -> Option<&SpreadsheetFormulaReference> {
+    match &expression.kind {
+        SpreadsheetFormulaExpressionKind::Parenthesized(inner) => single_cell_reference(inner),
+        SpreadsheetFormulaExpressionKind::Reference(reference)
+            if matches!(reference.kind, SpreadsheetFormulaReferenceKind::Cell { .. }) =>
+        {
+            Some(reference)
+        }
+        _ => None,
+    }
+}
+
 fn row_or_column(current: &CellKey, row: bool) -> SpreadsheetValue {
     let value = if row {
         current.row + 1
@@ -800,7 +836,6 @@ fn function_arity(name: &str) -> Option<(usize, Option<usize>)> {
         "AVERAGEIF" => (2, Some(3)),
         "ABS" | "SQRT" | "NOT" => (1, Some(1)),
         "POWER" | "MOD" | "ROUND" => (2, Some(2)),
-        "ROW" | "COLUMN" => (0, Some(0)),
         "FALSE" | "PI" | "NA" | "TRUE" => (0, Some(0)),
         _ => return None,
     })
