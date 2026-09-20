@@ -8,6 +8,8 @@ pub(in crate::office_mcp) enum OfficeSpreadsheetDelimitedFormat {
     Tsv,
 }
 
+/// Bounded CSV/TSV import payload for MCP. Fields that parse as formulas are
+/// stored only until `recalculate-spreadsheet-formulas` runs in the same batch.
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(in crate::office_mcp) struct OfficeSpreadsheetDelimitedImport {

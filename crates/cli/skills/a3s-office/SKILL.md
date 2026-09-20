@@ -107,7 +107,11 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    scene fields change.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
-   `view ... issues`. Use HTML, SVG, or screenshot only as a semantic preview.
+   `view ... issues`. For Spreadsheet formulas, filter issues with
+   `issueType=formula_not_evaluated` (or `formula_eval_error`) and confirm
+   `formulaCached=true` on the formula anchor after
+   `recalculate-spreadsheet-formulas`. Use HTML, SVG, or screenshot only as a
+   semantic preview.
 
 5. Report the exact output path and any remaining issue records. Do not claim
    Microsoft Office layout fidelity from a semantic preview.

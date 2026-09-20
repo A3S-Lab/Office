@@ -37,7 +37,10 @@ pub(super) fn evaluate_function(
             "use.office.spreadsheet_formula_function_unsupported",
             format!("Native calculation does not implement function '{name}'."),
         )
-        .with_detail("function", name));
+        .with_detail("function", name)
+        .with_suggestion(
+            "Use a closed-registry function listed on recalculate-spreadsheet-formulas. Do not calculate the formula outside the native engine.",
+        ));
     };
     if arguments.len() < definition.minimum_arguments
         || definition
@@ -70,6 +73,9 @@ pub(super) fn evaluate_function(
         calculation_error(
             "use.office.spreadsheet_formula_function_unsupported",
             format!("Native function registry has no implementation for '{name}'."),
+        )
+        .with_suggestion(
+            "Use a closed-registry function listed on recalculate-spreadsheet-formulas. Do not calculate the formula outside the native engine.",
         )
     })?;
     if matches!(function, BuiltinFunction::If) {

@@ -164,6 +164,10 @@ async fn standard_mcp_recalculates_formulas_atomically_without_officecli() {
         rejected["result"]["structuredContent"]["code"],
         "use.office.spreadsheet_formula_function_unsupported"
     );
+    assert_eq!(
+        rejected["result"]["structuredContent"]["suggestion"],
+        "Use a closed-registry function listed on recalculate-spreadsheet-formulas. Do not calculate the formula outside the native engine."
+    );
     let rolled_back = call(
         &mut stdin,
         &mut stdout,

@@ -858,6 +858,8 @@ pub(super) enum OfficeMutation {
     ImportSpreadsheetDelimited {
         /// Existing Spreadsheet worksheet path such as `/Sheet1`.
         sheet: String,
+        /// Import CSV/TSV cells. Inferred formulas are stored only and do not
+        /// calculate until `recalculate-spreadsheet-formulas` in the same batch.
         import: OfficeSpreadsheetDelimitedImport,
     },
     SetSpreadsheetFrozenPane {

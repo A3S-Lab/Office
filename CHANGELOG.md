@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Spreadsheet
+
+- Unsupported formula functions return an agent-directed suggestion to stay on
+  the closed native registry and recalculate in-process instead of shelling out.
+- MCP `import-spreadsheet-delimited` states that inferred formulas are stored
+  only until `recalculate-spreadsheet-formulas` in the same batch.
+- Skill workflow verification names `formula_not_evaluated` /
+  `formulaCached` so use workers that cannot read Skill references still close
+  the formula write → recalculate loop.
+
 ## 0.293.0 - 2026-09-20
 
 ### Spreadsheet
