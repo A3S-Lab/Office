@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.295.0` keeps conditional spreadsheet formulas on the native agent path:
+Version `0.296.0` keeps live collaboration Spreadsheet formulas agent-usable:
 
-- `*IF` wildcard and shape failures return suggestions to use exact or numeric criteria in-process.
-- Skill separates native OOXML formula verify/recalculate from live collaboration cell writes.
-- MCP named-range mutations state referenced names resolve only during recalculation.
+- Formula cell writes without cached `"v"` / `"m"` fail closed with an in-process suggestion.
+- MCP schema and `office_collaboration_mutate` state the collab formula contract for use workers.
+- Agents stay off `recalculate-spreadsheet-formulas` on collaboration replicas.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
