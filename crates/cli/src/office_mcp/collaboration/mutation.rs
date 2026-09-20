@@ -96,6 +96,9 @@ pub(in crate::office_mcp) struct OfficeCollaborationSpreadsheetCellChange {
     row: u32,
     column: u32,
     expected_cell: Option<JsonValue>,
+    /// Next cell JSON. When `"f"` is present, also supply cached `"v"` and
+    /// `"m"`; collaboration replicas do not run
+    /// `recalculate-spreadsheet-formulas`.
     #[serde(deserialize_with = "deserialize_present_optional_json")]
     #[schemars(required)]
     next_cell: Option<JsonValue>,
@@ -320,6 +323,8 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         decided_at: String,
     },
     /// Create or recursively patch one conflict-local Spreadsheet cell.
+    /// When `nextCell` includes `"f"`, also supply cached `"v"` and `"m"`;
+    /// collaboration replicas do not run `recalculate-spreadsheet-formulas`.
     SpreadsheetSetCell {
         sheet_id: String,
         row: u32,
@@ -335,6 +340,9 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_cell: JsonValue,
     },
     /// Apply distinct cell changes in one sheet and one atomic transaction.
+    /// When a change's `nextCell` includes `"f"`, also supply cached `"v"` and
+    /// `"m"`; collaboration replicas do not run
+    /// `recalculate-spreadsheet-formulas`.
     SpreadsheetBatchCells {
         sheet_id: String,
         changes: Vec<OfficeCollaborationSpreadsheetCellChange>,

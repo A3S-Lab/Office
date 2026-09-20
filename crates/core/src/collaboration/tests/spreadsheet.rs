@@ -507,6 +507,13 @@ fn typed_spreadsheet_cell_contract_is_bounded_kind_safe_and_atomic() {
             row: 0,
             column: 0,
             expected_cell: None,
+            next_cell: json!({ "f": "=1+1" }),
+        },
+        NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+            sheet_id: "sheet-data".to_owned(),
+            row: 0,
+            column: 0,
+            expected_cell: None,
             next_cell: deeply_nested_cell(),
         },
     ];
@@ -526,6 +533,25 @@ fn typed_spreadsheet_cell_contract_is_bounded_kind_safe_and_atomic() {
             "unexpected error: {error:?}"
         );
     }
+    let formula_only = store
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-formula-without-cache",
+            NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+                sheet_id: "sheet-data".to_owned(),
+                row: 0,
+                column: 0,
+                expected_cell: None,
+                next_cell: json!({ "f": "=2+2" }),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(formula_only.code, "office.collaboration.mutation_invalid");
+    assert_eq!(
+        formula_only.suggestion.as_deref(),
+        Some(
+            "Write explicit cached \"v\" / \"m\" with \"f\" on spreadsheet-set-cell or spreadsheet-batch-cells. Do not call recalculate-spreadsheet-formulas on collaboration replicas."
+        )
+    );
     let missing = store
         .mutate(spreadsheet_mutation_request(
             "spreadsheet-missing-sheet",

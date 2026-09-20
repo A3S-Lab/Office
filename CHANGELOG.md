@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Spreadsheet
+
+- Collaboration Spreadsheet cell mutations fail closed when `"f"` is written
+  without cached `"v"` / `"m"`, with an agent-directed suggestion to supply
+  those caches instead of calling `recalculate-spreadsheet-formulas`.
+- MCP `spreadsheet-set-cell` / `spreadsheet-batch-cells` schema and
+  `office_collaboration_mutate` state the same collab formula contract for
+  hosts that cannot read Skill references.
+
 ## 0.295.0 - 2026-09-20
 
 ### Spreadsheet

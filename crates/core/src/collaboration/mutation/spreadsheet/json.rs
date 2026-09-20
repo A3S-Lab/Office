@@ -42,6 +42,18 @@ pub(super) fn validate_cell_json(value: &JsonValue, label: &str) -> UseResult<()
             "A Spreadsheet {label} must be a JSON object."
         )));
     }
+    if label == "next cell" {
+        if let Some(object) = value.as_object() {
+            if object.contains_key("f") && !(object.contains_key("v") && object.contains_key("m")) {
+                return Err(invalid_spreadsheet_mutation(
+                    "A collaborative Spreadsheet formula cell must include cached \"v\" and \"m\" beside \"f\". Live replicas do not recalculate formulas.",
+                )
+                .with_suggestion(
+                    "Write explicit cached \"v\" / \"m\" with \"f\" on spreadsheet-set-cell or spreadsheet-batch-cells. Do not call recalculate-spreadsheet-formulas on collaboration replicas.",
+                ));
+            }
+        }
+    }
     let bytes = serde_json::to_vec(value)
         .map_err(|error| {
             invalid_spreadsheet_mutation(format!(

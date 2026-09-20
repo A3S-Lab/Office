@@ -711,6 +711,8 @@ mod tests {
             "column",
             "expectedCell",
             "nextCell",
+            "also supply cached",
+            "recalculate-spreadsheet-formulas",
             "presentation-create-element",
             "presentation-update-element",
             "presentation-delete-element",
