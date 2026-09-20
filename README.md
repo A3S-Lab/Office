@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.291.0` averages numeric cells with `AVERAGEIF`:
+Version `0.292.0` accepts a single cell in browser `ROW` and `COLUMN`:
 
-- `AVERAGEIF(A1:A3,"apple",C1)` reads `C1:C3` and is 10, not only `C1`.
-- Text and blanks are ignored. No numeric match is `#DIV/0!`.
-- Unescaped `*` and `?` criteria fail closed in both calculation engines.
+- `ROW()` and `COLUMN()` still return the current cell's 1-based index.
+- `ROW(C4)` is 4 and `COLUMN($B$2)` is 2, matching the native registry.
+- Ranges such as `ROW(A1:B2)` fail closed; the browser kernel does not spill.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

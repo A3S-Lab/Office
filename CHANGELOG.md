@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.292.0 - 2026-09-20
+
 ### Spreadsheet
 
 - CLI, Skill, and MCP list every closed native formula, including `SUBTOTAL`,

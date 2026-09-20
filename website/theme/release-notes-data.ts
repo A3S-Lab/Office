@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.292.0',
+    date: '2026-09-20',
+    kind: 'improved',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Browser ROW and COLUMN accept one cell',
+      zh: '浏览器 ROW 与 COLUMN 接受单个单元格',
+    },
+    summary: {
+      en: 'Browser ROW and COLUMN match the native registry for a single cell. Ranges still fail closed because the browser kernel does not spill.',
+      zh: '浏览器里的 ROW 与 COLUMN 对单个单元格与原生注册表对齐。区域仍然失败关闭，因为浏览器内核不溢出。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Current cell stays zero-arg',
+          zh: '无参数仍是当前单元格',
+        },
+        detail: {
+          en: 'ROW() and COLUMN() still return the current cell 1-based row or column.',
+          zh: 'ROW() 和 COLUMN() 仍返回当前单元格的 1-based 行号或列号。',
+        },
+      },
+      {
+        title: {
+          en: 'Optional single cell',
+          zh: '可选单个单元格',
+        },
+        detail: {
+          en: 'ROW(C4) is 4 and COLUMN($B$2) is 2, including absolute references.',
+          zh: 'ROW(C4) 是 4，COLUMN($B$2) 是 2，绝对引用也一样。',
+        },
+      },
+      {
+        title: {
+          en: 'Ranges fail closed',
+          zh: '区域失败关闭',
+        },
+        detail: {
+          en: 'ROW(A1:B2) is rejected. Agents should not expect a spilled array from the browser kernel.',
+          zh: 'ROW(A1:B2) 会被拒绝。智能体不应期望浏览器内核溢出数组。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.291.0',
     date: '2026-09-19',
     kind: 'new',
