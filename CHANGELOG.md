@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Spreadsheet
+
+- `SUMIF` / `COUNTIF` / `AVERAGEIF` wildcard and shape failures return
+  agent-directed suggestions to use exact or numeric criteria instead of
+  shelling out.
+- Skill guidance separates native OOXML formula verify/recalculate from live
+  collaboration Spreadsheet cell writes, and documents fail-closed `*IF`
+  wildcard rules for use workers that cannot read Skill references.
+- MCP named-range mutations state that referenced names resolve only during
+  `recalculate-spreadsheet-formulas`.
+
 ## 0.294.0 - 2026-09-20
 
 ### Spreadsheet

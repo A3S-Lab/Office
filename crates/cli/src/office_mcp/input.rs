@@ -868,11 +868,15 @@ pub(super) enum OfficeMutation {
         pane: OfficeSpreadsheetFrozenPane,
     },
     AddNamedRange {
+        /// Store a defined name. Referenced names resolve only during
+        /// `recalculate-spreadsheet-formulas` in the same batch.
         #[serde(rename = "namedRange")]
         named_range: OfficeNamedRange,
     },
     SetNamedRange {
         path: String,
+        /// Update a defined name. Referenced names resolve only during
+        /// `recalculate-spreadsheet-formulas` in the same batch.
         #[serde(rename = "namedRange")]
         named_range: OfficeNamedRange,
     },

@@ -417,6 +417,10 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
         encoded.contains("Inferred formulas are stored only"),
         "import-spreadsheet-delimited schema must say inferred formulas stay uncalculated, {encoded}"
     );
+    assert!(
+        encoded.contains("Referenced names resolve only during"),
+        "named-range schema must say names resolve on recalculate, {encoded}"
+    );
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",
