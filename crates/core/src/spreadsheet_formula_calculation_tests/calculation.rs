@@ -852,14 +852,20 @@ async fn calculation_sumif_rejects_wildcard_criteria() {
         .set_cell_value("/Sheet1/B1", formula("SUMIF(A1,\"a*\")"))
         .unwrap();
 
+    let error = editor
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
     assert_eq!(
-        editor
-            .snapshot()
-            .unwrap()
-            .calculate_spreadsheet_formulas()
-            .unwrap_err()
-            .code,
+        error.code,
         "use.office.spreadsheet_formula_sumif_criteria_unsupported"
+    );
+    assert_eq!(
+        error.suggestion.as_deref(),
+        Some(
+            "Use an exact value or a numeric comparison such as \">=10\". Unescaped * and ? wildcards are not calculated. Do not evaluate the formula outside the native engine."
+        )
     );
 }
 
@@ -927,14 +933,20 @@ async fn calculation_countif_rejects_wildcard_criteria() {
         .set_cell_value("/Sheet1/B1", formula("COUNTIF(A1,\"a*\")"))
         .unwrap();
 
+    let error = editor
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
     assert_eq!(
-        editor
-            .snapshot()
-            .unwrap()
-            .calculate_spreadsheet_formulas()
-            .unwrap_err()
-            .code,
+        error.code,
         "use.office.spreadsheet_formula_countif_criteria_unsupported"
+    );
+    assert_eq!(
+        error.suggestion.as_deref(),
+        Some(
+            "Use an exact value or a numeric comparison such as \">=10\". Unescaped * and ? wildcards are not calculated. Do not evaluate the formula outside the native engine."
+        )
     );
 }
 
@@ -1018,13 +1030,19 @@ async fn calculation_averageif_rejects_wildcard_criteria() {
         .set_cell_value("/Sheet1/B1", formula("AVERAGEIF(A1,\"a*\")"))
         .unwrap();
 
+    let error = editor
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
     assert_eq!(
-        editor
-            .snapshot()
-            .unwrap()
-            .calculate_spreadsheet_formulas()
-            .unwrap_err()
-            .code,
+        error.code,
         "use.office.spreadsheet_formula_averageif_criteria_unsupported"
+    );
+    assert_eq!(
+        error.suggestion.as_deref(),
+        Some(
+            "Use an exact value or a numeric comparison such as \">=10\". Unescaped * and ? wildcards are not calculated. Do not evaluate the formula outside the native engine."
+        )
     );
 }

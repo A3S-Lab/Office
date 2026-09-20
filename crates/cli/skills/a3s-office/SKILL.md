@@ -107,11 +107,14 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    scene fields change.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
-   `view ... issues`. For Spreadsheet formulas, filter issues with
+   `view ... issues`. For native OOXML Spreadsheet sessions, filter issues with
    `issueType=formula_not_evaluated` (or `formula_eval_error`) and confirm
    `formulaCached=true` on the formula anchor after
-   `recalculate-spreadsheet-formulas`. Use HTML, SVG, or screenshot only as a
-   semantic preview.
+   `recalculate-spreadsheet-formulas`. Live collaboration Spreadsheet replicas
+   use `spreadsheet-set-cell` / `spreadsheet-batch-cells` with explicit cached
+   `"v"` / `"m"` beside `"f"`; they do not expose
+   `recalculate-spreadsheet-formulas` or native `formulaCached` issue filters.
+   Use HTML, SVG, or screenshot only as a semantic preview.
 
 5. Report the exact output path and any remaining issue records. Do not claim
    Microsoft Office layout fidelity from a semantic preview.
@@ -311,6 +314,10 @@ available.
   `SUM`, `SUMIF`, and `TRANSPOSE`. Write the formula, then recalculate in that
   same native batch. The registry must reject unsupported functions instead of
   falling back to code execution or the compatibility route.
+  `SUMIF`/`COUNTIF`/`AVERAGEIF` accept one exact value or a numeric comparison
+  such as `">=10"`; unescaped `*` / `?` wildcards fail closed. `SUMIF` and
+  `AVERAGEIF` expand the optional sum/average window from that range's
+  top-left cell to match the criteria rectangle.
 - Treat dynamic-array spill children as read-only calculated output. Find and
   edit or remove the formula anchor whose `formulaRef` contains the child;
   recalculation, cache writes, spill cleanup, and every sibling mutation in

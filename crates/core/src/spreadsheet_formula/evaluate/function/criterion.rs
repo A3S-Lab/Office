@@ -39,12 +39,18 @@ pub(super) fn one_rectangle(
         return Err(calculation_error(
             call.range_code,
             format!("{role} must be one worksheet rectangle."),
+        )
+        .with_suggestion(
+            "Pass one worksheet rectangle for the criteria or value range. Do not evaluate the formula outside the native engine.",
         ));
     };
     if areas.len() != 1 {
         return Err(calculation_error(
             call.range_code,
             format!("{role} must be one worksheet rectangle."),
+        )
+        .with_suggestion(
+            "Pass one worksheet rectangle for the criteria or value range. Do not evaluate the formula outside the native engine.",
         ));
     }
     Ok(areas[0])
@@ -70,6 +76,9 @@ pub(super) fn criterion_scalar(
         _ => Err(calculation_error(
             call.criteria_code,
             format!("{} criteria must be one value, not a range.", call.name),
+        )
+        .with_suggestion(
+            "Pass one exact value or a numeric comparison such as \">=10\". Do not evaluate the formula outside the native engine.",
         )),
     }
 }
@@ -87,6 +96,9 @@ pub(super) fn parse_criterion(call: CriteriaCall, value: ScalarValue) -> UseResu
         ScalarValue::Error(error) => Err(calculation_error(
             call.criteria_code,
             format!("{} criteria cannot be the error {error:?}.", call.name),
+        )
+        .with_suggestion(
+            "Pass an exact value or a numeric comparison such as \">=10\". Do not evaluate the formula outside the native engine.",
         )),
         ScalarValue::Blank => Ok(Criterion::Blank),
         ScalarValue::Boolean(value) => Ok(Criterion::Boolean(value)),
@@ -137,6 +149,9 @@ fn parse_text_criterion(call: CriteriaCall, value: &str) -> UseResult<Criterion>
                 "{} wildcard criteria are not calculated. Pass an exact value or a numeric comparison.",
                 call.name
             ),
+        )
+        .with_suggestion(
+            "Use an exact value or a numeric comparison such as \">=10\". Unescaped * and ? wildcards are not calculated. Do not evaluate the formula outside the native engine.",
         ));
     }
     let operand = unescape_literal(operand);
