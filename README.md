@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.300.0` keeps closed-registry arity errors agent-usable:
+Version `0.301.0` keeps locate-then-edit place-safe in live collaboration:
 
-- Function arity mismatches fail closed with an in-process suggestion to match the documented argument count.
-- MCP `recalculate-spreadsheet-formulas` states the same recovery contract for use workers.
-- Agents stay on the closed native registry arity instead of inventing extra arguments or dialects.
+- `document-replace-text` / `presentation-replace-text` accept optional find-hit identity anchors.
+- MCP schema states the same place-safe recovery contract for use workers.
+- Agents re-find when a span drifts even if the match count stays equal.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
