@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.299.0` keeps 3D named-reference errors agent-usable:
+Version `0.300.0` keeps closed-registry arity errors agent-usable:
 
-- Three-dimensional names such as `Sheet1:Sheet2!Name` fail closed with an in-process suggestion.
+- Function arity mismatches fail closed with an in-process suggestion to match the documented argument count.
 - MCP `recalculate-spreadsheet-formulas` states the same recovery contract for use workers.
-- Agents stay on single-sheet or workbook-scoped names instead of inventing 3D name support.
+- Agents stay on the closed native registry arity instead of inventing extra arguments or dialects.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

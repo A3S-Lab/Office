@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.300.0',
+    date: '2026-09-20',
+    kind: 'improved',
+    surfaces: ['spreadsheet'],
+    title: {
+      en: 'Function arity guides agents in-process',
+      zh: '函数参数个数引导智能体留在进程内',
+    },
+    summary: {
+      en: 'Closed-registry function arity mismatches fail closed with a documented-argument-count suggestion, and MCP recalculate schema states the same contract.',
+      zh: '封闭注册表函数参数个数不匹配会失败关闭并提示对齐文档参数个数，MCP 重算 schema 声明同一约定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Arity mismatches stay closed',
+          zh: '参数个数不匹配保持关闭',
+        },
+        detail: {
+          en: 'Wrong argument counts suggest matching the closed-registry arity and recalculating in-process.',
+          zh: '错误的参数个数会提示对齐封闭注册表参数个数，并在进程内重算。',
+        },
+      },
+      {
+        title: {
+          en: 'No invented argument dialects',
+          zh: '不发明参数方言',
+        },
+        detail: {
+          en: 'Agents rewrite to the documented arity instead of inventing extra arguments or external evaluators.',
+          zh: '智能体重写为文档中的参数个数，而不是发明额外参数或外部求值器。',
+        },
+      },
+      {
+        title: {
+          en: 'MCP schema carries the contract',
+          zh: 'MCP schema 承载约定',
+        },
+        detail: {
+          en: 'recalculate-spreadsheet-formulas documents arity recovery for hosts that cannot read Skill references.',
+          zh: 'recalculate-spreadsheet-formulas 声明参数个数恢复约定，供无法读取 Skill 参考文件的宿主使用。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.299.0',
     date: '2026-09-20',
     kind: 'improved',
