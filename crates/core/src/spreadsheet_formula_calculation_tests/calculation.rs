@@ -450,6 +450,12 @@ async fn calculation_rejects_table_local_and_missing_item_rows_atomically() {
         error.code,
         "use.office.spreadsheet_formula_structured_reference_unsupported"
     );
+    assert_eq!(
+        error.suggestion.as_deref(),
+        Some(
+            "Use a supported ListObject form: Table[Column], contiguous column ranges, #All/#Data/#Headers/#Totals when those rows exist, or table-local [@Column] only inside the table. Fix missing table/column/header/totals or rewrite to sheet A1 ranges; do not invent Excel structured-reference dialects or calculate outside the native engine."
+        )
+    );
     assert_eq!(outside.package().content_sha256(), before);
 
     for (file_name, table, expression) in [

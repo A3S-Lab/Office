@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Spreadsheet
+
+- External-workbook references and unsupported ListObject structured references
+  fail closed with agent-directed suggestions to stay on in-workbook ranges or
+  supported table forms and recalculate in-process.
+- MCP `recalculate-spreadsheet-formulas` and Skill guidance state the same
+  recovery contract for hosts that cannot read Skill references.
+
 ## 0.297.0 - 2026-09-20
 
 ### Spreadsheet

@@ -82,6 +82,53 @@ async fn calculation_rejects_cycles_and_unregistered_functions_without_mutation(
             "Call closed-registry functions with bare names (no Sheet! or workbook qualifier). Recalculate in-process; do not evaluate the formula outside the native engine."
         )
     );
+
+    let mut external = NativeOfficeEditor::create(temp.path().join("external.xlsx"))
+        .await
+        .unwrap();
+    external
+        .set_cell_value(
+            "/Sheet1/A1",
+            formula("'[Book.xlsx]Sheet1'!A1"),
+        )
+        .unwrap();
+    let external_error = external
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
+    assert_eq!(
+        external_error.code,
+        "use.office.spreadsheet_formula_external_reference_unsupported"
+    );
+    assert_eq!(
+        external_error.suggestion.as_deref(),
+        Some(
+            "Rewrite the formula to in-workbook sheet ranges or values. Native calculation never opens other workbooks. Recalculate in-process; do not evaluate the formula outside the native engine."
+        )
+    );
+
+    let mut structured = NativeOfficeEditor::create(temp.path().join("structured.xlsx"))
+        .await
+        .unwrap();
+    structured
+        .set_cell_value("/Sheet1/A1", formula("SUM([@Qty])"))
+        .unwrap();
+    let structured_error = structured
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
+    assert_eq!(
+        structured_error.code,
+        "use.office.spreadsheet_formula_structured_reference_unsupported"
+    );
+    assert_eq!(
+        structured_error.suggestion.as_deref(),
+        Some(
+            "Use a supported ListObject form: Table[Column], contiguous column ranges, #All/#Data/#Headers/#Totals when those rows exist, or table-local [@Column] only inside the table. Fix missing table/column/header/totals or rewrite to sheet A1 ranges; do not invent Excel structured-reference dialects or calculate outside the native engine."
+        )
+    );
 }
 
 #[tokio::test]

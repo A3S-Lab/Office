@@ -214,10 +214,41 @@ async fn standard_mcp_recalculates_formulas_atomically_without_officecli() {
         "Call closed-registry functions with bare names (no Sheet! or workbook qualifier). Recalculate in-process; do not evaluate the formula outside the native engine."
     );
 
-    call(
+    let external = call(
         &mut stdin,
         &mut stdout,
         9,
+        "office_apply_batch",
+        serde_json::json!({
+            "session": "workbook",
+            "mutations": [
+                {
+                    "operation": "set-cell-value",
+                    "path": "/Sheet1/H1",
+                    "value": { "type": "formula", "expression": "'[Book.xlsx]Sheet1'!A1" }
+                },
+                {
+                    "operation": "recalculate-spreadsheet-formulas"
+                }
+            ]
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_eq!(external["result"]["isError"], true, "{external}");
+    assert_eq!(
+        external["result"]["structuredContent"]["code"],
+        "use.office.spreadsheet_formula_external_reference_unsupported"
+    );
+    assert_eq!(
+        external["result"]["structuredContent"]["suggestion"],
+        "Rewrite the formula to in-workbook sheet ranges or values. Native calculation never opens other workbooks. Recalculate in-process; do not evaluate the formula outside the native engine."
+    );
+
+    call(
+        &mut stdin,
+        &mut stdout,
+        10,
         "office_close",
         serde_json::json!({"session":"workbook","discard":true}),
         TIMEOUT,
