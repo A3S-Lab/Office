@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.294.0` keeps unsupported spreadsheet formulas on the native agent path:
+Version `0.295.0` keeps conditional spreadsheet formulas on the native agent path:
 
-- Unsupported functions return a suggestion to stay on the closed registry and recalculate in-process.
-- MCP delimited import states inferred formulas stay stored-only until recalculation.
-- Skill verification names `formula_not_evaluated` / `formulaCached` for use workers.
+- `*IF` wildcard and shape failures return suggestions to use exact or numeric criteria in-process.
+- Skill separates native OOXML formula verify/recalculate from live collaboration cell writes.
+- MCP named-range mutations state referenced names resolve only during recalculation.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
