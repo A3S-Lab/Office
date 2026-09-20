@@ -421,6 +421,10 @@ fn office_batch_schema_exposes_native_spreadsheet_recalculation() {
         encoded.contains("Referenced names resolve only during"),
         "named-range schema must say names resolve on recalculate, {encoded}"
     );
+    assert!(
+        encoded.contains("Call functions with bare names"),
+        "recalculate schema must say function calls stay bare, {encoded}"
+    );
 
     let input: OfficeBatchInput = serde_json::from_value(serde_json::json!({
         "session": "workbook",

@@ -60,6 +60,28 @@ async fn calculation_rejects_cycles_and_unregistered_functions_without_mutation(
             "Use a closed-registry function listed on recalculate-spreadsheet-formulas. Do not calculate the formula outside the native engine."
         )
     );
+
+    let mut qualified = NativeOfficeEditor::create(temp.path().join("qualified.xlsx"))
+        .await
+        .unwrap();
+    qualified
+        .set_cell_value("/Sheet1/A1", formula("Sheet1!SUM(1,2)"))
+        .unwrap();
+    let qualified_error = qualified
+        .snapshot()
+        .unwrap()
+        .calculate_spreadsheet_formulas()
+        .unwrap_err();
+    assert_eq!(
+        qualified_error.code,
+        "use.office.spreadsheet_formula_function_unsupported"
+    );
+    assert_eq!(
+        qualified_error.suggestion.as_deref(),
+        Some(
+            "Call closed-registry functions with bare names (no Sheet! or workbook qualifier). Recalculate in-process; do not evaluate the formula outside the native engine."
+        )
+    );
 }
 
 #[tokio::test]

@@ -183,10 +183,41 @@ async fn standard_mcp_recalculates_formulas_atomically_without_officecli() {
         "use.office.node_not_found"
     );
 
-    call(
+    let qualified = call(
         &mut stdin,
         &mut stdout,
         8,
+        "office_apply_batch",
+        serde_json::json!({
+            "session": "workbook",
+            "mutations": [
+                {
+                    "operation": "set-cell-value",
+                    "path": "/Sheet1/G1",
+                    "value": { "type": "formula", "expression": "Sheet1!SUM(1,2)" }
+                },
+                {
+                    "operation": "recalculate-spreadsheet-formulas"
+                }
+            ]
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_eq!(qualified["result"]["isError"], true, "{qualified}");
+    assert_eq!(
+        qualified["result"]["structuredContent"]["code"],
+        "use.office.spreadsheet_formula_function_unsupported"
+    );
+    assert_eq!(
+        qualified["result"]["structuredContent"]["suggestion"],
+        "Call closed-registry functions with bare names (no Sheet! or workbook qualifier). Recalculate in-process; do not evaluate the formula outside the native engine."
+    );
+
+    call(
+        &mut stdin,
+        &mut stdout,
+        9,
         "office_close",
         serde_json::json!({"session":"workbook","discard":true}),
         TIMEOUT,
