@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.298.0` keeps external and structured formula errors agent-usable:
+Version `0.299.0` keeps 3D named-reference errors agent-usable:
 
-- External-workbook and unsupported ListObject references fail closed with an in-process suggestion.
+- Three-dimensional names such as `Sheet1:Sheet2!Name` fail closed with an in-process suggestion.
 - MCP `recalculate-spreadsheet-formulas` states the same recovery contract for use workers.
-- Agents stay on in-workbook ranges or supported table forms instead of opening other workbooks.
+- Agents stay on single-sheet or workbook-scoped names instead of inventing 3D name support.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
