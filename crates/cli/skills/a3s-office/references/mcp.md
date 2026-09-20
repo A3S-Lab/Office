@@ -58,11 +58,14 @@ paragraph/text identities, projection-v3 comments/replies/anchors, live
 suggestions, immutable change decisions, and the state vector required for a
 fail-closed mutation. For Document or Markdown text locate-edit, call
 `office_collaboration_find` first and pass its `matchCount` /
-`occurrence` into `document-replace-text` or `markdown-replace-text`. For a
+`occurrence` into `document-replace-text` or `markdown-replace-text`. For live
+Document edits under concurrent peers, also pass the hit's `paragraphId`,
+`textId`, and `indexUtf16`. For a
 Spreadsheet replica, the same find returns one cell (`sheetId`, `row`,
 `column`); edit that coordinate with `spreadsheet-set-cell`. For a
-Presentation replica, pass that same count to `presentation-replace-text`;
-it rewrites only the matched scene-element text. Use
+Presentation replica, pass that same count to `presentation-replace-text` and
+optionally the hit's `containerKind`, `containerId`, `elementId`, and
+`indexUtf16`; it rewrites only the matched scene-element text. Use
 `presentation-update-element` when geometry or other fields change. Do not
 decode Office collaboration roots in the host.
 
@@ -147,7 +150,9 @@ unless `expectedMatches` equals the current non-overlapping match count. Locate
 that count first with `office_collaboration_find` (CLI `collab find`); its
 1-based `occurrence` values match `document-replace-text`. That count is the
 conflict check for replacing every match. Add `"occurrence": 2` to change only
-that 1-based match after the count still matches. To change one stable
+that 1-based match after the count still matches. Under concurrent peers, also
+pass the find hit's `paragraphId`, `textId`, and `indexUtf16` so a drifted span
+fails closed even when the match count is unchanged. To change one stable
 paragraph instead, use `document-replace-paragraph` with its paragraph id and
 text id. Markdown replicas use the same find → `markdown-replace-text` path on
 the canonical Y.Text source. File-level Word, Spreadsheet, and Presentation
@@ -168,7 +173,11 @@ once, and never crosses an XML-node or inline-atom boundary:
     "type": "document-replace-text",
     "search": "Draft",
     "replacement": "Final",
-    "expectedMatches": 1
+    "expectedMatches": 1,
+    "occurrence": 1,
+    "paragraphId": "00000001",
+    "textId": "00000002",
+    "indexUtf16": 0
   },
   "ifStateVectorBase64": "..."
 }

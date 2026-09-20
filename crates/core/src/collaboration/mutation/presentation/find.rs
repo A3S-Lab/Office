@@ -85,6 +85,10 @@ pub(super) fn validate_presentation_text_replacement(
     search: &str,
     expected_matches: u32,
     occurrence: Option<u32>,
+    container_kind: Option<NativeOfficeCollaborationPresentationContainerKind>,
+    container_id: Option<&str>,
+    element_id: Option<&str>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     if search.is_empty() {
         return Err(collaboration_error(
@@ -113,6 +117,36 @@ pub(super) fn validate_presentation_text_replacement(
             .with_detail("expectedMatches", expected_matches as u64));
         }
     }
+    if let Some(container_id) = container_id {
+        if container_id.is_empty() {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_invalid",
+                "Presentation text replacement containerId must be non-empty when supplied.",
+            ));
+        }
+    }
+    if let Some(element_id) = element_id {
+        if element_id.is_empty() {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_invalid",
+                "Presentation text replacement elementId must be non-empty when supplied.",
+            ));
+        }
+    }
+    let has_anchors = container_kind.is_some()
+        || container_id.is_some()
+        || element_id.is_some()
+        || index_utf16.is_some();
+    if has_anchors && occurrence.is_none() && expected_matches != 1 {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_invalid",
+            "Presentation text replacement identity anchors require occurrence or expectedMatches=1 so one match is selected.",
+        )
+        .with_suggestion(
+            "Pass occurrence from office_collaboration_find / collab find, or set expectedMatches to 1.",
+        )
+        .with_detail("expectedMatches", expected_matches as u64));
+    }
     Ok(())
 }
 
@@ -123,6 +157,10 @@ pub(super) fn replace_presentation_text(
     replacement: &str,
     expected_matches: u32,
     occurrence: Option<u32>,
+    container_kind: Option<NativeOfficeCollaborationPresentationContainerKind>,
+    container_id: Option<&str>,
+    element_id: Option<&str>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     let hits = collect_presentation_text_hits(doc, manifest, search)?;
     if hits.len() > MAX_PRESENTATION_TEXT_MATCHES {
@@ -163,6 +201,60 @@ pub(super) fn replace_presentation_text(
     } else {
         hits
     };
+    for hit in &hits {
+        if let Some(expected_kind) = container_kind {
+            if hit.kind != expected_kind {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Presentation text replacement containerKind no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Presentation text matches again, then retry replace-text with the current container and element identity.",
+                )
+                .with_detail("expectedContainerKind", expected_kind.as_str())
+                .with_detail("actualContainerKind", hit.kind.as_str()));
+            }
+        }
+        if let Some(expected_container_id) = container_id {
+            if hit.container_id != expected_container_id {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Presentation text replacement containerId no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Presentation text matches again, then retry replace-text with the current container and element identity.",
+                )
+                .with_detail("expectedContainerId", expected_container_id.to_owned())
+                .with_detail("actualContainerId", hit.container_id.clone()));
+            }
+        }
+        if let Some(expected_element_id) = element_id {
+            if hit.element_id != expected_element_id {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Presentation text replacement elementId no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Presentation text matches again, then retry replace-text with the current container and element identity.",
+                )
+                .with_detail("expectedElementId", expected_element_id.to_owned())
+                .with_detail("actualElementId", hit.element_id.clone()));
+            }
+        }
+        if let Some(expected_index_utf16) = index_utf16 {
+            if hit.index_utf16 != expected_index_utf16 {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Presentation text replacement indexUtf16 no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Presentation text matches again, then retry replace-text with the current container and element identity.",
+                )
+                .with_detail("expectedIndexUtf16", u64::from(expected_index_utf16))
+                .with_detail("actualIndexUtf16", u64::from(hit.index_utf16)));
+            }
+        }
+    }
     if search == replacement {
         return Ok(());
     }

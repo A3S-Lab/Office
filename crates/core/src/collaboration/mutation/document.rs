@@ -20,8 +20,18 @@ pub(super) fn validate_document_mutation(
             search,
             expected_matches,
             occurrence,
+            paragraph_id,
+            text_id,
+            index_utf16,
             ..
-        } => text::validate_text_replacement(search, *expected_matches, *occurrence),
+        } => text::validate_text_replacement(
+            search,
+            *expected_matches,
+            *occurrence,
+            paragraph_id.as_deref(),
+            text_id.as_deref(),
+            *index_utf16,
+        ),
         NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
             paragraph_id,
             expected_text_id,
@@ -77,6 +87,9 @@ pub(super) fn apply_document_mutation(
             replacement,
             expected_matches,
             occurrence,
+            paragraph_id,
+            text_id,
+            index_utf16,
         } => text::replace_document_text(
             doc,
             manifest,
@@ -84,6 +97,9 @@ pub(super) fn apply_document_mutation(
             replacement,
             *expected_matches,
             *occurrence,
+            paragraph_id.as_deref(),
+            text_id.as_deref(),
+            *index_utf16,
         ),
         NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
             paragraph_id,

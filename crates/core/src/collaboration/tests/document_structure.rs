@@ -49,6 +49,9 @@ fn typed_nested_document_mutations_converge_and_rotate_all_word_identities() {
                 replacement: "Native nested".to_owned(),
                 expected_matches: 1,
                 occurrence: None,
+                paragraph_id: None,
+                text_id: None,
+                index_utf16: None,
             },
         ))
         .unwrap();

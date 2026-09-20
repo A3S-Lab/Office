@@ -199,6 +199,9 @@ fn document_comment_mutations_fail_closed_on_conflicts_and_modes() {
                 replacement: "Changed".to_owned(),
                 expected_matches: 1,
                 occurrence: None,
+                paragraph_id: None,
+                text_id: None,
+                index_utf16: None,
             },
         ))
         .unwrap_err();

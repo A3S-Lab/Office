@@ -51,8 +51,10 @@ or an occurrence past the matches in the scope, fails with
 and does not write. Zero matches without `--occurrence` return an unchanged
 success. Live Writer text: locate with `collab find <store> --find ...` (or MCP
 `office_collaboration_find`), pass that `matchCount` as `expectedMatches` on
-`document-replace-text`, and optional `occurrence` to change one match. Prefer
-`document-replace-paragraph` for one complete plain paragraph.
+`document-replace-text`, and optional `occurrence` to change one match. For
+realtime peers, also pass the hit's `paragraphId`, `textId`, and `indexUtf16`
+so the mutation fails closed if that span drifted while the count stayed equal.
+Prefer `document-replace-paragraph` for one complete plain paragraph.
 
 Character formatting targets a run returned by `get --depth 2`. Paragraph
 alignment targets the paragraph itself. Supported typed properties are bold,
