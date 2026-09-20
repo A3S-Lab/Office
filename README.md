@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.296.0` keeps live collaboration Spreadsheet formulas agent-usable:
+Version `0.297.0` keeps native formula calls on the bare closed registry:
 
-- Formula cell writes without cached `"v"` / `"m"` fail closed with an in-process suggestion.
-- MCP schema and `office_collaboration_mutate` state the collab formula contract for use workers.
-- Agents stay off `recalculate-spreadsheet-formulas` on collaboration replicas.
+- Sheet- or workbook-qualified function calls fail closed with an in-process suggestion.
+- MCP `recalculate-spreadsheet-formulas` requires bare function names for use workers.
+- Agents stay on in-process recalculation instead of shelling out.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
