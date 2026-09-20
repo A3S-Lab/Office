@@ -227,6 +227,18 @@ async fn native_issue_view_parses_sheet_references_without_scanning_string_liter
                 .subtype,
             NativeOfficeIssueSubtype::FormulaNotEvaluated
         );
+        assert_eq!(
+            report
+                .issues
+                .iter()
+                .find(|issue| issue.path == path)
+                .unwrap()
+                .suggestion
+                .as_deref(),
+            Some(
+                "Run CLI `recalculate` or MCP `recalculate-spreadsheet-formulas`. Do not calculate the formula outside the native engine."
+            )
+        );
     }
 }
 
