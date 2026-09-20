@@ -312,8 +312,9 @@ available.
   `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `MAX`, `MIN`, `MOD`, `NA`,
   `NOT`, `OR`, `PI`, `POWER`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`, `SUBTOTAL`,
   `SUM`, `SUMIF`, and `TRANSPOSE`. Write the formula, then recalculate in that
-  same native batch. The registry must reject unsupported functions instead of
-  falling back to code execution or the compatibility route.
+  same native batch. Call functions with bare names; sheet or workbook
+  qualifiers are not calculated. The registry must reject unsupported functions
+  instead of falling back to code execution or the compatibility route.
   `SUMIF`/`COUNTIF`/`AVERAGEIF` accept one exact value or a numeric comparison
   such as `">=10"`; unescaped `*` / `?` wildcards fail closed. `SUMIF` and
   `AVERAGEIF` expand the optional sum/average window from that range's

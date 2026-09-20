@@ -828,7 +828,8 @@ pub(super) enum OfficeMutation {
     /// Closed registry: `ABS`, `AND`, `AVERAGE`, `AVERAGEIF`, `COLUMN`, `CONCAT`,
     /// `CONCATENATE`, `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `MAX`, `MIN`,
     /// `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`,
-    /// `SUBTOTAL`, `SUM`, `SUMIF`, `TRANSPOSE`.
+    /// `SUBTOTAL`, `SUM`, `SUMIF`, `TRANSPOSE`. Call functions with bare names;
+    /// sheet or workbook qualifiers are not calculated.
     RecalculateSpreadsheetFormulas,
     AddSpreadsheetTable {
         /// Existing Spreadsheet worksheet path such as `/Sheet1`.

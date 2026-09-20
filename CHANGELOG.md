@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Spreadsheet
+
+- Sheet- or workbook-qualified function calls fail closed with an agent-directed
+  suggestion to use bare closed-registry names and recalculate in-process.
+- MCP `recalculate-spreadsheet-formulas` and Skill guidance state that function
+  calls must be bare names for hosts that cannot read Skill references.
+
 ## 0.296.0 - 2026-09-20
 
 ### Spreadsheet

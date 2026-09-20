@@ -226,7 +226,10 @@ impl EvaluationContext<'_> {
                         "use.office.spreadsheet_formula_function_unsupported",
                         format!("Native calculation does not execute qualified function '{name}'."),
                     )
-                    .with_detail("function", name.clone()));
+                    .with_detail("function", name.clone())
+                    .with_suggestion(
+                        "Call closed-registry functions with bare names (no Sheet! or workbook qualifier). Recalculate in-process; do not evaluate the formula outside the native engine.",
+                    ));
                 }
                 function::evaluate_function(self, name, arguments, current)
             }
