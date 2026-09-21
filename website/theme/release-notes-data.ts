@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.306.0',
+    date: '2026-09-21',
+    kind: 'improved',
+    surfaces: ['shared'],
+    title: {
+      en: 'Name place-safe locate anchors on MCP',
+      zh: '在 MCP 上写明位置安全的定位锚点',
+    },
+    summary: {
+      en: 'CLI help and MCP find/mutate descriptions name Document, Markdown, and Presentation find-hit identity fields so collab agents echo them without reading Skill references.',
+      zh: 'CLI 帮助与 MCP find/mutate 描述写明 Document、Markdown、Presentation 的 find 身份字段，协作智能体无需阅读 Skill 即可回显。',
+    },
+    highlights: [
+      {
+        title: { en: 'Document and Markdown', zh: '文档与 Markdown' },
+        detail: {
+          en: 'Echo paragraphId, textId, and indexUtf16 for Document, and indexUtf16 for Markdown.',
+          zh: 'Document 回显 paragraphId、textId、indexUtf16；Markdown 回显 indexUtf16。',
+        },
+      },
+      {
+        title: { en: 'Presentation', zh: '演示文稿' },
+        detail: {
+          en: 'Echo containerKind, containerId, elementId, and indexUtf16 into presentation-replace-text.',
+          zh: '将 containerKind、containerId、elementId、indexUtf16 回显到 presentation-replace-text。',
+        },
+      },
+      {
+        title: { en: 'Host-visible contract', zh: '宿主可见契约' },
+        detail: {
+          en: 'MCP hosts cannot read Skill references, so the same anchors are on the tool schema.',
+          zh: 'MCP 宿主读不到 Skill 参考，因此相同锚点写在工具 schema 上。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.305.0',
     date: '2026-09-21',
     kind: 'improved',

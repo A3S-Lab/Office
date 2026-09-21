@@ -371,11 +371,10 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.305.0` keeps FreeText annotation edits on the find-hit span:
+Version `0.306.0` names place-safe locate anchors on the host-visible surface:
 
-- `pdf-update-annotation` accepts optional `search` and `indexUtf16` from `collab find`.
-- `nextAnnotation.contents` replaces only that FreeText span.
-- A drifted offset fails closed. Omit both fields to set the whole FreeText contents. There is no PDF body replace-text mutation.
+- CLI help and MCP find/mutate descriptions echo Document `paragraphId`/`textId`/`indexUtf16`, Markdown `indexUtf16`, and Presentation `containerKind`/`containerId`/`elementId`/`indexUtf16`.
+- MCP hosts do not read Skill references, so those contracts live on the tool schema.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

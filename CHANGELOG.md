@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.306.0 - 2026-09-21
+
 ### Collaboration
 
 - CLI help and MCP find/mutate/tool instructions now name the same
