@@ -13,6 +13,7 @@ pub(super) fn validate_text_replacement(
     search: &str,
     expected_matches: u32,
     occurrence: Option<u32>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     if search.is_empty() {
         return Err(collaboration_error(
@@ -44,6 +45,16 @@ pub(super) fn validate_text_replacement(
             .with_detail("occurrence", u64::from(occurrence))
             .with_detail("expectedMatches", expected_matches as u64));
         }
+    }
+    if index_utf16.is_some() && occurrence.is_none() && expected_matches != 1 {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_invalid",
+            "Markdown text replacement indexUtf16 requires occurrence or expectedMatches=1 so one match is selected.",
+        )
+        .with_suggestion(
+            "Pass occurrence from office_collaboration_find / collab find, or set expectedMatches to 1.",
+        )
+        .with_detail("expectedMatches", expected_matches as u64));
     }
     Ok(())
 }
@@ -116,6 +127,7 @@ pub(super) fn replace_markdown_text(
     replacement: &str,
     expected_matches: u32,
     occurrence: Option<u32>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     let root = format!("{}.markdown.source", manifest.namespace);
     let text = doc.get_or_insert_text(root);
@@ -159,6 +171,21 @@ pub(super) fn replace_markdown_text(
     } else {
         offsets
     };
+    if let Some(expected_index_utf16) = index_utf16 {
+        for actual in &offsets {
+            if *actual != expected_index_utf16 {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    "Markdown text replacement indexUtf16 no longer matches the selected find hit.",
+                )
+                .with_suggestion(
+                    "Find Markdown text matches again, then retry replace-text with the current indexUtf16.",
+                )
+                .with_detail("expectedIndexUtf16", u64::from(expected_index_utf16))
+                .with_detail("actualIndexUtf16", u64::from(*actual)));
+            }
+        }
+    }
     if search == replacement {
         return Ok(());
     }
@@ -372,7 +399,7 @@ mod tests {
             vec![4, 14, 26]
         );
 
-        replace_markdown_text(&doc, &manifest, "Draft", "Final", 3, Some(2)).unwrap();
+        replace_markdown_text(&doc, &manifest, "Draft", "Final", 3, Some(2), None).unwrap();
         assert_eq!(
             markdown_source(&doc, &manifest),
             "one Draft two Final three Draft"
@@ -399,7 +426,37 @@ mod tests {
             let mut tx = doc.transact_mut();
             text.insert(&mut tx, 0, "Draft Draft");
         }
-        let error = replace_markdown_text(&doc, &manifest, "Draft", "Final", 1, None).unwrap_err();
+        let error =
+            replace_markdown_text(&doc, &manifest, "Draft", "Final", 1, None, None).unwrap_err();
         assert_eq!(error.code, "office.collaboration.mutation_match_conflict");
+    }
+
+    #[test]
+    fn replace_rejects_drifted_index_utf16() {
+        let doc = new_replica_document(
+            9,
+            "a3s.office",
+            NativeOfficeCollaborationArtifactKind::Markdown,
+        );
+        let manifest = manifest();
+        {
+            let root = format!("{}.markdown.source", manifest.namespace);
+            let text = doc.get_or_insert_text(root);
+            let mut tx = doc.transact_mut();
+            text.insert(&mut tx, 0, "xx Draft");
+        }
+        let error = replace_markdown_text(&doc, &manifest, "Draft", "Final", 1, Some(1), Some(0))
+            .unwrap_err();
+        assert_eq!(error.code, "office.collaboration.mutation_match_conflict");
+        assert_eq!(markdown_source(&doc, &manifest), "xx Draft");
+
+        replace_markdown_text(&doc, &manifest, "Draft", "Final", 1, Some(1), Some(3)).unwrap();
+        assert_eq!(markdown_source(&doc, &manifest), "xx Final");
+    }
+
+    #[test]
+    fn index_utf16_requires_a_single_selected_match() {
+        let error = validate_text_replacement("Draft", 2, None, Some(0)).unwrap_err();
+        assert_eq!(error.code, "office.collaboration.mutation_invalid");
     }
 }

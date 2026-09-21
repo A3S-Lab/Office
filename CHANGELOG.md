@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Collaboration
+
+- `markdown-replace-text` accepts optional `indexUtf16` from `collab find` so
+  the selected Markdown span stays place-safe under concurrent peers. A drifted
+  offset fails closed even when the match count is unchanged.
+
 ## 0.302.0 - 2026-09-21
 
 ### Collaboration

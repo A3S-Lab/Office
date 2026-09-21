@@ -47,7 +47,7 @@ const HELP: &str = concat!(
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
     "Typed mutations: markdown-replace/splice/replace-text; document-replace-text/paragraph; document-insert/delete-paragraph; document-comment-create/reply/set-resolved/delete; document-suggestion-create/decide; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element/replace-text; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
-    "Document, Markdown, Spreadsheet, Presentation, and PDF find list 1-based matches. Pass matchCount as expectedMatches and optional occurrence to document-replace-text, markdown-replace-text, or presentation-replace-text. Spreadsheet hits name the cell for spreadsheet-set-cell. PDF hits return fieldId for pdf-set-form-value, or annotationId/pageIndex for FreeText pdf-update-annotation.\n",
+    "Document, Markdown, Spreadsheet, Presentation, and PDF find list 1-based matches. Pass matchCount as expectedMatches and optional occurrence to document-replace-text, markdown-replace-text, or presentation-replace-text. Markdown may also pass the hit indexUtf16. Spreadsheet hits name the cell for spreadsheet-set-cell. PDF hits return fieldId for pdf-set-form-value, or annotationId/pageIndex for FreeText pdf-update-annotation.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 

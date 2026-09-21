@@ -158,7 +158,9 @@ pass the find hit's `paragraphId`, `textId`, and `indexUtf16` so a drifted span
 fails closed even when the match count is unchanged. To change one stable
 paragraph instead, use `document-replace-paragraph` with its paragraph id and
 text id. Markdown replicas use the same find → `markdown-replace-text` path on
-the canonical Y.Text source. File-level Word, Spreadsheet, and Presentation
+the canonical Y.Text source. Under concurrent peers, also pass the hit's
+`indexUtf16` so a drifted span fails closed even when the match count is
+unchanged. File-level Word, Spreadsheet, and Presentation
 edits use `office_find` and native `replace-text` with the same `occurrence`.
 Document replacement may cross formatting runs inside one text node, preserves
 the first replaced character's attributes, rotates the affected Word `textId`

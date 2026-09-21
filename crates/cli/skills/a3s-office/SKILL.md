@@ -99,7 +99,8 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    add optional `occurrence` the same way. For Writer under concurrent peers,
    also pass the hit's `paragraphId`, `textId`, and `indexUtf16` so a drifted
    span fails closed; use `document-replace-paragraph` when the whole paragraph
-   identity is known. For a live Spreadsheet replica,
+   identity is known. For Markdown under concurrent peers, also pass the hit's
+   `indexUtf16` the same way. For a live Spreadsheet replica,
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
    `spreadsheet-set-cell` rather than a text-replace mutation. For a live
    Presentation replica, `collab find` returns `containerKind`, `containerId`,
