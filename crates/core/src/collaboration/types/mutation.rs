@@ -471,14 +471,15 @@ pub enum NativeOfficeCollaborationMutation {
         expected_page_index: u32,
         expected_type: u32,
     },
-    /// Set one PDF form value by its stable fully-qualified field name. New
-    /// fields are added to the typed presence/fields/order collection; an
-    /// existing field changes only its conflict-local value leaf.
-    /// Optional `search` plus `indexUtf16` from `collab find` replace only
-    /// that span inside the current value and fail closed when it drifts.
-    /// Omit both to keep the whole-value contract.
+    /// Set one PDF form value by its stable fully-qualified field name.
+    /// `expected_value` must equal the current value, or `""` when the field
+    /// is absent. A drifted base fails closed and writes nothing. New fields
+    /// are added to the typed presence/fields/order collection; an existing
+    /// field changes only its conflict-local value leaf. Optional `search`
+    /// plus `indexUtf16` from `collab find` then replace only that span.
     PdfSetFormValue {
         field_id: String,
+        expected_value: String,
         value: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         search: Option<String>,

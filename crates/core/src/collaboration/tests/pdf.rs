@@ -33,6 +33,7 @@ fn typed_pdf_form_value_mutations_are_browser_compatible_durable_and_idempotent(
         "pdf-set-name-1",
         NativeOfficeCollaborationMutation::PdfSetFormValue {
             field_id: "Applicant.Name".to_owned(),
+            expected_value: "Ada".to_owned(),
             value: "Grace".to_owned(),
             search: None,
             index_utf16: None,
@@ -46,11 +47,37 @@ fn typed_pdf_form_value_mutations_are_browser_compatible_durable_and_idempotent(
         Some("Grace".to_owned())
     );
 
+    let before_drift = store.inspect().unwrap();
+    let drifted = store
+        .mutate(pdf_mutation_request(
+            "pdf-set-name-stale",
+            NativeOfficeCollaborationMutation::PdfSetFormValue {
+                field_id: "Applicant.Name".to_owned(),
+                expected_value: "Ada".to_owned(),
+                value: "Hopper".to_owned(),
+                search: None,
+                index_utf16: None,
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(drifted.code, "office.collaboration.mutation_match_conflict");
+    assert_eq!(
+        pdf_form_value(&store, "Applicant.Name"),
+        Some("Grace".to_owned())
+    );
+    let after_drift = store.inspect().unwrap();
+    assert_eq!(after_drift.current_sequence, before_drift.current_sequence);
+    assert_eq!(
+        after_drift.document_state_sha256,
+        before_drift.document_state_sha256
+    );
+
     let created = store
         .mutate(pdf_mutation_request(
             "pdf-set-email-1",
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Email".to_owned(),
+                expected_value: String::new(),
                 value: "grace@example.test".to_owned(),
                 search: None,
                 index_utf16: None,
@@ -107,6 +134,7 @@ fn typed_pdf_form_value_validation_is_atomic_and_kind_bound() {
                 operation_id,
                 NativeOfficeCollaborationMutation::PdfSetFormValue {
                     field_id,
+                    expected_value: String::new(),
                     value: "Rejected".to_owned(),
                     search: None,
                     index_utf16: None,
@@ -126,6 +154,7 @@ fn typed_pdf_form_value_validation_is_atomic_and_kind_bound() {
             "pdf-on-markdown",
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Name".to_owned(),
+                expected_value: String::new(),
                 value: "Rejected".to_owned(),
                 search: None,
                 index_utf16: None,
@@ -927,6 +956,7 @@ fn find_lists_pdf_form_values_and_freetext_contents() {
             "pdf-find-seed-email",
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Email".to_owned(),
+                expected_value: String::new(),
                 value: "Draft applicant email".to_owned(),
                 search: None,
                 index_utf16: None,
@@ -1014,6 +1044,7 @@ fn form_span_replace_keeps_the_rest_of_the_field_and_rejects_drift() {
             "pdf-span-seed",
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Name".to_owned(),
+                expected_value: "Ada".to_owned(),
                 value: "xx Ada tail".to_owned(),
                 search: None,
                 index_utf16: None,
@@ -1026,6 +1057,7 @@ fn form_span_replace_keeps_the_rest_of_the_field_and_rejects_drift() {
             "pdf-span-drift",
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Name".to_owned(),
+                expected_value: "xx Ada tail".to_owned(),
                 value: "Grace".to_owned(),
                 search: Some("Ada".to_owned()),
                 index_utf16: Some(0),
@@ -1043,6 +1075,7 @@ fn form_span_replace_keeps_the_rest_of_the_field_and_rejects_drift() {
             "pdf-span-replace",
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Name".to_owned(),
+                expected_value: "xx Ada tail".to_owned(),
                 value: "Grace".to_owned(),
                 search: Some("Ada".to_owned()),
                 index_utf16: Some(3),
@@ -1060,6 +1093,7 @@ fn form_span_replace_keeps_the_rest_of_the_field_and_rejects_drift() {
             "pdf-span-half-anchor",
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Name".to_owned(),
+                expected_value: "xx Grace tail".to_owned(),
                 value: "Nope".to_owned(),
                 search: None,
                 index_utf16: Some(3),

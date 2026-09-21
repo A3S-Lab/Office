@@ -128,6 +128,7 @@ fn collaboration_find_and_mutate_tool_descriptions_name_place_safe_anchors() {
         "elementId",
         "search",
         "expectedMarkdown",
+        "expectedValue",
     ] {
         assert!(
             mutate.contains(expected),

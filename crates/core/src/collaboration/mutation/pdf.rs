@@ -64,6 +64,7 @@ pub(super) fn apply_pdf_mutation(
         }
         NativeOfficeCollaborationMutation::PdfSetFormValue {
             field_id,
+            expected_value,
             value,
             search,
             index_utf16,
@@ -71,6 +72,7 @@ pub(super) fn apply_pdf_mutation(
             doc,
             manifest,
             field_id,
+            expected_value,
             value,
             search.as_deref(),
             *index_utf16,
@@ -94,7 +96,7 @@ fn validate_form_span_anchor(search: Option<&str>, index_utf16: Option<u32>) -> 
         search,
         index_utf16,
         "PDF form span replacement",
-        "Pass the find hit indexUtf16 and its matched text, or omit both to set the whole field value.",
+        "Pass the find hit indexUtf16 and its matched text, or omit both and pass expectedValue to set the whole field value.",
     )
 }
 
@@ -123,12 +125,24 @@ fn set_pdf_form_value(
     doc: &yrs::Doc,
     manifest: &NativeOfficeCollaborationManifest,
     field_id: &str,
+    expected_value: &str,
     value: &str,
     search: Option<&str>,
     index_utf16: Option<u32>,
 ) -> UseResult<()> {
     let roots = PdfRecordCollectionRoots::new(doc, manifest, "form-values");
     let current = read_pdf_form_values(doc, &roots)?;
+    let observed = current.get(field_id).map(String::as_str).unwrap_or("");
+    if observed != expected_value {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_match_conflict",
+            "PDF form field value no longer matches expectedValue.",
+        )
+        .with_suggestion(
+            "Read the field again. Pass its current value as expectedValue. Use search and indexUtf16 to replace only one span.",
+        )
+        .with_detail("fieldId", field_id.to_owned()));
+    }
     let value = match (search, index_utf16) {
         (Some(search), Some(index_utf16)) => {
             let Some(current_value) = current.get(field_id) else {
