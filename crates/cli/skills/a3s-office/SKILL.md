@@ -100,7 +100,10 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    also pass the hit's `paragraphId`, `textId`, and `indexUtf16` so a drifted
    span fails closed; use `document-replace-paragraph` when the whole paragraph
    identity is known. For Markdown under concurrent peers, also pass the hit's
-   `indexUtf16` the same way. For a live Spreadsheet replica,
+   `indexUtf16` the same way. A whole-source `markdown-replace` requires
+   `expectedMarkdown` equal to the source just read; a drifted base fails
+   closed and writes nothing. Prefer `markdown-replace-text` or
+   `markdown-splice` so a live replica is not overwritten. For a live Spreadsheet replica,
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
    `spreadsheet-set-cell` rather than a text-replace mutation. For a live
    Presentation replica, `collab find` returns `containerKind`, `containerId`,

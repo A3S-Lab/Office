@@ -197,9 +197,14 @@ where
     deny_unknown_fields
 )]
 pub enum NativeOfficeCollaborationMutation {
-    /// Replace the canonical Markdown source while retaining the longest
-    /// common prefix and suffix in the underlying Y.Text.
-    MarkdownReplace { markdown: String },
+    /// Compare-and-swap the canonical Markdown source. `expected_markdown`
+    /// must equal the current Y.Text; a drifted base fails closed and writes
+    /// nothing. The accepted write keeps the longest common prefix and suffix.
+    /// Prefer `markdown-replace-text` or `markdown-splice` for incremental edits.
+    MarkdownReplace {
+        expected_markdown: String,
+        markdown: String,
+    },
     /// Splice the canonical Markdown Y.Text using browser-compatible UTF-16
     /// offsets. Surrogate pairs may not be split.
     MarkdownSplice {

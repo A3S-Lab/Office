@@ -36,7 +36,11 @@ operation contract from the MCP reference. Prefer locate-then-replace:
 4. Under concurrent peers, also pass the hit's `indexUtf16` so a drifted span
    fails closed even when the match count is unchanged
 
-Keep `markdown-splice` for known UTF-16 ranges and `markdown-replace` for a
-whole-source rewrite. Inspect the replica state first and keep the operation
-ID stable on retry. Do not treat a rendered preview as proof that the persisted
-Markdown text is correct: read the replica back after the mutation.
+Keep `markdown-splice` for a known UTF-16 range. Use `markdown-replace` only
+as a compare-and-swap: `expectedMarkdown` must equal the source just read from
+the replica. A drifted base returns `office.collaboration.mutation_match_conflict`
+and writes nothing, so a stale whole-source rewrite cannot overwrite a peer
+edit. Prefer `markdown-replace-text` for incremental edits. Inspect the replica
+state first and keep the operation ID stable on retry. Do not treat a rendered
+preview as proof that the persisted Markdown text is correct: read the replica
+back after the mutation.

@@ -189,8 +189,11 @@ pub(super) fn apply_mutation(
     }
 
     match mutation {
-        NativeOfficeCollaborationMutation::MarkdownReplace { markdown } => {
-            apply_markdown_replace(doc, manifest, markdown)?;
+        NativeOfficeCollaborationMutation::MarkdownReplace {
+            expected_markdown,
+            markdown,
+        } => {
+            apply_markdown_replace(doc, manifest, expected_markdown, markdown)?;
         }
         NativeOfficeCollaborationMutation::MarkdownSplice {
             index_utf16,

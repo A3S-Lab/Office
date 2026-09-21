@@ -586,7 +586,7 @@ fn cli_finds_markdown_text_matches_before_replace() {
         "mutate",
         replica.to_str().unwrap(),
         "--mutation",
-        r#"{"type":"markdown-replace","markdown":"one Draft two Draft"}"#,
+        r##"{"type":"markdown-replace","expectedMarkdown":"# Shared\n\nYjs to Yrs.","markdown":"one Draft two Draft"}"##,
         "--actor-id",
         "coding-agent-md-find",
         "--operation-id",
@@ -843,6 +843,7 @@ fn cli_session_bridges_live_browser_envelopes_and_external_agent_updates() {
         &local,
         serde_json::to_vec(&serde_json::json!({
             "type": "markdown-replace",
+            "expectedMarkdown": "# Shared\n\nYjs to Yrs.",
             "markdown": "# Agent live 😀"
         }))
         .unwrap(),

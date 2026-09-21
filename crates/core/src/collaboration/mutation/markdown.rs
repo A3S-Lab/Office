@@ -204,11 +204,21 @@ pub(super) fn replace_markdown_text(
 pub(super) fn apply_markdown_replace(
     doc: &yrs::Doc,
     manifest: &NativeOfficeCollaborationManifest,
+    expected_markdown: &str,
     markdown: &str,
 ) -> UseResult<()> {
     let root = format!("{}.markdown.source", manifest.namespace);
     let text = doc.get_or_insert_text(root);
     let current = text.get_string(&doc.transact());
+    if current != expected_markdown {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_match_conflict",
+            "Markdown whole-source rewrite no longer matches expectedMarkdown.",
+        )
+        .with_suggestion(
+            "Read the replica again. Prefer markdown-replace-text or markdown-splice so a concurrent edit is not overwritten.",
+        ));
+    }
     let (index_utf16, delete_utf16, insert) = minimal_text_replacement(&current, markdown);
     if delete_utf16 == 0 && insert.is_empty() {
         return Ok(());

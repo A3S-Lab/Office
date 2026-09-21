@@ -347,6 +347,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "kind": "markdown",
         "mutation": {
             "type": "markdown-replace",
+            "expectedMarkdown": "# Shared\n\nYjs to Yrs.",
             "markdown": "# MCP typed 😀"
         }
     });
