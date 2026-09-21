@@ -133,8 +133,45 @@ fn cli_sets_existing_and_new_pdf_form_values() {
         snapshot.form_order,
         vec!["Applicant.Name".to_owned(), "Applicant.Email".to_owned()]
     );
+
+    let drifted = run_failure(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","search":"Grace","indexUtf16":1,"value":"Ada"}"#,
+        "--actor-id",
+        "coding-agent-pdf-cli",
+        "--operation-id",
+        "pdf-span-drift-cli",
+        "--artifact-id",
+        "fixture-pdf",
+        "--kind",
+        "pdf",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(
+        drifted["error"]["code"],
+        "office.collaboration.mutation_match_conflict"
+    );
+    let spanned = mutate(
+        &replica,
+        "pdf-span-replace-cli",
+        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","search":"Grace","indexUtf16":0,"value":"Ada"}"#,
+    );
+    assert_eq!(spanned["data"]["stateChanged"], true);
+    let spanned_export = run(&["collab", "diff", replica.to_str().unwrap(), "--json"]);
+    let spanned_update = STANDARD
+        .decode(spanned_export["data"]["updateBase64"].as_str().unwrap())
+        .unwrap();
+    assert_eq!(
+        pdf_snapshot(&spanned_update).form_values["Applicant.Name"],
+        "Ada"
+    );
     let inspected = run(&["collab", "inspect", replica.to_str().unwrap(), "--json"]);
-    assert_eq!(inspected["data"]["currentSequence"], 2);
+    assert_eq!(inspected["data"]["currentSequence"], 3);
 }
 
 #[test]

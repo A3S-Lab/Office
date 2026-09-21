@@ -461,7 +461,17 @@ pub enum NativeOfficeCollaborationMutation {
     /// Set one PDF form value by its stable fully-qualified field name. New
     /// fields are added to the typed presence/fields/order collection; an
     /// existing field changes only its conflict-local value leaf.
-    PdfSetFormValue { field_id: String, value: String },
+    /// Optional `search` plus `indexUtf16` from `collab find` replace only
+    /// that span inside the current value and fail closed when it drifts.
+    /// Omit both to keep the whole-value contract.
+    PdfSetFormValue {
+        field_id: String,
+        value: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        search: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
+    },
     /// Append one attributable PDF redaction proposal. The replica actor is
     /// recorded as `proposedBy`; callers provide stable identity, geometry,
     /// and a deterministic UTC timestamp.
