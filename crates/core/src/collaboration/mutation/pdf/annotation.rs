@@ -13,8 +13,8 @@ use super::records::{
     required_json_string, PdfClaims, PdfRecords,
 };
 use super::{
-    invalid_shared_pdf, validate_pdf_identifier, validate_shared_pdf_identifier,
-    PdfRecordCollectionRoots,
+    invalid_shared_pdf, splice_pdf_text_span, validate_pdf_identifier,
+    validate_pdf_text_span_anchor, validate_shared_pdf_identifier, PdfRecordCollectionRoots,
 };
 
 const MAX_JSON_DEPTH: usize = 128;
@@ -37,8 +37,16 @@ pub(super) fn validate_pdf_annotation_mutation(
             annotation_id,
             expected_annotation,
             next_annotation,
+            search,
+            index_utf16,
         } => {
             validate_pdf_identifier(annotation_id, "annotationId", "PDF annotation")?;
+            validate_pdf_text_span_anchor(
+                search.as_deref(),
+                *index_utf16,
+                "PDF FreeText span replacement",
+                "Pass the find hit indexUtf16 and its matched text, or omit both to set the whole FreeText contents.",
+            )?;
             let expected = validate_annotation_input(expected_annotation, "expected annotation")?;
             let next = validate_annotation_input(next_annotation, "next annotation")?;
             if expected.id != annotation_id || next.id != annotation_id {
@@ -52,6 +60,15 @@ pub(super) fn validate_pdf_annotation_mutation(
                 return Err(invalid_annotation_mutation(
                     "A PDF annotation update cannot change its page or type identity.",
                 ));
+            }
+            if search.is_some() {
+                if expected.annotation_type != FREETEXT_ANNOTATION_TYPE {
+                    return Err(invalid_annotation_mutation(
+                        "PDF FreeText span replacement requires annotation type 3 (FreeText).",
+                    ));
+                }
+                require_string_contents(expected_annotation, "expected annotation")?;
+                require_string_contents(next_annotation, "next annotation")?;
             }
             Ok(())
         }
@@ -85,6 +102,8 @@ pub(super) fn apply_pdf_annotation_mutation(
             annotation_id,
             expected_annotation,
             next_annotation,
+            search,
+            index_utf16,
         } => update_annotation(
             doc,
             manifest,
@@ -92,6 +111,8 @@ pub(super) fn apply_pdf_annotation_mutation(
             annotation_id,
             expected_annotation,
             next_annotation,
+            search.as_deref(),
+            *index_utf16,
         )?,
         NativeOfficeCollaborationMutation::PdfDeleteAnnotation {
             annotation_id,
@@ -167,6 +188,8 @@ fn update_annotation(
     annotation_id: &str,
     expected_annotation: &JsonValue,
     next_annotation: &JsonValue,
+    search: Option<&str>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     let shared_record = state.annotations.by_id.get(annotation_id).ok_or_else(|| {
         annotation_match_conflict(format!(
@@ -186,13 +209,33 @@ fn update_annotation(
     let shared_annotation = required_json_object(shared_record, "annotation record")?
         .get("annotation")
         .expect("validated annotation record");
+    let next_annotation = match (search, index_utf16) {
+        (Some(search), Some(index_utf16)) => {
+            let shared_contents = require_string_contents(shared_annotation, "shared annotation")?;
+            let replacement = require_string_contents(next_annotation, "next annotation")?;
+            let next_contents = splice_pdf_text_span(
+                shared_contents,
+                index_utf16,
+                search,
+                replacement,
+                "PDF FreeText span no longer matches the selected find hit.",
+                "Find PDF FreeText contents again, then retry pdf-update-annotation with the current indexUtf16.",
+            )?;
+            let mut next = next_annotation.clone();
+            next.as_object_mut()
+                .expect("validated next annotation")
+                .insert("contents".to_owned(), JsonValue::String(next_contents));
+            next
+        }
+        _ => next_annotation.clone(),
+    };
     assert_compatible_value(
         expected_annotation,
-        next_annotation,
+        &next_annotation,
         shared_annotation,
         &format!("PDF annotation '{annotation_id}'"),
     )?;
-    if json_equal(shared_annotation, next_annotation)? {
+    if json_equal(shared_annotation, &next_annotation)? {
         return Ok(());
     }
 
@@ -205,7 +248,7 @@ fn update_annotation(
     next_record
         .as_object_mut()
         .expect("validated annotation record")
-        .insert("annotation".to_owned(), next_annotation.clone());
+        .insert("annotation".to_owned(), next_annotation);
     patch_record(
         doc,
         manifest,
@@ -215,6 +258,17 @@ fn update_annotation(
         shared_record,
         &next_record,
     )
+}
+
+fn require_string_contents<'a>(annotation: &'a JsonValue, label: &str) -> UseResult<&'a str> {
+    annotation
+        .get("contents")
+        .and_then(JsonValue::as_str)
+        .ok_or_else(|| {
+            invalid_annotation_mutation(format!(
+                "A PDF {label} must contain a string contents field for FreeText span replacement."
+            ))
+        })
 }
 
 #[allow(clippy::too_many_arguments)]

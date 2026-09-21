@@ -445,10 +445,18 @@ pub enum NativeOfficeCollaborationMutation {
     /// Update mutable leaves of one portable PDF annotation. The expected
     /// value provides a recursive optimistic guard, so unrelated concurrent
     /// leaf edits merge while conflicting edits fail closed.
+    /// Optional `search` plus `indexUtf16` from `collab find` treat
+    /// `nextAnnotation.contents` as a FreeText span replacement and fail
+    /// closed when that span drifts. Omit both to keep the whole-contents
+    /// contract.
     PdfUpdateAnnotation {
         annotation_id: String,
         expected_annotation: JsonValue,
         next_annotation: JsonValue,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        search: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Irreversibly tombstone one PDF annotation after matching its immutable
     /// source, page, and annotation-type identity.

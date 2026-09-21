@@ -412,10 +412,16 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         annotation: JsonValue,
     },
     /// Merge mutable annotation leaves using an exact recursive expectation.
+    /// Optional `search` and find-hit `indexUtf16` treat `nextAnnotation.contents`
+    /// as a FreeText span replacement and fail closed when that span drifts.
     PdfUpdateAnnotation {
         annotation_id: String,
         expected_annotation: JsonValue,
         next_annotation: JsonValue,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        search: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Irreversibly tombstone one annotation after matching immutable identity.
     PdfDeleteAnnotation {
@@ -753,10 +759,14 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 annotation_id,
                 expected_annotation,
                 next_annotation,
+                search,
+                index_utf16,
             } => Self::PdfUpdateAnnotation {
                 annotation_id,
                 expected_annotation,
                 next_annotation,
+                search,
+                index_utf16,
             },
             OfficeCollaborationMutation::PdfDeleteAnnotation {
                 annotation_id,

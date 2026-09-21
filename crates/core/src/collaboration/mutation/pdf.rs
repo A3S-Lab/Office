@@ -90,20 +90,32 @@ pub(super) fn apply_pdf_mutation(
 }
 
 fn validate_form_span_anchor(search: Option<&str>, index_utf16: Option<u32>) -> UseResult<()> {
+    validate_pdf_text_span_anchor(
+        search,
+        index_utf16,
+        "PDF form span replacement",
+        "Pass the find hit indexUtf16 and its matched text, or omit both to set the whole field value.",
+    )
+}
+
+pub(super) fn validate_pdf_text_span_anchor(
+    search: Option<&str>,
+    index_utf16: Option<u32>,
+    label: &str,
+    suggestion: &str,
+) -> UseResult<()> {
     match (search, index_utf16) {
         (None, None) => Ok(()),
         (Some(search), Some(_)) if !search.is_empty() => Ok(()),
         (Some(_), Some(_)) => Err(collaboration_error(
             "office.collaboration.mutation_invalid",
-            "PDF form span replacement requires a non-empty search string.",
+            format!("{label} requires a non-empty search string."),
         )),
         _ => Err(collaboration_error(
             "office.collaboration.mutation_invalid",
-            "PDF form span replacement requires both search and indexUtf16 from collab find.",
+            format!("{label} requires both search and indexUtf16 from collab find."),
         )
-        .with_suggestion(
-            "Pass the find hit indexUtf16 and its matched text, or omit both to set the whole field value.",
-        )),
+        .with_suggestion(suggestion)),
     }
 }
 
@@ -129,7 +141,14 @@ fn set_pdf_form_value(
                 )
                 .with_detail("fieldId", field_id.to_owned()));
             };
-            splice_form_span(current_value, index_utf16, search, value)?
+            splice_pdf_text_span(
+                current_value,
+                index_utf16,
+                search,
+                value,
+                "PDF form span no longer matches the selected find hit.",
+                "Find PDF form text again, then retry pdf-set-form-value with the current indexUtf16.",
+            )?
         }
         _ => value.to_owned(),
     };
@@ -157,21 +176,35 @@ fn set_pdf_form_value(
     Ok(())
 }
 
-fn splice_form_span(
+pub(super) fn splice_pdf_text_span(
     current: &str,
     index_utf16: u32,
     search: &str,
     replacement: &str,
+    conflict_message: &str,
+    conflict_suggestion: &str,
 ) -> UseResult<String> {
     let delete_utf16 = utf16_len(search)?;
     let Some((prefix, rest)) = split_utf16(current, index_utf16) else {
-        return Err(form_span_conflict(index_utf16));
+        return Err(pdf_text_span_conflict(
+            index_utf16,
+            conflict_message,
+            conflict_suggestion,
+        ));
     };
     let Some((actual, suffix)) = split_utf16(rest, delete_utf16) else {
-        return Err(form_span_conflict(index_utf16));
+        return Err(pdf_text_span_conflict(
+            index_utf16,
+            conflict_message,
+            conflict_suggestion,
+        ));
     };
     if actual != search {
-        return Err(form_span_conflict(index_utf16));
+        return Err(pdf_text_span_conflict(
+            index_utf16,
+            conflict_message,
+            conflict_suggestion,
+        ));
     }
     let mut next = String::with_capacity(prefix.len() + replacement.len() + suffix.len());
     next.push_str(prefix);
@@ -180,15 +213,14 @@ fn splice_form_span(
     Ok(next)
 }
 
-fn form_span_conflict(expected_index_utf16: u32) -> a3s_use_core::UseError {
-    collaboration_error(
-        "office.collaboration.mutation_match_conflict",
-        "PDF form span no longer matches the selected find hit.",
-    )
-    .with_suggestion(
-        "Find PDF form text again, then retry pdf-set-form-value with the current indexUtf16.",
-    )
-    .with_detail("expectedIndexUtf16", u64::from(expected_index_utf16))
+fn pdf_text_span_conflict(
+    expected_index_utf16: u32,
+    message: &str,
+    suggestion: &str,
+) -> a3s_use_core::UseError {
+    collaboration_error("office.collaboration.mutation_match_conflict", message)
+        .with_suggestion(suggestion)
+        .with_detail("expectedIndexUtf16", u64::from(expected_index_utf16))
 }
 
 fn split_utf16(value: &str, offset: u32) -> Option<(&str, &str)> {
