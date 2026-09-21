@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.301.0 - 2026-09-21
+
 ### Collaboration
 
 - `document-replace-text` and `presentation-replace-text` accept optional find-hit

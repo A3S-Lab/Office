@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.301.0',
+    date: '2026-09-21',
+    kind: 'improved',
+    surfaces: ['writer', 'presentation'],
+    title: {
+      en: 'Locate-then-edit stays place-safe in collab',
+      zh: '定位后编辑在协作中保持位置安全',
+    },
+    summary: {
+      en: 'Optional find-hit identity anchors on document/presentation replace-text fail closed when the selected span drifts, and MCP schema states the same contract.',
+      zh: '文档与演示文稿 replace-text 的可选查找命中身份锚点会在选中跨度漂移时失败关闭，MCP schema 声明同一约定。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Document anchors from find hits',
+          zh: '文档锚点来自查找命中',
+        },
+        detail: {
+          en: 'paragraphId, textId, and indexUtf16 keep Writer replace place-safe under concurrent peers.',
+          zh: 'paragraphId、textId 与 indexUtf16 让 Writer 替换在并发对等方下保持位置安全。',
+        },
+      },
+      {
+        title: {
+          en: 'Presentation element identity',
+          zh: '演示文稿元素身份',
+        },
+        detail: {
+          en: 'containerKind, containerId, elementId, and indexUtf16 guard the selected scene-element span.',
+          zh: 'containerKind、containerId、elementId 与 indexUtf16 守护选中的场景元素跨度。',
+        },
+      },
+      {
+        title: {
+          en: 'MCP schema carries the contract',
+          zh: 'MCP schema 承载约定',
+        },
+        detail: {
+          en: 'office_collaboration_mutate documents identity-anchored replace recovery for hosts that cannot read Skill references.',
+          zh: 'office_collaboration_mutate 声明身份锚定替换恢复约定，供无法读取 Skill 参考文件的宿主使用。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.300.0',
     date: '2026-09-20',
     kind: 'improved',
