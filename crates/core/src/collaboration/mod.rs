@@ -272,12 +272,9 @@ impl NativeOfficeCollaborationStore {
                     limit,
                 )?
             }
-            NativeOfficeCollaborationArtifactKind::Pdf => mutation::pdf::find_pdf_text(
-                &loaded.doc,
-                &loaded.manifest,
-                &search,
-                limit,
-            )?,
+            NativeOfficeCollaborationArtifactKind::Pdf => {
+                mutation::pdf::find_pdf_text(&loaded.doc, &loaded.manifest, &search, limit)?
+            }
         };
         Ok((kind, result))
     }
