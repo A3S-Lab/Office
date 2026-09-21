@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.309.0',
+    date: '2026-09-21',
+    kind: 'fixed',
+    surfaces: ['markdown'],
+    title: {
+      en: 'Refuse a stale Markdown whole-source splice',
+      zh: '拒绝过期的 Markdown 整篇 splice',
+    },
+    summary: {
+      en: 'markdown-splice now requires expectedSlice. A drifted slice fails closed and writes nothing, so a stale whole-source splice cannot overwrite a concurrent edit.',
+      zh: 'markdown-splice 现在必须带 expectedSlice。片段漂移时失败关闭且不写入，过期整篇 splice 不能覆盖并发修改。',
+    },
+    highlights: [
+      {
+        title: { en: 'Compare and swap', zh: '比较交换' },
+        detail: {
+          en: 'expectedSlice must equal the UTF-16 range being deleted, or be empty when deleteUtf16 is 0.',
+          zh: 'expectedSlice 必须等于被删的 UTF-16 区间；deleteUtf16 为 0 时传空字符串。',
+        },
+      },
+      {
+        title: { en: 'Fail closed', zh: '失败关闭' },
+        detail: {
+          en: 'A mismatch returns mutation_match_conflict and leaves the replica unchanged.',
+          zh: '不匹配时返回 mutation_match_conflict，副本保持不变。',
+        },
+      },
+      {
+        title: { en: 'Locate then edit', zh: '先定位再改' },
+        detail: {
+          en: 'Prefer markdown-replace-text with the find hit indexUtf16 for incremental edits.',
+          zh: '增量修改优先使用带 find 命中 indexUtf16 的 markdown-replace-text。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.308.0',
     date: '2026-09-21',
     kind: 'fixed',

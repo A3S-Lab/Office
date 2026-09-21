@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.309.0 - 2026-09-21
+
 ### Collaboration
 
 - `markdown-splice` now requires `expectedSlice` equal to the UTF-16 range being
