@@ -78,6 +78,24 @@ fn cli_sets_existing_and_new_pdf_form_values() {
     assert_eq!(replay["data"]["duplicate"], true);
     assert_eq!(replay["data"]["sequence"], 1);
 
+    let found = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "Grace",
+        "--json",
+    ]);
+    assert_eq!(found["data"]["operation"], "find-pdf-text");
+    assert_eq!(found["data"]["kind"], "pdf");
+    assert_eq!(found["data"]["matches"], 1);
+    assert_eq!(found["data"]["truncated"], false);
+    let hit = &found["data"]["result"]["matches"][0];
+    assert_eq!(hit["occurrence"], 1);
+    assert_eq!(hit["fieldId"], "Applicant.Name");
+    assert_eq!(hit["indexUtf16"], 0);
+    assert!(hit.get("annotationId").is_none());
+
     let invalid = run_failure(&[
         "collab",
         "mutate",

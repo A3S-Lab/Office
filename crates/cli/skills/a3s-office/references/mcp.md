@@ -66,8 +66,11 @@ Spreadsheet replica, the same find returns one cell (`sheetId`, `row`,
 Presentation replica, pass that same count to `presentation-replace-text` and
 optionally the hit's `containerKind`, `containerId`, `elementId`, and
 `indexUtf16`; it rewrites only the matched scene-element text. Use
-`presentation-update-element` when geometry or other fields change. Do not
-decode Office collaboration roots in the host.
+`presentation-update-element` when geometry or other fields change. For a PDF
+replica, find returns `fieldId` for form values or `annotationId`, `pageIndex`,
+and `annotationType` for FreeText (`type` 3) contents; edit with
+`pdf-set-form-value` or `pdf-update-annotation`. There is no PDF body
+replace-text. Do not decode Office collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
 from a browser peer:

@@ -47,7 +47,7 @@ const HELP: &str = concat!(
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
     "Typed mutations: markdown-replace/splice/replace-text; document-replace-text/paragraph; document-insert/delete-paragraph; document-comment-create/reply/set-resolved/delete; document-suggestion-create/decide; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element/replace-text; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
-    "Document, Markdown, Spreadsheet, and Presentation find list 1-based matches. Pass matchCount as expectedMatches and optional occurrence to document-replace-text, markdown-replace-text, or presentation-replace-text. Spreadsheet hits name the cell for spreadsheet-set-cell.\n",
+    "Document, Markdown, Spreadsheet, Presentation, and PDF find list 1-based matches. Pass matchCount as expectedMatches and optional occurrence to document-replace-text, markdown-replace-text, or presentation-replace-text. Spreadsheet hits name the cell for spreadsheet-set-cell. PDF hits return fieldId for pdf-set-form-value, or annotationId/pageIndex for FreeText pdf-update-annotation.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
@@ -237,7 +237,7 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
         NativeOfficeCollaborationArtifactKind::Markdown => "find-markdown-text",
         NativeOfficeCollaborationArtifactKind::Spreadsheet => "find-spreadsheet-text",
         NativeOfficeCollaborationArtifactKind::Presentation => "find-presentation-text",
-        _ => "find-text",
+        NativeOfficeCollaborationArtifactKind::Pdf => "find-pdf-text",
     };
     let human = if result.matches.is_empty() {
         format!("No {kind_label} matches for '{}'.", result.search)
@@ -265,6 +265,15 @@ async fn find_text(args: &[String]) -> UseResult<CommandOutput> {
                 {
                     format!(
                         "{container_kind} {container_id} element {element_id} @{}",
+                        hit.index_utf16
+                    )
+                } else if let Some(field_id) = &hit.field_id {
+                    format!("form field {field_id} @{}", hit.index_utf16)
+                } else if let (Some(annotation_id), Some(page_index)) =
+                    (&hit.annotation_id, hit.page_index)
+                {
+                    format!(
+                        "annotation {annotation_id} page {page_index} @{}",
                         hit.index_utf16
                     )
                 } else {

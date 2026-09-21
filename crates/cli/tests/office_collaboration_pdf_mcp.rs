@@ -74,6 +74,26 @@ async fn mcp_sets_existing_and_new_pdf_form_values() {
     .await;
     assert_ne!(created["result"]["isError"], true, "{created}");
 
+    let found = call(
+        &mut stdin,
+        &mut stdout,
+        20,
+        "office_collaboration_find",
+        serde_json::json!({
+            "store": replica.to_str().unwrap(),
+            "find": "Ada"
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(found["result"]["isError"], true, "{found}");
+    let found = &found["result"]["structuredContent"];
+    assert_eq!(found["operation"], "find-pdf-text");
+    assert_eq!(found["kind"], "pdf");
+    assert_eq!(found["matches"], 1);
+    assert_eq!(found["result"]["matches"][0]["fieldId"], "Applicant.Name");
+    assert_eq!(found["result"]["matches"][0]["indexUtf16"], 0);
+
     let name = mutate(
         &mut stdin,
         &mut stdout,

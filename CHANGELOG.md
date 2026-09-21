@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Collaboration
+
+- Locate live PDF form values and FreeText annotation contents before editing.
+  `collab find` / `office_collaboration_find` return one hit per matching form
+  field (`fieldId`) or FreeText annotation (`annotationId`, `pageIndex`,
+  `annotationType`) in collection order. Following edits stay
+  `pdf-set-form-value` and `pdf-update-annotation`; there is no PDF body
+  replace-text mutation.
+
 ## 0.301.0 - 2026-09-21
 
 ### Collaboration

@@ -272,16 +272,12 @@ impl NativeOfficeCollaborationStore {
                     limit,
                 )?
             }
-            other => {
-                return Err(collaboration_error(
-                    "office.collaboration.kind_mismatch",
-                    format!(
-                        "Collaboration text find requires a document, markdown, spreadsheet, or presentation replica, not {}.",
-                        other.as_str()
-                    ),
-                )
-                .with_detail("kind", other.as_str()))
-            }
+            NativeOfficeCollaborationArtifactKind::Pdf => mutation::pdf::find_pdf_text(
+                &loaded.doc,
+                &loaded.manifest,
+                &search,
+                limit,
+            )?,
         };
         Ok((kind, result))
     }

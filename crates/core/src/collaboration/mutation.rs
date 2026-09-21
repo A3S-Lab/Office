@@ -10,7 +10,7 @@ use super::{
 
 pub(in crate::collaboration) mod document;
 pub(in crate::collaboration) mod markdown;
-mod pdf;
+pub(in crate::collaboration) mod pdf;
 pub(in crate::collaboration) mod presentation;
 pub(in crate::collaboration) mod spreadsheet;
 
