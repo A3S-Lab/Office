@@ -8,11 +8,14 @@ use super::super::{
 };
 
 mod annotation;
+mod find;
 mod records;
 mod review;
 
 use annotation::{apply_pdf_annotation_mutation, validate_pdf_annotation_mutation};
 use review::{apply_pdf_review_mutation, validate_pdf_review_mutation};
+
+pub(in crate::collaboration) use find::find_pdf_text;
 
 const MAX_PDF_IDENTIFIER_UTF16: usize = 512;
 pub(super) const MAX_PDF_RECORDS: u32 = 1_000_000;
@@ -214,6 +217,33 @@ fn read_pdf_form_values(
         ));
     }
     Ok(values)
+}
+
+/// Form field values in durable collection order for locate-then-edit walks.
+pub(super) fn ordered_pdf_form_values(
+    doc: &yrs::Doc,
+    roots: &PdfRecordCollectionRoots,
+) -> UseResult<Vec<(String, String)>> {
+    let values = read_pdf_form_values(doc, roots)?;
+    let transaction = doc.transact();
+    let mut ordered = Vec::with_capacity(values.len());
+    for index in 0..roots.order.len(&transaction) {
+        let id = match roots.order.get(&transaction, index) {
+            Some(Out::Any(Any::String(value))) => value.to_string(),
+            _ => {
+                return Err(invalid_shared_pdf(
+                    "The shared PDF form-value order contains a non-string identity.",
+                ))
+            }
+        };
+        let Some(value) = values.get(&id) else {
+            return Err(invalid_shared_pdf(
+                "The shared PDF form-value records are incomplete.",
+            ));
+        };
+        ordered.push((id, value.clone()));
+    }
+    Ok(ordered)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -70,6 +70,10 @@ pub(in crate::collaboration) fn find_presentation_text(
             container_kind: Some(hit.kind.as_str().to_owned()),
             container_id: Some(hit.container_id),
             element_id: Some(hit.element_id),
+            field_id: None,
+            annotation_id: None,
+            page_index: None,
+            annotation_type: None,
             index_utf16: hit.index_utf16,
         });
     }

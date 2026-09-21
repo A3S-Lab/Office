@@ -891,3 +891,89 @@ fn typed_pdf_page_operation_validation_and_identity_conflicts_are_atomic() {
     );
     assert_eq!(store.inspect().unwrap().current_sequence, 2);
 }
+
+#[test]
+fn find_lists_pdf_form_values_and_freetext_contents() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("pdf-find");
+    let store = NativeOfficeCollaborationStore::create(pdf_create_request(&root)).unwrap();
+    store
+        .apply(pdf_apply_request(
+            "bootstrap-browser-pdf",
+            STANDARD.decode(YJS_PDF_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-find-seed-email",
+            NativeOfficeCollaborationMutation::PdfSetFormValue {
+                field_id: "Applicant.Email".to_owned(),
+                value: "Draft applicant email".to_owned(),
+            },
+        ))
+        .unwrap();
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-find-seed-freetext",
+            NativeOfficeCollaborationMutation::PdfCreateAnnotation {
+                annotation_id: "annotation-freetext-1".to_owned(),
+                page_index: 0,
+                annotation: portable_freetext_annotation(
+                    "annotation-freetext-1",
+                    0,
+                    "Draft FreeText note",
+                ),
+            },
+        ))
+        .unwrap();
+    // Highlight contents must not appear in PDF find hits.
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-find-seed-highlight",
+            NativeOfficeCollaborationMutation::PdfCreateAnnotation {
+                annotation_id: "annotation-highlight-1".to_owned(),
+                page_index: 1,
+                annotation: portable_annotation(
+                    "annotation-highlight-1",
+                    "#ffd400",
+                    "Draft highlight note",
+                ),
+            },
+        ))
+        .unwrap();
+
+    let (kind, found) = store.find_text("Draft", 10).unwrap();
+    assert_eq!(kind, NativeOfficeCollaborationArtifactKind::Pdf);
+    assert_eq!(found.match_count, 2);
+    assert!(!found.truncated);
+    assert_eq!(found.matches[0].occurrence, 1);
+    assert_eq!(
+        found.matches[0].field_id.as_deref(),
+        Some("Applicant.Email")
+    );
+    assert_eq!(found.matches[0].annotation_id, None);
+    assert_eq!(found.matches[0].index_utf16, 0);
+    assert_eq!(found.matches[1].occurrence, 2);
+    assert_eq!(
+        found.matches[1].annotation_id.as_deref(),
+        Some("annotation-freetext-1")
+    );
+    assert_eq!(found.matches[1].page_index, Some(0));
+    assert_eq!(found.matches[1].annotation_type, Some(3));
+    assert_eq!(found.matches[1].field_id, None);
+    assert_eq!(found.matches[1].index_utf16, 0);
+
+    let ada = store.find_text("Ada", 10).unwrap().1;
+    assert_eq!(ada.match_count, 1);
+    assert_eq!(ada.matches[0].field_id.as_deref(), Some("Applicant.Name"));
+
+    let limited = store.find_text("Draft", 1).unwrap().1;
+    assert_eq!(limited.match_count, 2);
+    assert!(limited.truncated);
+    assert_eq!(limited.matches.len(), 1);
+    assert_eq!(
+        limited.matches[0].field_id.as_deref(),
+        Some("Applicant.Email")
+    );
+}

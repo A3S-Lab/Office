@@ -106,7 +106,11 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    and `elementId`. Pass that `matchCount` as `expectedMatches` on
    `presentation-replace-text`, and add optional `occurrence` plus those
    identity fields the same way, to change only the matched text; use
-   `presentation-update-element` when other scene fields change.
+   `presentation-update-element` when other scene fields change. For a live PDF
+   replica, `collab find` returns `fieldId` for form values or `annotationId`,
+   `pageIndex`, and `annotationType` for FreeText (`type` 3) contents; edit with
+   `pdf-set-form-value` or `pdf-update-annotation`. There is no PDF body
+   replace-text mutation.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
    `view ... issues`. For native OOXML Spreadsheet sessions, filter issues with

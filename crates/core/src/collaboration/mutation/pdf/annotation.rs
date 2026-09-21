@@ -287,6 +287,36 @@ fn read_pdf_annotation_state(
     })
 }
 
+const FREETEXT_ANNOTATION_TYPE: u32 = 3;
+
+/// Live FreeText annotation contents in durable collection order.
+pub(super) fn ordered_freetext_contents(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<Vec<(String, u32, String)>> {
+    let state = read_pdf_annotation_state(doc, manifest)?;
+    let mut hits = Vec::new();
+    for id in &state.annotations.order {
+        let record = &state.annotations.by_id[id];
+        let identity = shared_annotation_identity(record, id, state.page_count)?;
+        if identity.deleted || identity.annotation_type != FREETEXT_ANNOTATION_TYPE {
+            continue;
+        }
+        let object = required_json_object(record, "annotation record")?;
+        let annotation = required_json_object(
+            object
+                .get("annotation")
+                .expect("validated annotation record"),
+            "annotation value",
+        )?;
+        let Some(JsonValue::String(contents)) = annotation.get("contents") else {
+            continue;
+        };
+        hits.push((id.clone(), identity.page_index, contents.clone()));
+    }
+    Ok(hits)
+}
+
 #[derive(Debug)]
 struct AnnotationIdentity<'a> {
     id: &'a str,

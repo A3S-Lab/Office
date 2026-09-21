@@ -3,9 +3,18 @@
 PDF is a browser viewer/editor boundary backed by PDFium. It owns page
 navigation, thumbnails, search, zoom, annotations, page organization, save,
 and download; it is not a native OOXML document and it has no file-level
-find/replace occurrence. Locate PDF changes through page organization and
-annotation mutations, not through `replace-text`. Use the source-checkout UI
-operator for user-level behavior:
+find/replace occurrence. For durable collaboration replicas, locate editable
+form values and FreeText annotation contents with `collab find` /
+`office_collaboration_find` before mutating. Each hit is one match in form
+collection order, then FreeText annotation order:
+
+- form value → `fieldId` + `indexUtf16` → `pdf-set-form-value`
+- FreeText (`type` 3) → `annotationId`, `pageIndex`, `annotationType`,
+  `indexUtf16` → `pdf-update-annotation`
+
+Highlight and other markup types are not searchable via collab find. Do not
+invent PDF body `replace-text`. Use the source-checkout UI operator for
+user-level behavior:
 
 ```bash
 bun run office:ops -- capabilities pdf --json

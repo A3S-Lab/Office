@@ -74,6 +74,10 @@ pub(in crate::collaboration) fn find_spreadsheet_text(
                 container_kind: None,
                 container_id: None,
                 element_id: None,
+                field_id: None,
+                annotation_id: None,
+                page_index: None,
+                annotation_type: None,
                 index_utf16: utf16_len(&display[..byte_index])?,
             });
         }

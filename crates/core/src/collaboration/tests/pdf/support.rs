@@ -114,6 +114,27 @@ pub(super) fn portable_annotation(id: &str, color: &str, contents: &str) -> serd
     })
 }
 
+pub(super) fn portable_freetext_annotation(
+    id: &str,
+    page_index: u32,
+    contents: &str,
+) -> serde_json::Value {
+    serde_json::json!({
+        "id": id,
+        "pageIndex": page_index,
+        "type": 3,
+        "rect": {
+            "origin": { "x": 40, "y": 50 },
+            "size": { "width": 220, "height": 36 },
+        },
+        "contents": contents,
+        "author": "A3S Agent",
+        "created": "2026-08-15T08:00:00.000Z",
+        "fontSize": 12.0,
+        "fontColor": "#111111",
+    })
+}
+
 pub(super) fn valid_pdf_rect() -> NativeOfficeCollaborationPdfRect {
     NativeOfficeCollaborationPdfRect {
         left: 10.0,
