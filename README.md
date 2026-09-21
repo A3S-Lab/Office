@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.307.0` refuses a stale Markdown whole-source rewrite:
+Version `0.308.0` refuses a stale PDF form whole-value write:
 
-- `markdown-replace` requires `expectedMarkdown` equal to the current source.
+- `pdf-set-form-value` requires `expectedValue` equal to the current field value, or empty when the field is absent.
 - A drifted base fails closed and writes nothing.
-- Prefer `markdown-replace-text` or `markdown-splice` so a live replica is not overwritten.
+- Span edits still pass the find hit `search` and `indexUtf16`.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
