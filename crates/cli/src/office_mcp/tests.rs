@@ -90,6 +90,52 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
 }
 
 #[test]
+fn collaboration_find_and_mutate_tool_descriptions_name_place_safe_anchors() {
+    let server = NativeOfficeMcpServer::new();
+    let tools = server.tool_router.list_all();
+    let description = |name: &str| {
+        tools
+            .iter()
+            .find(|tool| tool.name == name)
+            .and_then(|tool| tool.description.as_ref().map(|text| text.to_string()))
+            .unwrap_or_else(|| panic!("{name} must declare a description"))
+    };
+
+    let find = description("office_collaboration_find");
+    for expected in [
+        "paragraphId",
+        "textId",
+        "indexUtf16",
+        "containerKind",
+        "containerId",
+        "elementId",
+        "fieldId",
+        "annotationId",
+    ] {
+        assert!(
+            find.contains(expected),
+            "office_collaboration_find description must name {expected}; got {find}"
+        );
+    }
+
+    let mutate = description("office_collaboration_mutate");
+    for expected in [
+        "paragraphId",
+        "textId",
+        "indexUtf16",
+        "containerKind",
+        "containerId",
+        "elementId",
+        "search",
+    ] {
+        assert!(
+            mutate.contains(expected),
+            "office_collaboration_mutate description must name {expected}; got {mutate}"
+        );
+    }
+}
+
+#[test]
 fn office_view_schema_exposes_typed_view_options() {
     let schema = schemars::schema_for!(OfficeViewInput);
     let encoded = serde_json::to_string(&schema).unwrap();

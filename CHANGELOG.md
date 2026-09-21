@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Collaboration
+
+- CLI help and MCP find/mutate/tool instructions now name the same
+  place-safe locate-then-edit anchors for Document
+  (`paragraphId`/`textId`/`indexUtf16`), Markdown (`indexUtf16`), and
+  Presentation (`containerKind`/`containerId`/`elementId`/`indexUtf16`) that
+  core already enforces. MCP hosts do not read Skill references, so those
+  contracts must appear in the tool schema surface.
+
 ## 0.305.0 - 2026-09-21
 
 ### Collaboration
