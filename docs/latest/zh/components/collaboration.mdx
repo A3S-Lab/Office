@@ -818,7 +818,7 @@ a3s-office collab find .a3s/application.replica --find Grace --json
 a3s-office collab mutate .a3s/application.replica \
   --actor-id agent-7 --artifact-id application --kind pdf --mode edit \
   --operation-id pdf-1 \
-  --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace Hopper"}' \
+  --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","expectedValue":"Ada","value":"Grace Hopper"}' \
   --json
 ```
 

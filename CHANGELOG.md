@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Collaboration
+
+- `pdf-set-form-value` now requires `expectedValue` equal to the current field
+  value, or empty when the field is absent. A drifted base returns
+  `office.collaboration.mutation_match_conflict` and writes nothing, so a stale
+  whole-field write cannot overwrite a concurrent edit. Span edits still pass
+  find-hit `search` and `indexUtf16`.
+
 ## 0.307.0 - 2026-09-21
 
 ### Collaboration

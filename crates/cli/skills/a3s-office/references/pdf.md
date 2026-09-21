@@ -9,9 +9,11 @@ form values and FreeText annotation contents with `collab find` /
 collection order, then FreeText annotation order:
 
 - form value → `fieldId` + `indexUtf16` → `pdf-set-form-value` with that
-  `search` text and `indexUtf16`. `value` replaces only the matched span and
-  fails closed if the span drifted. Omit `search` and `indexUtf16` to set the
-  whole field value.
+  `search` text, `indexUtf16`, and `expectedValue` equal to the current field
+  value. `value` replaces only the matched span and fails closed if the span
+  or `expectedValue` drifted. Omit `search` and `indexUtf16` to set the whole
+  field value only when `expectedValue` still matches; an absent field uses
+  an empty `expectedValue`. A mismatch writes nothing.
 - FreeText (`type` 3) → `annotationId`, `pageIndex`, `annotationType`,
   `indexUtf16` → `pdf-update-annotation` with that `search` text and
   `indexUtf16`. `nextAnnotation.contents` replaces only the matched span and

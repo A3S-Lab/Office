@@ -101,6 +101,7 @@ async fn mcp_sets_existing_and_new_pdf_form_values() {
         &replica,
         "pdf-set-name-mcp",
         "Applicant.Name",
+        "Ada",
         "Katherine",
         TIMEOUT,
     )
@@ -114,6 +115,7 @@ async fn mcp_sets_existing_and_new_pdf_form_values() {
         &replica,
         "pdf-set-email-mcp",
         "Applicant.Email",
+        "",
         "katherine@example.test",
         TIMEOUT,
     )
@@ -451,6 +453,7 @@ async fn mutate(
     replica: &std::path::Path,
     operation_id: &str,
     field_id: &str,
+    expected_value: &str,
     value: &str,
     timeout: Duration,
 ) -> serde_json::Value {
@@ -469,6 +472,7 @@ async fn mutate(
             "mutation": {
                 "type": "pdf-set-form-value",
                 "fieldId": field_id,
+                "expectedValue": expected_value,
                 "value": value
             }
         }),

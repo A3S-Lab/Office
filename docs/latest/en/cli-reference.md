@@ -232,7 +232,7 @@ a3s-office collab mutate .a3s/deck.replica \
 a3s-office collab mutate .a3s/application.replica \
   --actor-id agent-7 --operation-id edit-47 --artifact-id application \
   --kind pdf --mode edit \
-  --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace Hopper"}' \
+  --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","expectedValue":"Ada","value":"Grace Hopper"}' \
   --json
 
 # Replace one FreeText span from collab find. nextAnnotation.contents is the
@@ -447,10 +447,13 @@ Identical retries are no-ops, and none of these operations synchronizes PDF
 source bytes.
 The conflict-local PDF form variant is `pdf-set-form-value`. `fieldId` is the
 stable fully-qualified PDF field name and must contain 1 to 512 UTF-16 code units
-without leading or trailing ECMAScript whitespace. Updating an existing field
+without leading or trailing ECMAScript whitespace. `expectedValue` must equal
+the current field value, or be empty when the field is absent. A drifted base
+fails closed and writes nothing. Updating an existing field
 writes only its conflict-local `value` leaf. Optional `search` and `indexUtf16`
 from `collab find` replace only that span inside the current value and fail
-closed when the span drifts; omit both to set the whole value. Creating a missing record writes
+closed when the span drifts; omit both to set the whole value after the
+`expectedValue` check. Creating a missing record writes
 the same typed presence, ID/value fields, and order roots used by browser Yjs;
 source and signature bytes never enter the replica. The native replica does
 not own or inspect the PDF source bytes, so the authenticated host/viewer must

@@ -736,6 +736,7 @@ mod tests {
             "nextElement",
             "expectedAfterElementId",
             "pdf-set-form-value",
+            "expectedValue",
             "fieldId",
             "pdf-propose-redaction",
             "proposalId",

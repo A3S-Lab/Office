@@ -59,21 +59,21 @@ fn cli_sets_existing_and_new_pdf_form_values() {
     let name = mutate(
         &replica,
         "pdf-set-name-cli",
-        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace"}"#,
+        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","expectedValue":"Ada","value":"Grace"}"#,
     );
     assert_eq!(name["data"]["sequence"], 1);
     assert_eq!(name["data"]["mutation"]["type"], "pdf-set-form-value");
     let email = mutate(
         &replica,
         "pdf-set-email-cli",
-        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Email","value":"grace@example.test"}"#,
+        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Email","expectedValue":"","value":"grace@example.test"}"#,
     );
     assert_eq!(email["data"]["sequence"], 2);
 
     let replay = mutate(
         &replica,
         "pdf-set-name-cli",
-        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace"}"#,
+        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","expectedValue":"Ada","value":"Grace"}"#,
     );
     assert_eq!(replay["data"]["duplicate"], true);
     assert_eq!(replay["data"]["sequence"], 1);
@@ -101,7 +101,7 @@ fn cli_sets_existing_and_new_pdf_form_values() {
         "mutate",
         replica.to_str().unwrap(),
         "--mutation",
-        r#"{"type":"pdf-set-form-value","fieldId":" Applicant.Name","value":"Rejected"}"#,
+        r#"{"type":"pdf-set-form-value","fieldId":" Applicant.Name","expectedValue":"","value":"Rejected"}"#,
         "--actor-id",
         "coding-agent-pdf-cli",
         "--operation-id",
@@ -139,7 +139,7 @@ fn cli_sets_existing_and_new_pdf_form_values() {
         "mutate",
         replica.to_str().unwrap(),
         "--mutation",
-        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","search":"Grace","indexUtf16":1,"value":"Ada"}"#,
+        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","expectedValue":"Grace","search":"Grace","indexUtf16":1,"value":"Ada"}"#,
         "--actor-id",
         "coding-agent-pdf-cli",
         "--operation-id",
@@ -159,7 +159,7 @@ fn cli_sets_existing_and_new_pdf_form_values() {
     let spanned = mutate(
         &replica,
         "pdf-span-replace-cli",
-        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","search":"Grace","indexUtf16":0,"value":"Ada"}"#,
+        r#"{"type":"pdf-set-form-value","fieldId":"Applicant.Name","expectedValue":"Grace","search":"Grace","indexUtf16":0,"value":"Ada"}"#,
     );
     assert_eq!(spanned["data"]["stateChanged"], true);
     let spanned_export = run(&["collab", "diff", replica.to_str().unwrap(), "--json"]);

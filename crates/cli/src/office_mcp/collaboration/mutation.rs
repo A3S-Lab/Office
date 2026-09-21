@@ -436,10 +436,12 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_type: u32,
     },
     /// Set one PDF form value by its stable fully-qualified field name.
-    /// Optional `search` and find-hit `indexUtf16` replace only that span and
-    /// fail closed when it drifts. Omit both to set the whole value.
+    /// `expectedValue` must equal the current value, or be empty when the
+    /// field is absent. A drifted base fails closed and writes nothing.
+    /// Optional `search` and find-hit `indexUtf16` then replace only that span.
     PdfSetFormValue {
         field_id: String,
+        expected_value: String,
         value: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         search: Option<String>,
@@ -790,11 +792,13 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
             },
             OfficeCollaborationMutation::PdfSetFormValue {
                 field_id,
+                expected_value,
                 value,
                 search,
                 index_utf16,
             } => Self::PdfSetFormValue {
                 field_id,
+                expected_value,
                 value,
                 search,
                 index_utf16,
