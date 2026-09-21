@@ -104,7 +104,7 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
    `spreadsheet-set-cell` rather than a text-replace mutation. For a live
    Presentation replica, `collab find` returns `containerKind`, `containerId`,
-   and `elementId`. Pass that `matchCount` as `expectedMatches` on
+   `elementId`, and `indexUtf16`. Pass that `matchCount` as `expectedMatches` on
    `presentation-replace-text`, and add optional `occurrence` plus those
    identity fields the same way, to change only the matched text; use
    `presentation-update-element` when other scene fields change. For a live PDF

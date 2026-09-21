@@ -317,7 +317,10 @@ replacement searches within each ProseMirror `Y.XmlText`, may cross rich-text
 format runs but not XML node or inline-atom boundaries, preserves the first
 replaced character's attributes, and fails unless `expectedMatches` equals the
 current non-overlapping match count. Optional `occurrence` then changes only
-that 1-based match; omit it to replace every match. A changed paragraph rotates its Word
+that 1-based match; omit it to replace every match. Optional find-hit
+`paragraphId`, `textId`, and `indexUtf16` make the selected occurrence
+place-safe under concurrent peers and fail closed when that span drifts. A
+changed paragraph rotates its Word
 `textId` once. Complete paragraph replacement instead matches one stable
 `paragraphId`, its current `textId`, and the exact visible text returned by
 `collab read`; a concurrent edit fails closed before mutation. Paragraph
@@ -394,9 +397,15 @@ against one shared snapshot before the complete batch changes fields,
 presence, and dense dimensions in one transaction. Any invalid or conflicting
 change rejects the whole batch without a durable event.
 The Presentation variants are `presentation-create-element`,
-`presentation-update-element`, `presentation-move-element`, and
-`presentation-delete-element`. All target a stable `containerKind` (`slide`,
-`master`, or `layout`) and `containerId`.
+`presentation-update-element`, `presentation-move-element`,
+`presentation-delete-element`, and `presentation-replace-text`. All target a
+stable `containerKind` (`slide`, `master`, or `layout`) and `containerId`.
+`presentation-replace-text` uses the same locate-then-replace contract as
+Document and Markdown: `collab find` / `office_collaboration_find`, then
+`expectedMatches` plus optional 1-based `occurrence`. Optional find-hit
+`containerKind`, `containerId`, `elementId`, and `indexUtf16` make the
+selected occurrence place-safe under concurrent peers and fail closed when
+that span drifts; the mutation rewrites only the matched scene-element text.
 Create accepts one complete element, optionally inserts it after an active
 `afterElementId`, and atomically appends its canonical immutable claim. An
 identical same-ID retry is a no-op; different content, a missing anchor, or a
