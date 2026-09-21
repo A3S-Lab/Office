@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.303.0 - 2026-09-21
+
 ### Collaboration
 
 - `markdown-replace-text` accepts optional `indexUtf16` from `collab find` so

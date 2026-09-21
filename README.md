@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.302.0` lets agents locate PDF form values and FreeText before edit:
+Version `0.303.0` keeps Markdown text replacement on the find-hit offset:
 
-- `collab find` / `office_collaboration_find` return `fieldId` or FreeText `annotationId` / `pageIndex` / `annotationType`.
-- Following edits stay `pdf-set-form-value` and `pdf-update-annotation`.
-- There is no PDF body replace-text mutation.
+- `markdown-replace-text` accepts optional `indexUtf16` from `collab find`.
+- A drifted offset fails closed even when the match count is unchanged.
+- Omit `indexUtf16` to keep the existing match-count contract.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

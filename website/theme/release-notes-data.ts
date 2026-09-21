@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.303.0',
+    date: '2026-09-21',
+    kind: 'improved',
+    surfaces: ['markdown'],
+    title: {
+      en: 'Anchor Markdown replace-text to the find-hit offset',
+      zh: '将 Markdown 替换锚定到 find 命中偏移',
+    },
+    summary: {
+      en: 'markdown-replace-text accepts optional indexUtf16 from collab find so a concurrent insert cannot rewrite a different span that still has the same match count.',
+      zh: 'markdown-replace-text 接受 collab find 的可选 indexUtf16，并发插入不能改写匹配次数相同但位置已变的另一段文本。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Place-safe span',
+          zh: '位置安全的跨度',
+        },
+        detail: {
+          en: 'Pass the hit indexUtf16 with occurrence or expectedMatches=1.',
+          zh: '将命中的 indexUtf16 与 occurrence 或 expectedMatches=1 一起传入。',
+        },
+      },
+      {
+        title: {
+          en: 'Fail closed on drift',
+          zh: '漂移时失败关闭',
+        },
+        detail: {
+          en: 'A drifted offset returns mutation_match_conflict and writes nothing, even when the match count is unchanged.',
+          zh: '偏移漂移返回 mutation_match_conflict 且不写入，即使匹配次数未变。',
+        },
+      },
+      {
+        title: {
+          en: 'Count-only contract stays',
+          zh: '匹配次数契约保留',
+        },
+        detail: {
+          en: 'Omit indexUtf16 to keep the existing match-count replacement contract.',
+          zh: '省略 indexUtf16 时仍保持原有匹配次数替换契约。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.302.0',
     date: '2026-09-21',
     kind: 'improved',
