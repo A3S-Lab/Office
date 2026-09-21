@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.308.0 - 2026-09-21
+
 ### Collaboration
 
 - `pdf-set-form-value` now requires `expectedValue` equal to the current field

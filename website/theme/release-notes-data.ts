@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.308.0',
+    date: '2026-09-21',
+    kind: 'fixed',
+    surfaces: ['pdf'],
+    title: {
+      en: 'Refuse a stale PDF form whole-value write',
+      zh: '拒绝过期的 PDF 表单整值覆盖',
+    },
+    summary: {
+      en: 'pdf-set-form-value now requires expectedValue. A drifted base fails closed and writes nothing, so a stale whole-field write cannot overwrite a concurrent edit.',
+      zh: 'pdf-set-form-value 现在必须带 expectedValue。基线漂移时失败关闭且不写入，过期整值写入不能覆盖并发修改。',
+    },
+    highlights: [
+      {
+        title: { en: 'Compare and swap', zh: '比较交换' },
+        detail: {
+          en: 'expectedValue must equal the current field value, or be empty when the field is absent.',
+          zh: 'expectedValue 必须等于当前字段值；字段不存在时传空字符串。',
+        },
+      },
+      {
+        title: { en: 'Fail closed', zh: '失败关闭' },
+        detail: {
+          en: 'A mismatch returns mutation_match_conflict and leaves the replica unchanged.',
+          zh: '不匹配时返回 mutation_match_conflict，副本保持不变。',
+        },
+      },
+      {
+        title: { en: 'Span edits', zh: '片段修改' },
+        detail: {
+          en: 'Pass the find hit search and indexUtf16 to change only that span of the field value.',
+          zh: '只改一段时传入 find 命中的 search 与 indexUtf16。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.307.0',
     date: '2026-09-21',
     kind: 'improved',
