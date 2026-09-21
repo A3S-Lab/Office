@@ -198,9 +198,17 @@ pub(super) fn apply_mutation(
         NativeOfficeCollaborationMutation::MarkdownSplice {
             index_utf16,
             delete_utf16,
+            expected_slice,
             insert,
         } => {
-            apply_markdown_splice(doc, manifest, *index_utf16, *delete_utf16, insert)?;
+            apply_markdown_splice(
+                doc,
+                manifest,
+                *index_utf16,
+                *delete_utf16,
+                expected_slice,
+                insert,
+            )?;
         }
         NativeOfficeCollaborationMutation::MarkdownReplaceText {
             search,

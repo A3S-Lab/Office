@@ -238,6 +238,7 @@ pub(super) fn apply_markdown_splice(
     manifest: &NativeOfficeCollaborationManifest,
     index_utf16: u32,
     delete_utf16: u32,
+    expected_slice: &str,
     insert: &str,
 ) -> UseResult<()> {
     let root = format!("{}.markdown.source", manifest.namespace);
@@ -257,6 +258,19 @@ pub(super) fn apply_markdown_splice(
             delete_utf16,
             current_len,
         ));
+    }
+    let observed = utf16_slice(&current, index_utf16, end_utf16)
+        .ok_or_else(|| invalid_markdown_range(index_utf16, delete_utf16, current_len))?;
+    if observed != expected_slice {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_match_conflict",
+            "Markdown splice range no longer matches expectedSlice.",
+        )
+        .with_suggestion(
+            "Read the UTF-16 slice again. Pass that text as expectedSlice, or empty when deleteUtf16 is 0. A whole-source rewrite belongs on markdown-replace with expectedMarkdown.",
+        )
+        .with_detail("indexUtf16", index_utf16 as u64)
+        .with_detail("deleteUtf16", delete_utf16 as u64));
     }
     if delete_utf16 == 0 && insert.is_empty() {
         return Ok(());
@@ -325,6 +339,30 @@ fn minimal_text_replacement(current: &str, replacement: &str) -> (u32, u32, Stri
     let delete_utf16 = current_middle.encode_utf16().count() as u32;
     let insert = replacement_middle.to_owned();
     (index_utf16, delete_utf16, insert)
+}
+
+fn utf16_slice(value: &str, start: u32, end: u32) -> Option<&str> {
+    let mut cursor = 0_u32;
+    let mut start_byte = if start == 0 { Some(0) } else { None };
+    let mut end_byte = if end == 0 { Some(0) } else { None };
+    for (byte_index, character) in value.char_indices() {
+        cursor = cursor.checked_add(character.len_utf16() as u32)?;
+        let next_byte = byte_index + character.len_utf8();
+        if cursor == start {
+            start_byte = Some(next_byte);
+        }
+        if cursor == end {
+            end_byte = Some(next_byte);
+            break;
+        }
+        if cursor > end {
+            return None;
+        }
+    }
+    if cursor < end {
+        return None;
+    }
+    Some(&value[start_byte?..end_byte?])
 }
 
 fn invalid_markdown_range(

@@ -74,7 +74,7 @@ a3s-office collab apply .a3s/report.replica \
 a3s-office collab mutate .a3s/notes.replica \
   --actor-id agent-7 --operation-id edit-43 --artifact-id notes \
   --kind markdown --mode edit \
-  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"expectedSlice":"","insert":" shared"}' \
   --json
 
 # Document or Markdown locate-then-replace. Pass matchCount as expectedMatches.
@@ -304,8 +304,10 @@ variants are `markdown-replace`, `markdown-splice`, and
 minimal incremental update, and use browser UTF-16 offsets.
 `markdown-replace` requires `expectedMarkdown` equal to the current source and
 fails closed without writing when that base drifted, so a stale whole-source
-rewrite cannot overwrite a peer edit. Prefer `markdown-replace-text` or
-`markdown-splice` for incremental edits.
+rewrite cannot overwrite a peer edit. `markdown-splice` requires `expectedSlice`
+equal to the UTF-16 range being deleted, or empty when `deleteUtf16` is 0, and
+fails closed without writing when that slice drifted. Prefer
+`markdown-replace-text` or a guarded `markdown-splice` for incremental edits.
 `markdown-replace-text` uses the same locate-then-replace contract as Document:
 `collab find` / `office_collaboration_find`, then `expectedMatches` plus optional
 1-based `occurrence`. Optional `indexUtf16` from that find hit fails closed when

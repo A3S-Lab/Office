@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Collaboration
+
+- `markdown-splice` now requires `expectedSlice` equal to the UTF-16 range being
+  deleted, or empty when `deleteUtf16` is 0. A drifted slice returns
+  `office.collaboration.mutation_match_conflict` and writes nothing, so a stale
+  whole-source splice cannot overwrite a concurrent edit.
+
 ## 0.308.0 - 2026-09-21
 
 ### Collaboration

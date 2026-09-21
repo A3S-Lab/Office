@@ -661,6 +661,7 @@ mod tests {
             "markdown-replace",
             "expectedMarkdown",
             "markdown-splice",
+            "expectedSlice",
             "markdown-replace-text",
             "indexUtf16",
             "deleteUtf16",
