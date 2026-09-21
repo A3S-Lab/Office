@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.305.0',
+    date: '2026-09-21',
+    kind: 'improved',
+    surfaces: ['pdf'],
+    title: {
+      en: 'Anchor FreeText edits to the find-hit span',
+      zh: '将 FreeText 编辑锚定到 find 命中跨度',
+    },
+    summary: {
+      en: 'pdf-update-annotation accepts optional search and indexUtf16 from collab find so only that FreeText span changes, and a drifted offset fails closed.',
+      zh: 'pdf-update-annotation 接受 collab find 的可选 search 与 indexUtf16，只改这一段 FreeText；偏移漂移时失败关闭。',
+    },
+    highlights: [
+      {
+        title: { en: 'Span edit', zh: '跨度编辑' },
+        detail: {
+          en: 'Pass the hit indexUtf16 and the matched search. nextAnnotation.contents replaces only that FreeText span and leaves the rest.',
+          zh: '传入命中的 indexUtf16 与匹配到的 search。nextAnnotation.contents 只替换这一段 FreeText，其余内容保留。',
+        },
+      },
+      {
+        title: { en: 'Fail closed on drift', zh: '漂移时失败关闭' },
+        detail: {
+          en: 'If that span no longer matches, the mutation returns mutation_match_conflict and writes nothing.',
+          zh: '若该跨度已不匹配，变更返回 mutation_match_conflict 且不写入。',
+        },
+      },
+      {
+        title: { en: 'Whole-contents contract stays', zh: '整段内容契约保留' },
+        detail: {
+          en: 'Omit search and indexUtf16 to set the whole FreeText contents. There is still no PDF body replace-text.',
+          zh: '省略 search 与 indexUtf16 时仍设置整段 FreeText 内容。仍然没有 PDF 正文 replace-text。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.304.0',
     date: '2026-09-21',
     kind: 'improved',
