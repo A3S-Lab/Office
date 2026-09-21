@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.303.0` keeps Markdown text replacement on the find-hit offset:
+Version `0.304.0` keeps PDF form edits on the find-hit span:
 
-- `markdown-replace-text` accepts optional `indexUtf16` from `collab find`.
-- A drifted offset fails closed even when the match count is unchanged.
-- Omit `indexUtf16` to keep the existing match-count contract.
+- `pdf-set-form-value` accepts optional `search` and `indexUtf16` from `collab find`.
+- Only that span of the current form value changes.
+- A drifted offset fails closed. Omit both fields to set the whole value. There is no PDF body replace-text mutation.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
