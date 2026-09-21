@@ -206,10 +206,15 @@ pub enum NativeOfficeCollaborationMutation {
         markdown: String,
     },
     /// Splice the canonical Markdown Y.Text using browser-compatible UTF-16
-    /// offsets. Surrogate pairs may not be split.
+    /// offsets. `expected_slice` must equal the current text in
+    /// `[index_utf16, index_utf16 + delete_utf16)`, or be empty when nothing
+    /// is deleted. A drifted slice fails closed and writes nothing, so a stale
+    /// whole-source splice cannot overwrite a concurrent edit. Surrogate pairs
+    /// may not be split.
     MarkdownSplice {
         index_utf16: u32,
         delete_utf16: u32,
+        expected_slice: String,
         insert: String,
     },
     /// Replace an exact number of non-overlapping text matches inside the

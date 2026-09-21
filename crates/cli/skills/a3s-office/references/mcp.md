@@ -136,7 +136,9 @@ closed `markdown-replace`, `markdown-replace-text`, and `markdown-splice` varian
 `markdown-replace` is a compare-and-swap: `expectedMarkdown` must equal the
 current source, and a drifted base writes nothing. Prefer
 `markdown-replace-text` (with find-hit `indexUtf16` under concurrent peers) or
-`markdown-splice` so a live replica is not overwritten. Splice positions are
+`markdown-splice` so a live replica is not overwritten. `markdown-splice`
+requires `expectedSlice` equal to the UTF-16 range being deleted, or empty when
+`deleteUtf16` is 0; a drifted slice writes nothing. Splice positions are
 UTF-16 code-unit offsets and may not split a surrogate pair:
 
 ```json
@@ -151,6 +153,7 @@ UTF-16 code-unit offsets and may not split a surrogate pair:
     "type": "markdown-splice",
     "indexUtf16": 4,
     "deleteUtf16": 0,
+    "expectedSlice": "",
     "insert": " shared"
   },
   "ifStateVectorBase64": "..."

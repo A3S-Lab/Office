@@ -102,8 +102,10 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    identity is known. For Markdown under concurrent peers, also pass the hit's
    `indexUtf16` the same way. A whole-source `markdown-replace` requires
    `expectedMarkdown` equal to the source just read; a drifted base fails
-   closed and writes nothing. Prefer `markdown-replace-text` or
-   `markdown-splice` so a live replica is not overwritten. For a live Spreadsheet replica,
+   closed and writes nothing. `markdown-splice` requires `expectedSlice` equal to
+   the UTF-16 range being deleted, or empty when `deleteUtf16` is 0; a drifted
+   slice fails closed and writes nothing. Prefer `markdown-replace-text` or a
+   guarded splice so a live replica is not overwritten. For a live Spreadsheet replica,
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
    `spreadsheet-set-cell` rather than a text-replace mutation. For a live
    Presentation replica, `collab find` returns `containerKind`, `containerId`,

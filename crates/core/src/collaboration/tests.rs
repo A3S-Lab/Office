@@ -352,6 +352,7 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
         NativeOfficeCollaborationMutation::MarkdownSplice {
             index_utf16: 1,
             delete_utf16: 2,
+            expected_slice: "😀".to_owned(),
             insert: "🦀".to_owned(),
         },
     );
@@ -364,6 +365,33 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
     assert!(replay.duplicate);
     assert_eq!(replay.sequence, Some(3));
 
+    let before_stale_splice = store.inspect().unwrap();
+    let stale_splice = store
+        .mutate(mutation_request(
+            "typed-splice-stale",
+            NativeOfficeCollaborationMutation::MarkdownSplice {
+                index_utf16: 0,
+                delete_utf16: 4,
+                expected_slice: "A😀B".to_owned(),
+                insert: "stale overwrite".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(
+        stale_splice.code,
+        "office.collaboration.mutation_match_conflict"
+    );
+    assert_eq!(markdown_source(&store), "A🦀B");
+    let after_stale_splice = store.inspect().unwrap();
+    assert_eq!(
+        after_stale_splice.current_sequence,
+        before_stale_splice.current_sequence
+    );
+    assert_eq!(
+        after_stale_splice.document_state_sha256,
+        before_stale_splice.document_state_sha256
+    );
+
     let before_invalid = store.inspect().unwrap();
     let invalid = store
         .mutate(mutation_request(
@@ -371,6 +399,7 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
             NativeOfficeCollaborationMutation::MarkdownSplice {
                 index_utf16: 2,
                 delete_utf16: 0,
+                expected_slice: String::new(),
                 insert: "!".to_owned(),
             },
         ))

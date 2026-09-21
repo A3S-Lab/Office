@@ -93,7 +93,7 @@ a3s-office collab read .a3s/notes.replica --json
 a3s-office collab mutate .a3s/notes.replica \
   --actor-id agent-7 --artifact-id notes --kind markdown --mode edit \
   --operation-id edit-42 \
-  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"expectedSlice":"","insert":" shared"}' \
   --json
 
 a3s-office collab mutate .a3s/report.replica \

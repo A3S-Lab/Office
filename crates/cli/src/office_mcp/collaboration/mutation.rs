@@ -228,9 +228,12 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         markdown: String,
     },
     /// Splice Markdown using browser-compatible UTF-16 code-unit offsets.
+    /// `expectedSlice` must equal the current text in that range, or be empty
+    /// when `deleteUtf16` is 0. A drifted slice fails closed and writes nothing.
     MarkdownSplice {
         index_utf16: u32,
         delete_utf16: u32,
+        expected_slice: String,
         insert: String,
     },
     /// Replace an exact number of non-overlapping Markdown Y.Text matches.
@@ -499,10 +502,12 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
             OfficeCollaborationMutation::MarkdownSplice {
                 index_utf16,
                 delete_utf16,
+                expected_slice,
                 insert,
             } => Self::MarkdownSplice {
                 index_utf16,
                 delete_utf16,
+                expected_slice,
                 insert,
             },
             OfficeCollaborationMutation::MarkdownReplaceText {

@@ -778,7 +778,7 @@ Envelope 送回会话。另一个 CLI、MCP 或 A3S Code 进程产生的类型�
 a3s-office collab mutate .a3s/notes.replica \
   --actor-id agent-7 --artifact-id notes --kind markdown --mode edit \
   --operation-id markdown-1 \
-  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"expectedSlice":"","insert":" shared"}' \
   --json
 
 # Document：先用 collab find / office_collaboration_find 定位；把 matchCount 作为
