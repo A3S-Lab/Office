@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.301.0` keeps locate-then-edit place-safe in live collaboration:
+Version `0.302.0` lets agents locate PDF form values and FreeText before edit:
 
-- `document-replace-text` / `presentation-replace-text` accept optional find-hit identity anchors.
-- MCP schema states the same place-safe recovery contract for use workers.
-- Agents re-find when a span drifts even if the match count stays equal.
+- `collab find` / `office_collaboration_find` return `fieldId` or FreeText `annotationId` / `pageIndex` / `annotationType`.
+- Following edits stay `pdf-set-form-value` and `pdf-update-annotation`.
+- There is no PDF body replace-text mutation.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

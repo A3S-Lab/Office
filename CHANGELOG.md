@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.302.0 - 2026-09-21
+
 ### Collaboration
 
 - Locate live PDF form values and FreeText annotation contents before editing.
