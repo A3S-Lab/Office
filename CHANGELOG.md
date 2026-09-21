@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Collaboration
+
+- `pdf-update-annotation` accepts optional `search` and find-hit `indexUtf16`
+  so FreeText `nextAnnotation.contents` is a span replacement. A drifted
+  offset fails closed and writes nothing. Omit both fields to keep the
+  whole-contents contract. There is still no PDF body replace-text mutation.
+
 ## 0.304.0 - 2026-09-21
 
 ### Collaboration

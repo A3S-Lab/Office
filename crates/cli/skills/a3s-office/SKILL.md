@@ -110,11 +110,11 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    `presentation-update-element` when other scene fields change. For a live PDF
    replica, `collab find` returns `fieldId` for form values or `annotationId`,
    `pageIndex`, and `annotationType` for FreeText (`type` 3) contents; edit with
-   `pdf-set-form-value` or `pdf-update-annotation`. For a form value under
-   concurrent peers, also pass the hit's `indexUtf16` and the matched `search`;
-   `value` then replaces only that span and a drifted offset fails closed.
-   Omit both to set the whole field value. There is no PDF body
-   replace-text mutation.
+   `pdf-set-form-value` or `pdf-update-annotation`. For a form value or FreeText
+   annotation under concurrent peers, also pass the hit's `indexUtf16` and the
+   matched `search`; `value` / `nextAnnotation.contents` then replace only that
+   span and a drifted offset fails closed. Omit both to set the whole field
+   value or FreeText contents. There is no PDF body replace-text mutation.
 
 4. Verify the result with `validate`, a targeted `get` or `query`, and
    `view ... issues`. For native OOXML Spreadsheet sessions, filter issues with

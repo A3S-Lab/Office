@@ -235,6 +235,14 @@ a3s-office collab mutate .a3s/application.replica \
   --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace Hopper"}' \
   --json
 
+# Replace one FreeText span from collab find. nextAnnotation.contents is the
+# replacement text for that span; omit search/indexUtf16 to set whole contents.
+a3s-office collab mutate .a3s/application.replica \
+  --actor-id agent-7 --operation-id annotation-span-1 --artifact-id application \
+  --kind pdf --mode edit \
+  --mutation '{"type":"pdf-update-annotation","annotationId":"annotation-1","expectedAnnotation":{"id":"annotation-1","pageIndex":0,"type":3,"contents":"xx Draft tail","rect":{"origin":{"x":40,"y":50},"size":{"width":220,"height":36}},"fontSize":12,"fontColor":"#111111"},"nextAnnotation":{"id":"annotation-1","pageIndex":0,"type":3,"contents":"Final","rect":{"origin":{"x":40,"y":50},"size":{"width":220,"height":36}},"fontSize":12,"fontColor":"#111111"},"search":"Draft","indexUtf16":3}' \
+  --json
+
 # Create a real EmbedPDF Highlight overlay on zero-based source page 0.
 a3s-office collab mutate .a3s/application.replica \
   --actor-id agent-7 --operation-id annotation-create-1 \
@@ -416,8 +424,12 @@ object, writes `source: created`, and atomically appends its immutable claim.
 An update supplies complete `expectedAnnotation` and `nextAnnotation` objects;
 recursive optimistic matching changes only their different leaves, merges
 unrelated concurrent leaves, and rejects a stale same-leaf edit. Record ID,
-source page, type, and source identity cannot drift. Deletion verifies the
-expected source/page/type identity and writes an irreversible tombstone.
+source page, type, and source identity cannot drift. For FreeText (`type` 3),
+optional `search` and find-hit `indexUtf16` make `nextAnnotation.contents` a
+span replacement inside the shared FreeText text; a drifted offset fails closed
+and writes nothing. Omit both fields to keep the whole-contents contract.
+Deletion verifies the expected source/page/type identity and writes an
+irreversible tombstone.
 Identical retries are no-ops, and none of these operations synchronizes PDF
 source bytes.
 The conflict-local PDF form variant is `pdf-set-form-value`. `fieldId` is the

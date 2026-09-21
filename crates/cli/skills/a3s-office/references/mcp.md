@@ -69,10 +69,11 @@ optionally the hit's `containerKind`, `containerId`, `elementId`, and
 `presentation-update-element` when geometry or other fields change. For a PDF
 replica, find returns `fieldId` for form values or `annotationId`, `pageIndex`,
 and `annotationType` for FreeText (`type` 3) contents; edit with
-`pdf-set-form-value` or `pdf-update-annotation`. For a form value under
-concurrent peers, pass the hit `indexUtf16` and matched `search` so
-`pdf-set-form-value` rewrites only that span and fails closed on drift. There is no PDF body
-replace-text. Do not decode Office collaboration roots in the host.
+`pdf-set-form-value` or `pdf-update-annotation`. For a form value or FreeText
+annotation under concurrent peers, pass the hit `indexUtf16` and matched
+`search` so `pdf-set-form-value` / `pdf-update-annotation` rewrite only that
+span and fail closed on drift. There is no PDF body replace-text. Do not decode
+Office collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
 from a browser peer:

@@ -274,6 +274,136 @@ fn cli_creates_updates_and_tombstones_portable_pdf_annotations() {
 }
 
 #[test]
+fn cli_replaces_one_freetext_span_from_find_and_rejects_drift() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("pdf-freetext-span.replica");
+    let fixture = temp.path().join("browser-pdf.update");
+    fs::write(&fixture, pdf_collaboration_fixture()).unwrap();
+    run(&[
+        "collab",
+        "join",
+        replica.to_str().unwrap(),
+        "--artifact-id",
+        "fixture-pdf",
+        "--kind",
+        "pdf",
+        "--actor-id",
+        "coding-agent-pdf-cli",
+        "--actor-kind",
+        "agent",
+        "--mode",
+        "edit",
+        "--operation-id",
+        "join-browser-pdf-freetext-span-cli",
+        "--input",
+        fixture.to_str().unwrap(),
+        "--client-id",
+        "900018",
+        "--json",
+    ]);
+
+    let annotation = serde_json::json!({
+        "id": "annotation-span-cli-1",
+        "pageIndex": 0,
+        "type": 3,
+        "rect": {
+            "origin": { "x": 40, "y": 50 },
+            "size": { "width": 220, "height": 36 },
+        },
+        "contents": "xx Draft tail",
+        "author": "A3S Agent",
+        "created": "2026-08-15T08:00:00.000Z",
+        "fontSize": 12.0,
+        "fontColor": "#111111",
+    });
+    let create = serde_json::json!({
+        "type": "pdf-create-annotation",
+        "annotationId": "annotation-span-cli-1",
+        "pageIndex": 0,
+        "annotation": annotation,
+    });
+    let created = mutate(
+        &replica,
+        "pdf-create-freetext-span-cli",
+        &create.to_string(),
+    );
+    assert_eq!(created["data"]["sequence"], 1);
+
+    let found = run(&[
+        "collab",
+        "find",
+        replica.to_str().unwrap(),
+        "--find",
+        "Draft",
+        "--json",
+    ]);
+    assert_eq!(found["data"]["matches"], 1);
+    let hit = &found["data"]["result"]["matches"][0];
+    assert_eq!(hit["annotationId"], "annotation-span-cli-1");
+    assert_eq!(hit["indexUtf16"], 3);
+
+    let mut drifted_next = annotation.clone();
+    drifted_next["contents"] = serde_json::json!("Final");
+    let drifted = serde_json::json!({
+        "type": "pdf-update-annotation",
+        "annotationId": "annotation-span-cli-1",
+        "expectedAnnotation": annotation,
+        "nextAnnotation": drifted_next,
+        "search": "Draft",
+        "indexUtf16": 0,
+    });
+    let drift = run_failure(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        &drifted.to_string(),
+        "--actor-id",
+        "coding-agent-pdf-cli",
+        "--operation-id",
+        "pdf-freetext-span-drift-cli",
+        "--artifact-id",
+        "fixture-pdf",
+        "--kind",
+        "pdf",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(
+        drift["error"]["code"],
+        "office.collaboration.mutation_match_conflict"
+    );
+
+    let mut span_next = annotation.clone();
+    span_next["contents"] = serde_json::json!("Final");
+    let update = serde_json::json!({
+        "type": "pdf-update-annotation",
+        "annotationId": "annotation-span-cli-1",
+        "expectedAnnotation": annotation,
+        "nextAnnotation": span_next,
+        "search": "Draft",
+        "indexUtf16": 3,
+    });
+    let updated = mutate(
+        &replica,
+        "pdf-freetext-span-replace-cli",
+        &update.to_string(),
+    );
+    assert_eq!(updated["data"]["stateChanged"], true);
+
+    let exported = run(&["collab", "diff", replica.to_str().unwrap(), "--json"]);
+    let update_bytes = STANDARD
+        .decode(exported["data"]["updateBase64"].as_str().unwrap())
+        .unwrap();
+    let snapshot = pdf_snapshot(&update_bytes);
+    assert_eq!(
+        snapshot.annotations["annotation-span-cli-1"]["annotation"]["contents"],
+        "xx Final tail"
+    );
+}
+
+#[test]
 fn cli_appends_attributable_pdf_review_records_and_claims() {
     let temp = tempfile::tempdir().unwrap();
     let replica = temp.path().join("pdf-review.replica");

@@ -13,7 +13,10 @@ collection order, then FreeText annotation order:
   fails closed if the span drifted. Omit `search` and `indexUtf16` to set the
   whole field value.
 - FreeText (`type` 3) → `annotationId`, `pageIndex`, `annotationType`,
-  `indexUtf16` → `pdf-update-annotation`
+  `indexUtf16` → `pdf-update-annotation` with that `search` text and
+  `indexUtf16`. `nextAnnotation.contents` replaces only the matched span and
+  fails closed if the span drifted. Omit `search` and `indexUtf16` to set the
+  whole FreeText contents.
 
 Highlight and other markup types are not searchable via collab find. Do not
 invent PDF body `replace-text`. Use the source-checkout UI operator for

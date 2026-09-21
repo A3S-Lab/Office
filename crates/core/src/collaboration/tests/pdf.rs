@@ -177,6 +177,8 @@ fn typed_pdf_annotation_mutations_merge_leaves_tombstone_and_survive_restart() {
                 annotation_id: "annotation-native-1".to_owned(),
                 expected_annotation: original.clone(),
                 next_annotation: color_update.clone(),
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
@@ -190,6 +192,8 @@ fn typed_pdf_annotation_mutations_merge_leaves_tombstone_and_survive_restart() {
                 annotation_id: "annotation-native-1".to_owned(),
                 expected_annotation: original.clone(),
                 next_annotation: note_update,
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
@@ -240,6 +244,8 @@ fn typed_pdf_annotation_mutations_merge_leaves_tombstone_and_survive_restart() {
                 annotation_id: "annotation-native-1".to_owned(),
                 expected_annotation: expected_tombstoned,
                 next_annotation: tombstoned_note,
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
@@ -300,6 +306,8 @@ fn typed_pdf_annotation_conflicts_and_identity_guards_are_atomic() {
                 annotation_id: "annotation-conflict".to_owned(),
                 expected_annotation: original.clone(),
                 next_annotation: red,
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
@@ -315,6 +323,8 @@ fn typed_pdf_annotation_conflicts_and_identity_guards_are_atomic() {
                 annotation_id: "annotation-conflict".to_owned(),
                 expected_annotation: original.clone(),
                 next_annotation: blue,
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap_err();
@@ -1060,5 +1070,69 @@ fn form_span_replace_keeps_the_rest_of_the_field_and_rejects_drift() {
     assert_eq!(
         pdf_form_value(&store, "Applicant.Name").as_deref(),
         Some("xx Grace tail")
+    );
+}
+
+#[test]
+fn freetext_span_replace_keeps_the_rest_and_rejects_drift() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("pdf-freetext-span");
+    let store = NativeOfficeCollaborationStore::create(pdf_create_request(&root)).unwrap();
+    store
+        .apply(pdf_apply_request(
+            "bootstrap-browser-pdf",
+            STANDARD.decode(YJS_PDF_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+    let original = portable_freetext_annotation("annotation-span-1", 0, "xx Draft tail");
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-freetext-span-seed",
+            NativeOfficeCollaborationMutation::PdfCreateAnnotation {
+                annotation_id: "annotation-span-1".to_owned(),
+                page_index: 0,
+                annotation: original.clone(),
+            },
+        ))
+        .unwrap();
+
+    let mut drifted_next = original.clone();
+    drifted_next["contents"] = serde_json::json!("Final");
+    let drifted = store
+        .mutate(pdf_mutation_request(
+            "pdf-freetext-span-drift",
+            NativeOfficeCollaborationMutation::PdfUpdateAnnotation {
+                annotation_id: "annotation-span-1".to_owned(),
+                expected_annotation: original.clone(),
+                next_annotation: drifted_next,
+                search: Some("Draft".to_owned()),
+                index_utf16: Some(0),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(drifted.code, "office.collaboration.mutation_match_conflict");
+    assert_eq!(
+        pdf_record(&store, "annotations", "annotation-span-1")["annotation"]["contents"],
+        "xx Draft tail"
+    );
+
+    let mut span_next = original.clone();
+    span_next["contents"] = serde_json::json!("Final");
+    let replaced = store
+        .mutate(pdf_mutation_request(
+            "pdf-freetext-span-replace",
+            NativeOfficeCollaborationMutation::PdfUpdateAnnotation {
+                annotation_id: "annotation-span-1".to_owned(),
+                expected_annotation: original.clone(),
+                next_annotation: span_next,
+                search: Some("Draft".to_owned()),
+                index_utf16: Some(3),
+            },
+        ))
+        .unwrap();
+    assert!(replaced.state_changed);
+    assert_eq!(
+        pdf_record(&store, "annotations", "annotation-span-1")["annotation"]["contents"],
+        "xx Final tail"
     );
 }

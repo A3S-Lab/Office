@@ -32,6 +32,8 @@ fn typed_pdf_annotation_updates_converge_across_delivery_order_and_restart() {
                 annotation_id: "annotation-order".to_owned(),
                 expected_annotation: original.clone(),
                 next_annotation: updated,
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
