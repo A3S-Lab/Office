@@ -37,6 +37,58 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.302.0',
+    date: '2026-09-21',
+    kind: 'improved',
+    surfaces: ['pdf'],
+    title: {
+      en: 'Locate PDF form values and FreeText before edit',
+      zh: '编辑前定位 PDF 表单值与 FreeText',
+    },
+    summary: {
+      en: 'collab find / office_collaboration_find list form values and FreeText contents with stable identities so agents can mutate without inventing PDF body replace-text.',
+      zh: 'collab find / office_collaboration_find 列出表单值与 FreeText 内容及稳定身份，智能体可直接变更，无需发明 PDF 正文 replace-text。',
+    },
+    highlights: [
+      {
+        title: {
+          en: 'Form field hits',
+          zh: '表单字段命中',
+        },
+        detail: {
+          en: 'Hits return fieldId and indexUtf16 in form collection order for pdf-set-form-value.',
+          zh: '命中按表单集合顺序返回 fieldId 与 indexUtf16，供 pdf-set-form-value 使用。',
+        },
+      },
+      {
+        title: {
+          en: 'FreeText annotation hits',
+          zh: 'FreeText 批注命中',
+        },
+        detail: {
+          en: 'type 3 contents return annotationId, pageIndex, and annotationType for pdf-update-annotation.',
+          zh: 'type 3 内容返回 annotationId、pageIndex 与 annotationType，供 pdf-update-annotation 使用。',
+        },
+      },
+      {
+        title: {
+          en: 'No body replace-text',
+          zh: '没有正文 replace-text',
+        },
+        detail: {
+          en: 'PDF locate-then-edit stays on existing typed mutations; body text replace remains out of scope.',
+          zh: 'PDF 定位后编辑仍走既有类型化变更；正文替换保持在范围外。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.301.0',
     date: '2026-09-21',
     kind: 'improved',
