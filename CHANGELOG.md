@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.305.0 - 2026-09-21
+
 ### Collaboration
 
 - `pdf-update-annotation` accepts optional `search` and find-hit `indexUtf16`
