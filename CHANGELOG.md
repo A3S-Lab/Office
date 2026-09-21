@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.304.0 - 2026-09-21
+
 ### Collaboration
 
 - `pdf-set-form-value` accepts optional `search` and find-hit `indexUtf16` so

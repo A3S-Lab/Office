@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.304.0',
+    date: '2026-09-21',
+    kind: 'improved',
+    surfaces: ['pdf'],
+    title: {
+      en: 'Anchor PDF form edits to the find-hit span',
+      zh: '将 PDF 表单编辑锚定到 find 命中跨度',
+    },
+    summary: {
+      en: 'pdf-set-form-value accepts optional search and indexUtf16 from collab find so only that span changes, and a drifted offset fails closed.',
+      zh: 'pdf-set-form-value 接受 collab find 的可选 search 与 indexUtf16，只改这一段；偏移漂移时失败关闭。',
+    },
+    highlights: [
+      {
+        title: { en: 'Span edit', zh: '跨度编辑' },
+        detail: {
+          en: 'Pass the hit indexUtf16 and the matched search. value replaces only that span and leaves the rest of the field.',
+          zh: '传入命中的 indexUtf16 与匹配到的 search。value 只替换这一段，字段其余内容保留。',
+        },
+      },
+      {
+        title: { en: 'Fail closed on drift', zh: '漂移时失败关闭' },
+        detail: {
+          en: 'If that span no longer matches, the mutation returns mutation_match_conflict and writes nothing.',
+          zh: '若该跨度已不匹配，变更返回 mutation_match_conflict 且不写入。',
+        },
+      },
+      {
+        title: { en: 'Whole-value contract stays', zh: '整值契约保留' },
+        detail: {
+          en: 'Omit search and indexUtf16 to set the whole field value. There is still no PDF body replace-text.',
+          zh: '省略 search 与 indexUtf16 时仍设置整个字段值。仍然没有 PDF 正文 replace-text。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.303.0',
     date: '2026-09-21',
     kind: 'improved',
