@@ -146,10 +146,16 @@ pub(super) fn validate_mutation_contract(
             search,
             expected_matches,
             occurrence,
+            index_utf16,
             ..
         } = mutation
         {
-            validate_markdown_text_replacement(search, *expected_matches, *occurrence)?;
+            validate_markdown_text_replacement(
+                search,
+                *expected_matches,
+                *occurrence,
+                *index_utf16,
+            )?;
         }
     } else if mutation_kind == NativeOfficeCollaborationArtifactKind::Spreadsheet {
         validate_spreadsheet_mutation(mutation)?;
@@ -198,6 +204,7 @@ pub(super) fn apply_mutation(
             replacement,
             expected_matches,
             occurrence,
+            index_utf16,
         } => {
             replace_markdown_text(
                 doc,
@@ -206,6 +213,7 @@ pub(super) fn apply_mutation(
                 replacement,
                 *expected_matches,
                 *occurrence,
+                *index_utf16,
             )?;
         }
         NativeOfficeCollaborationMutation::DocumentReplaceText { .. }

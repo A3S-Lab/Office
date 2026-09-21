@@ -296,7 +296,8 @@ variants are `markdown-replace`, `markdown-splice`, and
 minimal incremental update, and use browser UTF-16 offsets.
 `markdown-replace-text` uses the same locate-then-replace contract as Document:
 `collab find` / `office_collaboration_find`, then `expectedMatches` plus optional
-1-based `occurrence`. Its Document variants are `document-replace-text`,
+1-based `occurrence`. Optional `indexUtf16` from that find hit fails closed when
+the selected span drifts. Its Document variants are `document-replace-text`,
 `document-replace-paragraph`,
 `document-insert-paragraph`, `document-delete-paragraph`,
 `document-set-page-color`, `document-clear-page-color`,

@@ -211,6 +211,9 @@ pub enum NativeOfficeCollaborationMutation {
     /// canonical Markdown Y.Text. Locate first with `collab find` /
     /// `office_collaboration_find`, then pass `matchCount` as
     /// `expectedMatches` and optional 1-based `occurrence`.
+    /// Optional `indexUtf16` from the find hit makes that occurrence
+    /// place-safe under concurrent peers; omit it to keep the count-only
+    /// contract.
     MarkdownReplaceText {
         search: String,
         replacement: String,
@@ -218,6 +221,9 @@ pub enum NativeOfficeCollaborationMutation {
         /// 1-based match. Omitted means every match after the count check.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         occurrence: Option<u32>,
+        /// Optional UTF-16 start index from the find hit.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Replace an exact number of non-overlapping text matches inside the
     /// canonical ProseMirror `Y.XmlFragment`. Matches may span formatting

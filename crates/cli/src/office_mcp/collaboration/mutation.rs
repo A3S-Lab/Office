@@ -229,6 +229,8 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         insert: String,
     },
     /// Replace an exact number of non-overlapping Markdown Y.Text matches.
+    /// Optional `indexUtf16` from the find hit makes the selected occurrence
+    /// place-safe under concurrent peers.
     MarkdownReplaceText {
         search: String,
         replacement: String,
@@ -236,6 +238,8 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         /// 1-based match. Omit it to replace every match after the count check.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         occurrence: Option<u32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
     },
     /// Replace an exact number of non-overlapping Document Y.XmlText matches.
     /// Optional find-hit anchors (`paragraphId`, `textId`, `indexUtf16`) make
@@ -480,11 +484,13 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 replacement,
                 expected_matches,
                 occurrence,
+                index_utf16,
             } => Self::MarkdownReplaceText {
                 search,
                 replacement,
                 expected_matches,
                 occurrence,
+                index_utf16,
             },
             OfficeCollaborationMutation::DocumentReplaceText {
                 search,

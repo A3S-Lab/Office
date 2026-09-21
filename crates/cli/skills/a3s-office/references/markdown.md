@@ -33,6 +33,8 @@ operation contract from the MCP reference. Prefer locate-then-replace:
 1. `collab find <store> --find ...` or MCP `office_collaboration_find`
 2. Pass that `matchCount` as `expectedMatches` on `markdown-replace-text`
 3. Add optional `occurrence` (1-based from find) to change one match
+4. Under concurrent peers, also pass the hit's `indexUtf16` so a drifted span
+   fails closed even when the match count is unchanged
 
 Keep `markdown-splice` for known UTF-16 ranges and `markdown-replace` for a
 whole-source rewrite. Inspect the replica state first and keep the operation
