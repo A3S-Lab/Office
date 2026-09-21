@@ -220,8 +220,13 @@ impl From<OfficeCollaborationPdfAnnotationSource> for NativeOfficeCollaborationP
     deny_unknown_fields
 )]
 pub(in crate::office_mcp) enum OfficeCollaborationMutation {
-    /// Replace the canonical Markdown source using a minimal Y.Text edit.
-    MarkdownReplace { markdown: String },
+    /// Compare-and-swap the canonical Markdown source. `expectedMarkdown` must
+    /// equal the current source; a drifted base fails closed and writes
+    /// nothing. Prefer `markdown-replace-text` or `markdown-splice`.
+    MarkdownReplace {
+        expected_markdown: String,
+        markdown: String,
+    },
     /// Splice Markdown using browser-compatible UTF-16 code-unit offsets.
     MarkdownSplice {
         index_utf16: u32,
@@ -482,9 +487,13 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
 impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
     fn from(value: OfficeCollaborationMutation) -> Self {
         match value {
-            OfficeCollaborationMutation::MarkdownReplace { markdown } => {
-                Self::MarkdownReplace { markdown }
-            }
+            OfficeCollaborationMutation::MarkdownReplace {
+                expected_markdown,
+                markdown,
+            } => Self::MarkdownReplace {
+                expected_markdown,
+                markdown,
+            },
             OfficeCollaborationMutation::MarkdownSplice {
                 index_utf16,
                 delete_utf16,

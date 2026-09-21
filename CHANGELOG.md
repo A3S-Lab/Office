@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Collaboration
+
+- `markdown-replace` now requires `expectedMarkdown` equal to the current
+  canonical source. A drifted base returns
+  `office.collaboration.mutation_match_conflict` and writes nothing, so a stale
+  whole-source rewrite cannot overwrite a concurrent edit. Incremental edits
+  stay on `markdown-replace-text` and `markdown-splice`.
+
 ## 0.306.0 - 2026-09-21
 
 ### Collaboration

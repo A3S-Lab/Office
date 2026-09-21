@@ -130,7 +130,11 @@ changed since inspection:
 
 For local canonical Markdown, Document, Spreadsheet, Presentation, or PDF
 changes, prefer `office_collaboration_mutate` over constructing Yjs bytes. Markdown accepts
-closed `markdown-replace` and `markdown-splice` variants; splice positions are
+closed `markdown-replace`, `markdown-replace-text`, and `markdown-splice` variants.
+`markdown-replace` is a compare-and-swap: `expectedMarkdown` must equal the
+current source, and a drifted base writes nothing. Prefer
+`markdown-replace-text` (with find-hit `indexUtf16` under concurrent peers) or
+`markdown-splice` so a live replica is not overwritten. Splice positions are
 UTF-16 code-unit offsets and may not split a surrogate pair:
 
 ```json

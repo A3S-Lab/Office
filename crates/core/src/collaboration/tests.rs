@@ -319,6 +319,7 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
         .mutate(mutation_request(
             "typed-replace-1",
             NativeOfficeCollaborationMutation::MarkdownReplace {
+                expected_markdown: "# Shared\n\nYjs to Yrs.".to_owned(),
                 markdown: "A😀B".to_owned(),
             },
         ))
@@ -326,6 +327,25 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
     assert!(replaced.state_changed);
     assert_eq!(replaced.sequence, Some(2));
     assert_eq!(markdown_source(&store), "A😀B");
+
+    let before_drift = store.inspect().unwrap();
+    let drifted = store
+        .mutate(mutation_request(
+            "typed-replace-stale",
+            NativeOfficeCollaborationMutation::MarkdownReplace {
+                expected_markdown: "# Shared\n\nYjs to Yrs.".to_owned(),
+                markdown: "stale overwrite".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(drifted.code, "office.collaboration.mutation_match_conflict");
+    assert_eq!(markdown_source(&store), "A😀B");
+    let after_drift = store.inspect().unwrap();
+    assert_eq!(after_drift.current_sequence, before_drift.current_sequence);
+    assert_eq!(
+        after_drift.document_state_sha256,
+        before_drift.document_state_sha256
+    );
 
     let spliced_request = mutation_request(
         "typed-splice-1",
@@ -575,6 +595,7 @@ fn typed_mutations_require_initialization_and_edit_mode_but_raw_sync_does_not() 
         .mutate(mutation_request(
             "typed-before-bootstrap",
             NativeOfficeCollaborationMutation::MarkdownReplace {
+                expected_markdown: String::new(),
                 markdown: "blocked".to_owned(),
             },
         ))
@@ -607,6 +628,7 @@ fn typed_mutations_require_initialization_and_edit_mode_but_raw_sync_does_not() 
         let mut typed = mutation_request(
             &format!("typed-read-only-{index}"),
             NativeOfficeCollaborationMutation::MarkdownReplace {
+                expected_markdown: String::new(),
                 markdown: "blocked".to_owned(),
             },
         );

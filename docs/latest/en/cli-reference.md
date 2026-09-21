@@ -302,6 +302,10 @@ and updates are bounded to 1 MiB and 64 MiB respectively.
 variants are `markdown-replace`, `markdown-splice`, and
 `markdown-replace-text`. Replace and splice update canonical `Y.Text`, produce a
 minimal incremental update, and use browser UTF-16 offsets.
+`markdown-replace` requires `expectedMarkdown` equal to the current source and
+fails closed without writing when that base drifted, so a stale whole-source
+rewrite cannot overwrite a peer edit. Prefer `markdown-replace-text` or
+`markdown-splice` for incremental edits.
 `markdown-replace-text` uses the same locate-then-replace contract as Document:
 `collab find` / `office_collaboration_find`, then `expectedMatches` plus optional
 1-based `occurrence`. Optional `indexUtf16` from that find hit fails closed when

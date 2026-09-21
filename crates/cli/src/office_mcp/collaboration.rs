@@ -659,6 +659,7 @@ mod tests {
         let encoded = serde_json::to_string(&mutation_schema).unwrap();
         for expected in [
             "markdown-replace",
+            "expectedMarkdown",
             "markdown-splice",
             "markdown-replace-text",
             "indexUtf16",
