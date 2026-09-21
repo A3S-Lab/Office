@@ -423,7 +423,9 @@ source bytes.
 The conflict-local PDF form variant is `pdf-set-form-value`. `fieldId` is the
 stable fully-qualified PDF field name and must contain 1 to 512 UTF-16 code units
 without leading or trailing ECMAScript whitespace. Updating an existing field
-writes only its conflict-local `value` leaf. Creating a missing record writes
+writes only its conflict-local `value` leaf. Optional `search` and `indexUtf16`
+from `collab find` replace only that span inside the current value and fail
+closed when the span drifts; omit both to set the whole value. Creating a missing record writes
 the same typed presence, ID/value fields, and order roots used by browser Yjs;
 source and signature bytes never enter the replica. The native replica does
 not own or inspect the PDF source bytes, so the authenticated host/viewer must

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Collaboration
+
+- `pdf-set-form-value` accepts optional `search` and find-hit `indexUtf16` so
+  only that span of a form value changes. A drifted offset fails closed and
+  writes nothing. Omit both fields to keep the whole-value contract. There is
+  still no PDF body replace-text mutation.
+
 ## 0.303.0 - 2026-09-21
 
 ### Collaboration

@@ -8,7 +8,10 @@ form values and FreeText annotation contents with `collab find` /
 `office_collaboration_find` before mutating. Each hit is one match in form
 collection order, then FreeText annotation order:
 
-- form value → `fieldId` + `indexUtf16` → `pdf-set-form-value`
+- form value → `fieldId` + `indexUtf16` → `pdf-set-form-value` with that
+  `search` text and `indexUtf16`. `value` replaces only the matched span and
+  fails closed if the span drifted. Omit `search` and `indexUtf16` to set the
+  whole field value.
 - FreeText (`type` 3) → `annotationId`, `pageIndex`, `annotationType`,
   `indexUtf16` → `pdf-update-annotation`
 

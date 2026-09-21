@@ -425,7 +425,16 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_type: u32,
     },
     /// Set one PDF form value by its stable fully-qualified field name.
-    PdfSetFormValue { field_id: String, value: String },
+    /// Optional `search` and find-hit `indexUtf16` replace only that span and
+    /// fail closed when it drifts. Omit both to set the whole value.
+    PdfSetFormValue {
+        field_id: String,
+        value: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        search: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
+    },
     /// Append one attributable PDF redaction proposal with immutable geometry.
     PdfProposeRedaction {
         proposal_id: String,
@@ -760,9 +769,17 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 expected_page_index,
                 expected_type,
             },
-            OfficeCollaborationMutation::PdfSetFormValue { field_id, value } => {
-                Self::PdfSetFormValue { field_id, value }
-            }
+            OfficeCollaborationMutation::PdfSetFormValue {
+                field_id,
+                value,
+                search,
+                index_utf16,
+            } => Self::PdfSetFormValue {
+                field_id,
+                value,
+                search,
+                index_utf16,
+            },
             OfficeCollaborationMutation::PdfProposeRedaction {
                 proposal_id,
                 page_index,

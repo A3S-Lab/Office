@@ -6,6 +6,7 @@ use yrs::{Any, Array, ArrayRef, Map, MapRef, Out, Transact};
 use super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMutation,
 };
+use super::{is_utf16_boundary, utf16_len};
 
 mod annotation;
 mod find;
@@ -27,8 +28,14 @@ pub(super) fn validate_pdf_mutation(mutation: &NativeOfficeCollaborationMutation
         | NativeOfficeCollaborationMutation::PdfDeleteAnnotation { .. } => {
             validate_pdf_annotation_mutation(mutation)
         }
-        NativeOfficeCollaborationMutation::PdfSetFormValue { field_id, .. } => {
-            validate_pdf_identifier(field_id, "fieldId", "PDF form field")
+        NativeOfficeCollaborationMutation::PdfSetFormValue {
+            field_id,
+            search,
+            index_utf16,
+            ..
+        } => {
+            validate_pdf_identifier(field_id, "fieldId", "PDF form field")?;
+            validate_form_span_anchor(search.as_deref(), *index_utf16)
         }
         NativeOfficeCollaborationMutation::PdfProposeRedaction { .. }
         | NativeOfficeCollaborationMutation::PdfProposePageRotation { .. }
@@ -55,9 +62,19 @@ pub(super) fn apply_pdf_mutation(
         | NativeOfficeCollaborationMutation::PdfDeleteAnnotation { .. } => {
             apply_pdf_annotation_mutation(doc, manifest, mutation)
         }
-        NativeOfficeCollaborationMutation::PdfSetFormValue { field_id, value } => {
-            set_pdf_form_value(doc, manifest, field_id, value)
-        }
+        NativeOfficeCollaborationMutation::PdfSetFormValue {
+            field_id,
+            value,
+            search,
+            index_utf16,
+        } => set_pdf_form_value(
+            doc,
+            manifest,
+            field_id,
+            value,
+            search.as_deref(),
+            *index_utf16,
+        ),
         NativeOfficeCollaborationMutation::PdfProposeRedaction { .. }
         | NativeOfficeCollaborationMutation::PdfProposePageRotation { .. }
         | NativeOfficeCollaborationMutation::PdfProposePageDeletion { .. }
@@ -72,17 +89,53 @@ pub(super) fn apply_pdf_mutation(
     }
 }
 
+fn validate_form_span_anchor(search: Option<&str>, index_utf16: Option<u32>) -> UseResult<()> {
+    match (search, index_utf16) {
+        (None, None) => Ok(()),
+        (Some(search), Some(_)) if !search.is_empty() => Ok(()),
+        (Some(_), Some(_)) => Err(collaboration_error(
+            "office.collaboration.mutation_invalid",
+            "PDF form span replacement requires a non-empty search string.",
+        )),
+        _ => Err(collaboration_error(
+            "office.collaboration.mutation_invalid",
+            "PDF form span replacement requires both search and indexUtf16 from collab find.",
+        )
+        .with_suggestion(
+            "Pass the find hit indexUtf16 and its matched text, or omit both to set the whole field value.",
+        )),
+    }
+}
+
 fn set_pdf_form_value(
     doc: &yrs::Doc,
     manifest: &NativeOfficeCollaborationManifest,
     field_id: &str,
     value: &str,
+    search: Option<&str>,
+    index_utf16: Option<u32>,
 ) -> UseResult<()> {
     let roots = PdfRecordCollectionRoots::new(doc, manifest, "form-values");
     let current = read_pdf_form_values(doc, &roots)?;
+    let value = match (search, index_utf16) {
+        (Some(search), Some(index_utf16)) => {
+            let Some(current_value) = current.get(field_id) else {
+                return Err(collaboration_error(
+                    "office.collaboration.mutation_match_conflict",
+                    format!("PDF form field '{field_id}' no longer has a value to replace."),
+                )
+                .with_suggestion(
+                    "Find PDF form text again, then retry pdf-set-form-value with the current fieldId and indexUtf16.",
+                )
+                .with_detail("fieldId", field_id.to_owned()));
+            };
+            splice_form_span(current_value, index_utf16, search, value)?
+        }
+        _ => value.to_owned(),
+    };
     if current
         .get(field_id)
-        .is_some_and(|current| current == value)
+        .is_some_and(|current| current == &value)
     {
         return Ok(());
     }
@@ -95,11 +148,68 @@ fn set_pdf_form_value(
         roots.fields.insert(&mut transaction, id_key, field_id);
         roots.order.push_back(&mut transaction, field_id);
     }
-    roots.fields.insert(&mut transaction, value_key, value);
+    roots
+        .fields
+        .insert(&mut transaction, value_key, value.as_str());
     drop(transaction);
 
     read_pdf_form_values(doc, &roots)?;
     Ok(())
+}
+
+fn splice_form_span(
+    current: &str,
+    index_utf16: u32,
+    search: &str,
+    replacement: &str,
+) -> UseResult<String> {
+    let delete_utf16 = utf16_len(search)?;
+    let Some((prefix, rest)) = split_utf16(current, index_utf16) else {
+        return Err(form_span_conflict(index_utf16));
+    };
+    let Some((actual, suffix)) = split_utf16(rest, delete_utf16) else {
+        return Err(form_span_conflict(index_utf16));
+    };
+    if actual != search {
+        return Err(form_span_conflict(index_utf16));
+    }
+    let mut next = String::with_capacity(prefix.len() + replacement.len() + suffix.len());
+    next.push_str(prefix);
+    next.push_str(replacement);
+    next.push_str(suffix);
+    Ok(next)
+}
+
+fn form_span_conflict(expected_index_utf16: u32) -> a3s_use_core::UseError {
+    collaboration_error(
+        "office.collaboration.mutation_match_conflict",
+        "PDF form span no longer matches the selected find hit.",
+    )
+    .with_suggestion(
+        "Find PDF form text again, then retry pdf-set-form-value with the current indexUtf16.",
+    )
+    .with_detail("expectedIndexUtf16", u64::from(expected_index_utf16))
+}
+
+fn split_utf16(value: &str, offset: u32) -> Option<(&str, &str)> {
+    if !is_utf16_boundary(value, offset) {
+        return None;
+    }
+    if offset == 0 {
+        return Some(("", value));
+    }
+    let mut cursor = 0_u32;
+    for (byte_index, character) in value.char_indices() {
+        if cursor == offset {
+            return Some(value.split_at(byte_index));
+        }
+        cursor = cursor.saturating_add(character.len_utf16() as u32);
+    }
+    if cursor == offset {
+        Some((value, ""))
+    } else {
+        None
+    }
 }
 
 pub(super) struct PdfRecordCollectionRoots {

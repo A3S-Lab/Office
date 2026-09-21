@@ -34,6 +34,8 @@ fn typed_pdf_form_value_mutations_are_browser_compatible_durable_and_idempotent(
         NativeOfficeCollaborationMutation::PdfSetFormValue {
             field_id: "Applicant.Name".to_owned(),
             value: "Grace".to_owned(),
+            search: None,
+            index_utf16: None,
         },
     );
     let replaced = store.mutate(replace_request.clone()).unwrap();
@@ -50,6 +52,8 @@ fn typed_pdf_form_value_mutations_are_browser_compatible_durable_and_idempotent(
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Email".to_owned(),
                 value: "grace@example.test".to_owned(),
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
@@ -104,6 +108,8 @@ fn typed_pdf_form_value_validation_is_atomic_and_kind_bound() {
                 NativeOfficeCollaborationMutation::PdfSetFormValue {
                     field_id,
                     value: "Rejected".to_owned(),
+                    search: None,
+                    index_utf16: None,
                 },
             ))
             .unwrap_err();
@@ -121,6 +127,8 @@ fn typed_pdf_form_value_validation_is_atomic_and_kind_bound() {
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Name".to_owned(),
                 value: "Rejected".to_owned(),
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap_err();
@@ -910,6 +918,8 @@ fn find_lists_pdf_form_values_and_freetext_contents() {
             NativeOfficeCollaborationMutation::PdfSetFormValue {
                 field_id: "Applicant.Email".to_owned(),
                 value: "Draft applicant email".to_owned(),
+                search: None,
+                index_utf16: None,
             },
         ))
         .unwrap();
@@ -975,5 +985,80 @@ fn find_lists_pdf_form_values_and_freetext_contents() {
     assert_eq!(
         limited.matches[0].field_id.as_deref(),
         Some("Applicant.Email")
+    );
+}
+
+#[test]
+fn form_span_replace_keeps_the_rest_of_the_field_and_rejects_drift() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("pdf-form-span");
+    let store = NativeOfficeCollaborationStore::create(pdf_create_request(&root)).unwrap();
+    store
+        .apply(pdf_apply_request(
+            "bootstrap-browser-pdf",
+            STANDARD.decode(YJS_PDF_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-span-seed",
+            NativeOfficeCollaborationMutation::PdfSetFormValue {
+                field_id: "Applicant.Name".to_owned(),
+                value: "xx Ada tail".to_owned(),
+                search: None,
+                index_utf16: None,
+            },
+        ))
+        .unwrap();
+
+    let drifted = store
+        .mutate(pdf_mutation_request(
+            "pdf-span-drift",
+            NativeOfficeCollaborationMutation::PdfSetFormValue {
+                field_id: "Applicant.Name".to_owned(),
+                value: "Grace".to_owned(),
+                search: Some("Ada".to_owned()),
+                index_utf16: Some(0),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(drifted.code, "office.collaboration.mutation_match_conflict");
+    assert_eq!(
+        pdf_form_value(&store, "Applicant.Name").as_deref(),
+        Some("xx Ada tail")
+    );
+
+    let replaced = store
+        .mutate(pdf_mutation_request(
+            "pdf-span-replace",
+            NativeOfficeCollaborationMutation::PdfSetFormValue {
+                field_id: "Applicant.Name".to_owned(),
+                value: "Grace".to_owned(),
+                search: Some("Ada".to_owned()),
+                index_utf16: Some(3),
+            },
+        ))
+        .unwrap();
+    assert!(replaced.state_changed);
+    assert_eq!(
+        pdf_form_value(&store, "Applicant.Name").as_deref(),
+        Some("xx Grace tail")
+    );
+
+    let invalid = store
+        .mutate(pdf_mutation_request(
+            "pdf-span-half-anchor",
+            NativeOfficeCollaborationMutation::PdfSetFormValue {
+                field_id: "Applicant.Name".to_owned(),
+                value: "Nope".to_owned(),
+                search: None,
+                index_utf16: Some(3),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(invalid.code, "office.collaboration.mutation_invalid");
+    assert_eq!(
+        pdf_form_value(&store, "Applicant.Name").as_deref(),
+        Some("xx Grace tail")
     );
 }
