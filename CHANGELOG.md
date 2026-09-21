@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.307.0 - 2026-09-21
+
 ### Collaboration
 
 - `markdown-replace` now requires `expectedMarkdown` equal to the current

@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.307.0',
+    date: '2026-09-21',
+    kind: 'improved',
+    surfaces: ['markdown'],
+    title: {
+      en: 'Refuse a stale Markdown whole-source rewrite',
+      zh: '拒绝过期的 Markdown 整篇重写',
+    },
+    summary: {
+      en: 'markdown-replace now requires expectedMarkdown. A drifted base fails closed and writes nothing, so a stale rewrite cannot overwrite a concurrent edit.',
+      zh: 'markdown-replace 现在必须带 expectedMarkdown。基线漂移时失败关闭且不写入，过期重写不能覆盖并发修改。',
+    },
+    highlights: [
+      {
+        title: { en: 'Compare and swap', zh: '比较交换' },
+        detail: {
+          en: 'expectedMarkdown must equal the canonical source just read from the replica.',
+          zh: 'expectedMarkdown 必须等于刚从副本读到的规范源。',
+        },
+      },
+      {
+        title: { en: 'Fail closed', zh: '失败关闭' },
+        detail: {
+          en: 'A mismatch returns mutation_match_conflict and leaves the replica unchanged.',
+          zh: '不匹配时返回 mutation_match_conflict，副本保持不变。',
+        },
+      },
+      {
+        title: { en: 'Incremental edits', zh: '增量修改' },
+        detail: {
+          en: 'Prefer markdown-replace-text or markdown-splice so a live replica is not overwritten.',
+          zh: '增量修改优先使用 markdown-replace-text 或 markdown-splice，避免覆盖实时副本。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.306.0',
     date: '2026-09-21',
     kind: 'improved',

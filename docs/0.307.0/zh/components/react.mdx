@@ -1,0 +1,101 @@
+---
+title: React
+description: 以受控 React 组件的方式使用 A3S Office。
+---
+
+# React
+
+从 `@a3s-lab/office/react` 导入组件。内容值保存在宿主状态或应用数据仓库中，
+并把编辑器返回的完整新值传回组件。
+
+```tsx title="DocumentPage.tsx"
+import { useState } from 'react';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+import '@a3s-lab/office/styles.css';
+
+const initialContent: DocumentContent = {
+  type: 'document',
+  html: '<h1>项目说明</h1><p>从这里开始编辑。</p>',
+  pageSize: 'a4',
+};
+
+export function DocumentPage() {
+  const [content, setContent] = useState(initialContent);
+
+  return (
+    <div style={{ height: '100vh', minHeight: 0 }}>
+      <DocumentEditor
+        content={content}
+        onChange={setContent}
+        theme="light"
+      />
+    </div>
+  );
+}
+```
+
+富文本界面会按组合输入语义处理受控状态。Document、可视化 Markdown 和 Presentation
+文本会把输入法预编辑文字保留在编辑器内部，`onChange` 只接收已经结算的最终值。如果
+组合期间收到新的受控值，协调会延后到组合结束；宿主可以继续使用上例中的普通即时状态
+更新方式。
+
+## 宿主持有的文件操作
+
+文字、Markdown、表格和演示文稿编辑器都接受 `fileActions` 数组。保存、导出和
+删除行为由宿主持有；A3S Office 负责可访问菜单、焦点移动、分组与视觉呈现。
+`OfficeFileAction.icon` 可以使用宿主图标体系中的任意 React 节点。未提供图标时，
+菜单会显示中性文件图标，不会留下空白图标位。不可逆操作应设置
+`danger: true`，导出或删除分组可通过 `separatorBefore` 明确分隔。
+
+```tsx
+import type { OfficeFileAction } from '@a3s-lab/office/react';
+import { PresentationEditor } from '@a3s-lab/office/react';
+import { AppIcon } from './app-icon';
+
+const fileActions: readonly OfficeFileAction[] = [
+  {
+    id: 'save',
+    label: '立即保存',
+    icon: <AppIcon name="save" />,
+    disabled: !dirty,
+    onSelect: saveNow,
+  },
+  {
+    id: 'export-pdf',
+    label: '导出 PDF',
+    icon: <AppIcon name="pdf" />,
+    separatorBefore: true,
+    onSelect: exportPdf,
+  },
+  {
+    id: 'delete',
+    label: '删除演示文稿',
+    icon: <AppIcon name="trash" />,
+    danger: true,
+    separatorBefore: true,
+    onSelect: confirmDelete,
+  },
+];
+
+<PresentationEditor
+  content={content}
+  fileActions={fileActions}
+  onChange={setContent}
+  preview={false}
+/>;
+```
+
+禁用操作保持可读，但方向键与首尾焦点移动会跳过它们。通过键盘打开菜单时，焦点会
+落在第一个可用操作；按 Escape 会把焦点还原到“文件”触发按钮。
+
+各编辑器实现会按需拆包加载。如果宿主已经知道用户即将打开哪一种编辑器，可以
+提前调用 `preloadOfficeEditor(kind)`，减少首次打开等待。
+
+```tsx
+import { preloadOfficeEditor } from '@a3s-lab/office/react';
+
+<button onPointerEnter={() => void preloadOfficeEditor('spreadsheet')}>
+  打开工作簿
+</button>;
+```

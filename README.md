@@ -371,10 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.306.0` names place-safe locate anchors on the host-visible surface:
+Version `0.307.0` refuses a stale Markdown whole-source rewrite:
 
-- CLI help and MCP find/mutate descriptions echo Document `paragraphId`/`textId`/`indexUtf16`, Markdown `indexUtf16`, and Presentation `containerKind`/`containerId`/`elementId`/`indexUtf16`.
-- MCP hosts do not read Skill references, so those contracts live on the tool schema.
+- `markdown-replace` requires `expectedMarkdown` equal to the current source.
+- A drifted base fails closed and writes nothing.
+- Prefer `markdown-replace-text` or `markdown-splice` so a live replica is not overwritten.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

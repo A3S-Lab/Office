@@ -1,0 +1,55 @@
+---
+title: 扩展机制
+description: 在保持宿主接口类型安全的前提下扩展文档与 Markdown 编辑能力。
+---
+
+# 扩展机制
+
+A3S Office 采用模块化设计，但不会假设所有编辑器都有相同的交互模型。
+Document 与 Markdown 支持 TipTap Extension；Spreadsheet、Presentation 与 PDF
+目前提供类型化宿主接口，内部命令上下文仍保持私有。
+
+## TipTap Extension
+
+```tsx
+import { Extension } from '@tiptap/core';
+import { useMemo } from 'react';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const ReviewShortcut = Extension.create({
+  name: 'hostReviewShortcut',
+  addKeyboardShortcuts() {
+    return {
+      'Mod-Shift-r': () => {
+        this.editor.commands.focus();
+        return true;
+      },
+    };
+  },
+});
+
+export function Editor(props) {
+  const extensions = useMemo(() => [ReviewShortcut], []);
+  return <DocumentEditor {...props} extensions={extensions} />;
+}
+```
+
+使用规则：
+
+1. 每个 Extension 必须使用唯一 `name`；与内置 Extension 冲突时会明确报错。
+2. 保持 Extension 数组引用稳定。
+3. 自定义 Node 或 Mark 需要提供对应的 DOCX 或 Markdown 往返语义。
+4. 不要从 `@a3s-lab/office/internal` 路径导入实现模块。
+
+## 宿主扩展接口
+
+| 接口 | 用途 |
+| --- | --- |
+| `fileActions` | 保存、导出、历史记录、审批或业务文件命令。 |
+| `onAgentRequest` | 把结构化编辑器上下文发送给宿主 AI 流程。 |
+| `getSelectionMenuItems` | 完全定义选中文本后的操作及异步逻辑。 |
+| `loadSource` / `onSave` | 管理 PDF 数据与持久化生命周期。 |
+| `onStartSlideshow` | 把演示文稿放映与宿主路由或外部设备同步。 |
+
+组件库不会根据本地化文字或关键词猜测宿主行为。选区菜单回调接收类型化上下文与安全
+命令；提示词、模型调用、权限和持久化都由宿主决定。
