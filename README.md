@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.309.0` refuses a stale Markdown whole-source splice:
+Version `0.310.0` names remaining compare-and-swap fields on host-visible surfaces:
 
-- `markdown-splice` requires `expectedSlice` equal to the UTF-16 range being deleted, or empty when `deleteUtf16` is 0.
-- A drifted slice fails closed and writes nothing.
-- Prefer `markdown-replace-text` so a live replica is not overwritten.
+- CLI help and MCP mutate instructions name `expectedCell`, `expectedElement`, and `expectedAnnotation`.
+- MCP hosts that cannot read Skill refs still see the fail-closed baselines.
+- A drifted Spreadsheet, Presentation, or PDF FreeText base still writes nothing.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

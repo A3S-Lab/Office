@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.310.0 - 2026-09-22
+
+### Collaboration
+
+- CLI help and MCP mutate/tool instructions now name `expectedCell`,
+  `expectedElement`, and `expectedAnnotation` beside the existing Markdown and
+  PDF form compare-and-swap contracts, so hosts that cannot read Skill refs still
+  see the fail-closed baselines for Spreadsheet, Presentation, and PDF FreeText
+  updates.
+
 ## 0.309.0 - 2026-09-21
 
 ### Collaboration
