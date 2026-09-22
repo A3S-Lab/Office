@@ -104,20 +104,24 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    `expectedMarkdown` equal to the source just read; a drifted base fails
    closed and writes nothing. `markdown-splice` requires `expectedSlice` equal to
    the UTF-16 range being deleted, or empty when `deleteUtf16` is 0; a drifted
-   slice fails closed and writes nothing. Prefer `markdown-replace-text` or a
+   slice fails closed and writes nothing.    Prefer `markdown-replace-text` or a
    guarded splice so a live replica is not overwritten. For a live Spreadsheet replica,
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
-   `spreadsheet-set-cell` rather than a text-replace mutation. For a live
+   `spreadsheet-set-cell` and pass `expectedCell` equal to the current leaf, or
+   null/absent when blank; a drifted base fails closed and writes nothing. For a live
    Presentation replica, `collab find` returns `containerKind`, `containerId`,
    `elementId`, and `indexUtf16`. Pass that `matchCount` as `expectedMatches` on
    `presentation-replace-text`, and add optional `occurrence` plus those
    identity fields the same way, to change only the matched text; use
-   `presentation-update-element` when other scene fields change. For a live PDF
+   `presentation-update-element` with `expectedElement` equal to the current
+   element when other scene fields change (a drifted base fails closed). For a live PDF
    replica, `collab find` returns `fieldId` for form values or `annotationId`,
    `pageIndex`, and `annotationType` for FreeText (`type` 3) contents; edit with
    `pdf-set-form-value` or `pdf-update-annotation`. `pdf-set-form-value` requires
    `expectedValue` equal to the current field value, or empty when the field
-   is absent; a drifted base fails closed and writes nothing. For a form value or FreeText
+   is absent; a drifted base fails closed and writes nothing. `pdf-update-annotation`
+   requires `expectedAnnotation` equal to the current annotation; a drifted base
+   fails closed and writes nothing. For a form value or FreeText
    annotation under concurrent peers, also pass the hit's `indexUtf16` and the
    matched `search`; `value` / `nextAnnotation.contents` then replace only that
    span and a drifted offset fails closed. Omit both anchors to set the whole field

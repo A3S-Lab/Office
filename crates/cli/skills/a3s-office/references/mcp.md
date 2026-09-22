@@ -62,16 +62,22 @@ fail-closed mutation. For Document or Markdown text locate-edit, call
 Document edits under concurrent peers, also pass the hit's `paragraphId`,
 `textId`, and `indexUtf16`. For a
 Spreadsheet replica, the same find returns one cell (`sheetId`, `row`,
-`column`); edit that coordinate with `spreadsheet-set-cell`. For a
+`column`); edit that coordinate with `spreadsheet-set-cell` and pass
+`expectedCell` equal to the current leaf, or `null`/absent when blank (writes
+nothing when that base drifted). For a
 Presentation replica, pass that same count to `presentation-replace-text` and
 optionally the hit's `containerKind`, `containerId`, `elementId`, and
 `indexUtf16`; it rewrites only the matched scene-element text. Use
-`presentation-update-element` when geometry or other fields change. For a PDF
+`presentation-update-element` with `expectedElement` equal to the current
+element when geometry or other fields change (writes nothing when that base
+drifted). For a PDF
 replica, find returns `fieldId` for form values or `annotationId`, `pageIndex`,
 and `annotationType` for FreeText (`type` 3) contents; edit with
 `pdf-set-form-value` or `pdf-update-annotation`. `pdf-set-form-value` requires
 `expectedValue` equal to the current field value, or empty when the field is
-absent, and writes nothing when that base drifted. For a form value or FreeText
+absent, and writes nothing when that base drifted. `pdf-update-annotation`
+requires `expectedAnnotation` equal to the current annotation and writes
+nothing when that base drifted. For a form value or FreeText
 annotation under concurrent peers, pass the hit `indexUtf16` and matched
 `search` so `pdf-set-form-value` / `pdf-update-annotation` rewrite only that
 span and fail closed on drift. There is no PDF body replace-text. Do not decode
