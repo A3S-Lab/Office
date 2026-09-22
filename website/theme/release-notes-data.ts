@@ -37,6 +37,49 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.310.0',
+    date: '2026-09-22',
+    kind: 'improved',
+    surfaces: ['shared'],
+    title: {
+      en: 'Name remaining CAS fields on MCP and CLI',
+      zh: '在 MCP 与 CLI 上写明其余比较交换字段',
+    },
+    summary: {
+      en: 'Host-visible CLI help and MCP mutate instructions name expectedCell, expectedElement, and expectedAnnotation so collab agents see Spreadsheet, Presentation, and PDF FreeText fail-closed baselines without reading Skill references.',
+      zh: '宿主可见的 CLI 帮助与 MCP mutate 说明写明 expectedCell、expectedElement、expectedAnnotation，协作智能体无需阅读 Skill 即可看到 Spreadsheet、Presentation 与 PDF FreeText 的失败关闭基线。',
+    },
+    highlights: [
+      {
+        title: { en: 'Spreadsheet', zh: '表格' },
+        detail: {
+          en: 'spreadsheet-set-cell requires expectedCell equal to the current leaf, or null/absent when blank.',
+          zh: 'spreadsheet-set-cell 必须带与当前叶子相等的 expectedCell；空白坐标传 null/缺省。',
+        },
+      },
+      {
+        title: { en: 'Presentation and PDF', zh: '演示文稿与 PDF' },
+        detail: {
+          en: 'presentation-update-element requires expectedElement; pdf-update-annotation requires expectedAnnotation.',
+          zh: 'presentation-update-element 必须带 expectedElement；pdf-update-annotation 必须带 expectedAnnotation。',
+        },
+      },
+      {
+        title: { en: 'Host-visible contract', zh: '宿主可见契约' },
+        detail: {
+          en: 'MCP hosts cannot read Skill references, so the same CAS field names are on the mutate tool description.',
+          zh: 'MCP 宿主读不到 Skill 参考，因此相同比较交换字段名写在 mutate 工具描述上。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+    ],
+  },
+  {
     version: '0.309.0',
     date: '2026-09-21',
     kind: 'fixed',
