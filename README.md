@@ -259,10 +259,6 @@ const artifact = await importOfficeFile(file, {
 const output = await createArtifactBlob(artifact);
 ```
 
-The Playground download uses that same export. After a DOCX, XLSX, or PPTX
-download, **重新打开** imports those bytes through `importOfficeFile`, so the
-next editing session is the saved file.
-
 Imported DOCX artifacts are source-backed. Safe, unedited package parts and
 stable native identities are preserved under bounded rules; unsupported or
 unsafe structures produce compatibility diagnostics or fail explicitly rather
@@ -375,19 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.283.0` grows the permanent R0 no-clobber corpus gate:
+Version `0.310.0` names remaining compare-and-swap fields on host-visible surfaces:
 
-- Complex (fldChar) first-page header PAGE live-field identity now joins
-  fldSimple first-page PAGE, even-page footer NUMPAGES, even-page and
-  first-page header PAGE chrome, even/first-page text chrome, complex SECTION
-  fields, page-chrome PAGE/NUMPAGES/DATE/TIME fields, rich-text content
-  controls, table/figure captions, caption REF targets, body live fields, and
-  the rest of the representative DOCX round-trip corpus. Intentional
-  normalizations stay diagnosed; VBA and package signatures stay fail-closed on
-  export (`bun run test:corpus:r0`). Spreadsheet R2 formula-compatibility
-  corpus (`bun run test:corpus:r2`), pivot-depth corpus
-  (`bun run test:corpus:r2-pivot`), and conditional-format precedence corpus
-  (`bun run test:corpus:r2-cf`) are separate permanent gates.
+- CLI help and MCP mutate instructions name `expectedCell`, `expectedElement`, and `expectedAnnotation`.
+- MCP hosts that cannot read Skill refs still see the fail-closed baselines.
+- A drifted Spreadsheet, Presentation, or PDF FreeText base still writes nothing.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and
@@ -445,10 +433,7 @@ bounded page organization.
 and trustworthy redaction need explicit providers or future engines.
 
 The complete capability inventory, priorities, and exit evidence live in the
-[capability roadmap](./ROADMAP.md). WPS daily-workflow parity (first principles,
-a3s-test gates, CUA boundaries) lives in the
-[WPS editor parity plan](./docs/latest/en/wps-editor-parity-plan.md).
-Collaboration delivery has its own
+[capability roadmap](./ROADMAP.md). Collaboration delivery has its own
 [roadmap](./COLLABORATION_ROADMAP.md).
 
 ## Project status
