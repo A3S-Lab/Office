@@ -52,6 +52,11 @@ and are intentionally independent from in-memory OOXML sessions. They exchange
 standard Yjs v1 updates and state vectors; room transport, awareness, identity
 authentication, and authorization remain host responsibilities.
 
+Read the stable edit address from `collab read` or `office_collaboration_read`,
+then patch only that address with `office_collaboration_mutate`. Do not overwrite the whole document. Document addresses use `paragraphId` with
+`startUtf16`; Spreadsheet addresses use `sheetId`; Presentation addresses use
+`elementId`; PDF addresses use `fieldId`.
+
 Call `office_collaboration_read` before a local edit. It returns exact
 canonical Markdown source or an Office-owned Document projection with stable
 paragraph/text identities, projection-v3 comments/replies/anchors, live

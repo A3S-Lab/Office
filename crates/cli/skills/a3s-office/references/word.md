@@ -55,6 +55,9 @@ success. Live Writer text: locate with `collab find <store> --find ...` (or MCP
 realtime peers, also pass the hit's `paragraphId`, `textId`, and `indexUtf16`
 so the mutation fails closed if that span drifted while the count stayed equal.
 Prefer `document-replace-paragraph` for one complete plain paragraph.
+Read the stable edit address from `collab read` or `office_collaboration_read`,
+then patch only that `paragraphId` / `textId` / `startUtf16` / `endUtf16` span.
+Do not overwrite the whole document.
 
 Character formatting targets a run returned by `get --depth 2`. Paragraph
 alignment targets the paragraph itself. Supported typed properties are bold,

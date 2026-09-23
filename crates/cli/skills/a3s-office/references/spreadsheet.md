@@ -45,6 +45,8 @@ checks all guards against one sheet snapshot before one transaction, so one
 conflict leaves every cell and the durable event cursor unchanged. See
 [MCP: Real-time Collaboration](mcp.md#real-time-collaboration) for the complete
 request envelope and JSON example.
+Read the stable edit address from `collab read` or `office_collaboration_read`,
+then patch only that `sheetId` / `row` / `column` cell. Do not overwrite the whole document.
 
 ## Values and Formulas
 
