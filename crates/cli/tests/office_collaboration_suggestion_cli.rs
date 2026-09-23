@@ -112,7 +112,7 @@ fn cli_creates_syncs_and_finalizes_native_document_suggestions() {
         "--json",
     ]);
     let pending = run(&["collab", "read", editor.to_str().unwrap(), "--json"]);
-    assert_eq!(pending["data"]["version"], 3);
+    assert_eq!(pending["data"]["version"], 4);
     assert_eq!(
         pending["data"]["content"]["suggestions"]
             .as_array()
