@@ -1,8 +1,8 @@
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import { readDocxImageTransform } from './work-docx-image-transform';
 import {
-  EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
   type DocxExternalHyperlinkTargets,
+  EMPTY_DOCX_EXTERNAL_HYPERLINK_TARGETS,
 } from './work-docx-note-comment-hyperlink-relationships';
 import {
   xmlAttributeLocalName,

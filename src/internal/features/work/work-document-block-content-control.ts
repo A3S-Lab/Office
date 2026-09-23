@@ -1,4 +1,4 @@
-import { mergeAttributes, Node, type CommandProps } from '@tiptap/core';
+import { type CommandProps, mergeAttributes, Node } from '@tiptap/core';
 import { closeHistory } from '@tiptap/pm/history';
 import { TextSelection } from '@tiptap/pm/state';
 import { createWorkId } from './work-templates';
@@ -268,7 +268,10 @@ export const DocumentBlockContentControl = Node.create({
           const selected = selectedBlockContentControl(state);
           if (!selected) return false;
           if (!dispatch) return true;
-          tr.delete(selected.position, selected.position + selected.node.nodeSize);
+          tr.delete(
+            selected.position,
+            selected.position + selected.node.nodeSize,
+          );
           closeHistory(tr);
           return true;
         },
@@ -279,7 +282,9 @@ export const DocumentBlockContentControl = Node.create({
 export function normalizeBlockContentControlProperties(
   value: Partial<WorkDocumentBlockContentControlProperties> | null | undefined,
 ): WorkDocumentBlockContentControlProperties {
-  const lock = LOCK_VALUES.has(value?.lock as WorkDocumentBlockContentControlLock)
+  const lock = LOCK_VALUES.has(
+    value?.lock as WorkDocumentBlockContentControlLock,
+  )
     ? (value?.lock as WorkDocumentBlockContentControlLock)
     : 'unlocked';
   const appearance = APPEARANCE_VALUES.has(
@@ -338,7 +343,9 @@ export function blockContentControlPropertiesFromElement(
   return normalizeBlockContentControlProperties({
     id: element.getAttribute('data-block-content-control-id') ?? '',
     nativeId: (() => {
-      const value = element.getAttribute('data-block-content-control-native-id');
+      const value = element.getAttribute(
+        'data-block-content-control-native-id',
+      );
       if (value === null || value === '') return null;
       const parsed = Number(value);
       return Number.isSafeInteger(parsed) ? parsed : null;
@@ -356,8 +363,9 @@ export function blockContentControlPropertiesFromElement(
     ) as WorkDocumentBlockContentControlAppearance,
     color: element.getAttribute('data-block-content-control-color'),
     bindingStoreItemId:
-      element.getAttribute('data-block-content-control-binding-store-item-id') ??
-      '',
+      element.getAttribute(
+        'data-block-content-control-binding-store-item-id',
+      ) ?? '',
     bindingXPath:
       element.getAttribute('data-block-content-control-binding-xpath') ?? '',
     bindingPrefixMappings:
@@ -407,9 +415,7 @@ function insertDocumentBlockContentControlCommand(
   return true;
 }
 
-function blockContentControlNestingDepth(
-  state: CommandProps['state'],
-): number {
+function blockContentControlNestingDepth(state: CommandProps['state']): number {
   const { $from } = state.selection;
   let depth = 0;
   for (let level = $from.depth; level > 0; level -= 1) {
@@ -449,7 +455,10 @@ function normalizeBlockBinding(value: {
   };
   const storeItemId = sanitize(value.bindingStoreItemId, 64);
   const xpath = sanitize(value.bindingXPath, BINDING_PATH_MAX);
-  const prefixMappings = sanitize(value.bindingPrefixMappings, BINDING_PATH_MAX);
+  const prefixMappings = sanitize(
+    value.bindingPrefixMappings,
+    BINDING_PATH_MAX,
+  );
   if (!storeItemId && !xpath && !prefixMappings) return empty;
   if (
     !BINDING_STORE_ITEM_PATTERN.test(storeItemId) ||

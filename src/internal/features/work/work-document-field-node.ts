@@ -5,7 +5,7 @@ import {
   Node,
 } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
-import { NodeSelection, type EditorState } from '@tiptap/pm/state';
+import { type EditorState, NodeSelection } from '@tiptap/pm/state';
 import { createDocumentFieldIdentityPlugin } from './work-document-field-identity';
 import {
   documentFieldCodeDisplay,

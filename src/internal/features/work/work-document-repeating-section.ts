@@ -1,5 +1,5 @@
-import { mergeAttributes, Node } from '@tiptap/core';
 import type { CommandProps } from '@tiptap/core';
+import { mergeAttributes, Node } from '@tiptap/core';
 import { closeHistory } from '@tiptap/pm/history';
 import { TextSelection } from '@tiptap/pm/state';
 import { createWorkId } from './work-templates';
@@ -132,9 +132,13 @@ export const DocumentRepeatingSectionItem = Node.create({
     const properties = normalizeRepeatingSectionItemProperties(node.attrs);
     return [
       'div',
-      mergeAttributes(HTMLAttributes, repeatingSectionItemDomAttributes(properties), {
-        class: 'work-document-repeating-section-item',
-      }),
+      mergeAttributes(
+        HTMLAttributes,
+        repeatingSectionItemDomAttributes(properties),
+        {
+          class: 'work-document-repeating-section-item',
+        },
+      ),
       0,
     ];
   },
@@ -161,7 +165,9 @@ export const DocumentRepeatingSection = Node.create({
       nativeId: {
         default: null,
         parseHTML: (element) => {
-          const value = element.getAttribute('data-repeating-section-native-id');
+          const value = element.getAttribute(
+            'data-repeating-section-native-id',
+          );
           if (value === null || value === '') return null;
           const parsed = Number(value);
           return Number.isSafeInteger(parsed) ? parsed : null;
@@ -234,11 +240,15 @@ export const DocumentRepeatingSection = Node.create({
     const label = properties.alias || properties.tag || '重复部分';
     return [
       'div',
-      mergeAttributes(HTMLAttributes, repeatingSectionDomAttributes(properties), {
-        class: 'work-document-repeating-section',
-        role: 'group',
-        'aria-label': label,
-      }),
+      mergeAttributes(
+        HTMLAttributes,
+        repeatingSectionDomAttributes(properties),
+        {
+          class: 'work-document-repeating-section',
+          role: 'group',
+          'aria-label': label,
+        },
+      ),
       0,
     ];
   },
@@ -455,9 +465,7 @@ function insertDocumentRepeatingSectionCommand(
   closeHistory(tr);
   const { from, to } = state.selection;
   tr.replaceWith(from, to, section);
-  const resolved = tr.doc.resolve(
-    Math.min(from + 2, tr.doc.content.size),
-  );
+  const resolved = tr.doc.resolve(Math.min(from + 2, tr.doc.content.size));
   tr.setSelection(TextSelection.near(resolved));
   dispatch(tr.scrollIntoView());
   editor.view.focus();

@@ -1,6 +1,6 @@
 import type { Op } from '@fortune-sheet/core';
 import type { WorkbookInstance } from '@fortune-sheet/react';
-import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
+import { type RefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   createOfficeKernelClient,
   type OfficeKernelClient,
@@ -21,9 +21,9 @@ import {
   prepareSpreadsheetKernelWorkbook,
   projectSpreadsheetKernelWorkbookOperations,
   refreshSpreadsheetKernelWorkbook,
-  spreadsheetOperationsMayChangeCalculation,
   type SpreadsheetKernelOperationProjection,
   type SpreadsheetKernelWorkbook,
+  spreadsheetOperationsMayChangeCalculation,
 } from './spreadsheet-calculation-projection';
 import type {
   SpreadsheetCalculationCommand,

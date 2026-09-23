@@ -10,6 +10,7 @@ import {
 } from './internal/features/work/editors/office-collaboration-presence-context';
 import { OfficeEditorFocusHandoff } from './internal/features/work/editors/office-editor-focus-handoff';
 import type { PdfViewerProps as InternalPdfViewerProps } from './internal/features/work/editors/pdf-viewer';
+
 export {
   PDF_EVIDENCE_COORDINATE_BASIS,
   type PdfEvidenceBounds,
@@ -44,6 +45,7 @@ export {
   setMailMergeRecipientFilter,
   stepMailMergeSource,
 } from './internal/features/work/work-document-mail-merge';
+
 import type { PresentationEditorProps as InternalPresentationEditorProps } from './internal/features/work/editors/presentation-editor';
 import type { SpreadsheetEditorProps as InternalSpreadsheetEditorProps } from './internal/features/work/editors/spreadsheet-editor';
 import type { WorkOfficeFileAction } from './internal/features/work/editors/work-office-chrome';

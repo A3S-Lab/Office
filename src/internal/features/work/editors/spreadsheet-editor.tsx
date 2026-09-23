@@ -69,6 +69,7 @@ import { useOfficeCollaborationLocationNavigator } from './office-collaboration-
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { useOfficeDialog } from './office-dialog';
 import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
+import { SPREADSHEET_AUTO_FILTER_MENU_ITEMS } from './spreadsheet-auto-filter-menu';
 import {
   spreadsheetCellBordersAt,
   spreadsheetRenderableDiagonalBorders,
@@ -92,14 +93,25 @@ import {
   spreadsheetSortContextMenuItems,
   spreadsheetStructureContextMenuItems,
 } from './spreadsheet-context-menu';
+import { spreadsheetDataValidationItemAt } from './spreadsheet-data-validation';
+import { evaluateSpreadsheetCustomValidation } from './spreadsheet-data-validation-custom';
+import {
+  cloneSpreadsheetDataValidationItem,
+  type SpreadsheetDataValidationEditRequest,
+  spreadsheetDataValidationConfirmLabels,
+  spreadsheetDataValidationDialogDescription,
+  spreadsheetDataValidationDialogTitle,
+  spreadsheetDataValidationErrorStyle,
+  spreadsheetDataValidationInteraction,
+} from './spreadsheet-data-validation-interaction';
 import {
   SpreadsheetEditorRibbon,
   type SpreadsheetRibbonTabId,
 } from './spreadsheet-editor-ribbon';
 import {
   finiteSpreadsheetSelection,
-  isSpreadsheetCellEditorTarget,
   isSpreadsheetCellEditingTarget,
+  isSpreadsheetCellEditorTarget,
   isSpreadsheetNativeTextUndoTarget,
   sameSpreadsheetHistoryContent,
   sameSpreadsheetWorkbookState,
@@ -117,12 +129,12 @@ import {
 } from './spreadsheet-editor-support';
 import type { SpreadsheetFindMatch } from './spreadsheet-find';
 import { SpreadsheetFindBar } from './spreadsheet-find-bar';
+import { DEFAULT_SPREADSHEET_FONT_SIZE } from './spreadsheet-font-size';
 import { SpreadsheetFormatCellsDialog } from './spreadsheet-format-cells-dialog';
 import {
   createSpreadsheetFormatCellsDialogSource,
   type SpreadsheetFormatCellsDialogSource,
 } from './spreadsheet-format-cells-dialog-model';
-import { DEFAULT_SPREADSHEET_FONT_SIZE } from './spreadsheet-font-size';
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
 import {
   resolveSpreadsheetGoToTarget,
@@ -139,6 +151,7 @@ import {
 } from './spreadsheet-rich-text-selection-controller';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import { projectSpreadsheetSheetsShowingFormulas } from './spreadsheet-show-formulas';
+import type { SpreadsheetSortCustomListStore } from './spreadsheet-sort-custom-list-store';
 import { spreadsheetTableAtCell } from './spreadsheet-table';
 import {
   beginSpreadsheetTableCellRender,
@@ -156,7 +169,6 @@ import {
   useOfficeEditorWheelZoom,
 } from './use-office-editor-wheel-zoom';
 import { useOfficeHistory } from './use-office-history';
-import { SPREADSHEET_AUTO_FILTER_MENU_ITEMS } from './spreadsheet-auto-filter-menu';
 import { useSpreadsheetAutoFilter } from './use-spreadsheet-auto-filter';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import {
@@ -169,24 +181,12 @@ import {
   useSpreadsheetCollaboration,
 } from './use-spreadsheet-collaboration';
 import { useSpreadsheetDataValidation } from './use-spreadsheet-data-validation';
-import { spreadsheetDataValidationItemAt } from './spreadsheet-data-validation';
-import {
-  cloneSpreadsheetDataValidationItem,
-  spreadsheetDataValidationConfirmLabels,
-  spreadsheetDataValidationDialogDescription,
-  spreadsheetDataValidationDialogTitle,
-  spreadsheetDataValidationErrorStyle,
-  spreadsheetDataValidationInteraction,
-  type SpreadsheetDataValidationEditRequest,
-} from './spreadsheet-data-validation-interaction';
-import { evaluateSpreadsheetCustomValidation } from './spreadsheet-data-validation-custom';
 import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
 } from './use-spreadsheet-format-painter';
 import { useSpreadsheetHyperlink } from './use-spreadsheet-hyperlink';
 import { useSpreadsheetSort } from './use-spreadsheet-sort';
-import type { SpreadsheetSortCustomListStore } from './spreadsheet-sort-custom-list-store';
 import { useSpreadsheetTable } from './use-spreadsheet-table';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {

@@ -28,7 +28,10 @@ export function collectWorkPdfFigureBoxes(
   for (const node of images) {
     if (figures.length >= MAX_FIGURES) break;
     if (!(node instanceof HTMLImageElement)) continue;
-    const alt = normalizeFigureAlt(node.getAttribute('alt'), node.getAttribute('title'));
+    const alt = normalizeFigureAlt(
+      node.getAttribute('alt'),
+      node.getAttribute('title'),
+    );
     if (!alt) continue;
     let rect: DOMRect;
     try {

@@ -1,8 +1,3 @@
-import { layoutOfficeDocumentInJavaScript } from './office-kernel-fallback';
-import { resolveOfficePresentationGeometryInJavaScript } from './office-kernel-presentation-fallback';
-import { calculateSpreadsheetInJavaScript } from './office-kernel-spreadsheet-fallback';
-import { calculateSpreadsheetSessionInJavaScript } from './office-kernel-spreadsheet-session-fallback';
-import { layoutOfficeTextInJavaScript } from './office-kernel-text-fallback';
 import type {
   OfficeKernelClient,
   OfficeKernelLayoutInput,
@@ -11,7 +6,10 @@ import type {
   OfficeKernelSpreadsheetSessionCalculationInput,
   OfficeKernelTextLayoutInput,
 } from './office-kernel-client-types';
+import { layoutOfficeDocumentInJavaScript } from './office-kernel-fallback';
+import { resolveOfficePresentationGeometryInJavaScript } from './office-kernel-presentation-fallback';
 import {
+  OFFICE_KERNEL_PROTOCOL_VERSION,
   type OfficeKernelFontSource,
   type OfficeKernelLayoutRequest,
   type OfficeKernelLayoutResult,
@@ -24,8 +22,10 @@ import {
   type OfficeKernelTextLayoutRequest,
   type OfficeKernelTextLayoutResult,
   type OfficeKernelWorkerResponse,
-  OFFICE_KERNEL_PROTOCOL_VERSION,
 } from './office-kernel-protocol';
+import { calculateSpreadsheetInJavaScript } from './office-kernel-spreadsheet-fallback';
+import { calculateSpreadsheetSessionInJavaScript } from './office-kernel-spreadsheet-session-fallback';
+import { layoutOfficeTextInJavaScript } from './office-kernel-text-fallback';
 
 export type {
   OfficeKernelClient,

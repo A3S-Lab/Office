@@ -3,13 +3,15 @@ import {
   browserScalarFunctionArities,
   evaluateParserDate,
   evaluateParserDay,
+  evaluateParserFilter,
   evaluateParserMonth,
   evaluateParserNumberValue,
   evaluateParserSequence,
+  evaluateParserSort,
+  evaluateParserSubtotal,
   evaluateParserTranspose,
   evaluateParserUnique,
   evaluateParserValue,
-  evaluateParserSubtotal,
   evaluateParserYear,
   normalizeFormulaForFortuneParser,
   normalizeSpreadsheetFunctionName,
@@ -249,6 +251,20 @@ class JavaScriptSpreadsheetEvaluator {
         }
         return result;
       })
+      .setFunction('FILTER', (parameters) => {
+        const result = evaluateParserFilter(parameters);
+        if (Array.isArray(result)) {
+          producedSpillGrid = result as unknown[][];
+        }
+        return result;
+      })
+      .setFunction('SORT', (parameters) => {
+        const result = evaluateParserSort(parameters);
+        if (Array.isArray(result)) {
+          producedSpillGrid = result as unknown[][];
+        }
+        return result;
+      })
       .setFunction('ROW', (parameters) =>
         parameters.length ? null : coordinate.row + 1,
       )
@@ -384,7 +400,11 @@ class JavaScriptSpreadsheetEvaluator {
       };
     }
     for (let rowOffset = 0; rowOffset < rowCount; rowOffset += 1) {
-      for (let columnOffset = 0; columnOffset < columnCount; columnOffset += 1) {
+      for (
+        let columnOffset = 0;
+        columnOffset < columnCount;
+        columnOffset += 1
+      ) {
         if (rowOffset === 0 && columnOffset === 0) continue;
         const target = {
           sheetId: anchor.sheetId,
@@ -401,7 +421,11 @@ class JavaScriptSpreadsheetEvaluator {
     }
     for (let rowOffset = 0; rowOffset < rowCount; rowOffset += 1) {
       const row = grid[rowOffset] ?? [];
-      for (let columnOffset = 0; columnOffset < columnCount; columnOffset += 1) {
+      for (
+        let columnOffset = 0;
+        columnOffset < columnCount;
+        columnOffset += 1
+      ) {
         if (rowOffset === 0 && columnOffset === 0) continue;
         const target = {
           sheetId: anchor.sheetId,

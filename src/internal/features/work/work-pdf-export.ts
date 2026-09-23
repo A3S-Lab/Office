@@ -1,5 +1,4 @@
 import type { jsPDF as JsPdf } from 'jspdf';
-import type { WorkArtifact, WorkSpreadsheetPaperSize } from './work-types';
 import {
   mountWorkLiveDocumentCapture,
   positionWorkLiveDocumentCapture,
@@ -10,11 +9,23 @@ import {
   type RegisteredDocumentPageSurfaceFrame,
 } from './work-document-page-surface-registry';
 import {
+  appendWorkPdfFigureStructEntries,
+  collectWorkPdfFigureBoxes,
+} from './work-pdf-figure-structure';
+import {
+  appendWorkPdfExternalLinkAnnotations,
+  collectWorkPdfExternalLinkBoxes,
+} from './work-pdf-link-annotations';
+import {
   applyWorkPdfDocumentStructure,
   collectWorkPdfOutlineEntriesFromRoot,
   seedWorkPdfDocumentLanguage,
   type WorkPdfOutlineEntry,
 } from './work-pdf-structure';
+import {
+  appendWorkPdfTableStructEntries,
+  collectWorkPdfTableStructs,
+} from './work-pdf-table-structure';
 import { collectWorkPdfTextRuns } from './work-pdf-text-layer';
 import {
   appendWorkPdfVectorHighlightLayer,
@@ -28,18 +39,7 @@ import {
   appendWorkPdfVectorTextLayer,
   clearWorkPdfTextRunsOnCanvas,
 } from './work-pdf-vector-text';
-import {
-  appendWorkPdfExternalLinkAnnotations,
-  collectWorkPdfExternalLinkBoxes,
-} from './work-pdf-link-annotations';
-import {
-  appendWorkPdfFigureStructEntries,
-  collectWorkPdfFigureBoxes,
-} from './work-pdf-figure-structure';
-import {
-  appendWorkPdfTableStructEntries,
-  collectWorkPdfTableStructs,
-} from './work-pdf-table-structure';
+import type { WorkArtifact, WorkSpreadsheetPaperSize } from './work-types';
 
 type PdfPageSize = WorkSpreadsheetPaperSize;
 

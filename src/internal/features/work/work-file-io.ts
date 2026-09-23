@@ -2,18 +2,18 @@ import {
   createWorkDocumentBlob,
   importWorkDocumentFile,
 } from './work-document-file-io';
+import { materializeWorkFileSource } from './work-file-data';
 import {
   downloadBlob,
   fileNameWithoutExtension,
   safeFileName,
 } from './work-file-download';
-import { workFileExtension, workKindForFile } from './work-file-kind';
-import { materializeWorkFileSource } from './work-file-data';
 import {
   type WorkFileImportContext,
   WorkFileImportController,
   type WorkFileImportOptions,
 } from './work-file-import';
+import { workFileExtension, workKindForFile } from './work-file-kind';
 import {
   createWorkMarkdownBlob,
   importWorkMarkdownFile,

@@ -9,8 +9,9 @@
 - Admit R2 formula-compatibility corpus gates (`bun run test:corpus:r2`) with
   daily lookups, conditional aggregates, `SUMPRODUCT`/`PRODUCT`/`VALUE`,
   bounded `NUMBERVALUE`, locale-guessing `VALUE`, 1904 `DATE`/`YEAR`/`MONTH`/
-  `DAY`, and dynamic-array spill for `SEQUENCE` / `TRANSPOSE` / `UNIQUE`
-  (obstructed ranges return `#SPILL!`).
+  `DAY`, and dynamic-array spill for `SEQUENCE` / `TRANSPOSE` / `UNIQUE` /
+  `FILTER` / `SORT` (obstructed ranges return `#SPILL!`; empty `FILTER`
+  without `if_empty` returns `#CALC!`).
 - Admit in-app slicer-style multi-select pivot report filters (`selectedItems`).
 
 ### Writer

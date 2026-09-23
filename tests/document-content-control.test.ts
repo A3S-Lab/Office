@@ -229,8 +229,7 @@ describe('document content controls', () => {
   test('inserts a checkbox glyph, toggles checked state, and round-trips w14:checkbox', async () => {
     editor = new Editor({
       extensions: createWorkDocumentExtensions(),
-      content:
-        '<section data-document-section="true"><p>Ready</p></section>',
+      content: '<section data-document-section="true"><p>Ready</p></section>',
     });
     editor.commands.setTextSelection({ from: 2, to: 2 });
     expect(
@@ -302,8 +301,7 @@ describe('document content controls', () => {
   test('inserts a drop-down list, changes selection, and round-trips w:dropDownList', async () => {
     editor = new Editor({
       extensions: createWorkDocumentExtensions(),
-      content:
-        '<section data-document-section="true"><p>Ready</p></section>',
+      content: '<section data-document-section="true"><p>Ready</p></section>',
     });
     editor.commands.setTextSelection({ from: 2, to: 2 });
     expect(
@@ -383,8 +381,7 @@ describe('document content controls', () => {
   test('inserts a combo box, keeps free text, and round-trips w:comboBox', async () => {
     editor = new Editor({
       extensions: createWorkDocumentExtensions(),
-      content:
-        '<section data-document-section="true"><p>Ready</p></section>',
+      content: '<section data-document-section="true"><p>Ready</p></section>',
     });
     editor.commands.setTextSelection({ from: 2, to: 2 });
     expect(
@@ -415,8 +412,7 @@ describe('document content controls', () => {
     editor.destroy();
     editor = new Editor({
       extensions: createWorkDocumentExtensions(),
-      content:
-        '<section data-document-section="true"><p>Ready</p></section>',
+      content: '<section data-document-section="true"><p>Ready</p></section>',
     });
     editor.commands.setTextSelection({ from: 2, to: 2 });
     expect(
@@ -483,8 +479,7 @@ describe('document content controls', () => {
   test('inserts a date control, changes value, and round-trips w:date', async () => {
     editor = new Editor({
       extensions: createWorkDocumentExtensions(),
-      content:
-        '<section data-document-section="true"><p>Ready</p></section>',
+      content: '<section data-document-section="true"><p>Ready</p></section>',
     });
     editor.commands.setTextSelection({ from: 2, to: 2 });
     expect(
@@ -594,13 +589,13 @@ describe('document content controls', () => {
         type: 'text',
         bindingStoreItemId: '{55CF591A-3D7D-47A0-974C-028795EBCBC9}',
         bindingXPath: '/ns0:root[1]/ns0:name[1]',
-        bindingPrefixMappings: "xmlns:ns0='http://schemas.example.com/customer'",
+        bindingPrefixMappings:
+          "xmlns:ns0='http://schemas.example.com/customer'",
       }),
     ).toMatchObject({
       bindingStoreItemId: '{55CF591A-3D7D-47A0-974C-028795EBCBC9}',
       bindingXPath: '/ns0:root[1]/ns0:name[1]',
-      bindingPrefixMappings:
-        "xmlns:ns0='http://schemas.example.com/customer'",
+      bindingPrefixMappings: "xmlns:ns0='http://schemas.example.com/customer'",
     });
     expect(
       normalizeDocumentContentControlProperties({
@@ -628,14 +623,12 @@ describe('document content controls', () => {
       alias: 'Customer',
       bindingStoreItemId: '{55CF591A-3D7D-47A0-974C-028795EBCBC9}',
       bindingXPath: '/ns0:root[1]/ns0:name[1]',
-      bindingPrefixMappings:
-        "xmlns:ns0='http://schemas.example.com/customer'",
+      bindingPrefixMappings: "xmlns:ns0='http://schemas.example.com/customer'",
     });
 
     editor = new Editor({
       extensions: createWorkDocumentExtensions(),
-      content:
-        '<section data-document-section="true"><p>Ready</p></section>',
+      content: '<section data-document-section="true"><p>Ready</p></section>',
     });
     editor.commands.setTextSelection({ from: 2, to: 2 });
     expect(
@@ -672,7 +665,9 @@ describe('document content controls', () => {
       'w:storeItemID="{55CF591A-3D7D-47A0-974C-028795EBCBC9}"',
     );
     expect(xml).toContain('w:xpath="/ns0:root[1]/ns0:name[1]"');
-    expect(xml).toContain("w:prefixMappings=\"xmlns:ns0='http://schemas.example.com/customer'\"");
+    expect(xml).toContain(
+      'w:prefixMappings="xmlns:ns0=\'http://schemas.example.com/customer\'"',
+    );
     const reopened = await importOfficeFile(
       new File([blob], 'bound-content-control.docx', { type: blob.type }),
     );

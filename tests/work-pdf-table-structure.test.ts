@@ -1,10 +1,10 @@
 import { expect, test } from '@rstest/core';
 import { jsPDF } from 'jspdf';
+import { applyWorkPdfDocumentStructure } from '../src/internal/features/work/work-pdf-structure';
 import {
   appendWorkPdfTableStructEntries,
   collectWorkPdfTableStructs,
 } from '../src/internal/features/work/work-pdf-table-structure';
-import { applyWorkPdfDocumentStructure } from '../src/internal/features/work/work-pdf-structure';
 
 test('collects simple table row and cell structure', () => {
   const root = document.createElement('div');

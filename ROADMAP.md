@@ -298,7 +298,9 @@ Remaining, in order:
    `DATE`/`YEAR`/`MONTH`/`DAY`. `0.311.0` admits locale-guessing `VALUE` for
    unambiguous EU/US separators. `0.311.0` admits bounded `SEQUENCE` spill on
    the JavaScript path. `0.311.0` admits bounded `TRANSPOSE` spill. `0.311.0`
-   admits bounded `UNIQUE` spill. `FILTER`/`SORT` remain.
+   admits bounded `UNIQUE` spill. `0.311.0` admits bounded `FILTER` /
+  `SORT` spill (`FILTER` empty → `#CALC!` without `if_empty`; `SORT`
+  `by_col` non-default stays fail-closed).
 2. Pivot depth: caches, grouping, calculated fields, slicers/timelines,
    styles, pivot charts. `0.360.0` expands the built-in style authoring
    catalog (24 Traditional Office styles) and splits fail-closed calculated-

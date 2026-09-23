@@ -14,7 +14,8 @@ parity.
   `SUMIFS`/`COUNTIFS`, `AVERAGEIF`/`AVERAGEIFS`, `INDEX`/`MATCH`/`HLOOKUP`,
   approximate ascending `VLOOKUP`/`MATCH`/`HLOOKUP`, `SUMPRODUCT`/`PRODUCT`/
   `VALUE`, bounded `NUMBERVALUE` with explicit separators, locale-guessing
-  `VALUE`, bounded `SEQUENCE` / `TRANSPOSE` / `UNIQUE` spill) plus fail-closed
+  `VALUE`, bounded `SEQUENCE` / `TRANSPOSE` / `UNIQUE` / `FILTER` / `SORT`
+  spill) plus fail-closed
   unsupported and volatile functions (`TODAY`/`NOW`/`RAND`).
 
 ## Run
@@ -23,6 +24,6 @@ parity.
 bun run test:corpus:r2
 ```
 
-Pivot/slicer depth, remaining spill functions (`FILTER`/`SORT`),
+Pivot/slicer depth (native XLSX slicer packages / timelines / pivot charts),
 comma literals, and Fortune-owned redraw replacement remain ordered R2 leftovers
 beyond this bootstrap.

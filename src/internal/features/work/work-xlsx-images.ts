@@ -7,15 +7,15 @@ import {
   directChildren,
   firstDescendant,
   OoxmlPackage,
-  parseXml,
   type OoxmlRelationship,
+  parseXml,
 } from './work-ooxml-package';
-import {
-  readXlsxDrawingAnchor,
-  type XlsxDrawingAnchor,
-  xlsxDrawingAnchorToBounds,
-  xlsxTwoCellAnchorMarkers,
-} from './work-xlsx-drawing-geometry';
+import type {
+  WorkSpreadsheetChart,
+  WorkSpreadsheetContent,
+  WorkSpreadsheetImage,
+  WorkSpreadsheetSheet,
+} from './work-types';
 import {
   XLSX_CHART_CONTENT_TYPE,
   XLSX_CHART_RELATIONSHIP,
@@ -23,16 +23,16 @@ import {
   xlsxChartPartXml,
 } from './work-xlsx-charts';
 import {
+  readXlsxDrawingAnchor,
+  type XlsxDrawingAnchor,
+  xlsxDrawingAnchorToBounds,
+  xlsxTwoCellAnchorMarkers,
+} from './work-xlsx-drawing-geometry';
+import {
   readXlsxImageTransform,
-  xlsxImageTransformAttributes,
   type WorkSpreadsheetImageTransform,
+  xlsxImageTransformAttributes,
 } from './work-xlsx-image-transform';
-import type {
-  WorkSpreadsheetChart,
-  WorkSpreadsheetContent,
-  WorkSpreadsheetImage,
-  WorkSpreadsheetSheet,
-} from './work-types';
 
 export const MAX_XLSX_WORKSHEET_IMAGE_BYTES = 10 * 1024 * 1024;
 const DRAWING_RELATIONSHIP =

@@ -9,9 +9,7 @@ import type {
   WorkSpreadsheetPivotTable,
 } from '../src/internal/features/work/work-types';
 
-function workbook(
-  reportFilters: WorkSpreadsheetPivotTable['reportFilters'],
-): {
+function workbook(reportFilters: WorkSpreadsheetPivotTable['reportFilters']): {
   content: WorkSpreadsheetContent;
   pivot: WorkSpreadsheetPivotTable;
 } {
@@ -77,9 +75,7 @@ function outputLabels(
 }
 
 test('legacy single-select report filter still matches one item', () => {
-  const { content, pivot } = workbook([
-    { fieldIndex: 1, selectedItem: '东' },
-  ]);
+  const { content, pivot } = workbook([{ fieldIndex: 1, selectedItem: '东' }]);
   const labels = outputLabels(content, pivot);
   expect(labels[0]).toContain('区域');
   expect(labels[0]).toContain('东');

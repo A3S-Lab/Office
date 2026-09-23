@@ -7,8 +7,8 @@ import {
   type OfficeKernelSpreadsheetInputSheet,
 } from '../../../src/internal/kernel/office-kernel-protocol';
 import { calculateSpreadsheetInJavaScript } from '../../../src/internal/kernel/office-kernel-spreadsheet-fallback';
-import dailyFixtures from './fixtures/r2-formula-daily.json';
 import parityFixtures from '../../fixtures/spreadsheet-kernel-parity.json';
+import dailyFixtures from './fixtures/r2-formula-daily.json';
 
 /**
  * R2 formula-compatibility corpus gate.

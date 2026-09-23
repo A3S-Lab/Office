@@ -12,11 +12,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  selectedDocumentFieldIds,
-  syncDocumentFieldCodeClasses,
-  toggleDocumentFieldCodeOverrides,
-} from './document-field-code-overrides';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
 import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
@@ -54,6 +49,11 @@ import {
   transferLazyDocumentTextStatistics,
 } from '../work-document-lazy-update';
 import {
+  createMailMergeFieldContextResolver,
+  normalizeMailMergeSource,
+  type WorkDocumentMailMergeSource,
+} from '../work-document-mail-merge';
+import {
   createSchemaDerivedWorkDocumentModel,
   documentModelForContent,
   documentModelHasTrustedInitialIntegrityFeatures,
@@ -90,16 +90,11 @@ import {
 } from '../work-document-selection-menu';
 import { documentParagraphTabStops } from '../work-document-tab-stops';
 import { documentModelUsesWindowing } from '../work-document-windowing';
-import {
-  createMailMergeFieldContextResolver,
-  normalizeMailMergeSource,
-  type WorkDocumentMailMergeSource,
-} from '../work-document-mail-merge';
 import { createWorkId } from '../work-templates';
 import type { WorkDocumentContent, WorkDocumentNode } from '../work-types';
 import {
-  ControlledEditorComposition,
   type ControlledCompositionSnapshot,
+  ControlledEditorComposition,
 } from './controlled-editor-composition';
 import { DocumentChangesPanel } from './document-changes-panel';
 import { DocumentCitationsPanel } from './document-citations-panel';
@@ -112,6 +107,11 @@ import {
   documentTextStatistics,
 } from './document-editor-support';
 import { shouldPublishDocumentUpdate } from './document-external-content';
+import {
+  selectedDocumentFieldIds,
+  syncDocumentFieldCodeClasses,
+  toggleDocumentFieldCodeOverrides,
+} from './document-field-code-overrides';
 import {
   type DocumentFindReplaceMode,
   DocumentFindReplacePanel,

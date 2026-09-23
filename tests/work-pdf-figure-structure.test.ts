@@ -72,7 +72,9 @@ test('writes Figure StructElems with MCID marked-content into the PDF', () => {
   const ascii = Buffer.from(pdf.output('arraybuffer')).toString('latin1');
   expect(ascii).toContain('/S /Figure');
   expect(ascii).toContain('/Alt (Architecture diagram)');
-  expect(ascii).toMatch(/\/Figure << \/Alt \(Architecture diagram\).*\/MCID 0 >> BDC/);
+  expect(ascii).toMatch(
+    /\/Figure << \/Alt \(Architecture diagram\).*\/MCID 0 >> BDC/,
+  );
   const objects = [...ascii.matchAll(/(\d+) 0 obj\n([\s\S]*?)\nendobj/g)].map(
     (match) => ({ id: Number(match[1]), body: match[2] ?? '' }),
   );

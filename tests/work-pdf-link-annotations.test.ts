@@ -88,10 +88,12 @@ test('writes URI link annotations, Link StructElems, and OBJR association', () =
   );
   const annot = objects.find(
     (obj) =>
-      obj.body.includes('/Subtype /Link') && obj.body.includes('/URI (https://a3s.dev/office)'),
+      obj.body.includes('/Subtype /Link') &&
+      obj.body.includes('/URI (https://a3s.dev/office)'),
   );
   const link = objects.find(
-    (obj) => obj.body.includes('/S /Link') && obj.body.includes('/Type /StructElem'),
+    (obj) =>
+      obj.body.includes('/S /Link') && obj.body.includes('/Type /StructElem'),
   );
   const document = objects.find((obj) => obj.body.includes('/S /Document'));
   expect(annot).toBeTruthy();
@@ -99,9 +101,7 @@ test('writes URI link annotations, Link StructElems, and OBJR association', () =
   expect(document).toBeTruthy();
   expect(document!.body).toContain(`${link!.id} 0 R`);
   expect(link!.body).toContain(`/Obj ${annot!.id} 0 R`);
-  expect(ascii).toMatch(
-    new RegExp(`/Annots \\[\\s*${annot!.id} 0 R`),
-  );
+  expect(ascii).toMatch(new RegExp(`/Annots \\[\\s*${annot!.id} 0 R`));
 });
 
 function stubBoundingRect(

@@ -35,7 +35,9 @@ describe('document repeating sections', () => {
         tag: 'lineItems',
       }),
     ).toBe(true);
-    expect(editor.getHTML()).toContain('data-document-repeating-section="true"');
+    expect(editor.getHTML()).toContain(
+      'data-document-repeating-section="true"',
+    );
     expect(editor.getHTML()).toContain(
       'data-document-repeating-section-item="true"',
     );

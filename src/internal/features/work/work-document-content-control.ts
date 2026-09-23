@@ -216,9 +216,7 @@ export const DocumentContentControl = Node.create({
       options: hiddenAttribute([]),
       selectedValue: hiddenAttribute(''),
       fullDate: hiddenAttribute(''),
-      dateFormat: hiddenAttribute(
-        DOCUMENT_CONTENT_CONTROL_DEFAULT_DATE_FORMAT,
-      ),
+      dateFormat: hiddenAttribute(DOCUMENT_CONTENT_CONTROL_DEFAULT_DATE_FORMAT),
       dateLanguage: hiddenAttribute(
         DOCUMENT_CONTENT_CONTROL_DEFAULT_DATE_LANGUAGE,
       ),
@@ -393,7 +391,9 @@ export function normalizeDocumentContentControlProperties(
         type === 'comboBox',
       )
     : '';
-  const fullDate = isDate ? normalizeContentControlFullDate(value.fullDate) : '';
+  const fullDate = isDate
+    ? normalizeContentControlFullDate(value.fullDate)
+    : '';
   const dateFormat = isDate
     ? normalizeContentControlDateFormat(value.dateFormat)
     : DOCUMENT_CONTENT_CONTROL_DEFAULT_DATE_FORMAT;
@@ -490,7 +490,9 @@ export function contentControlDateInputValue(fullDate: string): string {
 }
 
 export function contentControlFullDateFromInput(value: string): string {
-  return normalizeContentControlFullDate(value) || defaultContentControlFullDate();
+  return (
+    normalizeContentControlFullDate(value) || defaultContentControlFullDate()
+  );
 }
 
 export function contentControlLocksContent(
@@ -557,8 +559,7 @@ export function contentControlDomAttributes(
       properties.type === 'date' ? properties.dateMapping : undefined,
     'data-content-control-binding-store-item-id':
       properties.bindingStoreItemId || undefined,
-    'data-content-control-binding-xpath':
-      properties.bindingXPath || undefined,
+    'data-content-control-binding-xpath': properties.bindingXPath || undefined,
     'data-content-control-binding-prefix-mappings':
       properties.bindingPrefixMappings || undefined,
     style: contentControlCss(properties),
@@ -625,10 +626,7 @@ function insertDocumentContentControlCommand(
       fullDate: defaultContentControlFullDate(),
     };
   }
-  if (
-    isStructuredFormContentControl(properties.type) &&
-    slice.size
-  ) {
+  if (isStructuredFormContentControl(properties.type) && slice.size) {
     return false;
   }
   if (
@@ -813,9 +811,7 @@ function contentControlAttributesForChanges(
     if (name === 'options') {
       if (
         JSON.stringify(merged.options) !==
-        JSON.stringify(
-          normalizeContentControlListItems(current.attrs.options),
-        )
+        JSON.stringify(normalizeContentControlListItems(current.attrs.options))
       ) {
         attributes.options = merged.options;
       }

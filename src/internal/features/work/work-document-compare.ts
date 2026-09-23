@@ -657,7 +657,8 @@ function prepareInlineComparison(
     baseCurrentUnits,
     baseRevisedUnits,
     (left, right) =>
-      left.text === right.text && Boolean(left.hardBreak) === Boolean(right.hardBreak),
+      left.text === right.text &&
+      Boolean(left.hardBreak) === Boolean(right.hardBreak),
     MAX_INLINE_DIFF_CELLS,
   );
   const baseVariant: InlineComparisonVariant = {
@@ -687,7 +688,8 @@ function prepareInlineComparison(
       moveCurrentUnits,
       moveRevisedUnits,
       (left, right) =>
-      left.text === right.text && Boolean(left.hardBreak) === Boolean(right.hardBreak),
+        left.text === right.text &&
+        Boolean(left.hardBreak) === Boolean(right.hardBreak),
       MAX_INLINE_DIFF_CELLS,
     );
     if (moveDiff) {
@@ -847,7 +849,11 @@ function inferParagraphBreakSplit(
   index: number,
   sectionIndex: number,
   factory: ComparisonIdentityFactory,
-): { first: ProseMirrorNode; second: ProseMirrorNode; consumed: number } | null {
+): {
+  first: ProseMirrorNode;
+  second: ProseMirrorNode;
+  consumed: number;
+} | null {
   const firstStep = alignment[index];
   const secondStep = alignment[index + 1];
   if (!firstStep || !secondStep) return null;
@@ -927,7 +933,11 @@ function inferParagraphBreakMerge(
   index: number,
   sectionIndex: number,
   factory: ComparisonIdentityFactory,
-): { first: ProseMirrorNode; second: ProseMirrorNode; consumed: number } | null {
+): {
+  first: ProseMirrorNode;
+  second: ProseMirrorNode;
+  consumed: number;
+} | null {
   const firstStep = alignment[index];
   const secondStep = alignment[index + 1];
   if (!firstStep || !secondStep) return null;
@@ -1004,7 +1014,10 @@ function plainComparisonParagraph(
   identityChannel: string,
 ): ProseMirrorNode {
   const paragraphIdentity = factory.paragraphIdentity(identityChannel);
-  const attrs: Record<string, unknown> = { ...block.attrs, ...paragraphIdentity };
+  const attrs: Record<string, unknown> = {
+    ...block.attrs,
+    ...paragraphIdentity,
+  };
   for (const name of BLOCK_CHANGE_ATTRIBUTE_NAMES) {
     if (name === 'blockChangeKind') attrs[name] = null;
     else attrs[name] = '';

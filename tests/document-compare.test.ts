@@ -215,7 +215,8 @@ describe('document compare and combine', () => {
 
     expect(result.status).toBe('applied');
     const change = collectDocumentChanges(editor.state.doc).find(
-      (candidate) => candidate.kind === 'insertion' && candidate.text.includes('Soft'),
+      (candidate) =>
+        candidate.kind === 'insertion' && candidate.text.includes('Soft'),
     );
     expect(change).toEqual(
       expect.objectContaining({

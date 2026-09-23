@@ -8,8 +8,8 @@ import type {
 import {
   OfficeCheckbox,
   OfficeSelect,
-  OfficeTextField,
   type OfficeSelectOption,
+  OfficeTextField,
 } from './office-controls';
 
 export interface DocumentFieldTargetOption {
@@ -135,9 +135,7 @@ export function DocumentFieldDialog({
 
         {clock && (
           <div className="work-document-dialog-field">
-            <span>
-              {draft.kind === 'time' ? '时间格式' : '日期格式'}
-            </span>
+            <span>{draft.kind === 'time' ? '时间格式' : '日期格式'}</span>
             <OfficeSelect
               ariaLabel={clockKind === 'date' ? '日期格式' : '时间格式'}
               value={

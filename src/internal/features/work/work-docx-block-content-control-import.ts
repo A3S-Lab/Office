@@ -119,7 +119,10 @@ export function markDocxBlockContentControls(
     if (controls.length >= MAX_IMPORTED_BLOCK_CONTROLS) {
       throw new Error('Imported DOCX exceeds the block content-control limit.');
     }
-    const [start, end] = blockContentControlMarkers(document, controls.length + 1);
+    const [start, end] = blockContentControlMarkers(
+      document,
+      controls.length + 1,
+    );
     if (!replaceBlockControlWithMarkers(document, control, start, end)) {
       unsupported += 1;
       continue;
@@ -393,7 +396,8 @@ function readProperties(
     if (namespace === MARKUP_COMPATIBILITY_NAMESPACE) continue;
     return null;
   }
-  if (Array.from(groups.values()).some((items) => items.length > 1)) return null;
+  if (Array.from(groups.values()).some((items) => items.length > 1))
+    return null;
   const textElement = groups.get('text')?.[0];
   const richTextElement = groups.get('richText')?.[0];
   if (textElement && richTextElement) return null;
@@ -577,7 +581,9 @@ function blockContentControlMarkers(
     }
     index += 1;
   }
-  throw new Error('Imported DOCX block content-control marker space is exhausted.');
+  throw new Error(
+    'Imported DOCX block content-control marker space is exhausted.',
+  );
 }
 
 function moveNodesBetween(
@@ -618,7 +624,10 @@ function moveNodesBetween(
 }
 
 function findTextParagraph(root: HTMLElement, marker: string): Element | null {
-  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = root.ownerDocument.createTreeWalker(
+    root,
+    NodeFilter.SHOW_TEXT,
+  );
   let current = walker.nextNode();
   while (current) {
     if ((current.textContent ?? '').includes(marker)) {
@@ -651,7 +660,8 @@ function runText(run: Element): string {
     if (!isDocxWordElement(child)) continue;
     if (child.localName === 't') value += child.textContent ?? '';
     else if (child.localName === 'tab') value += '\t';
-    else if (child.localName === 'br' || child.localName === 'cr') value += '\n';
+    else if (child.localName === 'br' || child.localName === 'cr')
+      value += '\n';
     else if (child.localName === 'noBreakHyphen') value += '\u2011';
     else if (child.localName === 'softHyphen') value += '\u00ad';
   }

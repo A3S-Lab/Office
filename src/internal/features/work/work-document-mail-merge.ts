@@ -1,8 +1,8 @@
 import type { Editor } from '@tiptap/core';
 import {
+  documentFieldKind,
   docxDocumentFieldKind,
   docxDocumentFieldTarget,
-  documentFieldKind,
   type WorkDocumentFieldContext,
   type WorkDocumentFieldContextResolver,
   type WorkDocumentFieldRefreshOptions,

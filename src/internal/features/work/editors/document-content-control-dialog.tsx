@@ -192,7 +192,8 @@ export function DocumentContentControlDialog({
                     ? properties.dateLanguage ||
                       DOCUMENT_CONTENT_CONTROL_DEFAULT_DATE_LANGUAGE
                     : DOCUMENT_CONTENT_CONTROL_DEFAULT_DATE_LANGUAGE,
-                dateMapping: type === 'date' ? properties.dateMapping : 'dateTime',
+                dateMapping:
+                  type === 'date' ? properties.dateMapping : 'dateTime',
               })
             }
           />
@@ -324,7 +325,9 @@ export function DocumentContentControlDialog({
   );
 }
 
-function listItemsToLines(options: WorkDocumentContentControlListItem[]): string {
+function listItemsToLines(
+  options: WorkDocumentContentControlListItem[],
+): string {
   return options
     .map((item) =>
       item.displayText === item.value
@@ -334,7 +337,9 @@ function listItemsToLines(options: WorkDocumentContentControlListItem[]): string
     .join('\n');
 }
 
-function linesToListItems(source: string): WorkDocumentContentControlListItem[] {
+function linesToListItems(
+  source: string,
+): WorkDocumentContentControlListItem[] {
   const items: WorkDocumentContentControlListItem[] = [];
   const seen = new Set<string>();
   for (const line of source.split(/\r?\n/u)) {
@@ -344,8 +349,11 @@ function linesToListItems(source: string): WorkDocumentContentControlListItem[] 
     const displayText =
       separator >= 0 ? trimmed.slice(0, separator).trim() : trimmed;
     const value =
-      separator >= 0 ? trimmed.slice(separator + 1).trim() || displayText : displayText;
-    if (!displayText || !value || seen.has(value) || items.length >= 32) continue;
+      separator >= 0
+        ? trimmed.slice(separator + 1).trim() || displayText
+        : displayText;
+    if (!displayText || !value || seen.has(value) || items.length >= 32)
+      continue;
     seen.add(value);
     items.push({ displayText, value });
   }

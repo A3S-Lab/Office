@@ -10,6 +10,10 @@ import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
 import { documentCharacterPositionHalfPointsFromElement } from './work-document-character-position';
 import { documentCharacterScalePercentFromElement } from './work-document-character-scale';
 import { documentCharacterSpacingTwipsFromElement } from './work-document-character-spacing';
+import {
+  documentConnectorPropertiesFromElement,
+  type WorkDocumentConnectorProperties,
+} from './work-document-connector';
 import { documentEmphasisMarkFromElement } from './work-document-emphasis';
 import { documentHiddenTextFromElement } from './work-document-hidden-text';
 import {
@@ -70,10 +74,6 @@ import {
   documentTextBoxPropertiesFromElement,
   type WorkDocumentTextBoxProperties,
 } from './work-document-text-box';
-import {
-  documentConnectorPropertiesFromElement,
-  type WorkDocumentConnectorProperties,
-} from './work-document-connector';
 import { normalizeDocumentTextCase } from './work-document-text-case';
 import {
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
@@ -82,6 +82,11 @@ import {
 } from './work-document-underline';
 import { patchDocxBibliography } from './work-docx-bibliography';
 import {
+  DocxBlockContentControlPatchCollector,
+  docxBlockContentControlParagraphs,
+  patchDocxBlockContentControls,
+} from './work-docx-block-content-control-export';
+import {
   DocxBookmarkPatchCollector,
   patchDocxBookmarks,
 } from './work-docx-bookmarks';
@@ -89,6 +94,10 @@ import {
   docxCaptionParagraph,
   docxCrossReferenceRuns,
 } from './work-docx-caption-export';
+import {
+  DocxCellFormattingChangePatchCollector,
+  patchDocxCellFormattingChanges,
+} from './work-docx-cell-format-change-export';
 import { docxCharacterPositionValue } from './work-docx-character-position';
 import { docxCharacterScaleValue } from './work-docx-character-scale';
 import {
@@ -103,54 +112,20 @@ import { docxSectionColumns } from './work-docx-column-export';
 import { createDocxCommentRecords } from './work-docx-comment-export';
 import { patchDocxCommentMetadata } from './work-docx-comment-metadata';
 import {
+  DocxConnectorPatchCollector,
+  patchDocxConnectors,
+} from './work-docx-connector-export';
+import {
   DocxContentControlPatchCollector,
   docxContentControlRuns,
   patchDocxContentControls,
 } from './work-docx-content-control-export';
-import {
-  DocxBlockContentControlPatchCollector,
-  docxBlockContentControlParagraphs,
-  patchDocxBlockContentControls,
-} from './work-docx-block-content-control-export';
-import {
-  DocxRepeatingSectionPatchCollector,
-  docxRepeatingSectionParagraphs,
-  patchDocxRepeatingSections,
-} from './work-docx-repeating-section-export';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import { docxEmphasisMarkRunOptions } from './work-docx-emphasis';
 import {
   DocxEquationPatchCollector,
   patchDocxEquations,
 } from './work-docx-equation-export';
-import {
-  DocxTableFloatPatchCollector,
-  patchDocxTableFloats,
-} from './work-docx-table-float-export';
-import {
-  DocxTablePropertyRevisionPatchCollector,
-  patchDocxTablePropertyRevisions,
-} from './work-docx-table-property-revision-export';
-import {
-  DocxTableFormattingChangePatchCollector,
-  patchDocxTableFormattingChanges,
-} from './work-docx-table-format-change-export';
-import {
-  DocxRowFormattingChangePatchCollector,
-  patchDocxRowFormattingChanges,
-} from './work-docx-row-format-change-export';
-import {
-  DocxCellFormattingChangePatchCollector,
-  patchDocxCellFormattingChanges,
-} from './work-docx-cell-format-change-export';
-import {
-  DocxSectionPropertyRevisionPatchCollector,
-  patchDocxSectionPropertyRevisions,
-} from './work-docx-section-property-revision-export';
-import {
-  DocxSectionFormattingChangePatchCollector,
-  patchDocxSectionFormattingChanges,
-} from './work-docx-section-format-change-export';
 import {
   cssColorToHex,
   cssFontFamily,
@@ -257,6 +232,15 @@ import {
 import { documentParagraphShadingDocxOptions } from './work-docx-paragraph-shading-export';
 import { documentProofingLanguageDocxOptions } from './work-docx-proofing';
 import {
+  DocxRepeatingSectionPatchCollector,
+  docxRepeatingSectionParagraphs,
+  patchDocxRepeatingSections,
+} from './work-docx-repeating-section-export';
+import {
+  DocxRowFormattingChangePatchCollector,
+  patchDocxRowFormattingChanges,
+} from './work-docx-row-format-change-export';
+import {
   DocxRunBorderPatchCollector,
   documentRunBorderDocxOptions,
   patchDocxRunBorders,
@@ -270,12 +254,32 @@ import {
   documentRunShadingDocxOptions,
   patchDocxRunShading,
 } from './work-docx-run-shading-export';
+import {
+  DocxSectionFormattingChangePatchCollector,
+  patchDocxSectionFormattingChanges,
+} from './work-docx-section-format-change-export';
+import {
+  DocxSectionPropertyRevisionPatchCollector,
+  patchDocxSectionPropertyRevisions,
+} from './work-docx-section-property-revision-export';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
+import {
+  DocxTableFloatPatchCollector,
+  patchDocxTableFloats,
+} from './work-docx-table-float-export';
+import {
+  DocxTableFormattingChangePatchCollector,
+  patchDocxTableFormattingChanges,
+} from './work-docx-table-format-change-export';
 import {
   DocxTableOfContentsPatchCollector,
   docxTableOfContents,
   patchDocxTableOfContents,
 } from './work-docx-table-of-contents-export';
+import {
+  DocxTablePropertyRevisionPatchCollector,
+  patchDocxTablePropertyRevisions,
+} from './work-docx-table-property-revision-export';
 import {
   documentTableCellSizingDocxOptions,
   documentTableRowSizingDocxOptions,
@@ -285,10 +289,6 @@ import {
   DocxTextBoxIdentityPatchCollector,
   patchDocxTextBoxIdentities,
 } from './work-docx-text-box-export';
-import {
-  DocxConnectorPatchCollector,
-  patchDocxConnectors,
-} from './work-docx-connector-export';
 import {
   DocxThemePatchCollector,
   parseDocxThemeReference,
@@ -1053,11 +1053,7 @@ async function blockToFileChildren(
     ];
   }
   if (element.hasAttribute('data-document-block-content-control')) {
-    return serializeDocxBlockContentControlElement(
-      element,
-      docx,
-      noteContext,
-    );
+    return serializeDocxBlockContentControlElement(element, docx, noteContext);
   }
   if (element.hasAttribute('data-document-repeating-section')) {
     const itemElements = Array.from(
@@ -1068,9 +1064,7 @@ async function blockToFileChildren(
     const itemParagraphs = await Promise.all(
       itemElements.map(async (item) => {
         const paragraph =
-          item.querySelector(':scope > p') ??
-          item.querySelector('p') ??
-          item;
+          item.querySelector(':scope > p') ?? item.querySelector('p') ?? item;
         const runs = await paragraphRuns(
           paragraph as HTMLElement,
           docx,

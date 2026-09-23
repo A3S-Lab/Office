@@ -83,10 +83,7 @@ describe('document mail-merge host runner', () => {
       '<span data-document-field="true" data-field-id="page" data-field-kind="page" data-field-instruction="PAGE" data-field-display="1">1</span>',
       '</p></section>',
     ].join('');
-    expect(mailMergeFieldNamesFromHtml(html)).toEqual([
-      'CustomerName',
-      'City',
-    ]);
+    expect(mailMergeFieldNamesFromHtml(html)).toEqual(['CustomerName', 'City']);
 
     editor = new Editor({
       extensions: createWorkDocumentExtensions(),
@@ -111,9 +108,9 @@ describe('document mail-merge host runner', () => {
     expect(editor.getText()).toContain('London');
 
     const next = stepMailMergeSource(source, 1);
-    expect(
-      previewMailMergeSource(editor, documentContent(editor), next),
-    ).toBe(true);
+    expect(previewMailMergeSource(editor, documentContent(editor), next)).toBe(
+      true,
+    );
     expect(editor.getText()).toContain('Grace Hopper');
     expect(editor.getText()).toContain('New York');
   });
@@ -177,9 +174,7 @@ describe('document mail-merge host runner', () => {
       City: 'London',
     });
     expect(source.activeIndex).toBe(1);
-    expect(
-      stepMailMergeSource(source, -1).activeIndex,
-    ).toBe(0);
+    expect(stepMailMergeSource(source, -1).activeIndex).toBe(0);
     expect(
       mailMergeRecordMatchesFilter(
         { CustomerName: 'Ada', City: 'London' },
@@ -188,9 +183,10 @@ describe('document mail-merge host runner', () => {
         }),
       ),
     ).toBe(true);
-    expect(
-      mailMergeFieldNamesFromRecords(source.records),
-    ).toEqual(['CustomerName', 'City']);
+    expect(mailMergeFieldNamesFromRecords(source.records)).toEqual([
+      'CustomerName',
+      'City',
+    ]);
     const cleared = setMailMergeRecipientFilter(source, null);
     expect(cleared.filter).toBeNull();
     expect(filteredMailMergeRecords(cleared)).toHaveLength(4);
@@ -218,12 +214,17 @@ describe('document mail-merge host runner', () => {
         rules: [{ field: 'City', operator: 'equals', value: 'London' }],
       },
     });
-    const generated = await generateMailMergeDocuments(editor, template, source, {
-      exportDocument: async (next) =>
-        new Blob([next.html], {
-          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        }),
-    });
+    const generated = await generateMailMergeDocuments(
+      editor,
+      template,
+      source,
+      {
+        exportDocument: async (next) =>
+          new Blob([next.html], {
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          }),
+      },
+    );
     expect(generated).toHaveLength(2);
     expect(generated.map((entry) => entry.record.CustomerName)).toEqual([
       'Ada Lovelace',
@@ -253,14 +254,19 @@ describe('document mail-merge host runner', () => {
     expect(editor.getText()).toContain('Ada Lovelace');
 
     const exported: string[] = [];
-    const generated = await generateMailMergeDocuments(editor, template, source, {
-      exportDocument: async (next) => {
-        exported.push(next.html);
-        return new Blob([next.html], {
-          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        });
+    const generated = await generateMailMergeDocuments(
+      editor,
+      template,
+      source,
+      {
+        exportDocument: async (next) => {
+          exported.push(next.html);
+          return new Blob([next.html], {
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          });
+        },
       },
-    });
+    );
     expect(generated).toHaveLength(2);
     expect(generated[0]?.record).toEqual({ CustomerName: 'Ada Lovelace' });
     expect(generated[1]?.record).toEqual({ CustomerName: 'Grace Hopper' });

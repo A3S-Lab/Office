@@ -16,10 +16,15 @@ import {
   documentInitialSectionLayout,
   documentSectionDomAttributes,
 } from './work-document-section';
-import { serializePreservableDocxSectionPropertyRevision } from './work-document-table-property-revision';
-import { supportedDocxSectionFormattingChangeFromProperties } from './work-docx-section-format-change-import';
 import { normalizeDocumentTableOfContentsHtml } from './work-document-table-of-contents';
+import { serializePreservableDocxSectionPropertyRevision } from './work-document-table-property-revision';
 import { readDocxBibliography } from './work-docx-bibliography';
+import {
+  applyImportedDocxBlockContentControlMarkers,
+  hasImportedDocxBlockContentControlMarkers,
+  type ImportedDocxBlockContentControlMarkers,
+  markDocxBlockContentControls,
+} from './work-docx-block-content-control-import';
 import {
   applyImportedDocxBookmarkMarkers,
   hasImportedDocxBookmarkMarkers,
@@ -52,29 +57,17 @@ import {
   markDocxComments,
 } from './work-docx-comment-import';
 import {
-  applyImportedDocxContentControlMarkers,
-  hasImportedDocxContentControlMarkers,
-  type ImportedDocxContentControlMarkers,
-  markDocxContentControls,
-} from './work-docx-content-control-import';
-import {
-  applyImportedDocxBlockContentControlMarkers,
-  hasImportedDocxBlockContentControlMarkers,
-  type ImportedDocxBlockContentControlMarkers,
-  markDocxBlockContentControls,
-} from './work-docx-block-content-control-import';
-import {
-  applyImportedDocxRepeatingSectionMarkers,
-  hasImportedDocxRepeatingSectionMarkers,
-  type ImportedDocxRepeatingSectionMarkers,
-  markDocxRepeatingSections,
-} from './work-docx-repeating-section-import';
-import {
   applyImportedDocxConnectorMarkers,
   hasImportedDocxConnectorMarkers,
   type ImportedDocxConnectorMarkers,
   markDocxConnectors,
 } from './work-docx-connector-import';
+import {
+  applyImportedDocxContentControlMarkers,
+  hasImportedDocxContentControlMarkers,
+  type ImportedDocxContentControlMarkers,
+  markDocxContentControls,
+} from './work-docx-content-control-import';
 import {
   applyImportedDocxEquationMarkers,
   type ImportedDocxEquationMarkers,
@@ -199,12 +192,19 @@ import {
 } from './work-docx-paragraph-spacing-import';
 import { createDocxParagraphStyleResolver } from './work-docx-paragraph-styles';
 import {
+  applyImportedDocxRepeatingSectionMarkers,
+  hasImportedDocxRepeatingSectionMarkers,
+  type ImportedDocxRepeatingSectionMarkers,
+  markDocxRepeatingSections,
+} from './work-docx-repeating-section-import';
+import {
   applyImportedDocxRunFormattingMarkers,
   createImportedDocxRunFormattingMarkerState,
   hasImportedDocxRunFormattingMarkers,
   type ImportedDocxRunFormattingMarkers,
   markDocxRunFormattingIntoState,
 } from './work-docx-run-formatting-import';
+import { supportedDocxSectionFormattingChangeFromProperties } from './work-docx-section-format-change-import';
 import {
   applyImportedDocxParagraphTabStopMarkers,
   hasImportedDocxParagraphTabStopMarkers,
@@ -255,15 +255,15 @@ import {
 } from './work-ooxml-package';
 import type {
   WorkDocumentContent,
+  WorkDocumentEndnotePos,
+  WorkDocumentEndnotePr,
+  WorkDocumentFootnoteNumRestart,
+  WorkDocumentFootnotePos,
+  WorkDocumentFootnotePr,
   WorkDocumentGrid,
   WorkDocumentGridType,
   WorkDocumentLnNumType,
   WorkDocumentPgNumFmt,
-  WorkDocumentFootnoteNumRestart,
-  WorkDocumentFootnotePos,
-  WorkDocumentFootnotePr,
-  WorkDocumentEndnotePos,
-  WorkDocumentEndnotePr,
   WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,

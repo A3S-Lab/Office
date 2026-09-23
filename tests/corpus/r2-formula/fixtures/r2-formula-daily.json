@@ -1400,6 +1400,149 @@
     "expectedIssues": []
   },
   {
+    "name": "daily FILTER spill",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "text", "value": "a" } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 1 } },
+          { "row": 1, "column": 0, "value": { "kind": "text", "value": "b" } },
+          { "row": 1, "column": 1, "value": { "kind": "number", "value": 0 } },
+          { "row": 2, "column": 0, "value": { "kind": "text", "value": "c" } },
+          { "row": 2, "column": 1, "value": { "kind": "number", "value": 1 } },
+          { "row": 0, "column": 2, "value": { "kind": "number", "value": 0 } },
+          { "row": 1, "column": 2, "value": { "kind": "number", "value": 0 } },
+          { "row": 2, "column": 2, "value": { "kind": "number", "value": 0 } },
+          {
+            "row": 0,
+            "column": 3,
+            "formula": "=FILTER(A1:A3,B1:B3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 5,
+            "formula": "=FILTER(A1:A3,C1:C3,\"none\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 7,
+            "formula": "=FILTER(A1:A3,C1:C3)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 3,
+        "value": { "kind": "text", "value": "c" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 3,
+        "value": { "kind": "text", "value": "a" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 5,
+        "value": { "kind": "text", "value": "none" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 7,
+        "value": { "kind": "error", "value": "#CALC!" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 1, "column": 3 },
+      { "sheetId": "sheet-1", "row": 0, "column": 3 },
+      { "sheetId": "sheet-1", "row": 0, "column": 5 },
+      { "sheetId": "sheet-1", "row": 0, "column": 7 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily SORT spill",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "text", "value": "b" } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 2 } },
+          { "row": 1, "column": 0, "value": { "kind": "text", "value": "a" } },
+          { "row": 1, "column": 1, "value": { "kind": "number", "value": 3 } },
+          { "row": 2, "column": 0, "value": { "kind": "text", "value": "c" } },
+          { "row": 2, "column": 1, "value": { "kind": "number", "value": 1 } },
+          {
+            "row": 0,
+            "column": 3,
+            "formula": "=SORT(A1:B3,2,1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 4,
+        "value": { "kind": "number", "value": 1 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 3,
+        "value": { "kind": "text", "value": "b" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 4,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 3,
+        "value": { "kind": "text", "value": "a" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 4,
+        "value": { "kind": "number", "value": 3 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 3,
+        "value": { "kind": "text", "value": "c" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 4 },
+      { "sheetId": "sheet-1", "row": 1, "column": 3 },
+      { "sheetId": "sheet-1", "row": 1, "column": 4 },
+      { "sheetId": "sheet-1", "row": 2, "column": 3 },
+      { "sheetId": "sheet-1", "row": 2, "column": 4 },
+      { "sheetId": "sheet-1", "row": 0, "column": 3 }
+    ],
+    "expectedIssues": []
+  },
+  {
     "name": "daily volatility TODAY NOW RAND fail-closed",
     "sheets": [
       {

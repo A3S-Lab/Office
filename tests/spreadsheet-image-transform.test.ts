@@ -1,16 +1,20 @@
 import { describe, expect, test } from '@rstest/core';
-import { parseXml } from '../src/internal/features/work/work-ooxml-package';
+import JSZip from 'jszip';
+import {
+  OoxmlPackage,
+  parseXml,
+} from '../src/internal/features/work/work-ooxml-package';
+import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 import {
   isIdentitySpreadsheetImageTransform,
   normalizeSpreadsheetImageTransform,
   readXlsxImageTransform,
   xlsxImageTransformAttributes,
 } from '../src/internal/features/work/work-xlsx-image-transform';
-import { patchXlsxWorksheetDrawings } from '../src/internal/features/work/work-xlsx-images';
-import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
-import JSZip from 'jszip';
-import { OoxmlPackage } from '../src/internal/features/work/work-ooxml-package';
-import { readXlsxWorksheetImages } from '../src/internal/features/work/work-xlsx-images';
+import {
+  patchXlsxWorksheetDrawings,
+  readXlsxWorksheetImages,
+} from '../src/internal/features/work/work-xlsx-images';
 
 describe('R2 worksheet image transforms', () => {
   test('admits quadrant rotations and flips while rejecting arbitrary angles', () => {
@@ -51,9 +55,13 @@ describe('R2 worksheet image transforms', () => {
       'xfrm',
     ).documentElement;
     expect(readXlsxImageTransform(unsupported).supported).toBe(false);
-    expect(xlsxImageTransformAttributes({ rotation: 180, flipHorizontal: false, flipVertical: true })).toBe(
-      ' rot="10800000" flipV="1"',
-    );
+    expect(
+      xlsxImageTransformAttributes({
+        rotation: 180,
+        flipHorizontal: false,
+        flipVertical: true,
+      }),
+    ).toBe(' rot="10800000" flipV="1"');
   });
 
   test('round-trips supported transforms through worksheet drawings', async () => {

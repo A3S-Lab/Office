@@ -130,7 +130,9 @@ export async function patchDocxBlockContentControls(
           `Generated DOCX did not emit block content-control marker ${patch.startMarker}.`,
         );
       }
-      if (!buildBlockContentControl(document, patch, allocateId, startParagraph)) {
+      if (
+        !buildBlockContentControl(document, patch, allocateId, startParagraph)
+      ) {
         throw new Error(
           `Generated DOCX block content-control markers were incomplete for ${patch.startMarker}.`,
         );
@@ -139,7 +141,8 @@ export async function patchDocxBlockContentControls(
     if (
       patches.some(
         (patch) =>
-          patch.properties.appearance !== 'boundingBox' || patch.properties.color,
+          patch.properties.appearance !== 'boundingBox' ||
+          patch.properties.color,
       )
     ) {
       ensureIgnorableContentControlNamespace(
@@ -173,10 +176,7 @@ function buildBlockContentControl(
       } else if ((element.textContent ?? '').trim()) {
         return false;
       }
-    } else if (
-      current.nodeType === 3 &&
-      (current.textContent ?? '').trim()
-    ) {
+    } else if (current.nodeType === 3 && (current.textContent ?? '').trim()) {
       return false;
     }
     current = current.nextSibling;
@@ -357,8 +357,7 @@ function findMarkerParagraph(
 
 function isWordParagraph(element: Element): boolean {
   return (
-    element.localName === 'p' &&
-    WORD_NAMESPACES.has(element.namespaceURI ?? '')
+    element.localName === 'p' && WORD_NAMESPACES.has(element.namespaceURI ?? '')
   );
 }
 

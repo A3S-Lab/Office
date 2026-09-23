@@ -10,7 +10,6 @@ import {
   buildBookmarksAndLinksFixture,
   buildBulletNumberingRevisionFixture,
   buildCaptionRefFixture,
-  buildCharacterFormattingRevisionFixture,
   buildCellBordersFormattingRevisionFixture,
   buildCellCnfStyleFormattingRevisionFixture,
   buildCellFillFormattingRevisionFixture,
@@ -24,6 +23,7 @@ import {
   buildCellTextDirectionFormattingRevisionFixture,
   buildCellVMergeFormattingRevisionFixture,
   buildCellWidthFormattingRevisionFixture,
+  buildCharacterFormattingRevisionFixture,
   buildContractTableFixture,
   buildDateFieldFixture,
   buildDateFormatFieldFixture,
@@ -31,9 +31,9 @@ import {
   buildDuplicateBookmarkFixture,
   buildEndnoteFixture,
   buildEvenPageFooterComplexNumPagesFieldFixture,
+  buildEvenPageFooterComplexSectionPagesFieldFixture,
   buildEvenPageFooterComplexTimeFieldFixture,
   buildEvenPageFooterNumPagesFieldFixture,
-  buildEvenPageFooterComplexSectionPagesFieldFixture,
   buildEvenPageFooterSectionPagesFieldFixture,
   buildEvenPageFooterTimeFieldFixture,
   buildEvenPageHeaderComplexDateFieldFixture,
@@ -80,26 +80,26 @@ import {
   buildReviewCommentsFixture,
   buildReviewTrackChangesFixture,
   buildRichTextContentControlFixture,
+  buildRowAlignmentFormattingRevisionFixture,
+  buildRowCellSpacingFormattingRevisionFixture,
+  buildRowCnfStyleFormattingRevisionFixture,
+  buildRowDivIdFormattingRevisionFixture,
   buildRowFormattingRevisionFixture,
+  buildRowGridAfterFormattingRevisionFixture,
+  buildRowGridBeforeFormattingRevisionFixture,
   buildRowHeaderFormattingRevisionFixture,
   buildRowHeightFormattingRevisionFixture,
   buildRowHiddenFormattingRevisionFixture,
-  buildRowAlignmentFormattingRevisionFixture,
-  buildRowGridBeforeFormattingRevisionFixture,
-  buildRowGridAfterFormattingRevisionFixture,
-  buildRowWidthBeforeFormattingRevisionFixture,
   buildRowWidthAfterFormattingRevisionFixture,
-  buildRowCnfStyleFormattingRevisionFixture,
-  buildRowDivIdFormattingRevisionFixture,
-  buildRowCellSpacingFormattingRevisionFixture,
+  buildRowWidthBeforeFormattingRevisionFixture,
   buildSectionBidiFormattingRevisionFixture,
   buildSectionDocGridFormattingRevisionFixture,
   buildSectionEndnotePrFormattingRevisionFixture,
   buildSectionEqualColsFormattingRevisionFixture,
   buildSectionFieldFixture,
   buildSectionFootnotePrFormattingRevisionFixture,
-  buildSectionFormProtFormattingRevisionFixture,
   buildSectionFormattingRevisionFixture,
+  buildSectionFormProtFormattingRevisionFixture,
   buildSectionLnNumTypeFormattingRevisionFixture,
   buildSectionMarginFormattingRevisionFixture,
   buildSectionNoEndnoteFormattingRevisionFixture,
@@ -133,9 +133,9 @@ import {
   buildTableRowBandSizeFormattingRevisionFixture,
   buildTableStyleFormattingRevisionFixture,
   buildTableWidthFormattingRevisionFixture,
+  buildTextContentControlFixture,
   buildTextMoveRangeCompanionRevisionFixture,
   buildTextMoveRevisionFixture,
-  buildTextContentControlFixture,
   buildTimeFieldFixture,
 } from './fixtures';
 import {
@@ -224,9 +224,7 @@ describe('R0 no-clobber corpus', () => {
     expect(result.identities.blockChangeAuthors).toEqual(['Reviewer']);
     expect(result.identities.blockChangeKinds).toEqual(['insertion']);
     expect(result.identities.plainText).toContain('Added whole paragraph');
-    expectIssueCodes(result.firstPassIssues, [
-      'docx.revisions.paragraph-mark',
-    ]);
+    expectIssueCodes(result.firstPassIssues, ['docx.revisions.paragraph-mark']);
   });
 
   test('paragraph-break split revision author and kind survive round trip', async () => {
@@ -299,7 +297,9 @@ describe('R0 no-clobber corpus', () => {
 
     expect(result.identities.changeAuthors).toEqual(['Reviewer']);
     expect(result.identities.changeKinds).toEqual(['table-formatting']);
-    expect(result.identities.tableCellTexts).toEqual(['Preferred width clause']);
+    expect(result.identities.tableCellTexts).toEqual([
+      'Preferred width clause',
+    ]);
     expect(result.identities.plainText).toContain('Preferred width clause');
     expectIssueCodes(result.firstPassIssues, [
       'docx.revisions.table-formatting',
@@ -1025,7 +1025,9 @@ describe('R0 no-clobber corpus', () => {
 
     expect(result.identities.changeAuthors).toEqual(['Reviewer']);
     expect(result.identities.changeKinds).toEqual(['row-formatting']);
-    expect(result.identities.tableCellTexts).toEqual(['Conditional format row']);
+    expect(result.identities.tableCellTexts).toEqual([
+      'Conditional format row',
+    ]);
     expect(result.identities.plainText).toContain('Conditional format row');
     expectIssueCodes(result.firstPassIssues, ['docx.revisions.row-formatting']);
   });
@@ -1039,7 +1041,9 @@ describe('R0 no-clobber corpus', () => {
 
     expect(result.identities.changeAuthors).toEqual(['Reviewer']);
     expect(result.identities.changeKinds).toEqual(['row-formatting']);
-    expect(result.identities.tableCellTexts).toEqual(['Div-mapped contract row']);
+    expect(result.identities.tableCellTexts).toEqual([
+      'Div-mapped contract row',
+    ]);
     expect(result.identities.plainText).toContain('Div-mapped contract row');
     expectIssueCodes(result.firstPassIssues, ['docx.revisions.row-formatting']);
   });
@@ -1165,7 +1169,9 @@ describe('R0 no-clobber corpus', () => {
 
     expect(result.identities.changeAuthors).toEqual(['Reviewer']);
     expect(result.identities.changeKinds).toEqual(['cell-formatting']);
-    expect(result.identities.tableCellTexts).toEqual(['Fit-text contract cell']);
+    expect(result.identities.tableCellTexts).toEqual([
+      'Fit-text contract cell',
+    ]);
     expect(result.identities.plainText).toContain('Fit-text contract cell');
     expectIssueCodes(result.firstPassIssues, [
       'docx.revisions.cell-formatting',
@@ -1267,7 +1273,9 @@ describe('R0 no-clobber corpus', () => {
 
     expect(result.identities.changeAuthors).toEqual(['Reviewer']);
     expect(result.identities.changeKinds).toEqual(['cell-formatting']);
-    expect(result.identities.tableCellTexts).toEqual(['Bordered contract cell']);
+    expect(result.identities.tableCellTexts).toEqual([
+      'Bordered contract cell',
+    ]);
     expect(result.identities.plainText).toContain('Bordered contract cell');
     expectIssueCodes(result.firstPassIssues, [
       'docx.revisions.cell-formatting',

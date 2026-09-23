@@ -21,16 +21,16 @@ import {
 import type { WorkPdfCollaborationContent } from '../../../collaboration/office-pdf-collaboration-types';
 import { Button, StateView } from '../../../design-system/primitives';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
+import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { usePdfAnnotationController } from './pdf-annotation-controller';
+import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
 import { createWorkPdfCollaborationProjection } from './pdf-collaboration-projection';
 import { createPdfEditorExtensions } from './pdf-editor-extensions';
 import type {
   PdfEvidenceOverlay,
   PdfEvidenceRegion,
 } from './pdf-evidence-contract';
-import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
-import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
-import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
 import { PdfEvidenceOverlayLayer } from './pdf-evidence-overlay';
 import { PdfPageOrganizerDialog } from './pdf-page-organizer-dialog';
 import { PdfThumbnailRail } from './pdf-thumbnail-rail';
@@ -40,8 +40,8 @@ import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-s
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
 import {
-  usePdfPageOrganization,
   type PdfPageOrganizationExport,
+  usePdfPageOrganization,
 } from './use-pdf-page-organization';
 
 const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';

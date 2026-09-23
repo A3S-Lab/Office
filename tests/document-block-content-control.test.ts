@@ -124,9 +124,7 @@ describe('document block content controls', () => {
     });
     const markers = markDocxBlockContentControls(document);
     expect(markers.controls).toHaveLength(1);
-    expect(markers.controls[0]?.text).toBe(
-      'First paragraph\nSecond paragraph',
-    );
+    expect(markers.controls[0]?.text).toBe('First paragraph\nSecond paragraph');
 
     const html = new DOMParser().parseFromString(
       `<p>${markers.controls[0]?.start}</p><p>First paragraph</p><p>Second paragraph</p><p>${markers.controls[0]?.end}</p>`,

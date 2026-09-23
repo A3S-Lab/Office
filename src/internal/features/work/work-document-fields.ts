@@ -347,7 +347,9 @@ function fieldFormatFromInstruction(
   }
   const source = dateFormatSwitch(instruction);
   const fallback =
-    kind === 'time' ? 'HH:mm' : ('yyyy年M月d日' as WorkDocumentClockFieldFormat);
+    kind === 'time'
+      ? 'HH:mm'
+      : ('yyyy年M月d日' as WorkDocumentClockFieldFormat);
   const clockKind = kind === 'time' ? 'time' : 'date';
   const value = isClockFieldFormat(clockKind, source) ? source : fallback;
   return {
@@ -493,8 +495,7 @@ export function documentFieldDisplay(
   }
   if (kind === 'createDate') {
     const provided = validDate(context.createDate);
-    const format =
-      dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
+    const format = dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
     if (provided) {
       const display = formatWordDate(provided, format);
       return display || cachedValue.trim() || documentFieldLabel(kind);
@@ -504,8 +505,7 @@ export function documentFieldDisplay(
   }
   if (kind === 'saveDate') {
     const provided = validDate(context.saveDate);
-    const format =
-      dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
+    const format = dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
     if (provided) {
       const display = formatWordDate(provided, format);
       return display || cachedValue.trim() || documentFieldLabel(kind);
@@ -515,8 +515,7 @@ export function documentFieldDisplay(
   }
   if (kind === 'printDate') {
     const provided = validDate(context.printDate);
-    const format =
-      dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
+    const format = dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
     if (provided) {
       const display = formatWordDate(provided, format);
       return display || cachedValue.trim() || documentFieldLabel(kind);

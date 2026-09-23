@@ -109,7 +109,9 @@ export function markDocxRepeatingSections(
       sections.length + 1,
       parsed.items.length,
     );
-    if (!replaceRepeatingSectionWithMarkers(document, control, markers, parsed)) {
+    if (
+      !replaceRepeatingSectionWithMarkers(document, control, markers, parsed)
+    ) {
       unsupported += 1;
       continue;
     }
@@ -176,10 +178,7 @@ export function applyImportedDocxRepeatingSectionMarkers(
   document.body.normalize();
 }
 
-function findMarkerElement(
-  root: ParentNode,
-  marker: string,
-): Element | null {
+function findMarkerElement(root: ParentNode, marker: string): Element | null {
   const textNodes: Text[] = [];
   const collect = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) textNodes.push(node as Text);
@@ -346,7 +345,13 @@ function readSectionProperties(
     if (namespace === CONTENT_CONTROL_WORD_2012_NAMESPACE) {
       if (child.localName === 'repeatingSection') {
         if (hasRepeating || child.children.length > 0) return null;
-        if (!validNamespacedLeaf(child, new Set(), CONTENT_CONTROL_WORD_2012_NAMESPACE)) {
+        if (
+          !validNamespacedLeaf(
+            child,
+            new Set(),
+            CONTENT_CONTROL_WORD_2012_NAMESPACE,
+          )
+        ) {
           return null;
         }
         hasRepeating = true;
@@ -370,7 +375,8 @@ function readSectionProperties(
     return null;
   }
   if (!hasRepeating) return null;
-  if (Array.from(groups.values()).some((items) => items.length > 1)) return null;
+  if (Array.from(groups.values()).some((items) => items.length > 1))
+    return null;
   const id = groups.get('id')?.[0];
   if (id && !validLeaf(id, new Set(['val']))) return null;
   const nativeId = id ? parseNativeId(wordAttribute(id, 'val')) : null;
@@ -418,10 +424,15 @@ function readSectionProperties(
       'val',
       CONTENT_CONTROL_WORD_2012_NAMESPACE,
     );
-    if (!value || !/^#[0-9a-fA-F]{6}$/.test(value) && !/^[0-9a-fA-F]{6}$/.test(value)) {
+    if (
+      !value ||
+      (!/^#[0-9a-fA-F]{6}$/.test(value) && !/^[0-9a-fA-F]{6}$/.test(value))
+    ) {
       return null;
     }
-    color = value.startsWith('#') ? value.toLowerCase() : `#${value.toLowerCase()}`;
+    color = value.startsWith('#')
+      ? value.toLowerCase()
+      : `#${value.toLowerCase()}`;
   }
   return normalizeRepeatingSectionProperties({
     id: `docx-repeating-section-${sequence}`,
@@ -521,7 +532,9 @@ function replaceRepeatingSectionWithMarkers(
   const fragment = document.createDocumentFragment();
   fragment.append(createMarkerParagraph(document, markers.start));
   for (const [index, item] of parsed.items.entries()) {
-    fragment.append(createMarkerParagraph(document, markers.itemStarts[index]!));
+    fragment.append(
+      createMarkerParagraph(document, markers.itemStarts[index]!),
+    );
     fragment.append(item.paragraph.cloneNode(true));
     fragment.append(createMarkerParagraph(document, markers.itemEnds[index]!));
   }

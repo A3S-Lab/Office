@@ -8,6 +8,10 @@ import {
   StateView,
 } from '../../../design-system/primitives';
 import {
+  WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
+  WORK_SPREADSHEET_PIVOT_STYLE_OPTIONS,
+} from '../work-spreadsheet-pivot-styles';
+import {
   spreadsheetPivotFilterValueKey,
   spreadsheetPivotReportFilterSelection,
 } from '../work-spreadsheet-pivot-values';
@@ -16,11 +20,11 @@ import {
   defaultPivotValueCaption,
   deleteSpreadsheetPivotTable,
   refreshSpreadsheetPivotTables,
+  type SpreadsheetPivotFilterItem,
   spreadsheetPivotAggregationLabel,
   spreadsheetPivotFields,
   spreadsheetPivotFilterItems,
   spreadsheetPivotValidation,
-  type SpreadsheetPivotFilterItem,
 } from '../work-spreadsheet-pivots';
 import type {
   WorkSpreadsheetContent,
@@ -28,10 +32,6 @@ import type {
   WorkSpreadsheetPivotFilterValue,
   WorkSpreadsheetPivotTable,
 } from '../work-types';
-import {
-  WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
-  WORK_SPREADSHEET_PIVOT_STYLE_OPTIONS,
-} from '../work-spreadsheet-pivot-styles';
 import {
   OfficeCheckbox,
   OfficeSelect,

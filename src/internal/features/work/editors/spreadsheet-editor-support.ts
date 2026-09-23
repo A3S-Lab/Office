@@ -16,20 +16,20 @@ import {
 } from '../work-xlsx-rich-text-edit';
 import { officeFontFamilies } from './office-font-families';
 import type { OfficeSelectOption } from './office-select';
+import {
+  materializeSpreadsheetDependentListsForFortune,
+  restoreSpreadsheetDependentListProjections,
+} from './spreadsheet-data-validation-list';
+import { reconcileSpreadsheetFiltersAfterFortune } from './spreadsheet-filter-reconciliation';
 import { spreadsheetFontSizes } from './spreadsheet-font-size';
-import { takeSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import {
   MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS,
   projectSpreadsheetSheetsFromFortuneOperations,
   spreadsheetCellOperationCoordinates,
   spreadsheetCellOperationKey,
 } from './spreadsheet-operation-projection';
-import { reconcileSpreadsheetFiltersAfterFortune } from './spreadsheet-filter-reconciliation';
+import { takeSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import { reconcileSpreadsheetTablesAfterFortune } from './spreadsheet-table-reconciliation';
-import {
-  materializeSpreadsheetDependentListsForFortune,
-  restoreSpreadsheetDependentListProjections,
-} from './spreadsheet-data-validation-list';
 
 export interface SpreadsheetSelectionSummary {
   average: number | null;

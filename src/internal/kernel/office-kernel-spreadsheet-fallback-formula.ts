@@ -46,6 +46,8 @@ export const browserScalarFunctionArities = new Map<
   ['SUMIFS', [3, 255]],
   ['SUMPRODUCT', [1, 255]],
   ['SEQUENCE', [1, 4]],
+  ['FILTER', [2, 3]],
+  ['SORT', [1, 4]],
   ['TRANSPOSE', [1, 1]],
   ['UNIQUE', [1, 3]],
   ['TRUE', [0, 0]],
@@ -132,7 +134,9 @@ const EXCEL_1904_EPOCH_UTC = Date.UTC(1904, 0, 1);
 
 export type SpreadsheetFormulaDateSystem = '1900' | '1904';
 
-function excelEpochUtc(dateSystem: SpreadsheetFormulaDateSystem = '1900'): number {
+function excelEpochUtc(
+  dateSystem: SpreadsheetFormulaDateSystem = '1900',
+): number {
   return dateSystem === '1904' ? EXCEL_1904_EPOCH_UTC : EXCEL_1900_EPOCH_UTC;
 }
 
@@ -385,10 +389,8 @@ export function evaluateParserSequence(
   const rows = positiveSequenceDimension(parameters[0]);
   const columns =
     parameters.length >= 2 ? positiveSequenceDimension(parameters[1]) : 1;
-  const start =
-    parameters.length >= 3 ? parserNumericValue(parameters[2]) : 1;
-  const step =
-    parameters.length >= 4 ? parserNumericValue(parameters[3]) : 1;
+  const start = parameters.length >= 3 ? parserNumericValue(parameters[2]) : 1;
+  const step = parameters.length >= 4 ? parserNumericValue(parameters[3]) : 1;
   if (
     rows === undefined ||
     columns === undefined ||
@@ -441,9 +443,7 @@ export function evaluateParserTranspose(
  * Optional `by_col` / `exactly_once` arguments stay fail-closed as `#VALUE!`
  * when non-default so the spill surface remains intentional.
  */
-export function evaluateParserUnique(
-  parameters: readonly unknown[],
-): unknown {
+export function evaluateParserUnique(parameters: readonly unknown[]): unknown {
   if (!parameters.length || parameters.length > 3) return 'VALUE!';
   const byCol = parameters.length >= 2 ? parserNumericValue(parameters[1]) : 0;
   const exactlyOnce =
@@ -462,6 +462,131 @@ export function evaluateParserUnique(
     if (uniqueRows.length > 10_000) return 'VALUE!';
   }
   return uniqueRows.length ? uniqueRows : [[null]];
+}
+
+/**
+ * Bounded Traditional Office `FILTER` (row or column include masks).
+ * Empty results without `if_empty` fail closed as `#CALC!`.
+ */
+export function evaluateParserFilter(parameters: readonly unknown[]): unknown {
+  if (parameters.length < 2 || parameters.length > 3) return 'VALUE!';
+  const grid = normalizeParserGrid(parameters[0]);
+  const include = normalizeParserGrid(parameters[1]);
+  if (!grid || !include) return 'VALUE!';
+  const rowCount = grid.length;
+  const columnCount = Math.max(0, ...grid.map((row) => row.length));
+  if (rowCount * columnCount > 10_000) return 'VALUE!';
+  const includeRows = include.length;
+  const includeColumns = Math.max(0, ...include.map((row) => row.length));
+  const filterRows = includeRows === rowCount && includeColumns === 1;
+  const filterColumns = includeRows === 1 && includeColumns === columnCount;
+  if (!filterRows && !filterColumns) return 'VALUE!';
+
+  let filtered: unknown[][];
+  if (filterRows) {
+    filtered = [];
+    for (let row = 0; row < rowCount; row += 1) {
+      if (!parserIncludeTruthy(include[row]?.[0])) continue;
+      filtered.push(padParserRow(grid[row] ?? [], columnCount));
+      if (filtered.length > 10_000) return 'VALUE!';
+    }
+  } else {
+    const keptColumns: number[] = [];
+    for (let column = 0; column < columnCount; column += 1) {
+      if (!parserIncludeTruthy(include[0]?.[column])) continue;
+      keptColumns.push(column);
+    }
+    filtered = grid.map((row) =>
+      keptColumns.map((column) => row[column] ?? null),
+    );
+  }
+
+  if (filtered.length === 0 || (filtered[0]?.length ?? 0) === 0) {
+    if (parameters.length < 3) return 'CALC!';
+    const fallback = normalizeParserGrid(parameters[2]);
+    return fallback ?? parameters[2] ?? null;
+  }
+  return filtered;
+}
+
+/**
+ * Bounded Traditional Office `SORT` (row-wise by one column index).
+ * Non-default `by_col` stays fail-closed as `#VALUE!`.
+ */
+export function evaluateParserSort(parameters: readonly unknown[]): unknown {
+  if (!parameters.length || parameters.length > 4) return 'VALUE!';
+  const grid = normalizeParserGrid(parameters[0]);
+  if (!grid) return 'VALUE!';
+  const sortIndex =
+    parameters.length >= 2 ? parserNumericValue(parameters[1]) : 1;
+  const sortOrder =
+    parameters.length >= 3 ? parserNumericValue(parameters[2]) : 1;
+  const byCol = parameters.length >= 4 ? parserNumericValue(parameters[3]) : 0;
+  if (
+    sortIndex === undefined ||
+    sortOrder === undefined ||
+    byCol === undefined
+  ) {
+    return 'VALUE!';
+  }
+  if (byCol !== 0) return 'VALUE!';
+  if (sortOrder !== 1 && sortOrder !== -1) return 'VALUE!';
+  const columnCount = Math.max(0, ...grid.map((row) => row.length));
+  const column = Math.trunc(sortIndex) - 1;
+  if (column < 0 || column >= columnCount) return 'VALUE!';
+  if (grid.length * columnCount > 10_000) return 'VALUE!';
+  const sorted = grid
+    .map((row) => padParserRow(row, columnCount))
+    .map((row, index) => ({ row, index }))
+    .sort((left, right) => {
+      const compared = compareParserSortValues(
+        left.row[column],
+        right.row[column],
+      );
+      if (compared !== 0) return sortOrder === 1 ? compared : -compared;
+      return left.index - right.index;
+    })
+    .map((entry) => entry.row);
+  return sorted.length ? sorted : [[null]];
+}
+
+function parserIncludeTruthy(value: unknown): boolean {
+  if (value instanceof Error) return false;
+  if (value === null || value === undefined || value === '') return false;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0 && Number.isFinite(value);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    const numeric = Number(trimmed);
+    if (Number.isFinite(numeric)) return numeric !== 0;
+    return trimmed.toUpperCase() === 'TRUE';
+  }
+  return Boolean(value);
+}
+
+function padParserRow(row: readonly unknown[], columnCount: number): unknown[] {
+  const padded: unknown[] = [];
+  for (let column = 0; column < columnCount; column += 1) {
+    padded.push(row[column] ?? null);
+  }
+  return padded;
+}
+
+function compareParserSortValues(left: unknown, right: unknown): number {
+  const leftBlank = left === null || left === undefined || left === '';
+  const rightBlank = right === null || right === undefined || right === '';
+  if (leftBlank && rightBlank) return 0;
+  if (leftBlank) return 1;
+  if (rightBlank) return -1;
+  const leftNumber = parserNumericValue(left);
+  const rightNumber = parserNumericValue(right);
+  if (leftNumber !== undefined && rightNumber !== undefined) {
+    return leftNumber === rightNumber ? 0 : leftNumber < rightNumber ? -1 : 1;
+  }
+  const leftText = String(left).toLocaleLowerCase();
+  const rightText = String(right).toLocaleLowerCase();
+  return leftText.localeCompare(rightText);
 }
 
 function normalizeUniqueKey(value: unknown): unknown {
@@ -496,7 +621,11 @@ function excelPartsFromParserDate(
   let serial: number | undefined;
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     serial = Math.round(
-      (Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()) -
+      (Date.UTC(
+        value.getUTCFullYear(),
+        value.getUTCMonth(),
+        value.getUTCDate(),
+      ) -
         epoch) /
         86_400_000,
     );

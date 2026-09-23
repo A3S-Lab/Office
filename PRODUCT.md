@@ -75,11 +75,11 @@ jc-only w:tblPrChange table-formatting revisions, reviewable orientation-only
 w:sectPrChange section-formatting revisions, reviewable cantSplit-only w:trPrChange row-formatting revisions, reviewable tblHeader-only w:trPrChange header-row revisions, reviewable trHeight-only w:trPrChange row-height revisions, reviewable hidden-only w:trPrChange row-visibility revisions, reviewable jc-only w:trPrChange row-alignment revisions, reviewable gridBefore-only w:trPrChange leading-grid revisions, reviewable gridAfter-only w:trPrChange trailing-grid revisions, reviewable wBefore-only w:trPrChange leading-width revisions, reviewable wAfter-only w:trPrChange trailing-width revisions, reviewable cnfStyle-only w:trPrChange conditional-format revisions, reviewable divId-only w:trPrChange HTML-div revisions, reviewable tblCellSpacing-only w:trPrChange cell-spacing revisions, reviewable vAlign-only w:tcPrChange cell-formatting revisions, reviewable solid-shd-only w:tcPrChange cell-fill revisions, reviewable tcW-only w:tcPrChange preferred-width cell revisions, reviewable tcMar-only w:tcPrChange cell-margin revisions, reviewable noWrap-only w:tcPrChange cell-wrap revisions, reviewable textDirection-only w:tcPrChange text-direction revisions, reviewable tcFitText-only w:tcPrChange fit-text revisions, reviewable hideMark-only w:tcPrChange hide-mark revisions, reviewable cnfStyle-only w:tcPrChange conditional-format cell revisions, reviewable hMerge-only w:tcPrChange horizontal-merge revisions, reviewable vMerge-only w:tcPrChange vertical-merge revisions, reviewable gridSpan-only w:tcPrChange column-span revisions, reviewable tcBorders-only w:tcPrChange cell-border revisions, reviewable current-level bullet w:numberingChange (nfc 23) numbering revisions, reviewable current-level decimal w:numberingChange numbering revisions, reviewable multi-level w:numberingChange (sibling original levels) numbering revisions, contract
 tables, duplicate-bookmark diagnostics, and active-content fail-closed export.
 Next work is R2 Spreadsheet leftovers after tip `0.311.0` (R2 formula corpus,
-locale-guessing `VALUE`, `SEQUENCE`/`TRANSPOSE`/`UNIQUE` spill, multi-select
-pivot filters, and Track A WPS daily loops rebased onto `0.310.0`) —
-`FILTER`/`SORT` spill, comma number literals, native XLSX slicer packages /
-timeline / pivot-chart depth, and Fortune virtual-grid ownership — then R3–R4
-tracks. Writer R1 content-control and mail-merge depth remains gated; depth ≥ 3
+locale-guessing `VALUE`, `SEQUENCE`/`TRANSPOSE`/`UNIQUE`/`FILTER`/`SORT`
+spill, multi-select pivot filters, and Track A WPS daily loops rebased onto
+`0.310.0`) — comma number literals, native XLSX slicer packages / timeline /
+pivot-chart depth, and Fortune virtual-grid ownership — then R3–R4 tracks.
+Writer R1 content-control and mail-merge depth remains gated; depth ≥ 3
 block nesting stays fail-closed.
 R0 format-trust exit evidence remains on the permanent corpus gate; remaining
 decorative art borders and full PDF/UA stay deferred.

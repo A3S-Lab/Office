@@ -76,11 +76,11 @@ import { diagnoseXlsxCharts } from './work-xlsx-chart-diagnostics';
 import { diagnoseXlsxConditionalFormatting } from './work-xlsx-conditional-format-diagnostics';
 import { diagnoseXlsxFormulas } from './work-xlsx-formula-diagnostics';
 import type { XlsxFormulaFeatures } from './work-xlsx-formulas';
+import { readXlsxImageTransform } from './work-xlsx-image-transform';
 import {
   isSupportedXlsxWorksheetImageContentType,
   MAX_XLSX_WORKSHEET_IMAGE_BYTES,
 } from './work-xlsx-images';
-import { readXlsxImageTransform } from './work-xlsx-image-transform';
 import { diagnoseXlsxPageSetup } from './work-xlsx-page-setup-diagnostics';
 import { diagnoseXlsxPivots } from './work-xlsx-pivot-diagnostics';
 import type { XlsxPivotReadResult } from './work-xlsx-pivots';

@@ -1,11 +1,11 @@
 import type { Sheet } from '@fortune-sheet/core';
 import { describe, expect, test } from '@rstest/core';
+import { parseXml } from '../../../src/internal/features/work/work-ooxml-package';
 import { spreadsheetConditionalFormatStyles } from '../../../src/internal/features/work/work-spreadsheet-conditional-format';
 import {
   writeXlsxConditionalFormats,
   XlsxDifferentialFormatWriter,
 } from '../../../src/internal/features/work/work-xlsx-conditional-format-write';
-import { parseXml } from '../../../src/internal/features/work/work-ooxml-package';
 
 /**
  * R2 conditional-format precedence corpus.

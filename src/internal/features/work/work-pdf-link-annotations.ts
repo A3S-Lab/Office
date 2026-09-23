@@ -4,7 +4,10 @@ import {
   registerWorkPdfLinkStructEntry,
   type WorkPdfAnnotObjectRef,
 } from './work-pdf-structure';
-import type { WorkPdfPageBounds, WorkPdfPagePoints } from './work-pdf-text-layer';
+import type {
+  WorkPdfPageBounds,
+  WorkPdfPagePoints,
+} from './work-pdf-text-layer';
 
 /** One external hyperlink hotspot in page-local CSS pixels. */
 export interface WorkPdfExternalLinkBox {
@@ -117,7 +120,9 @@ export function appendWorkPdfExternalLinkAnnotations(
   }
 }
 
-function normalizeExternalHref(value: string | null | undefined): string | null {
+function normalizeExternalHref(
+  value: string | null | undefined,
+): string | null {
   const href = value?.trim() ?? '';
   if (!href || href.length > MAX_HREF_LENGTH) return null;
   if (!HTTP_HREF_PATTERN.test(href)) return null;

@@ -20,7 +20,9 @@ describe('R2 pivot depth diagnostics and styles', () => {
     );
     expect(
       WORK_SPREADSHEET_PIVOT_STYLE_OPTIONS.map((option) => option.value),
-    ).toEqual(expect.arrayContaining(['PivotStyleLight16', 'PivotStyleDark28']));
+    ).toEqual(
+      expect.arrayContaining(['PivotStyleLight16', 'PivotStyleDark28']),
+    );
   });
 
   test('fail-closes calculated pivot-cache fields with a dedicated code', async () => {

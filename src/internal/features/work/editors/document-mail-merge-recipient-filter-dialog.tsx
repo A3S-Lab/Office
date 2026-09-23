@@ -14,8 +14,8 @@ import {
 } from '../work-document-mail-merge';
 import {
   OfficeSelect,
-  OfficeTextField,
   type OfficeSelectOption,
+  OfficeTextField,
 } from './office-controls';
 
 export interface DocumentMailMergeRecipientFilterDialogProps {

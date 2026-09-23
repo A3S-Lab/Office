@@ -9,11 +9,12 @@ import {
   parseXml,
   xmlNamespacePrefix,
 } from './work-ooxml-package';
+import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
+import { spreadsheetPivotValidation } from './work-spreadsheet-pivots';
 import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
 } from './work-spreadsheet-ranges';
-import { spreadsheetPivotValidation } from './work-spreadsheet-pivots';
 import { createWorkId } from './work-templates';
 import type {
   WorkSpreadsheetContent,
@@ -22,7 +23,6 @@ import type {
   WorkSpreadsheetPivotTable,
   WorkSpreadsheetPivotValue,
 } from './work-types';
-import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
 import {
   createXlsxPivotXmlParts,
   workPivotAggregation,

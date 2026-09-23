@@ -679,7 +679,8 @@ function readListItemProperties(
   const items: Array<{ displayText: string; value: string }> = [];
   const seen = new Set<string>();
   for (const child of Array.from(container.children)) {
-    if (!isDocxWordElement(child) || child.localName !== 'listItem') return null;
+    if (!isDocxWordElement(child) || child.localName !== 'listItem')
+      return null;
     if (!validLeaf(child, new Set(['displayText', 'value']))) return null;
     const displayText = wordAttribute(child, 'displayText') ?? '';
     const value = wordAttribute(child, 'value') ?? displayText;
@@ -701,7 +702,9 @@ function readListItemProperties(
   return items.length ? items : null;
 }
 
-function readCheckboxProperties(checkbox: Element): { checked: boolean } | null {
+function readCheckboxProperties(
+  checkbox: Element,
+): { checked: boolean } | null {
   if ((checkbox.namespaceURI ?? '') !== CONTENT_CONTROL_WORD_2010_NAMESPACE) {
     return null;
   }

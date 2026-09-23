@@ -254,9 +254,9 @@ describe('document fields', () => {
     expect(
       docxDocumentFieldKind('MERGEFIELD CustomerName \\* MERGEFORMAT'),
     ).toBe('mergeField');
-    expect(supportedDocxDocumentFieldInstruction('MERGEFIELD CustomerName')).toBe(
-      true,
-    );
+    expect(
+      supportedDocxDocumentFieldInstruction('MERGEFIELD CustomerName'),
+    ).toBe(true);
     expect(
       supportedDocxDocumentFieldInstruction(
         'MERGEFIELD CustomerName \\* MERGEFORMAT',
@@ -301,12 +301,10 @@ describe('document fields', () => {
       false,
     );
     expect(supportedDocxDocumentFieldInstruction('TITLE')).toBe(true);
-    expect(
-      supportedDocxDocumentFieldInstruction('TITLE \\* MERGEFORMAT'),
-    ).toBe(true);
-    expect(supportedDocxDocumentFieldInstruction('TITLE \\* Caps')).toBe(
-      false,
+    expect(supportedDocxDocumentFieldInstruction('TITLE \\* MERGEFORMAT')).toBe(
+      true,
     );
+    expect(supportedDocxDocumentFieldInstruction('TITLE \\* Caps')).toBe(false);
     expect(supportedDocxDocumentFieldInstruction('SUBJECT')).toBe(true);
     expect(
       supportedDocxDocumentFieldInstruction('SUBJECT \\* MERGEFORMAT'),
@@ -341,18 +339,18 @@ describe('document fields', () => {
         'CREATEDATE \\@ "yyyy-MM-dd" \\* MERGEFORMAT',
       ),
     ).toBe(true);
-    expect(supportedDocxDocumentFieldInstruction('CREATEDATE \\@ "yyyy" extra')).toBe(
-      false,
-    );
+    expect(
+      supportedDocxDocumentFieldInstruction('CREATEDATE \\@ "yyyy" extra'),
+    ).toBe(false);
     expect(supportedDocxDocumentFieldInstruction('SAVEDATE')).toBe(true);
     expect(
       supportedDocxDocumentFieldInstruction(
         'SAVEDATE \\@ "yyyy-MM-dd" \\* MERGEFORMAT',
       ),
     ).toBe(true);
-    expect(supportedDocxDocumentFieldInstruction('SAVEDATE \\@ "yyyy" extra')).toBe(
-      false,
-    );
+    expect(
+      supportedDocxDocumentFieldInstruction('SAVEDATE \\@ "yyyy" extra'),
+    ).toBe(false);
     expect(supportedDocxDocumentFieldInstruction('PRINTDATE')).toBe(true);
     expect(
       supportedDocxDocumentFieldInstruction(
@@ -1464,12 +1462,7 @@ describe('document fields', () => {
     }
     artifact.content.html = [
       '<section data-document-section="true"><p>',
-      field(
-        'saveDate',
-        'saved',
-        'SAVEDATE \\@ "yyyy-MM-dd"',
-        '2021-02-02',
-      ),
+      field('saveDate', 'saved', 'SAVEDATE \\@ "yyyy-MM-dd"', '2021-02-02'),
       '</p></section>',
     ].join('');
 
@@ -1533,12 +1526,7 @@ describe('document fields', () => {
     }
     artifact.content.html = [
       '<section data-document-section="true"><p>',
-      field(
-        'printDate',
-        'printed',
-        'PRINTDATE \\@ "yyyy-MM-dd"',
-        '2022-03-03',
-      ),
+      field('printDate', 'printed', 'PRINTDATE \\@ "yyyy-MM-dd"', '2022-03-03'),
       '</p></section>',
     ].join('');
 

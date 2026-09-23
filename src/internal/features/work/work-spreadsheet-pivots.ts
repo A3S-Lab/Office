@@ -2,12 +2,13 @@ import type { Cell, CellMatrix, Selection } from '@fortune-sheet/core';
 import {
   buildSpreadsheetPivotOutput,
   defaultPivotValueCaption,
-  spreadsheetPivotAggregationLabel,
-  spreadsheetPivotFilterItemsFromSource,
   type SpreadsheetPivotBounds as PivotBounds,
   type SpreadsheetPivotField,
   type SpreadsheetPivotFilterItem,
+  spreadsheetPivotAggregationLabel,
+  spreadsheetPivotFilterItemsFromSource,
 } from './work-spreadsheet-pivot-engine';
+import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
 import {
   displaySpreadsheetPivotValue,
   finiteSpreadsheetPivotNumber,
@@ -19,7 +20,6 @@ import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
 } from './work-spreadsheet-ranges';
-import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
 import { createWorkId } from './work-templates';
 import type {
   WorkSpreadsheetContent,
@@ -32,8 +32,8 @@ const MAXIMUM_OUTPUT_CELLS = 20_000;
 const MAXIMUM_XLSX_ROW = 1_048_575;
 const MAXIMUM_XLSX_COLUMN = 16_383;
 
-export { defaultPivotValueCaption, spreadsheetPivotAggregationLabel };
 export type { SpreadsheetPivotField, SpreadsheetPivotFilterItem };
+export { defaultPivotValueCaption, spreadsheetPivotAggregationLabel };
 
 export interface SpreadsheetPivotValidation {
   valid: boolean;

@@ -9,10 +9,7 @@ import {
 } from './work-document-repeating-section';
 import { ensureIgnorableContentControlNamespace } from './work-docx-note-comment-content-control-xml';
 import { XML_NAMESPACE } from './work-docx-settings-xml';
-import {
-  descendants,
-  parseXml,
-} from './work-ooxml-package';
+import { descendants, parseXml } from './work-ooxml-package';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -214,8 +211,7 @@ function findMarkerParagraph(
 
 function isWordParagraph(element: Element): boolean {
   return (
-    element.localName === 'p' &&
-    WORD_NAMESPACES.has(element.namespaceURI ?? '')
+    element.localName === 'p' && WORD_NAMESPACES.has(element.namespaceURI ?? '')
   );
 }
 
