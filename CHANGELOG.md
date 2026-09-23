@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.311.1 - 2026-09-23
+
+### Packaging
+
+- Publish via npm Trusted Publishing (GitHub Actions OIDC) instead of a classic
+  `NPM_TOKEN` that bypasses 2FA, unblocking `@a3s-lab/office@0.311.x` after
+  registry PUT 404s on `v0.311.0` (Office#162).
+
 ## 0.311.0 - 2026-09-23
 
 ### Spreadsheet
@@ -746,6 +754,13 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.311.1 - 2026-09-23
+
+### Packaging
+
+- Publish via npm Trusted Publishing (GitHub Actions OIDC) instead of a classic
+  `NPM_TOKEN` that bypasses 2FA, unblocking `@a3s-lab/office@0.311.x` after
+  registry PUT 404s on `v0.311.0` (Office#162).
 ## 0.236.0 - 2026-09-15
 
 ### Shared
