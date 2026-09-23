@@ -443,7 +443,7 @@ pub(super) fn text_len(
         Err(error) => return Ok(EvalValue::Scalar(ScalarValue::Error(error))),
     };
     Ok(EvalValue::Scalar(ScalarValue::Number(
-        text.chars().count() as f64,
+        text.chars().count() as f64
     )))
 }
 

@@ -866,16 +866,23 @@ fn text_mid(values: &[EvaluatedValue]) -> SpreadsheetValue {
 }
 
 fn first_scalar_text(values: &[EvaluatedValue]) -> Result<String, ()> {
-    let Some(value) = values.first().cloned().and_then(|value| {
-        value.into_values().into_iter().next()
-    }) else {
+    let Some(value) = values
+        .first()
+        .cloned()
+        .and_then(|value| value.into_values().into_iter().next())
+    else {
         return Err(());
     };
     scalar_text(value).map_err(|_| ())
 }
 
 fn optional_text_count(values: &[EvaluatedValue], index: usize) -> Option<f64> {
-    let value = values.get(index)?.clone().into_values().into_iter().next()?;
+    let value = values
+        .get(index)?
+        .clone()
+        .into_values()
+        .into_iter()
+        .next()?;
     scalar_number(value).ok()
 }
 
