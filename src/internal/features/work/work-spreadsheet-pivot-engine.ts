@@ -1,10 +1,12 @@
 import type { Cell, CellMatrix } from '@fortune-sheet/core';
 import {
+  displaySpreadsheetPivotReportFilterSelection,
   displaySpreadsheetPivotValue,
   finiteSpreadsheetPivotNumber,
   normalizeSpreadsheetPivotFilterValue,
   spreadsheetPivotCellValue,
   spreadsheetPivotFilterValueKey,
+  spreadsheetPivotReportFilterSelection,
 } from './work-spreadsheet-pivot-values';
 import type {
   WorkSpreadsheetPivotAggregation,
@@ -233,9 +235,7 @@ export function buildSpreadsheetPivotOutput(
     const row = Array<Cell | null>(width).fill(null);
     row[0] = pivotFilterLabelCell(fields[filter.fieldIndex].name);
     row[1] = pivotFilterSelectionCell(
-      filter.selectedItem === undefined
-        ? '(全部)'
-        : displaySpreadsheetPivotValue(filter.selectedItem),
+      displaySpreadsheetPivotReportFilterSelection(filter),
     );
     return row;
   });
@@ -482,11 +482,15 @@ function matchesPivotReportFilters(
   values: unknown[],
   pivot: WorkSpreadsheetPivotTable,
 ): boolean {
-  return (pivot.reportFilters ?? []).every(
-    (filter) =>
-      filter.selectedItem === undefined ||
-      spreadsheetPivotFilterValueKey(
-        normalizeSpreadsheetPivotFilterValue(values[filter.fieldIndex]),
-      ) === spreadsheetPivotFilterValueKey(filter.selectedItem),
-  );
+  return (pivot.reportFilters ?? []).every((filter) => {
+    const selection = spreadsheetPivotReportFilterSelection(filter);
+    if (selection.kind === 'all') return true;
+    if (selection.kind === 'none') return false;
+    const key = spreadsheetPivotFilterValueKey(
+      normalizeSpreadsheetPivotFilterValue(values[filter.fieldIndex]),
+    );
+    return selection.items.some(
+      (item) => spreadsheetPivotFilterValueKey(item) === key,
+    );
+  });
 }

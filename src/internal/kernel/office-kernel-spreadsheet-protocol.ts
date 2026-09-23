@@ -67,6 +67,8 @@ export interface OfficeKernelSpreadsheetInputSheet {
   tables?: OfficeKernelSpreadsheetInputTable[];
 }
 
+export type OfficeKernelSpreadsheetDateSystem = '1900' | '1904';
+
 export interface OfficeKernelSpreadsheetCalculationRequest {
   protocol: typeof OFFICE_KERNEL_PROTOCOL_VERSION;
   kind: 'spreadsheetCalculation';
@@ -75,6 +77,8 @@ export interface OfficeKernelSpreadsheetCalculationRequest {
   documentRevision: number;
   sheets: OfficeKernelSpreadsheetInputSheet[];
   targets?: OfficeKernelSpreadsheetCoordinate[];
+  /** Workbook date system for DATE/YEAR/MONTH/DAY serials. Defaults to 1900. */
+  dateSystem?: OfficeKernelSpreadsheetDateSystem;
 }
 
 export type OfficeKernelSpreadsheetSessionCellChange =
@@ -114,6 +118,8 @@ export interface OfficeKernelSpreadsheetSessionCalculationRequest {
   documentRevision: number;
   update: OfficeKernelSpreadsheetSessionUpdate;
   calculation: OfficeKernelSpreadsheetSessionCalculationScope;
+  /** Workbook date system for DATE/YEAR/MONTH/DAY serials. Defaults to 1900. */
+  dateSystem?: OfficeKernelSpreadsheetDateSystem;
 }
 
 export interface OfficeKernelSpreadsheetCalculatedCell

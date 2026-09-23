@@ -34,7 +34,7 @@ fn native_suggestion_mutation_creates_and_projects_an_atomic_replacement() {
     assert!(result.state_changed);
 
     let projection = store.project().unwrap();
-    assert_eq!(projection.version, 3);
+    assert_eq!(projection.version, 4);
     let NativeOfficeCollaborationProjectedContent::Document {
         plain_text,
         paragraphs,

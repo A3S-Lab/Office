@@ -633,7 +633,13 @@ export type WorkSpreadsheetPivotFilterValue = string | number | boolean | null;
 
 export interface WorkSpreadsheetPivotReportFilter {
   fieldIndex: number;
+  /** Legacy single-select page-field value. Ignored when `selectedItems` is set. */
   selectedItem?: WorkSpreadsheetPivotFilterValue;
+  /**
+   * In-app slicer-style multi-select. `undefined` (with no `selectedItem`) means
+   * all values; `[]` means none; otherwise OR-match the listed values.
+   */
+  selectedItems?: WorkSpreadsheetPivotFilterValue[];
 }
 
 export interface WorkSpreadsheetPivotTable {

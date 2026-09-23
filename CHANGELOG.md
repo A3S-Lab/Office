@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## 0.311.0 - 2026-09-23
+
+### Spreadsheet
+
+- Admit R2 formula-compatibility corpus gates (`bun run test:corpus:r2`) with
+  daily lookups, conditional aggregates, `SUMPRODUCT`/`PRODUCT`/`VALUE`,
+  bounded `NUMBERVALUE`, locale-guessing `VALUE`, 1904 `DATE`/`YEAR`/`MONTH`/
+  `DAY`, and dynamic-array spill for `SEQUENCE` / `TRANSPOSE` / `UNIQUE`
+  (obstructed ranges return `#SPILL!`).
+- Admit in-app slicer-style multi-select pivot report filters (`selectedItems`).
+
+### Writer
+
+- Admit Track A WPS daily-loop ACL suites (Writer / Spreadsheet / Presentation /
+  PDF) via `a3s-test` CDP, plus deeper mail-merge / content-control form depth
+  from the WPS parity track (depth ≥ 3 nesting remains fail-closed).
+
+### Packaging
+
+- Rebased onto `origin/main` `0.310.0` and cut tip `0.311.0` so NPM releases
+  continue the published version line (`@a3s-lab/office@0.310.0` → `0.311.0`).
+
 ## 0.310.0 - 2026-09-22
 
 ### Collaboration

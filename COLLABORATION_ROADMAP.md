@@ -27,6 +27,26 @@ which tracks editor capability parity with Traditional Office.
   mode/format pairs remain read-only.
 - Editors never collaborate by repeatedly replacing one serialized OOXML file
   or one universal JSON blob. Each format gets a typed, conflict-local model.
+- Native `collab read` and `office_collaboration_read` return projection schema
+  v4 addresses for every artifact kind. The read is not
+  `projection_unsupported`, not an OOXML or PDF byte payload, and not a blob
+  the agent writes back. Markdown returns canonical source plus line slices
+  (`startUtf16`, `endUtf16`, text). Document returns `paragraphId`, `textId`,
+  and the paragraph UTF-16 range. Spreadsheet returns `sheetId` with zero-based
+  row and column plus the current cell. Presentation returns `containerKind`,
+  `containerId`, and `elementId` plus the current element. PDF returns
+  `pageCount`, annotation id/page/type, and form-field id/value. Agents patch
+  one of those addresses. `markdown-splice` requires `expectedText` and fails
+  closed when that slice changed. `markdown-replace` requires
+  `expectedMarkdown` and applies only the caller's diff, so unrelated
+  concurrent text remains; echoing the read snapshot does not revert other
+  participants. A stale Document paragraph, Spreadsheet cell, Presentation
+  element, or PDF form value fails closed and does not rewrite the rest of the
+  replica. A whole-artifact payload does not drop an unrelated concurrent
+  region: a full next Markdown keeps text outside the caller's diff, a full
+  Document plain-text replace fails closed when that string is stale, and
+  echoing a stale Spreadsheet cell, Presentation element, or PDF form value
+  leaves the concurrent value in place.
 
 Session modes are client-side capability guards, not a security boundary. The
 host and synchronization service must enforce authorization for received and
@@ -193,7 +213,7 @@ parity remains pending.
 - Rust, CLI, MCP, and A3S Code expose `document-comment-create`,
   `document-comment-reply`, `document-comment-set-resolved`,
   `document-comment-delete`, `document-suggestion-create`, and
-  `document-suggestion-decide`. Projection schema v3 returns attributable
+  `document-suggestion-decide`. Projection schema v4 returns attributable
   comment threads, replies, anchor text, live suggestion identities and exact
   placements, immutable final decisions, paragraph/text identities,
   browser-compatible UTF-16 offsets, resolution, and detached state. Native and
@@ -482,8 +502,10 @@ format mutations are pending.
   same identity plus a stable operation ID and accept an optional state-vector
   precondition.
 - `collab mutate` and `office_collaboration_mutate` accept a closed typed
-  operation instead of caller-authored Yjs bytes. Markdown replace/splice
-  writes canonical `Y.Text` with browser UTF-16 offsets. Document exact-match
+  operation instead of caller-authored Yjs bytes. Markdown splice writes one
+  canonical `Y.Text` range after `expectedText` matches that UTF-16 slice.
+  Markdown replace applies only the diff from required `expectedMarkdown` to
+  the supplied Markdown, so text outside that diff is kept. Document exact-match
   replacement edits ProseMirror `Y.XmlText` in place, preserves the first
   replaced character's formatting attributes, rotates Word `textId`, and fails
   if the declared match count is stale. Bounded section/list/table/blockquote
@@ -506,30 +528,44 @@ format mutations are pending.
   identities atomically, then appends immutable browser-compatible decisions.
 - Rust `project`, `collab read`, and `office_collaboration_read` interpret the
   Office-owned browser schema inside Office rather than in a product host.
-  Markdown returns its exact canonical source. Document returns bounded
-  traversal-order paragraph records, stable `paragraphId`/`textId` pairs,
-  structural ancestry, option fields, subordinate plain text, and projection-v3
-  comment/reply/anchor/detached records, live suggestions with exact placements,
-  and immutable final decisions together with the exact state vector.
-  `document-replace-paragraph` uses those stable
-  identities plus complete expected text to reject a stale same-paragraph
-  browser/agent edit before writing, while unrelated changes can proceed
-  without replacing the full document.
+  Projection schema v4 returns stable edit addresses for all five kinds, plus
+  the exact state vector. Markdown returns canonical source and non-overlapping
+  UTF-16 line slices. Document returns traversal-order paragraph records with
+  `paragraphId`, `textId`, `startUtf16`/`endUtf16`, structural ancestry, option
+  fields, subordinate plain text, comment/reply/anchor/detached records, live
+  suggestions with exact placements, and immutable final decisions. Spreadsheet
+  returns each sheet id and its populated cell coordinates with the current
+  cell JSON. Presentation returns slide, master, and layout containers with
+  active element ids and the current element JSON. PDF returns page count,
+  portable annotation addresses, and ordered form-field values, and does not
+  return source bytes. `document-replace-paragraph` uses the paragraph id, text
+  id, and complete expected text to reject a stale same-paragraph edit before
+  writing. Replacing the whole projected plain text fails closed when a
+  concurrent paragraph edit has made that string stale, so the other paragraph
+  remains. An outside edit is visible on the next read as a different slice,
+  text id, cell, element field, or form value.
 - Spreadsheet cell mutations create or recursively patch one zero-based
   coordinate after matching the caller's observed cell, or delete it only after
   an exact complete-cell match. `spreadsheet-batch-cells` applies 1 to 4,096
-  distinct changes from one sheet snapshot in one transaction. They preserve
-  the browser's field-addressed representation, dense/sparse projection mode,
-  and atomic fail-closed semantics without replacing a worksheet or workbook.
+  distinct changes from one sheet snapshot in one transaction. A batch that
+  changes one cell and echoes another cell's stale value keeps a concurrent
+  edit at the echoed coordinate. They preserve the browser's field-addressed
+  representation, dense/sparse projection mode, and atomic fail-closed
+  semantics without replacing a worksheet or workbook.
 - Presentation scene-element mutations create, update, move, or tombstone one
   stable object inside a slide, master, or layout. Canonical creation claims
   prevent conflicting same-ID reuse, optimistic top-level field guards merge
   unrelated concurrent edits, stable predecessor guards move one order entry
   without array indexes, and exact deletion guards prevent a stale destructive
-  write without replacing the deck or container.
+  write without replacing the deck or container. Updating one element and then
+  writing the other element's stale snapshot back, with the same expected and
+  next value, leaves a concurrent field edit in place.
 - PDF form-value mutations write the browser-compatible conflict-local record
-  roots by fully-qualified field name, retain idempotent receipts and optional
-  state-vector preconditions, and never synchronize source bytes.
+  roots by fully-qualified field name. An existing field requires its observed
+  value; a stale value fails closed. Writing that observed value back after
+  another participant changed the field does not revert the concurrent value.
+  Receipts stay idempotent, state-vector preconditions stay optional, and the
+  read/mutate path never synchronizes source bytes.
 - PDF annotation mutations create browser-compatible portable records, merge
   unrelated mutable JSON leaves under recursive optimistic guards, preserve
   immutable creation claims, and use irreversible deletion tombstones. The

@@ -19,6 +19,31 @@ export {
   type PdfEvidenceRegionLocation,
 } from './internal/features/work/editors/pdf-evidence-contract';
 export type { PdfPageOrganizationExport } from './internal/features/work/editors/use-pdf-page-organization';
+export type {
+  WorkDocumentMailMergeFilterOperator as DocumentMailMergeFilterOperator,
+  WorkDocumentMailMergeFilterRule as DocumentMailMergeFilterRule,
+  WorkDocumentMailMergeGeneratedDocument as DocumentMailMergeGeneratedDocument,
+  WorkDocumentMailMergeRecipientFilter as DocumentMailMergeRecipientFilter,
+  WorkDocumentMailMergeRecord as DocumentMailMergeRecord,
+  WorkDocumentMailMergeSource as DocumentMailMergeSource,
+} from './internal/features/work/work-document-mail-merge';
+export {
+  activeMailMergeRecord,
+  createMailMergeFieldContextResolver,
+  emptyMailMergeSource,
+  filteredMailMergeRecords,
+  generateMailMergeDocuments,
+  mailMergeFieldNamesFromEditor,
+  mailMergeFieldNamesFromHtml,
+  mailMergeFieldNamesFromRecords,
+  mailMergeRecordMatchesFilter,
+  normalizeMailMergeRecipientFilter,
+  normalizeMailMergeRecord,
+  normalizeMailMergeSource,
+  previewMailMergeSource,
+  setMailMergeRecipientFilter,
+  stepMailMergeSource,
+} from './internal/features/work/work-document-mail-merge';
 import type { PresentationEditorProps as InternalPresentationEditorProps } from './internal/features/work/editors/presentation-editor';
 import type { SpreadsheetEditorProps as InternalSpreadsheetEditorProps } from './internal/features/work/editors/spreadsheet-editor';
 import type { WorkOfficeFileAction } from './internal/features/work/editors/work-office-chrome';

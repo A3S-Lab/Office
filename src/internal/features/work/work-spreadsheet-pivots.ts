@@ -13,11 +13,13 @@ import {
   finiteSpreadsheetPivotNumber,
   spreadsheetPivotCellValue,
   spreadsheetPivotFilterValueKey,
+  spreadsheetPivotReportFilterSelection,
 } from './work-spreadsheet-pivot-values';
 import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
 } from './work-spreadsheet-ranges';
+import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
 import { createWorkId } from './work-templates';
 import type {
   WorkSpreadsheetContent,
@@ -159,7 +161,7 @@ export function createSpreadsheetPivotFromSelection(
     values: [],
     rowGrandTotals: true,
     columnGrandTotals: true,
-    styleName: 'PivotStyleLight16',
+    styleName: WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
     refreshOnLoad: true,
   };
   const fields = spreadsheetPivotFields(content, draftPivot);
@@ -476,12 +478,21 @@ function pivotFailure(
     );
   }
   for (const filter of reportFilters) {
+    const available = spreadsheetPivotFilterItems(
+      content,
+      pivot,
+      filter.fieldIndex,
+    );
+    const selection = spreadsheetPivotReportFilterSelection(filter);
     if (
-      filter.selectedItem !== undefined &&
-      !spreadsheetPivotFilterItems(content, pivot, filter.fieldIndex).some(
+      selection.kind === 'items' &&
+      selection.items.some(
         (item) =>
-          spreadsheetPivotFilterValueKey(item.value) ===
-          spreadsheetPivotFilterValueKey(filter.selectedItem!),
+          !available.some(
+            (entry) =>
+              spreadsheetPivotFilterValueKey(entry.value) ===
+              spreadsheetPivotFilterValueKey(item),
+          ),
       )
     ) {
       return invalid(

@@ -222,6 +222,8 @@ describe('document text boxes', () => {
     ['ellipse', 'ellipse'],
     ['diamond', 'diamond'],
     ['triangle', 'triangle'],
+    ['parallelogram', 'parallelogram'],
+    ['hexagon', 'hexagon'],
   ] as const)('maps the supported WPS %s preset to %s', (preset, shapeType) => {
     const document = wordXml(`
       <w:p>
@@ -407,6 +409,68 @@ describe('document text boxes', () => {
       throw new Error('Expected a reopened document artifact.');
     }
     expect(reopened.content.html).toContain('data-text-box-shape="ellipse"');
+  });
+
+  test('exports parallelogram preset geometry and reopens it', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const properties = normalizeDocumentTextBoxProperties({
+      id: 'parallelogram-box',
+      shapeType: 'parallelogram',
+      width: 90,
+      height: 36,
+    });
+    const attributes = Object.entries(textBoxDomAttributes(properties))
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .map(([name, value]) => `${name}="${value}"`)
+      .join(' ');
+    artifact.content.html = `<div ${attributes} style="${textBoxCss(properties)}">Skew</div>`;
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const source =
+      (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(source).toContain('<a:prstGeom prst="parallelogram"');
+    const reopened = await importOfficeFile(
+      new File([blob], 'parallelogram-shape.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain(
+      'data-text-box-shape="parallelogram"',
+    );
+  });
+
+  test('exports hexagon preset geometry and reopens it', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const properties = normalizeDocumentTextBoxProperties({
+      id: 'hexagon-box',
+      shapeType: 'hexagon',
+      width: 88,
+      height: 48,
+    });
+    const attributes = Object.entries(textBoxDomAttributes(properties))
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .map(([name, value]) => `${name}="${value}"`)
+      .join(' ');
+    artifact.content.html = `<div ${attributes} style="${textBoxCss(properties)}">Hex</div>`;
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const source =
+      (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(source).toContain('<a:prstGeom prst="hexagon"');
+    const reopened = await importOfficeFile(
+      new File([blob], 'hexagon-shape.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-text-box-shape="hexagon"');
   });
 
   test('assigns unique drawing-property IDs to repeated text boxes', async () => {

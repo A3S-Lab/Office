@@ -128,7 +128,14 @@ export function markDocxParagraphMarkChanges(
     // paragraph.  The bounded Work model reviews the complete text-only
     // paragraph atomically, so remove the native boundary flag after capturing
     // it and let the marker retain the original block boundary through HTML.
+    const runProperties = change.element.parentElement;
     change.element.remove();
+    // An empty leftover w:rPr still counts as a run-property source and forces
+    // false bold/italic/underline wrappers onto every run (including change
+    // markers), which breaks tracked body wraps on re-export.
+    if (runProperties && !runProperties.childNodes.length) {
+      runProperties.remove();
+    }
     paragraphs.push({
       marker,
       id: uniqueChangeId(change.id, changeIds),

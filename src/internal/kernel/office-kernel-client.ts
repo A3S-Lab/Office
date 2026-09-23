@@ -215,6 +215,7 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
       documentRevision: input.documentRevision,
       sheets: input.sheets,
       targets: input.targets,
+      dateSystem: input.dateSystem,
     };
     if (signal?.aborted) return Promise.reject(abortError());
     if (!this.worker) {
@@ -248,6 +249,7 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
       documentRevision: input.documentRevision,
       update: input.update,
       calculation: input.calculation,
+      dateSystem: input.dateSystem,
     };
     if (signal?.aborted) return Promise.reject(abortError());
     if (!this.worker) {

@@ -74,6 +74,26 @@ export function spreadsheetSingleRange(
   };
 }
 
+export function spreadsheetFormulaResultText(
+  cell: Cell | null | undefined,
+): string | null {
+  if (!cell || typeof cell.f !== 'string' || cell.f.trim().length === 0) {
+    return null;
+  }
+  if (typeof cell.m === 'string') {
+    const display = cell.m.trim();
+    if (display && display !== cell.f.trim()) return display;
+  }
+  if (typeof cell.v === 'number' && Number.isFinite(cell.v)) {
+    return String(cell.v);
+  }
+  if (typeof cell.v === 'string') {
+    const display = cell.v.trim();
+    if (display && display !== cell.f.trim()) return display;
+  }
+  return null;
+}
+
 export function spreadsheetCellAt(
   sheet: WorkSpreadsheetContent['sheets'][number] | undefined,
   row: number | undefined,

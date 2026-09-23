@@ -37,6 +37,48 @@ pub(super) struct SpreadsheetSheetState {
     pub(super) row_lengths_ref: ArrayRef,
 }
 
+pub(super) fn ordered_sheet_ids(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<Vec<String>> {
+    let order = doc.get_or_insert_array(format!("{}.spreadsheet.sheet-order", manifest.namespace));
+    let sheets = doc.get_or_insert_map(format!("{}.{}", manifest.namespace, SHEETS_ROOT));
+    let transaction = doc.transact();
+    let mut ids = Vec::new();
+    let mut ordered = HashSet::new();
+    for index in 0..order.len(&transaction) {
+        let id = match order.get(&transaction, index) {
+            Some(Out::Any(Any::String(value))) => value.to_string(),
+            _ => {
+                return Err(invalid_shared_spreadsheet(
+                    "The shared Spreadsheet sheet order contains a non-string identity.",
+                ))
+            }
+        };
+        if !ordered.insert(id.clone()) {
+            return Err(invalid_shared_spreadsheet(
+                "The shared Spreadsheet sheet order contains a duplicate identity.",
+            ));
+        }
+        ids.push(id);
+    }
+    let mut present = HashSet::new();
+    for (id, value) in sheets.iter(&transaction) {
+        if !matches!(value, Out::YMap(_)) {
+            return Err(invalid_shared_spreadsheet(format!(
+                "Shared Spreadsheet sheet '{id}' is not a typed map."
+            )));
+        }
+        present.insert(id.to_owned());
+    }
+    if present != ordered {
+        return Err(invalid_shared_spreadsheet(
+            "The shared Spreadsheet sheet order and sheet map disagree.",
+        ));
+    }
+    Ok(ids)
+}
+
 pub(super) fn read_sheet_state(
     doc: &yrs::Doc,
     manifest: &NativeOfficeCollaborationManifest,

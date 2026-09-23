@@ -1,10 +1,15 @@
 import type { Cell } from '@fortune-sheet/core';
-import { spreadsheetPivotFilterValueKey } from './work-spreadsheet-pivot-values';
+import {
+  spreadsheetPivotFilterValueKey,
+  spreadsheetPivotReportFilterIsSingleSelectExportable,
+  spreadsheetPivotReportFilterSelection,
+} from './work-spreadsheet-pivot-values';
 import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
 } from './work-spreadsheet-ranges';
 import { spreadsheetPivotFields } from './work-spreadsheet-pivots';
+import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetPivotAggregation,
@@ -49,6 +54,12 @@ export function createXlsxPivotXmlParts(
     ranges?.length !== 1 ||
     !fields.length ||
     !pivot.outputReference
+  )
+    return null;
+  if (
+    !(pivot.reportFilters ?? []).every(
+      spreadsheetPivotReportFilterIsSingleSelectExportable,
+    )
   )
     return null;
   const sourceRange = ranges[0];
@@ -163,13 +174,18 @@ function pivotTableXml(
   const pageFields = (pivot.reportFilters ?? [])
     .map((filter) => {
       const items = fields[filter.fieldIndex]?.sharedItems ?? [];
+      const selection = spreadsheetPivotReportFilterSelection(filter);
+      const selectedItem =
+        selection.kind === 'items' && selection.items.length === 1
+          ? selection.items[0]
+          : undefined;
       const selectedIndex =
-        filter.selectedItem === undefined
+        selectedItem === undefined
           ? items.length
           : items.findIndex(
               (item) =>
                 pivotSourceFilterKey(item) ===
-                spreadsheetPivotFilterValueKey(filter.selectedItem!),
+                spreadsheetPivotFilterValueKey(selectedItem),
             );
       return `<pageField fld="${filter.fieldIndex}" hier="-1" item="${
         selectedIndex >= 0 ? selectedIndex : items.length
@@ -210,7 +226,7 @@ function pivotTableXml(
       : '',
     `<dataFields count="${pivot.values.length}">${dataFields}</dataFields>`,
     `<pivotTableStyleInfo name="${escapeXml(
-      pivot.styleName || 'PivotStyleLight16',
+      pivot.styleName || WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
     )}" showRowHeaders="1" showColHeaders="1" showRowStripes="0" showColStripes="0" showLastColumn="1"/>`,
     '</pivotTableDefinition>',
   ].join('');

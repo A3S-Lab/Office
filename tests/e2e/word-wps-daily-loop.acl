@@ -1,0 +1,240 @@
+suite "office-word-wps-daily-loop" {
+    version = 1
+
+    scenario "edit-format-replace-table-save-reopen" {
+        name = "Edit, format, replace, and insert a Writer table, then reopen the saved DOCX"
+        surface = "web"
+        timeout_ms = 300000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "create-blank-document" {
+            target = css("button[data-template-id='blank-document']")
+        }
+
+        wait "writer-focused" {
+            visible = css(".work-document-editable .ProseMirror[contenteditable='true']:focus")
+        }
+
+        type "enter-body" {
+            target = css(".work-document-editable .ProseMirror[contenteditable='true']")
+            value = "WPSDAILY alpha token"
+        }
+
+        expect "body-entered" {
+            text = "WPSDAILY alpha token"
+        }
+
+        press "move-to-line-start" {
+            key = "Home"
+        }
+
+        press "select-entered-line" {
+            key = "Shift+End"
+        }
+
+        click "apply-bold" {
+            target = role("button", "加粗")
+        }
+
+        click "grow-font" {
+            target = role("button", "增大字号")
+        }
+
+        click "align-center" {
+            target = role("button", "居中")
+        }
+
+        expect "center-and-font-size-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: center'] [style*='font-size: 12pt']")
+        }
+
+        expect "bold-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: center'] strong")
+        }
+
+        click "open-replace" {
+            target = role("button", "替换")
+        }
+
+        wait "replace-field-visible" {
+            visible = css(".work-document-find-panel input[aria-label='替换为']")
+        }
+
+        fill "find-alpha" {
+            target = css(".work-document-find-panel input[aria-label='查找内容']")
+            value = "alpha"
+        }
+
+        fill "replace-with-beta" {
+            target = css(".work-document-find-panel input[aria-label='替换为']")
+            value = "beta"
+        }
+
+        wait "one-match" {
+            text = "1 个匹配"
+        }
+
+        click "replace-all" {
+            target = role("button", "全部替换")
+        }
+
+        expect "replacement-applied" {
+            target = css(".work-document-editable .ProseMirror p[style*='text-align: center']")
+            rendered_text = "WPSDAILY beta token"
+        }
+
+        click "close-find" {
+            target = role("button", "关闭查找")
+        }
+
+        click "place-caret-in-formatted-paragraph" {
+            target = css(".work-document-editable .ProseMirror p[style*='text-align: center']")
+        }
+
+        press "move-to-paragraph-end" {
+            key = "End"
+        }
+
+        press "insert-paragraph-after-text" {
+            key = "Enter"
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "open-table-picker" {
+            target = role("button", "插入表格")
+        }
+
+        click "insert-two-by-two-table" {
+            target = role("button", "2 行 2 列")
+        }
+
+        wait "table-inserted" {
+            visible = css(".work-document-editable table")
+        }
+
+        click "select-comment-anchor" {
+            target = css(".work-document-editable .ProseMirror p[style*='text-align: center'] strong")
+        }
+
+        press "extend-anchor-selection" {
+            key = "Control+a"
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "start-add-comment" {
+            target = role("button", "添加批注")
+        }
+
+        wait "comment-composer-ready" {
+            visible = css(".work-document-comment-composer textarea[aria-label='批注内容']")
+        }
+
+        fill "enter-comment-body" {
+            target = css(".work-document-comment-composer textarea[aria-label='批注内容']")
+            value = "WPSDAILY review note"
+        }
+
+        click "commit-comment" {
+            target = css(".work-document-comment-composer footer button:last-child")
+        }
+
+        wait "comment-recorded" {
+            text = "WPSDAILY review note"
+        }
+
+        click "open-export-menu" {
+            target = role("button", "导出")
+        }
+
+        wait "docx-export-item" {
+            visible = css(".work-export-menu-panel [role='menuitem']:first-child")
+        }
+
+        click "save-docx" {
+            target = css(".work-export-menu-panel [role='menuitem']:first-child")
+        }
+
+        wait "docx-downloaded" {
+            text = "无标题文字.docx 已下载"
+        }
+
+        wait "reopen-exported-file" {
+            visible = css("button[aria-label='重新打开已导出文件']")
+        }
+
+        click "reopen-saved-docx" {
+            target = role("button", "重新打开已导出文件")
+        }
+
+        wait "saved-docx-opened" {
+            text = "无标题文字.docx 已打开"
+        }
+
+        wait "reopened-writer" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "reopened-replacement" {
+            target = css(".work-document-editable .ProseMirror p[style*='text-align: center']:first-of-type")
+            rendered_text = "WPSDAILY beta token"
+        }
+
+        expect "reopened-font-size" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: center'] [style*='font-size: 12pt']")
+        }
+
+        expect "reopened-bold" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: center'] strong")
+        }
+
+        expect "reopened-table" {
+            visible = css(".work-document-editable table")
+        }
+
+        click "open-review-tab-after-reopen" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-comments-after-reopen" {
+            target = css("button[aria-label^='查看批注']")
+        }
+
+        expect "reopened-comment" {
+            text = "WPSDAILY review note"
+        }
+
+        accessibility "word-wps-daily-loop-accessibility" {
+            path = "evidence/word-wps-daily-loop-accessibility.json"
+            interactive = true
+        }
+
+        console "word-wps-daily-loop-console" {
+            path = "diagnostics/word-wps-daily-loop-console.json"
+            clear = false
+        }
+
+        page_errors "word-wps-daily-loop-page-errors" {
+            path = "diagnostics/word-wps-daily-loop-page-errors.json"
+            clear = false
+        }
+    }
+}

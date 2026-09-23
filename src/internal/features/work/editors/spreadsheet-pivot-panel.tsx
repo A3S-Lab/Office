@@ -7,7 +7,10 @@ import {
   InlineNotice,
   StateView,
 } from '../../../design-system/primitives';
-import { spreadsheetPivotFilterValueKey } from '../work-spreadsheet-pivot-values';
+import {
+  spreadsheetPivotFilterValueKey,
+  spreadsheetPivotReportFilterSelection,
+} from '../work-spreadsheet-pivot-values';
 import {
   createSpreadsheetPivotFromSelection,
   defaultPivotValueCaption,
@@ -17,6 +20,7 @@ import {
   spreadsheetPivotFields,
   spreadsheetPivotFilterItems,
   spreadsheetPivotValidation,
+  type SpreadsheetPivotFilterItem,
 } from '../work-spreadsheet-pivots';
 import type {
   WorkSpreadsheetContent,
@@ -24,6 +28,10 @@ import type {
   WorkSpreadsheetPivotFilterValue,
   WorkSpreadsheetPivotTable,
 } from '../work-types';
+import {
+  WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
+  WORK_SPREADSHEET_PIVOT_STYLE_OPTIONS,
+} from '../work-spreadsheet-pivot-styles';
 import {
   OfficeCheckbox,
   OfficeSelect,
@@ -194,7 +202,7 @@ export function SpreadsheetPivotPanel({
       name,
       sourceReference: draft.sourceReference.trim().replace(/^=/, ''),
       anchor: draft.anchor.trim().replace(/^=/, ''),
-      styleName: draft.styleName || 'PivotStyleLight16',
+      styleName: draft.styleName || WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
       rowFields: [...draft.rowFields].sort((left, right) => left - right),
       columnFields: [...draft.columnFields].sort((left, right) => left - right),
       reportFilters: (draft.reportFilters ?? [])
@@ -390,13 +398,7 @@ export function SpreadsheetPivotPanel({
               <OfficeSelect
                 ariaLabel="透视表样式"
                 value={draft.styleName}
-                options={[
-                  { value: 'PivotStyleLight16', label: '浅色 16' },
-                  { value: 'PivotStyleLight18', label: '浅色 18' },
-                  { value: 'PivotStyleMedium2', label: '中等 2' },
-                  { value: 'PivotStyleMedium9', label: '中等 9' },
-                  { value: 'PivotStyleDark3', label: '深色 3' },
-                ]}
+                options={[...WORK_SPREADSHEET_PIVOT_STYLE_OPTIONS]}
                 onValueChange={(styleName) => setDraft({ ...draft, styleName })}
               />
             </div>
@@ -519,42 +521,68 @@ export function SpreadsheetPivotPanel({
                         </>
                       ) : role === 'filter' && filter ? (
                         <>
-                          <OfficeSelect
-                            ariaLabel={`${field.name} 筛选值`}
-                            value={
-                              filter.selectedItem === undefined
-                                ? 'all:'
-                                : spreadsheetPivotFilterValueKey(
-                                    filter.selectedItem,
-                                  )
-                            }
-                            options={[
-                              { value: 'all:', label: '（全部）' },
-                              ...filterItems.map((item) => ({
-                                value: spreadsheetPivotFilterValueKey(
-                                  item.value,
-                                ),
-                                label: item.label,
-                              })),
-                            ]}
-                            onValueChange={(selectedValue) =>
-                              setDraft(
-                                updatePivotReportFilter(
-                                  draft,
-                                  field.index,
-                                  selectedValue === 'all:'
-                                    ? undefined
-                                    : filterItems.find(
-                                        (item) =>
-                                          spreadsheetPivotFilterValueKey(
-                                            item.value,
-                                          ) === selectedValue,
-                                      )?.value,
-                                ),
-                              )
-                            }
-                          />
-                          <span className="filter-hint">单选报表筛选</span>
+                          <div
+                            className="pivot-slicer-filter"
+                            role="group"
+                            aria-label={`${field.name} 切片器筛选`}
+                          >
+                            <OfficeCheckbox
+                              className="check"
+                              ariaLabel={`${field.name} 全部`}
+                              checked={
+                                spreadsheetPivotReportFilterSelection(filter)
+                                  .kind === 'all'
+                              }
+                              onCheckedChange={(checked) =>
+                                setDraft(
+                                  updatePivotReportFilterItems(
+                                    draft,
+                                    field.index,
+                                    checked ? undefined : [],
+                                  ),
+                                )
+                              }
+                            >
+                              （全部）
+                            </OfficeCheckbox>
+                            {filterItems.map((item) => {
+                              const selection =
+                                spreadsheetPivotReportFilterSelection(filter);
+                              const itemKey = spreadsheetPivotFilterValueKey(
+                                item.value,
+                              );
+                              const checked =
+                                selection.kind === 'all' ||
+                                (selection.kind === 'items' &&
+                                  selection.items.some(
+                                    (value) =>
+                                      spreadsheetPivotFilterValueKey(value) ===
+                                      itemKey,
+                                  ));
+                              return (
+                                <OfficeCheckbox
+                                  key={itemKey}
+                                  className="check"
+                                  ariaLabel={`${field.name} ${item.label}`}
+                                  checked={checked}
+                                  onCheckedChange={(nextChecked) =>
+                                    setDraft(
+                                      togglePivotReportFilterItem(
+                                        draft,
+                                        field.index,
+                                        item.value,
+                                        nextChecked,
+                                        filterItems,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  {item.label}
+                                </OfficeCheckbox>
+                              );
+                            })}
+                          </div>
+                          <span className="filter-hint">切片器多选筛选</span>
                         </>
                       ) : (
                         <span className="placeholder">—</span>
@@ -691,15 +719,53 @@ function updatePivotValue(
   };
 }
 
-function updatePivotReportFilter(
+function updatePivotReportFilterItems(
   draft: PivotDraft,
   fieldIndex: number,
-  selectedItem: WorkSpreadsheetPivotFilterValue | undefined,
+  selectedItems: WorkSpreadsheetPivotFilterValue[] | undefined,
 ): PivotDraft {
   return {
     ...draft,
     reportFilters: (draft.reportFilters ?? []).map((filter) =>
-      filter.fieldIndex === fieldIndex ? { ...filter, selectedItem } : filter,
+      filter.fieldIndex === fieldIndex
+        ? {
+            fieldIndex,
+            ...(selectedItems === undefined ? {} : { selectedItems }),
+          }
+        : filter,
     ),
   };
+}
+
+function togglePivotReportFilterItem(
+  draft: PivotDraft,
+  fieldIndex: number,
+  value: WorkSpreadsheetPivotFilterValue,
+  checked: boolean,
+  allItems: SpreadsheetPivotFilterItem[],
+): PivotDraft {
+  const filter = (draft.reportFilters ?? []).find(
+    (entry) => entry.fieldIndex === fieldIndex,
+  ) ?? { fieldIndex };
+  const selection = spreadsheetPivotReportFilterSelection(filter);
+  const keys = new Set<string>(
+    selection.kind === 'all'
+      ? allItems.map((item) => spreadsheetPivotFilterValueKey(item.value))
+      : selection.kind === 'items'
+        ? selection.items.map(spreadsheetPivotFilterValueKey)
+        : [],
+  );
+  const valueKey = spreadsheetPivotFilterValueKey(value);
+  if (checked) keys.add(valueKey);
+  else keys.delete(valueKey);
+  if (!keys.size) return updatePivotReportFilterItems(draft, fieldIndex, []);
+  if (keys.size === allItems.length)
+    return updatePivotReportFilterItems(draft, fieldIndex, undefined);
+  return updatePivotReportFilterItems(
+    draft,
+    fieldIndex,
+    allItems
+      .filter((item) => keys.has(spreadsheetPivotFilterValueKey(item.value)))
+      .map((item) => item.value),
+  );
 }

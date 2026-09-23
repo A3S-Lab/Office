@@ -80,7 +80,7 @@ find_agent_browser() {
 a3s_test="$(resolve_a3s_test)"
 browser_driver="${A3S_TEST_BROWSER_DRIVER:-standalone}"
 browser_arguments=(--browser-driver "$browser_driver")
-required_a3s_test_version="a3s-test 1.0.0"
+required_a3s_test_version="a3s-test 1.0.1"
 required_agent_browser_version="agent-browser 0.26.0"
 required_protocol_revision=15
 require_executable bun >/dev/null

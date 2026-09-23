@@ -45,6 +45,8 @@ const shapeOptions = [
   { value: 'ellipse', label: '椭圆' },
   { value: 'diamond', label: '菱形' },
   { value: 'triangle', label: '三角形' },
+  { value: 'parallelogram', label: '平行四边形' },
+  { value: 'hexagon', label: '六边形' },
 ] as const satisfies readonly {
   value: WorkDocumentShapeType;
   label: string;

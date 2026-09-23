@@ -28,6 +28,18 @@ import {
   appendWorkPdfVectorTextLayer,
   clearWorkPdfTextRunsOnCanvas,
 } from './work-pdf-vector-text';
+import {
+  appendWorkPdfExternalLinkAnnotations,
+  collectWorkPdfExternalLinkBoxes,
+} from './work-pdf-link-annotations';
+import {
+  appendWorkPdfFigureStructEntries,
+  collectWorkPdfFigureBoxes,
+} from './work-pdf-figure-structure';
+import {
+  appendWorkPdfTableStructEntries,
+  collectWorkPdfTableStructs,
+} from './work-pdf-table-structure';
 
 type PdfPageSize = WorkSpreadsheetPaperSize;
 
@@ -196,6 +208,20 @@ export async function exportWorkArtifactPdf(
                 page,
                 page,
               );
+              appendWorkPdfExternalLinkAnnotations(
+                pdf,
+                collectWorkPdfExternalLinkBoxes(capture.viewport, pageBounds),
+                page,
+                page,
+              );
+              appendWorkPdfFigureStructEntries(
+                pdf,
+                collectWorkPdfFigureBoxes(capture.viewport, pageBounds),
+              );
+              appendWorkPdfTableStructEntries(
+                pdf,
+                collectWorkPdfTableStructs(capture.viewport, pageBounds),
+              );
               exportedPageNumber += 1;
               outline.push(
                 ...collectWorkPdfOutlineEntriesFromRoot(
@@ -258,6 +284,20 @@ export async function exportWorkArtifactPdf(
               borderBoxes,
               page,
               page,
+            );
+            appendWorkPdfExternalLinkAnnotations(
+              pdf,
+              collectWorkPdfExternalLinkBoxes(capture.viewport, pageBounds),
+              page,
+              page,
+            );
+            appendWorkPdfFigureStructEntries(
+              pdf,
+              collectWorkPdfFigureBoxes(capture.viewport, pageBounds),
+            );
+            appendWorkPdfTableStructEntries(
+              pdf,
+              collectWorkPdfTableStructs(capture.viewport, pageBounds),
             );
             exportedPageNumber += 1;
             outline.push(
@@ -352,6 +392,20 @@ export async function exportWorkArtifactPdf(
           borderBoxes,
           pageSizeCss,
           pagePoints,
+        );
+        appendWorkPdfExternalLinkAnnotations(
+          pdf,
+          collectWorkPdfExternalLinkBoxes(page, pageCss),
+          pageCss,
+          pagePoints,
+        );
+        appendWorkPdfFigureStructEntries(
+          pdf,
+          collectWorkPdfFigureBoxes(page, pageCss),
+        );
+        appendWorkPdfTableStructEntries(
+          pdf,
+          collectWorkPdfTableStructs(page, pageCss),
         );
         exportedPageNumber += 1;
         outline.push(

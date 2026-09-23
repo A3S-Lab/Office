@@ -14,5 +14,7 @@ export function downloadBlob(blob: Blob, name: string) {
   anchor.href = url;
   anchor.download = name;
   anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  // Headless browsers can cancel the download if the object URL is revoked
+  // before Chrome finishes reading it. Keep the URL alive through that read.
+  window.setTimeout(() => URL.revokeObjectURL(url), 15_000);
 }

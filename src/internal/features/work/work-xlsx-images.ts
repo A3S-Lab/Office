@@ -22,6 +22,11 @@ import {
   xlsxChartGraphicFrameXml,
   xlsxChartPartXml,
 } from './work-xlsx-charts';
+import {
+  readXlsxImageTransform,
+  xlsxImageTransformAttributes,
+  type WorkSpreadsheetImageTransform,
+} from './work-xlsx-image-transform';
 import type {
   WorkSpreadsheetChart,
   WorkSpreadsheetContent,
@@ -65,6 +70,9 @@ export interface XlsxWorksheetImage extends XlsxDrawingAnchor {
   altText?: string;
   contentType: string;
   dataUrl: string;
+  transform?: WorkSpreadsheetImageTransform;
+  /** True when DrawingML transform was present but not in the editable subset. */
+  unsupportedTransform?: boolean;
 }
 
 export async function readXlsxWorksheetImages(
@@ -128,6 +136,9 @@ export async function readXlsxWorksheetImages(
     const sourceId =
       attribute(properties ?? picture, 'id') ?? String(anchorIndex + 1);
     const drawingNumber = partNumber(drawingRelationship.target);
+    const transformRead = readXlsxImageTransform(
+      firstDescendant(directChild(picture, 'spPr'), 'xfrm'),
+    );
     images.push({
       id: `xlsx-image-${drawingNumber}-${sourceId}`,
       name:
@@ -136,6 +147,10 @@ export async function readXlsxWorksheetImages(
       altText: attribute(properties ?? picture, 'descr')?.trim() || undefined,
       contentType,
       dataUrl: bytesToDataUrl(bytes, contentType),
+      ...(transformRead.transform
+        ? { transform: transformRead.transform }
+        : {}),
+      ...(transformRead.supported ? {} : { unsupportedTransform: true }),
       ...readXlsxDrawingAnchor(anchor),
     });
   }
@@ -156,6 +171,7 @@ export function xlsxWorksheetImagesToSheet(
         altText: image.altText,
         contentType: image.contentType,
         src: image.dataUrl,
+        ...(image.transform ? { transform: image.transform } : {}),
         ...bounds,
       },
     ];
@@ -348,7 +364,7 @@ function drawingXml(
         }/>`,
         '<xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>',
         `<xdr:blipFill><a:blip r:embed="${relationshipId}"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>`,
-        '<xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>',
+        `<xdr:spPr><a:xfrm${xlsxImageTransformAttributes(image.transform)}/><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>`,
         '</xdr:pic><xdr:clientData/></xdr:twoCellAnchor>',
       ].join('');
     }),

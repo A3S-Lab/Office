@@ -131,19 +131,25 @@ export function PdfViewer({
       }
     : undefined;
   const controller = usePdfViewerController(registry, collaborationHistory);
-  const replacePageSource = useCallback((source: Blob) => {
-    setRegistry(null);
-    setSourceUrl(null);
-    setSourceBlob(
-      source.type === 'application/pdf'
-        ? source
-        : new Blob([source], { type: 'application/pdf' }),
-    );
-    setLoadError(null);
-    setSaveState('idle');
-    setMobilePageNavigationOpen(false);
-    setPageOrganizerOpen(false);
-  }, []);
+  const replacePageSource = useCallback(
+    (source: Blob) => {
+      const next =
+        source.type === 'application/pdf'
+          ? source
+          : new Blob([source], { type: 'application/pdf' });
+      setRegistry(null);
+      setSourceUrl(null);
+      setSourceBlob(next);
+      setLoadError(null);
+      setSaveState('idle');
+      setMobilePageNavigationOpen(false);
+      setPageOrganizerOpen(false);
+      // Keep the host artifact blob in sync so Download/export reopens the
+      // organized PDF rather than the pre-mutation source bytes.
+      if (onSave) void onSave(next);
+    },
+    [onSave],
+  );
   const pageOrganization = usePdfPageOrganization({
     enabled: pageOrganizationEnabled,
     fileName,

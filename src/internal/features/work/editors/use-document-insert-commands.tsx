@@ -750,6 +750,9 @@ function documentFieldPreview(draft: WorkDocumentFieldDraft): string {
   if (draft.kind === 'pageReference' && !draft.targetName) {
     return '请选择引用目标';
   }
+  if (draft.kind === 'mergeField' && !draft.targetName.trim()) {
+    return '请输入合并域名';
+  }
   return documentFieldDisplay(
     draft.kind,
     {

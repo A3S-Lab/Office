@@ -39,6 +39,7 @@ export interface OfficeKernelSpreadsheetCalculationInput {
   documentRevision: number;
   sheets: OfficeKernelSpreadsheetCalculationRequest['sheets'];
   targets?: OfficeKernelSpreadsheetCalculationRequest['targets'];
+  dateSystem?: OfficeKernelSpreadsheetCalculationRequest['dateSystem'];
 }
 
 export interface OfficeKernelSpreadsheetSessionCalculationInput {
@@ -47,6 +48,7 @@ export interface OfficeKernelSpreadsheetSessionCalculationInput {
   update: OfficeKernelSpreadsheetSessionUpdate;
   calculation: OfficeKernelSpreadsheetSessionCalculationScope;
   fallbackSheets: OfficeKernelSpreadsheetCalculationRequest['sheets'];
+  dateSystem?: OfficeKernelSpreadsheetCalculationRequest['dateSystem'];
 }
 
 export interface OfficeKernelClient {

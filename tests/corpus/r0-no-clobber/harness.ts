@@ -12,9 +12,13 @@ export type R0CommentIdentity = {
 
 export type R0IdentitySnapshot = {
   bookmarkNames: string[];
+  blockChangeAuthors: string[];
+  blockChangeKinds: string[];
   captionIds: string[];
   captionKinds: string[];
   changeAuthors: string[];
+  changeKinds: string[];
+  changeMoveRangeNames: string[];
   changeTexts: string[];
   commentAuthors: string[];
   commentTexts: string[];
@@ -34,6 +38,8 @@ export type R0IdentitySnapshot = {
   indexColumns: string[];
   indexMainEntries: string[];
   indexSubEntries: string[];
+  paragraphBreakAuthors: string[];
+  paragraphBreakKinds: string[];
   plainText: string;
   tableCellTexts: string[];
   tocEntryTitles: string[];
@@ -128,10 +134,20 @@ export function extractDocumentIdentities(
     bookmarkNames: uniqueSorted(
       matchAll(html, /data-bookmark-name="([^"]+)"/g),
     ),
+    blockChangeAuthors: uniqueSorted(
+      matchAll(html, /data-block-change-author="([^"]+)"/g),
+    ),
+    blockChangeKinds: uniqueSorted(
+      matchAll(html, /data-block-change-kind="([^"]+)"/g),
+    ),
     captionIds: uniqueSorted(matchAll(html, /data-caption-id="([^"]+)"/g)),
     captionKinds: uniqueSorted(matchAll(html, /data-caption-kind="([^"]+)"/g)),
     changeAuthors: uniqueSorted(
       matchAll(html, /data-change-author="([^"]+)"/g),
+    ),
+    changeKinds: uniqueSorted(matchAll(html, /data-change-kind="([^"]+)"/g)),
+    changeMoveRangeNames: uniqueSorted(
+      matchAll(html, /data-change-move-range-name="([^"]+)"/g),
     ),
     changeTexts: uniqueSorted(
       matchAll(
@@ -193,6 +209,12 @@ export function extractDocumentIdentities(
     ),
     indexSubEntries: uniqueSorted(
       matchAll(html, /data-index-sub-entry="([^"]+)"/g).map(decodeHtmlAttr),
+    ),
+    paragraphBreakAuthors: uniqueSorted(
+      matchAll(html, /data-paragraph-break-author="([^"]+)"/g),
+    ),
+    paragraphBreakKinds: uniqueSorted(
+      matchAll(html, /data-paragraph-break-kind="([^"]+)"/g),
     ),
     plainText: normalizePlainText(html),
     tableCellTexts: uniqueSorted(

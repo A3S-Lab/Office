@@ -12,6 +12,7 @@ import {
   FilePlus2,
   FileStack,
   FileText,
+  Filter,
   GitCompareArrows,
   Globe2,
   Hash,
@@ -169,6 +170,7 @@ interface DocumentToolbarProps {
   onInsertTextBox?: () => void;
   onInsertConnector?: () => void;
   onInsertContentControl?: () => void;
+  onOpenMailMergeRecipientFilter?: () => void;
   onPageChromeEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onClosePageChrome: () => void;
   onTogglePageChromePageNumber: () => void;
@@ -253,6 +255,7 @@ export function DocumentToolbar({
   onInsertTextBox,
   onInsertConnector,
   onInsertContentControl,
+  onOpenMailMergeRecipientFilter,
   onPageChromeEditingPartChange,
   onClosePageChrome,
   onTogglePageChromePageNumber,
@@ -853,6 +856,16 @@ export function DocumentToolbar({
                 >
                   <SlidersHorizontal size={19} />
                 </ToolbarButton>
+                {onOpenMailMergeRecipientFilter ? (
+                  <ToolbarButton
+                    label="筛选收件人"
+                    title="按条件筛选邮件合并收件人"
+                    displayLabel
+                    onClick={onOpenMailMergeRecipientFilter}
+                  >
+                    <Filter size={19} />
+                  </ToolbarButton>
+                ) : null}
               </RibbonGroup>
             </>
           ),
@@ -1316,8 +1329,18 @@ const documentFieldInsertActions = [
   { value: 'sectionPages', label: '本节页数' },
   { value: 'date', label: '当前日期' },
   { value: 'time', label: '当前时间' },
+  { value: 'createDate', label: '创建日期' },
+  { value: 'saveDate', label: '保存日期' },
+  { value: 'printDate', label: '打印日期' },
   { value: 'wordCount', label: '字数' },
   { value: 'characterCount', label: '字符数' },
+  { value: 'fileName', label: '文件名' },
+  { value: 'author', label: '作者' },
+  { value: 'title', label: '标题' },
+  { value: 'subject', label: '主题' },
+  { value: 'keywords', label: '关键字' },
+  { value: 'lastSavedBy', label: '最后保存者' },
+  { value: 'comments', label: '备注' },
 ] as const satisfies readonly {
   value: WorkDocumentFieldKind;
   label: string;

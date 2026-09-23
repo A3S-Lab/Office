@@ -25,17 +25,64 @@ interface WorkPdfContentLink {
   text: string;
 }
 
+/** Filled when the deferred Link annotation object is materialized on putPage. */
+export interface WorkPdfAnnotObjectRef {
+  objectId: number | null;
+}
+
+interface WorkPdfLinkStructEntry {
+  alt: string;
+  annotRef?: WorkPdfAnnotObjectRef;
+  href: string;
+  pageNumber: number;
+}
+
+interface WorkPdfFigureStructEntry {
+  alt: string;
+  mcid: number | null;
+  pageNumber: number;
+}
+
+interface WorkPdfTableCellStructEntry {
+  alt: string;
+  header: boolean;
+}
+
+interface WorkPdfTableRowStructEntry {
+  cells: WorkPdfTableCellStructEntry[];
+}
+
+interface WorkPdfTableStructEntry {
+  pageNumber: number;
+  rows: WorkPdfTableRowStructEntry[];
+}
+
 interface WorkPdfPageInfo {
   objId: number;
+  pageContext?: {
+    annotations?: Array<{
+      object?: { objId: number };
+      type: string;
+      [key: string]: unknown;
+    }>;
+  };
   pageNumber: number;
+}
+
+interface WorkPdfAdditionalObject {
+  content: string;
+  objId: number;
 }
 
 interface WorkPdfJsInternal {
   events?: {
     subscribe?: (name: string, handler: (...args: unknown[]) => void) => void;
   };
+  getCoordinateString?: (value: number) => string;
   getCurrentPageInfo?: () => WorkPdfPageInfo | undefined;
   getPageInfo?: (pageNumber: number) => WorkPdfPageInfo | undefined;
+  getVerticalCoordinateString?: (value: number) => string;
+  newAdditionalObject?: () => WorkPdfAdditionalObject;
   newObjectDeferred?: () => number;
   newObjectDeferredBegin?: (objectId: number, doOutput?: boolean) => number;
   out?: (content: string) => void;
@@ -43,6 +90,8 @@ interface WorkPdfJsInternal {
   workPdfCatalogLang?: string | null;
   workPdfCatalogLangSubscribed?: boolean;
   workPdfContentLinks?: WorkPdfContentLink[];
+  workPdfFigureStructs?: WorkPdfFigureStructEntry[];
+  workPdfLinkStructs?: WorkPdfLinkStructEntry[];
   workPdfMarkInfoSubscribed?: boolean;
   workPdfMcidCounters?: Record<number, number>;
   workPdfPageStructParents?: Record<number, number>;
@@ -50,6 +99,7 @@ interface WorkPdfJsInternal {
   workPdfStructTreePlan?: WorkPdfStructTreePlan;
   workPdfStructTreeRootObjectId?: number;
   workPdfStructTreeSubscribed?: boolean;
+  workPdfTableStructs?: WorkPdfTableStructEntry[];
   workPdfViewerPreferencesSubscribed?: boolean;
 }
 
@@ -57,6 +107,9 @@ const MAX_OUTLINE_ENTRIES = 512;
 const MAX_OUTLINE_TITLE_LENGTH = 200;
 const MAX_ACTUAL_TEXT_LENGTH = 2048;
 const MAX_CONTENT_LINKS = 2048;
+const MAX_LINK_STRUCTS = 2048;
+const MAX_FIGURE_STRUCTS = 2048;
+const MAX_TABLE_STRUCTS = 256;
 const OUTLINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p[data-office-outline-level]';
 
 /**
@@ -65,7 +118,9 @@ const OUTLINE_SELECTOR = 'h1, h2, h3, h4, h5, h6, p[data-office-outline-level]';
  * title (Info dict + Document StructElem `/Alt`) + heading outline + MarkInfo
  * (Marked + Suspects false) + catalog Tabs /S + StructTreeRoot (Document /
  * H1–H6 / P with /Pg) with ParentTree / MCID links for vector-run Span content,
- * without claiming full PDF/UA certification.
+ * and `/Link` / `/Figure` / `/Table` StructElems for registered external URI
+ * hotspots (Link kids may carry `/OBJR` to deferred URI annotations), alt-text
+ * images, and simple HTML tables, without claiming full PDF/UA certification.
  */
 export function applyWorkPdfDocumentStructure(
   pdf: JsPdf,
@@ -372,6 +427,229 @@ export function endWorkPdfArtifact(pdf: JsPdf): void {
   } catch {
     // Ignore when the page stream is unavailable.
   }
+}
+
+/**
+ * Queues a deferred URI `/Link` annotation as an indirect page Annot so a
+ * StructElem `/OBJR` can reference it. Object ids are allocated lazily during
+ * jsPDF `putPage` (via a getter) to avoid colliding with the page object id.
+ * Fail-soft when annotation hooks are unavailable.
+ */
+export function queueWorkPdfUriLinkAnnotation(
+  pdf: JsPdf,
+  entry: {
+    annotRef: WorkPdfAnnotObjectRef;
+    height: number;
+    href: string;
+    width: number;
+    x: number;
+    y: number;
+  },
+): void {
+  const href = entry.href.trim().slice(0, MAX_ACTUAL_TEXT_LENGTH);
+  if (!href) return;
+  if (!(entry.width > 0) || !(entry.height > 0)) return;
+  const internal = workPdfJsInternal(pdf);
+  if (
+    !internal?.newAdditionalObject ||
+    !internal.getCoordinateString ||
+    !internal.getVerticalCoordinateString
+  ) {
+    return;
+  }
+  let pageInfo: WorkPdfPageInfo | undefined;
+  try {
+    pageInfo = internal.getCurrentPageInfo?.();
+  } catch {
+    return;
+  }
+  if (!pageInfo?.pageContext) return;
+  if (!pageInfo.pageContext.annotations) {
+    pageInfo.pageContext.annotations = [];
+  }
+  const getCoordinateString = internal.getCoordinateString;
+  const getVerticalCoordinateString = internal.getVerticalCoordinateString;
+  const newAdditionalObject = internal.newAdditionalObject;
+  const x = entry.x;
+  const y = entry.y;
+  const width = entry.width;
+  const height = entry.height;
+  const annotRef = entry.annotRef;
+  pageInfo.pageContext.annotations.push({
+    type: 'reference',
+    object: {
+      get objId() {
+        const self = this as {
+          _workPdfAnnot?: WorkPdfAdditionalObject;
+          objId: number;
+        };
+        if (self._workPdfAnnot) return self._workPdfAnnot.objId;
+        let livePage: WorkPdfPageInfo | undefined;
+        try {
+          livePage = internal.getCurrentPageInfo?.();
+        } catch {
+          livePage = undefined;
+        }
+        const pageObjId = livePage?.objId;
+        if (!Number.isSafeInteger(pageObjId) || (pageObjId ?? 0) < 1) {
+          // Allocate a dummy id so jsPDF still writes a token; content stays empty.
+          const fallback = newAdditionalObject();
+          self._workPdfAnnot = fallback;
+          return fallback.objId;
+        }
+        const annot = newAdditionalObject();
+        const rect = `/Rect [${getCoordinateString(x)} ${getVerticalCoordinateString(y)} ${getCoordinateString(x + width)} ${getVerticalCoordinateString(y + height)}] `;
+        annot.content = `<< /Type /Annot /Subtype /Link ${rect}/Border [0 0 0] /A << /S /URI /URI (${escapePdfLiteralString(href)}) >> /P ${pageObjId} 0 R >>`;
+        self._workPdfAnnot = annot;
+        annotRef.objectId = annot.objId;
+        return annot.objId;
+      },
+    },
+  });
+}
+
+/**
+ * Registers a `/Link` StructElem for an external URI hotspot on the current
+ * (or explicit) page. When `annotRef` is supplied and later filled by
+ * {@link queueWorkPdfUriLinkAnnotation}, the StructElem `/K` carries an
+ * `/OBJR` to that annotation. Fail-soft when structure hooks are unavailable.
+ * Not a PDF/UA certification claim.
+ */
+export function registerWorkPdfLinkStructEntry(
+  pdf: JsPdf,
+  entry: {
+    alt?: string;
+    annotRef?: WorkPdfAnnotObjectRef;
+    href: string;
+    pageNumber?: number;
+  },
+): void {
+  const href = entry.href.trim().slice(0, MAX_ACTUAL_TEXT_LENGTH);
+  if (!href) return;
+  const internal = workPdfJsInternal(pdf);
+  if (!internal) return;
+  ensureWorkPdfMarkInfo(pdf);
+  ensureWorkPdfStructTreeRoot(pdf, {});
+  if (!internal.workPdfLinkStructs) internal.workPdfLinkStructs = [];
+  if (internal.workPdfLinkStructs.length >= MAX_LINK_STRUCTS) return;
+  let pageNumber = entry.pageNumber;
+  if (pageNumber === undefined) {
+    try {
+      pageNumber = internal.getCurrentPageInfo?.()?.pageNumber;
+    } catch {
+      pageNumber = undefined;
+    }
+  }
+  if (!Number.isSafeInteger(pageNumber) || (pageNumber ?? 0) < 1) return;
+  const altSource = (entry.alt?.trim() || href).slice(
+    0,
+    MAX_ACTUAL_TEXT_LENGTH,
+  );
+  if (!altSource) return;
+  internal.workPdfLinkStructs.push({
+    alt: altSource,
+    annotRef: entry.annotRef,
+    href,
+    pageNumber: pageNumber!,
+  });
+}
+
+/**
+ * Registers a `/Figure` StructElem for an image with non-empty alt text on the
+ * current (or explicit) page and emits a page-local `/Figure` BDC+MCID marker
+ * so the StructElem `/K` can reference marked content. Fail-soft when structure
+ * hooks are unavailable. Not a PDF/UA certification claim; content-stream
+ * figure paint stays whatever the page raster already embeds.
+ */
+export function registerWorkPdfFigureStructEntry(
+  pdf: JsPdf,
+  entry: { alt: string; pageNumber?: number },
+): void {
+  const alt = entry.alt.trim().slice(0, MAX_ACTUAL_TEXT_LENGTH);
+  if (!alt) return;
+  const internal = workPdfJsInternal(pdf);
+  if (!internal) return;
+  ensureWorkPdfMarkInfo(pdf);
+  ensureWorkPdfStructTreeRoot(pdf, {});
+  if (!internal.workPdfFigureStructs) internal.workPdfFigureStructs = [];
+  if (internal.workPdfFigureStructs.length >= MAX_FIGURE_STRUCTS) return;
+  let pageNumber = entry.pageNumber;
+  if (pageNumber === undefined) {
+    try {
+      pageNumber = internal.getCurrentPageInfo?.()?.pageNumber;
+    } catch {
+      pageNumber = undefined;
+    }
+  }
+  if (!Number.isSafeInteger(pageNumber) || (pageNumber ?? 0) < 1) return;
+  const mcid = allocateWorkPdfMcid(internal);
+  const lang =
+    internal.workPdfStructTreePlan?.language ??
+    internal.workPdfCatalogLang ??
+    null;
+  const langOperand = lang ? ` /Lang (${escapePdfLiteralString(lang)})` : '';
+  if (mcid !== null && internal.out) {
+    try {
+      internal.out(
+        `/Figure << /Alt ${encodePdfActualTextOperand(alt)}${langOperand} /MCID ${mcid.mcid} >> BDC`,
+      );
+      internal.out('EMC');
+    } catch {
+      // Fail soft when the page stream is unavailable; keep StructElem without MCID.
+    }
+  }
+  internal.workPdfFigureStructs.push({
+    alt,
+    mcid: mcid?.mcid ?? null,
+    pageNumber: pageNumber!,
+  });
+}
+
+/**
+ * Registers a `/Table` → `/TR` → `/TH`|`/TD` StructElem tree for a simple HTML
+ * table on the current (or explicit) page. Fail-soft when structure hooks are
+ * unavailable. Not a PDF/UA certification claim.
+ */
+export function registerWorkPdfTableStructEntry(
+  pdf: JsPdf,
+  table: {
+    pageNumber?: number;
+    rows: readonly {
+      cells: readonly { alt: string; header: boolean }[];
+    }[];
+  },
+): void {
+  if (!table.rows.length) return;
+  const internal = workPdfJsInternal(pdf);
+  if (!internal) return;
+  ensureWorkPdfMarkInfo(pdf);
+  ensureWorkPdfStructTreeRoot(pdf, {});
+  if (!internal.workPdfTableStructs) internal.workPdfTableStructs = [];
+  if (internal.workPdfTableStructs.length >= MAX_TABLE_STRUCTS) return;
+  let pageNumber = table.pageNumber;
+  if (pageNumber === undefined) {
+    try {
+      pageNumber = internal.getCurrentPageInfo?.()?.pageNumber;
+    } catch {
+      pageNumber = undefined;
+    }
+  }
+  if (!Number.isSafeInteger(pageNumber) || (pageNumber ?? 0) < 1) return;
+  const rows: WorkPdfTableRowStructEntry[] = [];
+  for (const row of table.rows) {
+    if (!row.cells.length) continue;
+    rows.push({
+      cells: row.cells.map((cell) => ({
+        alt: cell.alt.trim().slice(0, MAX_ACTUAL_TEXT_LENGTH),
+        header: cell.header,
+      })),
+    });
+  }
+  if (!rows.length) return;
+  internal.workPdfTableStructs.push({
+    pageNumber: pageNumber!,
+    rows,
+  });
 }
 
 /**
@@ -753,6 +1031,219 @@ function writeWorkPdfStructTreeObjects(
     out('endobj');
   }
 
+  const linkStructs = internal.workPdfLinkStructs ?? [];
+  const linkKids: Array<{
+    alt: string;
+    annotObjectId: number | null;
+    objectId: number;
+    pageObjId: number;
+    parentObjectId: number;
+  }> = [];
+  for (const link of linkStructs) {
+    if (linkKids.length >= MAX_LINK_STRUCTS) break;
+    let pageInfo: WorkPdfPageInfo | undefined;
+    try {
+      pageInfo = internal.getPageInfo?.(link.pageNumber);
+    } catch {
+      continue;
+    }
+    if (!pageInfo || !Number.isSafeInteger(pageInfo.objId)) continue;
+    const objectId = deferred();
+    const annotObjectId = link.annotRef?.objectId ?? null;
+    linkKids.push({
+      alt: link.alt,
+      annotObjectId:
+        Number.isSafeInteger(annotObjectId) && (annotObjectId ?? 0) > 0
+          ? annotObjectId
+          : null,
+      objectId,
+      pageObjId: pageInfo.objId,
+      parentObjectId: documentObjectId,
+    });
+  }
+
+  for (const kid of linkKids) {
+    begin(kid.objectId, true);
+    out('<<');
+    out('/Type /StructElem');
+    out('/S /Link');
+    out(`/P ${kid.parentObjectId} 0 R`);
+    out(`/Pg ${kid.pageObjId} 0 R`);
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
+    out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
+    if (kid.annotObjectId !== null) {
+      out(`/K << /Type /OBJR /Obj ${kid.annotObjectId} 0 R >>`);
+    } else {
+      out('/K []');
+    }
+    out('>>');
+    out('endobj');
+  }
+
+  const figureStructs = internal.workPdfFigureStructs ?? [];
+  const figureKids: Array<{
+    alt: string;
+    mcid: number | null;
+    objectId: number;
+    pageNumber: number;
+    pageObjId: number;
+    parentObjectId: number;
+  }> = [];
+  for (const figure of figureStructs) {
+    if (figureKids.length >= MAX_FIGURE_STRUCTS) break;
+    let pageInfo: WorkPdfPageInfo | undefined;
+    try {
+      pageInfo = internal.getPageInfo?.(figure.pageNumber);
+    } catch {
+      continue;
+    }
+    if (!pageInfo || !Number.isSafeInteger(pageInfo.objId)) continue;
+    const objectId = deferred();
+    figureKids.push({
+      alt: figure.alt,
+      mcid:
+        Number.isSafeInteger(figure.mcid) && (figure.mcid ?? -1) >= 0
+          ? figure.mcid
+          : null,
+      objectId,
+      pageNumber: figure.pageNumber,
+      pageObjId: pageInfo.objId,
+      parentObjectId: documentObjectId,
+    });
+  }
+
+  for (const kid of figureKids) {
+    begin(kid.objectId, true);
+    out('<<');
+    out('/Type /StructElem');
+    out('/S /Figure');
+    out(`/P ${kid.parentObjectId} 0 R`);
+    out(`/Pg ${kid.pageObjId} 0 R`);
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
+    out(`/Alt ${encodePdfActualTextOperand(kid.alt)}`);
+    if (kid.mcid !== null) {
+      out(`/K ${kid.mcid}`);
+    } else {
+      out('/K []');
+    }
+    out('>>');
+    out('endobj');
+  }
+
+  const tableStructs = internal.workPdfTableStructs ?? [];
+  const tableRoots: Array<{
+    objectId: number;
+    pageObjId: number;
+    parentObjectId: number;
+    rowObjectIds: number[];
+  }> = [];
+  const tableRows: Array<{
+    cellObjectIds: number[];
+    objectId: number;
+    pageObjId: number;
+    parentObjectId: number;
+  }> = [];
+  const tableCells: Array<{
+    alt: string;
+    header: boolean;
+    objectId: number;
+    pageObjId: number;
+    parentObjectId: number;
+  }> = [];
+
+  for (const table of tableStructs) {
+    if (tableRoots.length >= MAX_TABLE_STRUCTS) break;
+    let pageInfo: WorkPdfPageInfo | undefined;
+    try {
+      pageInfo = internal.getPageInfo?.(table.pageNumber);
+    } catch {
+      continue;
+    }
+    if (!pageInfo || !Number.isSafeInteger(pageInfo.objId)) continue;
+    const tableObjectId = deferred();
+    const rowObjectIds: number[] = [];
+    for (const row of table.rows) {
+      const rowObjectId = deferred();
+      const cellObjectIds: number[] = [];
+      for (const cell of row.cells) {
+        const cellObjectId = deferred();
+        cellObjectIds.push(cellObjectId);
+        tableCells.push({
+          alt: cell.alt,
+          header: cell.header,
+          objectId: cellObjectId,
+          pageObjId: pageInfo.objId,
+          parentObjectId: rowObjectId,
+        });
+      }
+      rowObjectIds.push(rowObjectId);
+      tableRows.push({
+        cellObjectIds,
+        objectId: rowObjectId,
+        pageObjId: pageInfo.objId,
+        parentObjectId: tableObjectId,
+      });
+    }
+    tableRoots.push({
+      objectId: tableObjectId,
+      pageObjId: pageInfo.objId,
+      parentObjectId: documentObjectId,
+      rowObjectIds,
+    });
+  }
+
+  for (const cell of tableCells) {
+    begin(cell.objectId, true);
+    out('<<');
+    out('/Type /StructElem');
+    out(`/S /${cell.header ? 'TH' : 'TD'}`);
+    out(`/P ${cell.parentObjectId} 0 R`);
+    out(`/Pg ${cell.pageObjId} 0 R`);
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
+    if (cell.alt) {
+      out(`/Alt ${encodePdfActualTextOperand(cell.alt)}`);
+    }
+    out('/K []');
+    out('>>');
+    out('endobj');
+  }
+
+  for (const row of tableRows) {
+    begin(row.objectId, true);
+    out('<<');
+    out('/Type /StructElem');
+    out('/S /TR');
+    out(`/P ${row.parentObjectId} 0 R`);
+    out(`/Pg ${row.pageObjId} 0 R`);
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
+    out(`/K [${row.cellObjectIds.map((id) => `${id} 0 R`).join(' ')}]`);
+    out('>>');
+    out('endobj');
+  }
+
+  for (const table of tableRoots) {
+    begin(table.objectId, true);
+    out('<<');
+    out('/Type /StructElem');
+    out('/S /Table');
+    out(`/P ${table.parentObjectId} 0 R`);
+    out(`/Pg ${table.pageObjId} 0 R`);
+    if (plan.language) {
+      out(`/Lang (${escapePdfLiteralString(plan.language)})`);
+    }
+    out(`/K [${table.rowObjectIds.map((id) => `${id} 0 R`).join(' ')}]`);
+    out('>>');
+    out('endobj');
+  }
+
   begin(documentObjectId, true);
   out('<<');
   out('/Type /StructElem');
@@ -769,6 +1260,9 @@ function writeWorkPdfStructTreeObjects(
     ...pageParagraphs
       .filter((paragraph) => paragraph.parentObjectId === documentObjectId)
       .map((paragraph) => `${paragraph.objectId} 0 R`),
+    ...linkKids.map((kid) => `${kid.objectId} 0 R`),
+    ...figureKids.map((kid) => `${kid.objectId} 0 R`),
+    ...tableRoots.map((table) => `${table.objectId} 0 R`),
   ];
   if (documentKids.length === 0) {
     out('/K []');
@@ -781,7 +1275,22 @@ function writeWorkPdfStructTreeObjects(
   if (parentTreeObjectId !== undefined) {
     begin(parentTreeObjectId, true);
     out('<<');
-    out(`/Nums [${writeWorkPdfParentTreeNums(internal, spanKids)}]`);
+    out(
+      `/Nums [${writeWorkPdfParentTreeNums(internal, [
+        ...spanKids,
+        ...figureKids.flatMap((kid) =>
+          kid.mcid !== null
+            ? [
+                {
+                  mcid: kid.mcid,
+                  objectId: kid.objectId,
+                  pageNumber: kid.pageNumber,
+                },
+              ]
+            : [],
+        ),
+      ])}]`,
+    );
     out('>>');
     out('endobj');
   }
@@ -820,7 +1329,7 @@ function findWorkPdfOutlineParentForPage(
 
 /**
  * Builds ParentTree `/Nums` pairs: StructParents key → MCID-indexed array of
- * Span StructElem refs (null holes for unused MCID slots).
+ * Span/Figure StructElem refs (null holes for unused MCID slots).
  */
 function writeWorkPdfParentTreeNums(
   internal: WorkPdfJsInternal,

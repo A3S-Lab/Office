@@ -107,6 +107,16 @@ import {
   docxContentControlRuns,
   patchDocxContentControls,
 } from './work-docx-content-control-export';
+import {
+  DocxBlockContentControlPatchCollector,
+  docxBlockContentControlParagraphs,
+  patchDocxBlockContentControls,
+} from './work-docx-block-content-control-export';
+import {
+  DocxRepeatingSectionPatchCollector,
+  docxRepeatingSectionParagraphs,
+  patchDocxRepeatingSections,
+} from './work-docx-repeating-section-export';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import { docxEmphasisMarkRunOptions } from './work-docx-emphasis';
 import {
@@ -309,6 +319,8 @@ interface DocxNoteContext extends DocxListExportContext {
   textBoxIdentityPatches: DocxTextBoxIdentityPatchCollector;
   connectorPatches: DocxConnectorPatchCollector;
   contentControlPatches: DocxContentControlPatchCollector;
+  blockContentControlPatches: DocxBlockContentControlPatchCollector;
+  repeatingSectionPatches: DocxRepeatingSectionPatchCollector;
   paragraphBorderPatches: DocxParagraphBorderPatchCollector;
   paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
@@ -400,6 +412,8 @@ export async function createDocxBlob(
     textBoxIdentityPatches: new DocxTextBoxIdentityPatchCollector(),
     connectorPatches: new DocxConnectorPatchCollector(),
     contentControlPatches: new DocxContentControlPatchCollector(),
+    blockContentControlPatches: new DocxBlockContentControlPatchCollector(),
+    repeatingSectionPatches: new DocxRepeatingSectionPatchCollector(),
     paragraphBorderPatches: new DocxParagraphBorderPatchCollector(
       JSON.stringify(normalizedContent),
     ),
@@ -745,11 +759,19 @@ export async function createDocxBlob(
     patched,
     noteContext.contentControlPatches.patches,
   );
+  const blockContentControlsPatched = await patchDocxBlockContentControls(
+    contentControlsPatched,
+    noteContext.blockContentControlPatches.patches,
+  );
+  const repeatingSectionsPatched = await patchDocxRepeatingSections(
+    blockContentControlsPatched,
+    noteContext.repeatingSectionPatches.patches,
+  );
   const preserved = sourcePackage
-    ? await preserveDocxSourcePackage(contentControlsPatched, sourcePackage, {
+    ? await preserveDocxSourcePackage(repeatingSectionsPatched, sourcePackage, {
         numberingIdentities: noteContext.numberingSourceIdentities,
       })
-    : contentControlsPatched;
+    : repeatingSectionsPatched;
   return new Blob([preserved], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
@@ -1029,6 +1051,42 @@ async function blockToFileChildren(
         children: [await textBoxToDocx(element, docx, noteContext)],
       }),
     ];
+  }
+  if (element.hasAttribute('data-document-block-content-control')) {
+    return serializeDocxBlockContentControlElement(
+      element,
+      docx,
+      noteContext,
+    );
+  }
+  if (element.hasAttribute('data-document-repeating-section')) {
+    const itemElements = Array.from(
+      element.querySelectorAll<HTMLElement>(
+        ':scope > [data-document-repeating-section-item]',
+      ),
+    );
+    const itemParagraphs = await Promise.all(
+      itemElements.map(async (item) => {
+        const paragraph =
+          item.querySelector(':scope > p') ??
+          item.querySelector('p') ??
+          item;
+        const runs = await paragraphRuns(
+          paragraph as HTMLElement,
+          docx,
+          noteContext,
+        );
+        return new docx.Paragraph({
+          children: runs.length ? runs : [new docx.TextRun('')],
+        });
+      }),
+    );
+    return docxRepeatingSectionParagraphs(
+      element,
+      docx,
+      noteContext.repeatingSectionPatches,
+      itemParagraphs,
+    );
   }
   if (element.hasAttribute('data-document-connector')) {
     return [
@@ -1336,6 +1394,44 @@ async function pageChromeBlocks(
   } finally {
     noteContext.tableFloatPart = previousPart;
   }
+}
+
+async function serializeDocxBlockContentControlElement(
+  element: HTMLElement,
+  docx: typeof import('docx'),
+  noteContext: DocxNoteContext,
+): Promise<import('docx').Paragraph[]> {
+  const children: import('docx').Paragraph[] = [];
+  for (const child of Array.from(element.children).slice(0, 64)) {
+    if (!(child instanceof HTMLElement)) continue;
+    if (child.localName === 'p') {
+      const runs = await paragraphRuns(child, docx, noteContext);
+      children.push(
+        new docx.Paragraph({
+          children: runs.length ? runs : [new docx.TextRun('')],
+        }),
+      );
+      continue;
+    }
+    if (child.hasAttribute('data-document-block-content-control')) {
+      children.push(
+        ...(await serializeDocxBlockContentControlElement(
+          child,
+          docx,
+          noteContext,
+        )),
+      );
+    }
+  }
+  if (!children.length) {
+    children.push(new docx.Paragraph({ children: [new docx.TextRun('')] }));
+  }
+  return docxBlockContentControlParagraphs(
+    element,
+    docx,
+    noteContext.blockContentControlPatches,
+    children,
+  );
 }
 
 async function paragraphRuns(
@@ -1691,12 +1787,14 @@ async function inlineRuns(
     const style: IRunOptions = {
       ...inherited,
       style: runStyle,
-      bold: inherited.bold || tag === 'strong' || tag === 'b',
-      italics: inherited.italics || tag === 'em' || tag === 'i',
+      // Keep unset distinct from explicit false. `undefined || false` would emit
+      // w:b/w:i val="false" on every run and break tracked-change re-import wraps.
+      bold: tag === 'strong' || tag === 'b' ? true : inherited.bold,
+      italics: tag === 'em' || tag === 'i' ? true : inherited.italics,
       underline,
       ...strike,
-      subScript: inherited.subScript || tag === 'sub',
-      superScript: inherited.superScript || tag === 'sup',
+      subScript: tag === 'sub' ? true : inherited.subScript,
+      superScript: tag === 'sup' ? true : inherited.superScript,
       color: themeColorMarker ?? resolvedColor,
       font: scriptFontMarker
         ? { ascii: scriptFontMarker }

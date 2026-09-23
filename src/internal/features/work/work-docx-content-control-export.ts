@@ -20,8 +20,13 @@ const STRICT_WORD_NAMESPACE =
 const WORD_NAMESPACES = new Set([WORD_NAMESPACE, STRICT_WORD_NAMESPACE]);
 const STORY_PATTERN =
   /^word\/(?:document|header\d+|footer\d+|footnotes|endnotes|comments)\.xml$/;
+const WORD_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordml';
 const WORD_2012_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2012/wordml';
+const CHECKBOX_CHECKED_STATE = '2611';
+const CHECKBOX_UNCHECKED_STATE = '2610';
+const CHECKBOX_STATE_FONT = 'Segoe UI Symbol';
 
 export interface DocxContentControlPatch {
   startMarker: string;
@@ -66,7 +71,7 @@ export function docxContentControlRuns(
   const properties = documentContentControlPropertiesFromElement(element);
   if (containsUnsupportedContentControlSemantics(element)) {
     throw new Error(
-      'Document content controls support only inline text and rich-text formatting.',
+      'Document content controls support only inline text, rich-text formatting, bounded checkboxes, drop-down lists, combo boxes, date pickers, and passive custom-XML data bindings.',
     );
   }
   const marker = collector.register(properties);
@@ -211,6 +216,9 @@ function wrapMarkerPair(
   if (properties.appearance !== 'boundingBox' || properties.color) {
     ensureIgnorableContentControlNamespace(root, WORD_2012_NAMESPACE, 'w15');
   }
+  if (properties.type === 'checkbox') {
+    ensureIgnorableContentControlNamespace(root, WORD_2010_NAMESPACE, 'w14');
+  }
 }
 
 function appendContentControlProperties(
@@ -242,8 +250,138 @@ function appendContentControlProperties(
     const text = wordElement(document, context, 'text');
     if (properties.multiLine) setWordAttribute(text, context, 'multiLine', '1');
     propertiesElement.append(text);
+  } else if (properties.type === 'checkbox') {
+    const checkbox = namespacedElement(
+      document,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'checkbox',
+    );
+    const checked = namespacedElement(
+      document,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'checked',
+    );
+    setNamespacedAttribute(
+      checked,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'val',
+      properties.checked ? '1' : '0',
+    );
+    const checkedState = namespacedElement(
+      document,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'checkedState',
+    );
+    setNamespacedAttribute(
+      checkedState,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'val',
+      CHECKBOX_CHECKED_STATE,
+    );
+    setNamespacedAttribute(
+      checkedState,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'font',
+      CHECKBOX_STATE_FONT,
+    );
+    const uncheckedState = namespacedElement(
+      document,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'uncheckedState',
+    );
+    setNamespacedAttribute(
+      uncheckedState,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'val',
+      CHECKBOX_UNCHECKED_STATE,
+    );
+    setNamespacedAttribute(
+      uncheckedState,
+      context,
+      WORD_2010_NAMESPACE,
+      'w14',
+      'font',
+      CHECKBOX_STATE_FONT,
+    );
+    checkbox.append(checked, checkedState, uncheckedState);
+    propertiesElement.append(checkbox);
+  } else if (properties.type === 'dropDownList') {
+    const dropDownList = wordElement(document, context, 'dropDownList');
+    for (const item of properties.options) {
+      const listItem = wordElement(document, context, 'listItem');
+      setWordAttribute(listItem, context, 'displayText', item.displayText);
+      setWordAttribute(listItem, context, 'value', item.value);
+      dropDownList.append(listItem);
+    }
+    propertiesElement.append(dropDownList);
+  } else if (properties.type === 'comboBox') {
+    const comboBox = wordElement(document, context, 'comboBox');
+    for (const item of properties.options) {
+      const listItem = wordElement(document, context, 'listItem');
+      setWordAttribute(listItem, context, 'displayText', item.displayText);
+      setWordAttribute(listItem, context, 'value', item.value);
+      comboBox.append(listItem);
+    }
+    propertiesElement.append(comboBox);
+  } else if (properties.type === 'date') {
+    const date = wordElement(document, context, 'date');
+    if (properties.fullDate) {
+      setWordAttribute(date, context, 'fullDate', properties.fullDate);
+    }
+    const dateFormat = wordElement(document, context, 'dateFormat');
+    setWordAttribute(dateFormat, context, 'val', properties.dateFormat);
+    date.append(dateFormat);
+    const lid = wordElement(document, context, 'lid');
+    setWordAttribute(lid, context, 'val', properties.dateLanguage);
+    date.append(lid);
+    const storeMappedDataAs = wordElement(
+      document,
+      context,
+      'storeMappedDataAs',
+    );
+    setWordAttribute(storeMappedDataAs, context, 'val', properties.dateMapping);
+    date.append(storeMappedDataAs);
+    const calendar = wordElement(document, context, 'calendar');
+    setWordAttribute(calendar, context, 'val', 'gregorian');
+    date.append(calendar);
+    propertiesElement.append(date);
   } else {
     propertiesElement.append(wordElement(document, context, 'richText'));
+  }
+  if (properties.bindingStoreItemId && properties.bindingXPath) {
+    const dataBinding = wordElement(document, context, 'dataBinding');
+    setWordAttribute(
+      dataBinding,
+      context,
+      'storeItemID',
+      properties.bindingStoreItemId,
+    );
+    setWordAttribute(dataBinding, context, 'xpath', properties.bindingXPath);
+    if (properties.bindingPrefixMappings) {
+      setWordAttribute(
+        dataBinding,
+        context,
+        'prefixMappings',
+        properties.bindingPrefixMappings,
+      );
+    }
+    propertiesElement.append(dataBinding);
   }
   if (properties.appearance !== 'boundingBox') {
     const appearance = namespacedElement(

@@ -90,6 +90,11 @@ import {
 } from '../work-document-selection-menu';
 import { documentParagraphTabStops } from '../work-document-tab-stops';
 import { documentModelUsesWindowing } from '../work-document-windowing';
+import {
+  createMailMergeFieldContextResolver,
+  normalizeMailMergeSource,
+  type WorkDocumentMailMergeSource,
+} from '../work-document-mail-merge';
 import { createWorkId } from '../work-templates';
 import type { WorkDocumentContent, WorkDocumentNode } from '../work-types';
 import {
@@ -115,6 +120,7 @@ import {
   DocumentLayoutPanel,
   type DocumentLayoutPanelTab,
 } from './document-layout-panel';
+import { DocumentMailMergeRecipientFilterDialog } from './document-mail-merge-recipient-filter-dialog';
 import { DocumentNavigationPanel } from './document-navigation-panel';
 import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
 import { DocumentPageStack } from './document-page-stack';
@@ -175,9 +181,19 @@ export interface DocumentEditorProps {
   layoutFonts?: readonly WorkDocumentLayoutFont[];
   fileActions?: readonly WorkOfficeFileAction[];
   getSelectionMenuItems?: WorkGetDocumentSelectionMenuItems;
-  defaultCommentsOpen?: boolean;
+  /**
+   * Host-owned mail-merge data source for MERGEFIELD preview. Typed object
+   * (not a raw backend name) so hosts can swap CSV/DB providers without
+   * changing the editor contract.
+   */
+  mailMergeSource?: WorkDocumentMailMergeSource | null;
+  /**
+   * Notifies the host when the editor updates mail-merge source state
+   * (recipient filter). Required to enable the recipient-filter ribbon
+   * control.
+   */
+  onMailMergeSourceChange?: (source: WorkDocumentMailMergeSource) => void;
   onChange: (content: WorkDocumentContent) => void;
-  onEditorReady?: (editor: Editor) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
   onReviewConflict?: (event: WorkDocumentReviewConflictEvent) => void;
 }
@@ -324,14 +340,14 @@ function DocumentEditorSurface({
   extensions = EMPTY_DOCUMENT_EXTENSIONS,
   preview: requestedPreview,
   defaultRibbonCollapsed = false,
-  defaultCommentsOpen = false,
   saveStatus = '已自动保存',
   kernelWasmUrl,
   layoutFonts = EMPTY_DOCUMENT_LAYOUT_FONTS,
   fileActions,
   getSelectionMenuItems,
+  mailMergeSource = null,
+  onMailMergeSourceChange,
   onChange,
-  onEditorReady,
   onAgentRequest,
   onReviewConflict,
 }: DocumentEditorSurfaceProps) {
@@ -368,6 +384,7 @@ function DocumentEditorSurface({
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const statisticsInvokerRef = useRef<HTMLElement | null>(null);
+  const mailMergeFilterInvokerRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef(effectiveContent);
   const editorMountStartedAtRef = useRef(documentEditorNow());
   const editorBeforeCreateAtRef = useRef<number | null>(null);
@@ -438,6 +455,9 @@ function DocumentEditorSurface({
   const [selectionVersion, setSelectionVersion] = useState(0);
   const [compositionRevision, setCompositionRevision] = useState(0);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
+  const [mailMergeFilterOpen, setMailMergeFilterOpen] = useState(false);
+  const [mailMergeFilterDraft, setMailMergeFilterDraft] =
+    useState<WorkDocumentMailMergeSource | null>(null);
   const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
   if (!collaboration) contentRef.current = content;
   onChangeRef.current = onChange;
@@ -490,7 +510,7 @@ function DocumentEditorSurface({
         Placeholder.configure({ placeholder: '在这里开始输入…' }),
         DocumentPagination,
       ],
-      extensions,
+      collaboration ? EMPTY_DOCUMENT_EXTENSIONS : extensions,
     );
     recordDocumentEditorMeasure(
       'a3s-office.document.editor-extensions',
@@ -746,7 +766,6 @@ function DocumentEditorSurface({
     },
     onCreate: ({ editor: current }) => {
       editorRef.current = current;
-      onEditorReady?.(current);
       publishedDocumentRef.current = current.state.doc;
       const mountedAt = documentEditorNow();
       const detachedMountAt = editorDetachedMountAtRef.current;
@@ -853,7 +872,6 @@ function DocumentEditorSurface({
   const documentComments = useDocumentComments({
     actor: collaboration?.actor,
     contentRef,
-    defaultOpen: defaultCommentsOpen,
     deleteOwnOnly: commentOnly,
     editor,
     enabled: canCommentDocument,
@@ -1265,19 +1283,27 @@ function DocumentEditorSurface({
     layoutFonts,
     loadedLayoutFontIds,
   });
+  const resolveFieldContext = useMemo(
+    () =>
+      createMailMergeFieldContextResolver(
+        pagination.resolveFieldContext,
+        mailMergeSource,
+      ),
+    [pagination.resolveFieldContext, mailMergeSource],
+  );
   const documentInsert = useDocumentInsertCommands({
     contentRef,
     editor,
-    resolveFieldContext: pagination.resolveFieldContext,
+    resolveFieldContext,
   });
   useEffect(() => {
-    if (!editor || !pagination.resolveFieldContext) return;
+    if (!editor || !resolveFieldContext) return;
     editor.commands.refreshDocumentFields(contentRef.current, {
-      resolveContext: pagination.resolveFieldContext,
+      resolveContext: resolveFieldContext,
       addToHistory: false,
       updateClock: false,
     });
-  }, [contentRef, editor, pagination.resolveFieldContext]);
+  }, [contentRef, editor, resolveFieldContext]);
 
   const pageCount = editor
     ? (pagination.pageCount ?? documentPageCount(editor))
@@ -1387,6 +1413,27 @@ function DocumentEditorSurface({
         ? activeElement
         : editor.view.dom;
     setStatisticsOpen(true);
+  };
+  const openMailMergeRecipientFilter = () => {
+    if (!mailMergeSource || !onMailMergeSourceChange) return;
+    const activeElement = document.activeElement;
+    mailMergeFilterInvokerRef.current =
+      activeElement instanceof HTMLElement && activeElement.isConnected
+        ? activeElement
+        : editor.view.dom;
+    setMailMergeFilterDraft(mailMergeSource);
+    setMailMergeFilterOpen(true);
+  };
+  const closeMailMergeRecipientFilter = () => {
+    setMailMergeFilterOpen(false);
+    setMailMergeFilterDraft(null);
+  };
+  const submitMailMergeRecipientFilter = () => {
+    if (mailMergeFilterDraft && onMailMergeSourceChange) {
+      onMailMergeSourceChange(mailMergeFilterDraft);
+    }
+    closeMailMergeRecipientFilter();
+    restoreDocumentBodyFocus();
   };
   const updateToolbarLayout = (next: typeof layout) => {
     updateLayout(next);
@@ -1567,6 +1614,11 @@ function DocumentEditorSurface({
           onInsertTextBox={documentInsert.insertTextBox}
           onInsertConnector={documentInsert.insertConnector}
           onInsertContentControl={documentInsert.openContentControl}
+          onOpenMailMergeRecipientFilter={
+            mailMergeSource && onMailMergeSourceChange
+              ? openMailMergeRecipientFilter
+              : undefined
+          }
           onPageChromeEditingPartChange={editPageChrome}
           onClosePageChrome={closePageChrome}
           onTogglePageChromePageNumber={toggleVisiblePageNumber}
@@ -2165,6 +2217,20 @@ function DocumentEditorSurface({
           onClose={() => setStatisticsOpen(false)}
         />
       )}
+      {!preview &&
+        mailMergeFilterOpen &&
+        mailMergeFilterDraft &&
+        onMailMergeSourceChange && (
+          <DocumentMailMergeRecipientFilterDialog
+            source={mailMergeFilterDraft}
+            restoreFocusTarget={() => mailMergeFilterInvokerRef.current}
+            onCancel={closeMailMergeRecipientFilter}
+            onChange={(next) =>
+              setMailMergeFilterDraft(normalizeMailMergeSource(next))
+            }
+            onSubmit={submitMailMergeRecipientFilter}
+          />
+        )}
     </section>
   );
 }

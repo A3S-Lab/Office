@@ -18,7 +18,7 @@ use super::{
 };
 use aggregate::{
     add_function_cells, aggregate, concatenate, count, count_a, logical_aggregate, logical_not,
-    subtotal, Aggregate,
+    subtotal, text_left, text_len, text_mid, text_right, Aggregate,
 };
 use array::{row_or_column, sequence, transpose};
 use average_if::average_if;
@@ -134,6 +134,10 @@ pub(super) fn evaluate_function(
         BuiltinFunction::Or => logical_aggregate(context, &values, false),
         BuiltinFunction::Not => logical_not(context, argument(&values, 0)?),
         BuiltinFunction::Concatenate => concatenate(context, &values),
+        BuiltinFunction::Left => text_left(context, &values),
+        BuiltinFunction::Right => text_right(context, &values),
+        BuiltinFunction::Len => text_len(context, &values),
+        BuiltinFunction::Mid => text_mid(context, &values),
         BuiltinFunction::Row => row_or_column(context, &values, current, true),
         BuiltinFunction::Column => row_or_column(context, &values, current, false),
         BuiltinFunction::Sequence => sequence(context, &values),

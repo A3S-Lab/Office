@@ -121,6 +121,127 @@ describe('document compare and combine', () => {
     editor.destroy();
   });
 
+  test('infers a paragraph-break split when one paragraph becomes two', () => {
+    const original = documentHtml('<p>AlphaBravo</p>');
+    const revised = documentHtml('<p>Alpha</p><p>Bravo</p>');
+    const editor = createEditor(original);
+    const revisedEditor = createEditor(revised);
+
+    const result = applyCompare(editor, revisedEditor.getJSON());
+
+    expect(result.status).toBe('applied');
+    const change = collectDocumentChanges(editor.state.doc).find(
+      (candidate) => candidate.kind === 'paragraph-break',
+    );
+    expect(change).toEqual(
+      expect.objectContaining({
+        kind: 'paragraph-break',
+        author: 'Morgan',
+        text: 'Bravo',
+      }),
+    );
+    expect(editor.getHTML()).toContain('data-paragraph-break-kind="split"');
+    expect(editor.getHTML()).toContain('>Alpha</p>');
+    expect(editor.getHTML()).toContain('>Bravo</p>');
+    expect(editor.commands.rejectDocumentChange(change?.id ?? '')).toBe(true);
+    expect(normalizedText(editor)).toBe('AlphaBravo');
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
+
+    editor.destroy();
+    revisedEditor.destroy();
+  });
+
+  test('infers a paragraph-break merge when two paragraphs become one', () => {
+    const original = documentHtml('<p>Alpha</p><p>Bravo</p>');
+    const revised = documentHtml('<p>AlphaBravo</p>');
+    const editor = createEditor(original);
+    const revisedEditor = createEditor(revised);
+
+    const result = applyCompare(editor, revisedEditor.getJSON());
+
+    expect(result.status).toBe('applied');
+    const change = collectDocumentChanges(editor.state.doc).find(
+      (candidate) => candidate.kind === 'paragraph-break',
+    );
+    expect(change).toEqual(
+      expect.objectContaining({
+        kind: 'paragraph-break',
+        author: 'Morgan',
+        text: 'Alpha',
+      }),
+    );
+    expect(editor.getHTML()).toContain('data-paragraph-break-kind="merge"');
+    expect(editor.commands.acceptDocumentChange(change?.id ?? '')).toBe(true);
+    expect(normalizedText(editor)).toBe('AlphaBravo');
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
+
+    editor.destroy();
+    revisedEditor.destroy();
+  });
+
+  test('compares soft-break paragraphs as reviewable inline revisions', () => {
+    const original = documentHtml('<p>Hello<br>world</p>');
+    const revised = documentHtml('<p>Hello<br>there</p>');
+    const editor = createEditor(original);
+    const revisedEditor = createEditor(revised);
+
+    const result = applyCompare(editor, revisedEditor.getJSON());
+
+    expect(result.status).toBe('applied');
+    expect(
+      collectDocumentChanges(editor.state.doc).map((change) => ({
+        kind: change.kind,
+        text: change.text,
+      })),
+    ).toEqual([
+      { kind: 'deletion', text: 'world' },
+      { kind: 'insertion', text: 'there' },
+    ]);
+    expect(editor.getHTML()).toMatch(/Hello<br[^>]*>/);
+    expect(editor.commands.acceptAllDocumentChanges()).toBe(true);
+    expect(normalizedText(editor)).toBe('Hello there');
+
+    editor.destroy();
+    revisedEditor.destroy();
+  });
+
+  test('admits whole-paragraph soft-break insertions as structural revisions', async () => {
+    const original = documentHtml('<p>Stable.</p>');
+    const revised = documentHtml('<p>Soft<br>break</p><p>Stable.</p>');
+    const editor = createEditor(original);
+    const revisedEditor = createEditor(revised);
+
+    const result = applyCompare(editor, revisedEditor.getJSON());
+
+    expect(result.status).toBe('applied');
+    const change = collectDocumentChanges(editor.state.doc).find(
+      (candidate) => candidate.kind === 'insertion' && candidate.text.includes('Soft'),
+    );
+    expect(change).toEqual(
+      expect.objectContaining({
+        kind: 'insertion',
+        author: 'Morgan',
+        text: 'Softbreak',
+      }),
+    );
+    expect(editor.getHTML()).toContain('data-block-change-kind="insertion"');
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a Writer artifact.');
+    }
+    artifact.content.html = editor.getHTML();
+    const exported = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await exported.arrayBuffer());
+    const documentXml = await archive.file('word/document.xml')?.async('text');
+    expect(documentXml).toMatch(
+      /<w:pPr>[\s\S]*?<w:rPr>[\s\S]*?<w:ins\b[^>]*w:author="Morgan"/,
+    );
+
+    editor.destroy();
+    revisedEditor.destroy();
+  });
+
   test('infers a bounded text move and round-trips native move revisions', async () => {
     const original = documentHtml('<p>Alpha beta gamma.</p>');
     const revised = documentHtml('<p>Alpha gamma beta.</p>');
@@ -377,12 +498,46 @@ describe('document compare and combine', () => {
     editor.destroy();
   });
 
-  test('fails closed for changed complex structures and leaves the document untouched', () => {
+  test('compares same-shape table cell text as reviewable inline revisions', () => {
     const original = documentHtml(
       '<table><tbody><tr><td><p>Original cell</p></td></tr></tbody></table>',
     );
     const revised = documentHtml(
       '<table><tbody><tr><td><p>Revised cell</p></td></tr></tbody></table>',
+    );
+    const editor = createEditor(original);
+    const revisedEditor = createEditor(revised);
+
+    const result = applyCompare(editor, revisedEditor.getJSON());
+
+    expect(result.status).toBe('applied');
+    expect(result.summary).toEqual({
+      deletions: 1,
+      formatting: 0,
+      insertions: 1,
+      paragraphFormatting: 0,
+    });
+    const changes = collectDocumentChanges(editor.state.doc);
+    expect(changes.map((change) => change.kind).sort()).toEqual([
+      'deletion',
+      'insertion',
+    ]);
+    expect(editor.getHTML()).toContain('data-change-kind="deletion"');
+    expect(editor.getHTML()).toContain('data-change-kind="insertion"');
+    expect(editor.getHTML()).toContain('>Original</del>');
+    expect(editor.getHTML()).toContain('>Revised</ins>');
+    expect(editor.getHTML()).toContain(' cell</p>');
+
+    editor.destroy();
+    revisedEditor.destroy();
+  });
+
+  test('fails closed when table shape changes and leaves the document untouched', () => {
+    const original = documentHtml(
+      '<table><tbody><tr><td><p>Only cell</p></td></tr></tbody></table>',
+    );
+    const revised = documentHtml(
+      '<table><tbody><tr><td><p>Left</p></td><td><p>Right</p></td></tr></tbody></table>',
     );
     const editor = createEditor(original);
     const revisedEditor = createEditor(revised);
@@ -399,6 +554,32 @@ describe('document compare and combine', () => {
     expect(editor.getHTML()).toBe(originalSnapshot);
     expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
     expect(editor.commands.undo()).toBe(false);
+
+    editor.destroy();
+    revisedEditor.destroy();
+  });
+
+  test('fails closed for non-table complex structures and leaves the document untouched', () => {
+    const original = documentHtml(
+      '<blockquote><p>Original quote</p></blockquote>',
+    );
+    const revised = documentHtml(
+      '<blockquote><p>Revised quote</p></blockquote>',
+    );
+    const editor = createEditor(original);
+    const revisedEditor = createEditor(revised);
+    const originalSnapshot = editor.getHTML();
+
+    const result = applyCompare(editor, revisedEditor.getJSON());
+
+    expect(result.status).toBe('unsupported');
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'changed-complex-structure' }),
+      ]),
+    );
+    expect(editor.getHTML()).toBe(originalSnapshot);
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
 
     editor.destroy();
     revisedEditor.destroy();

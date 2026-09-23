@@ -29,7 +29,13 @@ fn projects_canonical_markdown_after_reordered_delivery_and_restart() {
     assert_eq!(
         projection.content,
         NativeOfficeCollaborationProjectedContent::Markdown {
-            source: "AB".to_owned()
+            source: "AB".to_owned(),
+            slices: vec![NativeOfficeCollaborationMarkdownSlice {
+                index: 0,
+                start_utf16: 0,
+                end_utf16: 2,
+                text: "AB".to_owned(),
+            }],
         }
     );
 

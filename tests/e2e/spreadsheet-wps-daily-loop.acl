@@ -1,0 +1,574 @@
+suite "office-spreadsheet-wps-daily-loop" {
+    version = 1
+
+    scenario "enter-sum-format-insert-row-autofilter-sort-save-reopen" {
+        name = "Enter values, calculate SUM, format a cell, insert a row, AutoFilter and sort a Score column, then reopen the saved XLSX"
+        surface = "web"
+        timeout_ms = 420000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "create-blank-spreadsheet" {
+            target = css("button[data-template-id='blank-spreadsheet']")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-a1" {
+            key = "Control+Home"
+        }
+
+        click "focus-formula-bar-a1" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-a1" {
+            key = "Control+a"
+        }
+
+        type "enter-a1" {
+            target = css(".fortune-fx-input")
+            value = "10"
+        }
+
+        press "commit-a1" {
+            key = "Enter"
+        }
+
+        press "move-to-a2" {
+            key = "ArrowDown"
+        }
+
+        click "focus-formula-bar-a2" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-a2" {
+            key = "Control+a"
+        }
+
+        type "enter-a2" {
+            target = css(".fortune-fx-input")
+            value = "20"
+        }
+
+        press "commit-a2" {
+            key = "Enter"
+        }
+
+        press "move-to-sum-row" {
+            key = "ArrowDown"
+        }
+
+        click "focus-formula-bar-sum" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-sum" {
+            key = "Control+a"
+        }
+
+        type "enter-sum" {
+            target = css(".fortune-fx-input")
+            value = "=SUM(A1:A3)"
+        }
+
+        press "commit-sum" {
+            key = "Enter"
+        }
+
+        expect "sum-formula-visible" {
+            target = css(".fortune-fx-input")
+            rendered_text = "=SUM(A1:A3)"
+        }
+
+        expect "sum-cell-address" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "A5"
+        }
+
+        wait "sum-result-ready" {
+            visible = css("output[aria-label='当前单元格结果']")
+        }
+
+        expect "sum-result-is-30" {
+            target = css("output[aria-label='当前单元格结果']")
+            rendered_text = "30"
+        }
+
+        click "bold-sum-cell" {
+            target = role("button", "加粗")
+        }
+
+        expect "sum-cell-is-bold" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        click "open-rows-and-columns" {
+            target = role("button", "行和列")
+        }
+
+        click "insert-row-above-a2" {
+            target = role("menuitem", "在上方插入行")
+        }
+
+        expect "inserted-row-selected" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "A5:Z5"
+        }
+
+        press "select-shifted-sum" {
+            key = "ArrowDown"
+        }
+
+        expect "shifted-sum-formula" {
+            target = css(".fortune-fx-input")
+            rendered_text = "=SUM(A1:A3)"
+        }
+
+        expect "shifted-sum-result" {
+            target = css("output[aria-label='当前单元格结果']")
+            rendered_text = "30"
+        }
+
+        expect "shifted-sum-stays-bold" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        press "return-to-a1-for-filter-range" {
+            key = "Control+Home"
+        }
+
+        press "move-to-filter-header" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-filter-gap-column" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-score-column" {
+            key = "ArrowRight"
+        }
+
+        click "focus-formula-bar-filter-header" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-filter-header" {
+            key = "Control+a"
+        }
+
+        type "enter-filter-header" {
+            target = css(".fortune-fx-input")
+            value = "Score"
+        }
+
+        press "commit-filter-header" {
+            key = "Enter"
+        }
+
+        click "focus-formula-bar-d2" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-d2" {
+            key = "Control+a"
+        }
+
+        type "enter-d2" {
+            target = css(".fortune-fx-input")
+            value = "30"
+        }
+
+        press "commit-d2" {
+            key = "Enter"
+        }
+
+        click "focus-formula-bar-d3" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-d3" {
+            key = "Control+a"
+        }
+
+        type "enter-d3" {
+            target = css(".fortune-fx-input")
+            value = "10"
+        }
+
+        press "commit-d3" {
+            key = "Enter"
+        }
+
+        click "focus-formula-bar-d4" {
+            target = css(".fortune-fx-input")
+        }
+
+        press "select-formula-bar-d4" {
+            key = "Control+a"
+        }
+
+        type "enter-d4" {
+            target = css(".fortune-fx-input")
+            value = "20"
+        }
+
+        press "commit-d4" {
+            key = "Enter"
+        }
+
+        press "select-filter-header-cell" {
+            key = "Control+Home"
+        }
+
+        press "move-to-score-header-via-b" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-score-header-via-c" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-score-header" {
+            key = "ArrowRight"
+        }
+
+        press "extend-score-range-d2" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-score-range-d3" {
+            key = "Shift+ArrowDown"
+        }
+
+        press "extend-score-range-d4" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "score-range-selected" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "D1:D4"
+        }
+
+        click "open-data-tab" {
+            target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='data']")
+        }
+
+        click "enable-autofilter" {
+            target = role("button", "自动筛选")
+        }
+
+        expect "autofilter-active" {
+            visible = css(".work-spreadsheet-editor[data-auto-filter='active'] button[aria-label='自动筛选'][aria-pressed='true']")
+        }
+
+        expect "score-filter-trigger-visible" {
+            visible = css(".luckysheet-filter-options[role='button'][aria-label='Score 筛选']")
+        }
+
+        expect "score-range-still-selected" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "D1:D4"
+        }
+
+        focus "focus-grid-before-sort" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "collapse-to-score-header" {
+            key = "Control+Home"
+        }
+
+        press "move-to-score-header-via-b-before-sort" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-score-header-via-c-before-sort" {
+            key = "ArrowRight"
+        }
+
+        press "select-score-header-before-sort" {
+            key = "ArrowRight"
+        }
+
+        expect "score-header-selected-before-sort" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "D1"
+        }
+
+        click "sort-score-descending" {
+            target = css(".work-spreadsheet-ribbon button[aria-label='降序']")
+        }
+
+        expect "sort-range-dialog-visible" {
+            visible = css(".work-spreadsheet-sort-range-dialog[role='dialog']")
+        }
+
+        expect "expand-filter-range-default" {
+            visible = css(".work-spreadsheet-sort-range-dialog input[value='expand']:checked")
+        }
+
+        click "confirm-descending-sort-range" {
+            target = role("button", "排序")
+        }
+
+        focus "focus-grid-after-sort" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-origin-after-sort" {
+            key = "Control+Home"
+        }
+
+        press "move-to-score-header-via-b-after-sort" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-score-header-via-c-after-sort" {
+            key = "ArrowRight"
+        }
+
+        press "move-to-score-header-after-sort" {
+            key = "ArrowRight"
+        }
+
+        expect "score-header-cell-selected" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "D1"
+        }
+
+        expect "score-header-after-sort" {
+            target = css(".fortune-fx-input")
+            rendered_text = "Score"
+        }
+
+        press "inspect-sorted-first-value" {
+            key = "ArrowDown"
+        }
+
+        expect "first-data-cell-selected" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "D2"
+        }
+
+        expect "largest-score-is-first" {
+            target = css(".fortune-fx-input")
+            rendered_text = "30"
+        }
+
+        press "inspect-sorted-second-value" {
+            key = "ArrowDown"
+        }
+
+        expect "middle-score-is-second" {
+            target = css(".fortune-fx-input")
+            rendered_text = "20"
+        }
+
+        press "inspect-sorted-third-value" {
+            key = "ArrowDown"
+        }
+
+        expect "smallest-score-is-third" {
+            target = css(".fortune-fx-input")
+            rendered_text = "10"
+        }
+
+        click "save-xlsx" {
+            target = css("button.work-export-button[aria-label='导出']")
+        }
+
+        wait "xlsx-downloaded" {
+            text = "无标题表格.xlsx 已下载"
+        }
+
+        wait "reopen-exported-file" {
+            visible = css("button[aria-label='重新打开已导出文件']")
+        }
+
+        click "reopen-saved-xlsx" {
+            target = role("button", "重新打开已导出文件")
+        }
+
+        wait "saved-xlsx-opened" {
+            text = "无标题表格.xlsx 已打开"
+        }
+
+        wait "reopened-spreadsheet" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-reopened-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "reopened-a1" {
+            key = "Control+Home"
+        }
+
+        expect "reopened-a1-value" {
+            target = css(".fortune-fx-input")
+            rendered_text = "10"
+        }
+
+        press "reopened-a2" {
+            key = "ArrowDown"
+        }
+
+        press "reopened-a3" {
+            key = "ArrowDown"
+        }
+
+        expect "reopened-a3-value" {
+            target = css(".fortune-fx-input")
+            rendered_text = "20"
+        }
+
+        press "reopened-a4" {
+            key = "ArrowDown"
+        }
+
+        press "reopened-inserted-row" {
+            key = "ArrowDown"
+        }
+
+        expect "reopened-inserted-row-is-empty" {
+            visible = css(".fortune-fx-input:empty")
+        }
+
+        press "reopened-sum" {
+            key = "ArrowDown"
+        }
+
+        expect "reopened-sum-formula" {
+            target = css(".fortune-fx-input")
+            rendered_text = "=SUM(A1:A3)"
+        }
+
+        wait "reopened-sum-result-ready" {
+            visible = css("output[aria-label='当前单元格结果']")
+        }
+
+        expect "reopened-sum-result" {
+            target = css("output[aria-label='当前单元格结果']")
+            rendered_text = "30"
+        }
+
+        expect "reopened-sum-is-bold" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        press "reopened-home" {
+            key = "Control+Home"
+        }
+
+        press "reopened-score-via-b" {
+            key = "ArrowRight"
+        }
+
+        press "reopened-score-via-c" {
+            key = "ArrowRight"
+        }
+
+        press "reopened-score-header" {
+            key = "ArrowRight"
+        }
+
+        click "reopened-data-tab" {
+            target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='data']")
+        }
+
+        expect "reopened-autofilter-active" {
+            visible = css(".work-spreadsheet-editor[data-auto-filter='active'] button[aria-label='自动筛选'][aria-pressed='true']")
+        }
+
+        expect "reopened-score-filter-trigger" {
+            visible = css(".luckysheet-filter-options[role='button'][aria-label='Score 筛选']")
+        }
+
+        expect "reopened-score-header-value" {
+            target = css(".fortune-fx-input")
+            rendered_text = "Score"
+        }
+
+        focus "focus-reopened-score-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "escape-filter-chrome" {
+            key = "Escape"
+        }
+
+        expect "reopened-score-header-selected" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "D1"
+        }
+
+        press "reopened-sorted-first" {
+            key = "ArrowDown"
+        }
+
+        expect "reopened-first-data-cell-selected" {
+            target = css("output[aria-label='表格选区状态']")
+            rendered_text = "D2"
+        }
+
+        expect "reopened-largest-score" {
+            target = css(".fortune-fx-input")
+            rendered_text = "30"
+        }
+
+        press "reopened-sorted-second" {
+            key = "ArrowDown"
+        }
+
+        expect "reopened-middle-score" {
+            target = css(".fortune-fx-input")
+            rendered_text = "20"
+        }
+
+        press "reopened-sorted-third" {
+            key = "ArrowDown"
+        }
+
+        expect "reopened-smallest-score" {
+            target = css(".fortune-fx-input")
+            rendered_text = "10"
+        }
+
+        accessibility "spreadsheet-wps-daily-loop-accessibility" {
+            path = "evidence/spreadsheet-wps-daily-loop-accessibility.json"
+            interactive = true
+        }
+
+        console "spreadsheet-wps-daily-loop-console" {
+            path = "diagnostics/spreadsheet-wps-daily-loop-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-wps-daily-loop-page-errors" {
+            path = "diagnostics/spreadsheet-wps-daily-loop-page-errors.json"
+            clear = false
+        }
+    }
+}

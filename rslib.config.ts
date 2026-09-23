@@ -62,6 +62,13 @@ export default defineConfig({
             to: 'pptxgen.LICENSE.txt',
           },
         ],
+        // The copied PptxGenJS file is a classic script. The JS minimizer
+        // parses it as a module and drops `var PptxGenJS`.
+        minify: {
+          jsOptions: {
+            exclude: /pptxgen\.bundle\.js/,
+          },
+        },
         target: 'web',
       },
       source: {

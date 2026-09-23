@@ -107,6 +107,7 @@ import {
   spreadsheetCellAt,
   spreadsheetContentWithSelection,
   spreadsheetContentWithSelections,
+  spreadsheetFormulaResultText,
   spreadsheetSelectionReference,
   spreadsheetSelectionSummary,
   spreadsheetSheetsForFortune,
@@ -1275,6 +1276,7 @@ function SpreadsheetEditorSurface({
     toolbarRow,
     toolbarColumn,
   );
+  const formulaResultText = spreadsheetFormulaResultText(toolbarCell);
   const toolbarCellBorders = spreadsheetCellBordersAt(
     toolbarSheet,
     toolbarRow,
@@ -2262,6 +2264,9 @@ function SpreadsheetEditorSurface({
               ? spreadsheetSelectionReference(selectionState.selection)
               : '未选择单元格'}
           </output>
+          {formulaResultText && (
+            <output aria-label="当前单元格结果">{formulaResultText}</output>
+          )}
           {selectionSummary && selectionSummary.nonEmptyCount > 0 && (
             <output aria-label="表格选区统计">
               {spreadsheetSelectionSummaryText(selectionSummary)}

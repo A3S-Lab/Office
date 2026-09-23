@@ -163,6 +163,40 @@ workflow then enters Chinese title text in the built Playground, requires the
 rendered value to match exactly once, reopens the presentation to prove
 persistence, and captures accessibility plus empty console/page-error evidence.
 
+Writer, Spreadsheet, Presentation, and PDF daily editing each have one local
+gate that creates or opens a file, edits it, downloads the real package, and
+reopens those bytes:
+
+```bash
+bun run test:e2e:wps-daily:check
+bun run test:e2e:wps-daily:writer
+bun run test:e2e:wps-daily:spreadsheet
+bun run test:e2e:wps-daily:presentation
+bun run test:e2e:wps-daily:pdf
+# or all four:
+bun run test:e2e:wps-daily
+```
+
+On Windows these scripts use `office:ops -- a3s run … --cdp-port` with
+`--command-timeout-ms 120000` (same deadline as the web gate) so the
+compiled CDP adapter owns Chrome and Fortune Sheet cold-start waits are not
+killed by the 30s default. Do not set `A3S_TEST_AGENT_BROWSER` to native
+`agent-browser` when a CDP port is required.
+
+See also
+[`docs/latest/en/wps-editor-parity-plan.md`](../../docs/latest/en/wps-editor-parity-plan.md)
+for the first-principles WPS parity bar and ordered tracks.
+
+The Writer loop replaces text, applies bold, font size, and alignment, inserts a
+table, and records a review comment that must survive DOCX export and reopen.
+The Spreadsheet loop enters values, shows a calculated SUM, applies bold,
+inserts a row, then builds a Score column with AutoFilter and descending sort
+that must survive XLSX export and reopen. The Presentation loop adds a slide,
+edits its title, records speaker notes, duplicates the slide, and inserts a
+shape. The PDF loop inserts a blank page, downloads the PDF, and asserts the
+page count after reopen. Each suite asserts those results after the exported
+file is opened again.
+
 The PDF page organizer has its own focused local gate:
 
 ```bash

@@ -57,7 +57,8 @@ export function createComparisonIdentityFactory(
       else if (kind === 'deletion') summary.deletions += 1;
       else if (kind === 'formatting') summary.formatting += 1;
       else if (kind === 'move') summary.moves = (summary.moves ?? 0) + 1;
-      else summary.paragraphFormatting += 1;
+      else if (kind === 'paragraph-formatting')
+        summary.paragraphFormatting += 1;
       return {
         id: `compare-${seed}-${kind}-${sequence.toString(36)}`,
         author,
@@ -82,7 +83,8 @@ export function summarizeComparisonChanges(
     else if (change.kind === 'deletion') summary.deletions += 1;
     else if (change.kind === 'formatting') summary.formatting += 1;
     else if (change.kind === 'move') summary.moves = (summary.moves ?? 0) + 1;
-    else summary.paragraphFormatting += 1;
+    else if (change.kind === 'paragraph-formatting')
+      summary.paragraphFormatting += 1;
   }
   return summary;
 }

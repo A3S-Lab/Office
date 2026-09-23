@@ -335,6 +335,11 @@ async function ensureCdpEndpoint(port: string): Promise<void> {
       '--no-first-run',
       '--no-default-browser-check',
       '--disable-background-networking',
+      // Local Windows CI / restricted shells often fail DevToolsActivePort
+      // without these flags; Playwright Chromium still boots Writer WASM.
+      '--no-sandbox',
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
       'about:blank',
     ],
     {

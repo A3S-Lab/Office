@@ -403,9 +403,24 @@ export function resolveCdpBrowserExecutable(
   cdpPort: string | undefined,
 ): string | undefined {
   const configured = process.env.A3S_TEST_AGENT_BROWSER?.trim();
-  if (configured) return configured;
-  if (!cdpPort) return undefined;
-  if (process.platform !== 'win32') return undefined;
+  // Without a CDP port, callers may point straight at native agent-browser.
+  if (!cdpPort) {
+    return configured && existsSync(configured) ? configured : undefined;
+  }
+  // The compiled CDP adapter is the Windows contract for restricted shells.
+  if (process.platform !== 'win32') {
+    return configured && existsSync(configured) ? configured : undefined;
+  }
+  // With a CDP port, always use the compiled Office adapter. Native Chrome
+  // auto-launch from agent-browser fails on restricted Windows shells
+  // (DevToolsActivePort); the adapter owns Chrome + --cdp attach instead.
+  // Override the wrapped native binary via A3S_TEST_AGENT_BROWSER_NATIVE.
+  if (
+    configured &&
+    path.resolve(configured) === path.resolve(cdpBrowserExecutable)
+  ) {
+    return configured;
+  }
   const outputDirectory = path.dirname(cdpBrowserExecutable);
   mkdirSync(outputDirectory, { recursive: true });
   const shouldBuild =

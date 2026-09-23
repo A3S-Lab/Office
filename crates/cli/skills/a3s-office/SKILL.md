@@ -187,6 +187,16 @@ available `mcp__use_office__office_collaboration_*` tools. Create or join the
 replica once, then poll `office_collaboration_events` with the last successfully
 consumed `cursorSequence`; use `includeUpdates=true` when the agent needs to
 apply the update locally. No OOXML session is required for collaboration.
+Read the stable edit address from `collab read` or `office_collaboration_read`,
+then patch only that address with `collab mutate` or `office_collaboration_mutate`.
+Do not overwrite the whole document. Markdown addresses are `startUtf16` and
+`endUtf16` slices patched by `markdown-splice` with `expectedText`. A full next
+Markdown string uses `markdown-replace` only with `expectedMarkdown` from that
+read and must leave unrelated concurrent text in place. Document addresses are
+`paragraphId`, `textId`, `startUtf16`, and `endUtf16`. Spreadsheet addresses are
+`sheetId`, `row`, and `column`. Presentation addresses are `containerKind`,
+`containerId`, and `elementId`. PDF addresses are `pageIndex` and `annotationId`
+or `fieldId`.
 Use `office_collaboration_mutate` for local typed Markdown, Document,
 Spreadsheet, Presentation, or PDF operations instead of generating Yjs bytes;
 keep the operation ID stable and use the last inspected state vector as a

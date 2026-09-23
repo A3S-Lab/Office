@@ -208,6 +208,7 @@ export function useSpreadsheetCalculation({
             update,
             calculation,
             fallbackSheets: calculationSnapshot.sheets,
+            dateSystem: latestContentRef.current.dateSystem,
           },
           active.controller.signal,
         )

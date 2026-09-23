@@ -17,7 +17,9 @@ export type WorkDocumentShapeType =
   | 'roundedRectangle'
   | 'ellipse'
   | 'diamond'
-  | 'triangle';
+  | 'triangle'
+  | 'parallelogram'
+  | 'hexagon';
 export type WorkDocumentTextBoxHorizontalReference =
   | 'column'
   | 'margin'
@@ -549,7 +551,9 @@ function documentShapeType(value: unknown): WorkDocumentShapeType {
   return value === 'roundedRectangle' ||
     value === 'ellipse' ||
     value === 'diamond' ||
-    value === 'triangle'
+    value === 'triangle' ||
+    value === 'parallelogram' ||
+    value === 'hexagon'
     ? value
     : 'rectangle';
 }

@@ -420,6 +420,129 @@ pub(super) fn concatenate(
     Ok(EvalValue::Scalar(ScalarValue::Text(output)))
 }
 
+pub(super) fn text_left(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+) -> UseResult<EvalValue> {
+    text_slice(context, arguments, TextSlice::Left)
+}
+
+pub(super) fn text_right(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+) -> UseResult<EvalValue> {
+    text_slice(context, arguments, TextSlice::Right)
+}
+
+pub(super) fn text_len(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+) -> UseResult<EvalValue> {
+    let text = match first_argument_text(context, arguments)? {
+        Ok(text) => text,
+        Err(error) => return Ok(EvalValue::Scalar(ScalarValue::Error(error))),
+    };
+    Ok(EvalValue::Scalar(ScalarValue::Number(
+        text.chars().count() as f64,
+    )))
+}
+
+pub(super) fn text_mid(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+) -> UseResult<EvalValue> {
+    let text = match first_argument_text(context, arguments)? {
+        Ok(text) => text,
+        Err(error) => return Ok(EvalValue::Scalar(ScalarValue::Error(error))),
+    };
+    let start = match argument_number(context, arguments, 1)? {
+        Ok(value) => value,
+        Err(error) => return Ok(EvalValue::Scalar(ScalarValue::Error(error))),
+    };
+    let count = match argument_number(context, arguments, 2)? {
+        Ok(value) => value,
+        Err(error) => return Ok(EvalValue::Scalar(ScalarValue::Error(error))),
+    };
+    if !start.is_finite() || start < 1.0 || !count.is_finite() || count < 0.0 {
+        return Ok(EvalValue::Scalar(ScalarValue::Error(
+            SpreadsheetFormulaErrorLiteral::Value,
+        )));
+    }
+    let start_index = start.floor() as usize - 1;
+    let take = count.floor() as usize;
+    Ok(EvalValue::Scalar(ScalarValue::Text(
+        text.chars().skip(start_index).take(take).collect(),
+    )))
+}
+
+enum TextSlice {
+    Left,
+    Right,
+}
+
+fn text_slice(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+    mode: TextSlice,
+) -> UseResult<EvalValue> {
+    let text = match first_argument_text(context, arguments)? {
+        Ok(text) => text,
+        Err(error) => return Ok(EvalValue::Scalar(ScalarValue::Error(error))),
+    };
+    let count = if arguments.len() > 1 {
+        match argument_number(context, arguments, 1)? {
+            Ok(value) => value,
+            Err(error) => return Ok(EvalValue::Scalar(ScalarValue::Error(error))),
+        }
+    } else {
+        1.0
+    };
+    if !count.is_finite() || count < 0.0 {
+        return Ok(EvalValue::Scalar(ScalarValue::Error(
+            SpreadsheetFormulaErrorLiteral::Value,
+        )));
+    }
+    let take = count.floor() as usize;
+    let value = match mode {
+        TextSlice::Left => text.chars().take(take).collect(),
+        TextSlice::Right => {
+            let total = text.chars().count();
+            let skip = total.saturating_sub(take);
+            text.chars().skip(skip).collect()
+        }
+    };
+    Ok(EvalValue::Scalar(ScalarValue::Text(value)))
+}
+
+fn first_argument_text(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+) -> UseResult<Result<String, SpreadsheetFormulaErrorLiteral>> {
+    let Some(argument) = arguments.first() else {
+        return Ok(Err(SpreadsheetFormulaErrorLiteral::Value));
+    };
+    let values = argument_scalars(context, argument)?;
+    let Some(value) = values.into_iter().next() else {
+        return Ok(Err(SpreadsheetFormulaErrorLiteral::Value));
+    };
+    Ok(scalar_text(value))
+}
+
+fn argument_number(
+    context: &EvaluationContext<'_>,
+    arguments: &[EvalValue],
+    index: usize,
+) -> UseResult<Result<f64, SpreadsheetFormulaErrorLiteral>> {
+    let Some(argument) = arguments.get(index) else {
+        return Ok(Err(SpreadsheetFormulaErrorLiteral::Value));
+    };
+    let values = argument_scalars(context, argument)?;
+    let Some(value) = values.into_iter().next() else {
+        return Ok(Err(SpreadsheetFormulaErrorLiteral::Value));
+    };
+    Ok(scalar_number(value))
+}
+
 pub(super) fn logical_not(
     context: &EvaluationContext<'_>,
     value: EvalValue,

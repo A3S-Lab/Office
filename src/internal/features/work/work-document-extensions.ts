@@ -26,6 +26,7 @@ import {
 } from './work-document-citation-nodes';
 import { DocumentComment } from './work-document-comments';
 import { DocumentContentControl } from './work-document-content-control';
+import { DocumentBlockContentControl } from './work-document-block-content-control';
 import { DocumentConnector } from './work-document-connector';
 import { DocumentEquation } from './work-document-equations';
 import { DocumentEquationOpaque } from './work-document-equation-opaque';
@@ -45,6 +46,10 @@ import {
 import { DocumentPageBreak } from './work-document-page-break';
 import { DocumentParagraphFormatting } from './work-document-paragraph-formatting';
 import { DocumentParagraphIdentity } from './work-document-paragraph-identity';
+import {
+  DocumentRepeatingSection,
+  DocumentRepeatingSectionItem,
+} from './work-document-repeating-section';
 import { DocumentScriptFontFormatting } from './work-document-script-font-extension';
 import { DocumentSection } from './work-document-section-node';
 import { DocumentStrike } from './work-document-strike';
@@ -142,6 +147,9 @@ export function createWorkDocumentExtensions(
     DocumentIndex,
     DocumentField,
     DocumentContentControl,
+    DocumentBlockContentControl,
+    DocumentRepeatingSectionItem,
+    DocumentRepeatingSection,
     DocumentEquation,
     DocumentEquationOpaque,
     commentExtension,
