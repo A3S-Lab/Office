@@ -4,6 +4,13 @@ on:
   release:
     types:
       - published
+  # Manual retry after Trusted Publisher / NPM_TOKEN is restored (Office#162).
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to publish (usually main or a v* tag)
+        required: true
+        default: main
 
 permissions:
   contents: read
@@ -11,13 +18,17 @@ permissions:
 
 jobs:
   publish:
-    if: startsWith(github.event.release.tag_name, 'v')
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -33,25 +44,43 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
+          # Do not set registry-url here: it writes an empty/stale
+          # //registry.npmjs.org/:_authToken= line that breaks OIDC Trusted
+          # Publishing (Office#162). Registry is set explicitly below.
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
       - name: Verify release tag
+        if: github.event_name == 'release'
         run: node -e "if ('v' + require('./package.json').version !== process.env.GITHUB_REF_NAME) process.exit(1)"
-
       - name: Verify package
         run: |
           bun run typecheck
           bun run test
           bun run build
 
-      # Provenance uses GitHub OIDC (id-token: write). Registry auth uses
-      # NPM_TOKEN — the path that published 0.310.0. OIDC-only publish without
-      # a Trusted Publisher on npmjs.com fails with scoped PUT 404 (Office#162).
-      # Prefer adding Trusted Publisher later; keep NODE_AUTH_TOKEN until then.
+      # Prefer npm Trusted Publishing (OIDC). Classic NPM_TOKEN secrets across
+      # A3S-Lab repos currently 401 (Office#162). If a valid granular token is
+      # restored later, set NODE_AUTH_TOKEN and it will be used as fallback.
       - name: Publish package
-        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Drop setup-node / empty auth lines so OIDC can authenticate.
+          if [ -f "$HOME/.npmrc" ]; then
+            sed -i '/_authToken/d' "$HOME/.npmrc" || true
+          fi
+          if [ -f .npmrc ]; then
+            sed -i '/_authToken/d' .npmrc || true
+          fi
+          # Only re-inject token auth when the secret is non-empty AND whoami works.
+          if [ -n "${NODE_AUTH_TOKEN:-}" ] && npm whoami --registry https://registry.npmjs.org/ >/dev/null 2>&1; then
+            echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> "$HOME/.npmrc"
+            echo "Publishing with NPM_TOKEN (whoami ok)"
+          else
+            unset NODE_AUTH_TOKEN || true
+            echo "Publishing with GitHub OIDC Trusted Publisher (no usable NPM_TOKEN)"
+          fi
+          npm publish --access public --provenance --registry https://registry.npmjs.org/
