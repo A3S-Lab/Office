@@ -47,9 +47,11 @@ jobs:
           bun run test
           bun run build
 
-      # Publish via npm Trusted Publishing (GitHub Actions OIDC). Do not pass
-      # NODE_AUTH_TOKEN: classic tokens that bypass 2FA are restricted, and a
-      # stale NPM_TOKEN yields PUT 404 (Office#162). Configure the package's
-      # trusted publisher on npmjs.com for this repository + workflow.
+      # Provenance uses GitHub OIDC (id-token: write). Registry auth uses
+      # NPM_TOKEN — the path that published 0.310.0. OIDC-only publish without
+      # a Trusted Publisher on npmjs.com fails with scoped PUT 404 (Office#162).
+      # Prefer adding Trusted Publisher later; keep NODE_AUTH_TOKEN until then.
       - name: Publish package
         run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
