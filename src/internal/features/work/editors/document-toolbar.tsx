@@ -387,7 +387,18 @@ export function DocumentToolbar({
     // Capture the editing selection before the modal steals focus; restoring
     // only `editor.view.dom` can collapse Shift+End ranges and leave setLink
     // with an empty selection (no visible <a href>).
-    const { from, to } = editor.state.selection;
+    let { from, to } = editor.state.selection;
+    if (from === to) {
+      // Cursor-only: wrap the current textblock so the link is visible, matching
+      // daily Writer expectation when Ctrl+K is pressed without a range.
+      const $pos = editor.state.doc.resolve(from);
+      const blockFrom = $pos.start();
+      const blockTo = $pos.end();
+      if (blockFrom < blockTo) {
+        from = blockFrom;
+        to = blockTo;
+      }
+    }
     const href = await prompt({
       title: '添加链接',
       description: '输入网页、邮箱地址，或使用 #书签名称 跳转到文档内位置。',
@@ -404,9 +415,14 @@ export function DocumentToolbar({
     if (href === null) return;
     const normalized = normalizeDocumentHref(href);
     if (!normalized) return;
+    const docSize = editor.state.doc.content.size;
     editor
       .chain()
-      .setTextSelection({ from, to })
+      .focus()
+      .setTextSelection({
+        from: Math.min(from, docSize),
+        to: Math.min(to, docSize),
+      })
       .setLink({ href: normalized })
       .run();
   }, [editor, prompt]);
