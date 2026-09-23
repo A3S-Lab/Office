@@ -23,9 +23,11 @@ test('PDF page organization mutates, exports, saves, and restores exact history'
   await expect(organizer.getByText('已选择 1 / 4 页')).toBeVisible();
   await organizer.getByRole('button', { name: '插入空白页' }).click();
   await expectPdfPageCount(page, 5);
-  // Close the organizer before undo/redo so toolbar actions are not covered /
-  // disabled behind the modal (overflow 撤销 menuitem then never stabilizes).
-  await organizer.getByRole('button', { name: '完成' }).click();
+  // Insert keeps the organizer open with closeDisabled while busy; wait for the
+  // primary 完成 control before dismissing so undo/redo can reach the toolbar.
+  const done = organizer.getByRole('button', { name: '完成' });
+  await expect(done).toBeEnabled({ timeout: 60_000 });
+  await done.click();
   await expect(organizer).toBeHidden();
 
   await runPdfToolbarAction(page, '撤销');
