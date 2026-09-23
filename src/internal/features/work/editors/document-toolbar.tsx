@@ -384,6 +384,10 @@ export function DocumentToolbar({
       editor.chain().extendMarkRange('link').unsetLink().run();
       return;
     }
+    // Capture the editing selection before the modal steals focus; restoring
+    // only `editor.view.dom` can collapse Shift+End ranges and leave setLink
+    // with an empty selection (no visible <a href>).
+    const { from, to } = editor.state.selection;
     const href = await prompt({
       title: '添加链接',
       description: '输入网页、邮箱地址，或使用 #书签名称 跳转到文档内位置。',
@@ -399,7 +403,12 @@ export function DocumentToolbar({
     });
     if (href === null) return;
     const normalized = normalizeDocumentHref(href);
-    if (normalized) editor.chain().focus().setLink({ href: normalized }).run();
+    if (!normalized) return;
+    editor
+      .chain()
+      .setTextSelection({ from, to })
+      .setLink({ href: normalized })
+      .run();
   }, [editor, prompt]);
   const toggleBookmark = useCallback(async () => {
     if (activeBookmark) {
