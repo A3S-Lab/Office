@@ -23,6 +23,8 @@ const STRICT_WORD_NAMESPACE =
 const WORD_NAMESPACES = new Set([WORD_NAMESPACE, STRICT_WORD_NAMESPACE]);
 const MARKUP_COMPATIBILITY_NAMESPACE =
   'http://schemas.openxmlformats.org/markup-compatibility/2006';
+const CONTENT_CONTROL_WORD_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordml';
 const MAX_IMPORTED_CONTENT_CONTROLS = 4096;
 const MAX_CONTENT_CONTROL_TEXT = 1_000_000;
 const RUN_CONTENT_NAMES = new Set([
@@ -35,12 +37,24 @@ const RUN_CONTENT_NAMES = new Set([
 ]);
 const PROPERTY_NAMES = new Set([
   'alias',
+  'comboBox',
+  'dataBinding',
+  'date',
+  'dropDownList',
   'id',
   'lock',
   'richText',
   'tag',
   'text',
 ]);
+const DATE_CHILD_NAMES = new Set([
+  'calendar',
+  'dateFormat',
+  'lid',
+  'storeMappedDataAs',
+]);
+const DATE_MAPPING_VALUES = new Set(['date', 'dateTime', 'text']);
+const DATE_CALENDAR_VALUES = new Set(['gregorian']);
 const LOCK_VALUES = new Set([
   'contentLocked',
   'sdtContentLocked',
@@ -48,6 +62,16 @@ const LOCK_VALUES = new Set([
   'unlocked',
 ]);
 const APPEARANCE_VALUES = new Set(['boundingBox', 'hidden', 'tags']);
+const CHECKBOX_BOOLEAN_VALUES = new Set([
+  '0',
+  '1',
+  'false',
+  'off',
+  'on',
+  'true',
+]);
+const CHECKBOX_TRUE_VALUES = new Set(['1', 'on', 'true']);
+const CHECKBOX_STATE_ATTRIBUTES = new Set(['font', 'val']);
 
 export interface ImportedDocxContentControlMarker {
   start: string;
@@ -78,8 +102,14 @@ export function inspectDocxContentControls(
   for (const control of descendants(document, 'sdt')) {
     if (hasContentControlAncestor(control)) continue;
     if (isStructuralContentControl(control)) continue;
-    if (isDirectParagraphControl(control) && readContentControl(control, 0))
-      supported += 1;
+    if (isRepeatingSectionControl(control)) continue;
+    if (!isDirectParagraphControl(control)) {
+      // Body-level controls are owned by the block / repeating importers.
+      if (isBodyLevelControl(control)) continue;
+      unsupported += 1;
+      continue;
+    }
+    if (readContentControl(control, 0)) supported += 1;
     else unsupported += 1;
   }
   return { supported, unsupported };
@@ -101,7 +131,13 @@ export function markDocxContentControls(
       !isStructuralContentControl(control),
   );
   for (const [index, control] of candidates.entries()) {
+    if (isRepeatingSectionControl(control)) {
+      // Handled by the dedicated repeating-section importer.
+      continue;
+    }
     if (!isDirectParagraphControl(control)) {
+      // Body-level text/rich-text controls are handled by the block importer.
+      if (isBodyLevelControl(control)) continue;
       unsupported += 1;
       continue;
     }
@@ -206,7 +242,27 @@ function readContentControl(
   if (metadata.type === 'text' && !metadata.multiLine && text.includes('\n')) {
     return null;
   }
+  if (metadata.type === 'checkbox' && text.includes('\n')) {
+    return null;
+  }
+  if (
+    (metadata.type === 'dropDownList' ||
+      metadata.type === 'comboBox' ||
+      metadata.type === 'date') &&
+    text.includes('\n')
+  ) {
+    return null;
+  }
   const nativeId = metadata.nativeId;
+  let selectedValue = metadata.selectedValue;
+  if (metadata.type === 'dropDownList' || metadata.type === 'comboBox') {
+    const matched = metadata.options.find(
+      (item) => item.displayText === text || item.value === text,
+    );
+    selectedValue =
+      matched?.value ??
+      (metadata.type === 'comboBox' ? '' : (metadata.options[0]?.value ?? ''));
+  }
   return normalizeDocumentContentControlProperties({
     // Native w:id values are expected to be unique, but malformed documents
     // do occur in the wild. Keep the editor identity tied to the source
@@ -221,6 +277,16 @@ function readContentControl(
     multiLine: metadata.multiLine,
     appearance: metadata.appearance,
     color: metadata.color,
+    checked: metadata.checked,
+    options: metadata.options,
+    selectedValue,
+    fullDate: metadata.fullDate,
+    dateFormat: metadata.dateFormat,
+    dateLanguage: metadata.dateLanguage,
+    dateMapping: metadata.dateMapping,
+    bindingStoreItemId: metadata.bindingStoreItemId,
+    bindingXPath: metadata.bindingXPath,
+    bindingPrefixMappings: metadata.bindingPrefixMappings,
   });
 }
 
@@ -285,23 +351,42 @@ function readDefinition(control: Element): ParsedContentControl | null {
 function readProperties(properties: Element): {
   alias: string;
   appearance: 'boundingBox' | 'hidden' | 'tags';
+  bindingPrefixMappings: string;
+  bindingStoreItemId: string;
+  bindingXPath: string;
+  checked: boolean;
   color: string | null;
+  dateFormat: string;
+  dateLanguage: string;
+  dateMapping: 'date' | 'dateTime' | 'text';
+  fullDate: string;
   lock: 'contentLocked' | 'sdtContentLocked' | 'sdtLocked' | 'unlocked';
   multiLine: boolean;
   nativeId: number | null;
+  options: Array<{ displayText: string; value: string }>;
+  selectedValue: string;
   tag: string;
-  type: 'richText' | 'text';
+  type: 'checkbox' | 'comboBox' | 'date' | 'dropDownList' | 'richText' | 'text';
 } | null {
   if (hasContentControlRelationshipReference(properties)) return null;
   const children = Array.from(properties.children);
   const groups = new Map<string, Element[]>();
   let appearance: 'boundingBox' | 'hidden' | 'tags' = 'boundingBox';
   let color: string | null = null;
+  let checked = false;
+  let options: Array<{ displayText: string; value: string }> = [];
+  let fullDate = '';
+  let dateFormat = 'yyyy年M月d日';
+  let dateLanguage = 'zh-CN';
+  let dateMapping: 'date' | 'dateTime' | 'text' = 'dateTime';
+  let bindingStoreItemId = '';
+  let bindingXPath = '';
+  let bindingPrefixMappings = '';
   for (const child of children) {
     const namespace = child.namespaceURI ?? '';
     if (isDocxWordElement(child)) {
       if (!PROPERTY_NAMES.has(child.localName)) {
-        // These include dataBinding, placeholders, and active form controls.
+        // These include placeholders and unsupported form controls.
         return null;
       }
       const matches = groups.get(child.localName) ?? [];
@@ -316,6 +401,13 @@ function readProperties(properties: Element): {
       const matches = groups.get(`w15:${child.localName}`) ?? [];
       matches.push(child);
       groups.set(`w15:${child.localName}`, matches);
+      continue;
+    }
+    if (namespace === CONTENT_CONTROL_WORD_2010_NAMESPACE) {
+      if (child.localName !== 'checkbox') return null;
+      const matches = groups.get('w14:checkbox') ?? [];
+      matches.push(child);
+      groups.set('w14:checkbox', matches);
       continue;
     }
     if (namespace === MARKUP_COMPATIBILITY_NAMESPACE) continue;
@@ -335,13 +427,55 @@ function readProperties(properties: Element): {
   const lockValue = lockElement ? wordAttribute(lockElement, 'val') : null;
   const lock = lockValue ?? 'unlocked';
   if (!LOCK_VALUES.has(lock)) return null;
+  const bindingElement = groups.get('dataBinding')?.[0];
+  if (bindingElement) {
+    const binding = readDataBindingProperties(bindingElement);
+    if (!binding) return null;
+    bindingStoreItemId = binding.bindingStoreItemId;
+    bindingXPath = binding.bindingXPath;
+    bindingPrefixMappings = binding.bindingPrefixMappings;
+  }
   const textElement = groups.get('text')?.[0];
   const richTextElement = groups.get('richText')?.[0];
-  if (textElement && richTextElement) return null;
+  const checkboxElement = groups.get('w14:checkbox')?.[0];
+  const dropDownElement = groups.get('dropDownList')?.[0];
+  const comboBoxElement = groups.get('comboBox')?.[0];
+  const dateElement = groups.get('date')?.[0];
+  const typeCount =
+    Number(Boolean(textElement)) +
+    Number(Boolean(richTextElement)) +
+    Number(Boolean(checkboxElement)) +
+    Number(Boolean(dropDownElement)) +
+    Number(Boolean(comboBoxElement)) +
+    Number(Boolean(dateElement));
+  if (typeCount > 1) return null;
   if (textElement && !validLeaf(textElement, new Set(['multiLine']))) {
     return null;
   }
   if (richTextElement && !validLeaf(richTextElement, new Set())) return null;
+  if (checkboxElement) {
+    const checkboxState = readCheckboxProperties(checkboxElement);
+    if (!checkboxState) return null;
+    checked = checkboxState.checked;
+  }
+  if (dropDownElement) {
+    const listItems = readListItemProperties(dropDownElement, 'dropDownList');
+    if (!listItems) return null;
+    options = listItems;
+  }
+  if (comboBoxElement) {
+    const listItems = readListItemProperties(comboBoxElement, 'comboBox');
+    if (!listItems) return null;
+    options = listItems;
+  }
+  if (dateElement) {
+    const dateState = readDateProperties(dateElement);
+    if (!dateState) return null;
+    fullDate = dateState.fullDate;
+    dateFormat = dateState.dateFormat;
+    dateLanguage = dateState.dateLanguage;
+    dateMapping = dateState.dateMapping;
+  }
   const multilineValue = textElement
     ? wordAttribute(textElement, 'multiLine')
     : null;
@@ -392,7 +526,15 @@ function readProperties(properties: Element): {
   return {
     alias: alias ?? '',
     appearance,
+    bindingPrefixMappings,
+    bindingStoreItemId,
+    bindingXPath,
+    checked,
     color,
+    dateFormat,
+    dateLanguage,
+    dateMapping,
+    fullDate,
     lock: lock as
       | 'contentLocked'
       | 'sdtContentLocked'
@@ -401,9 +543,255 @@ function readProperties(properties: Element): {
     multiLine:
       multilineValue !== null && ['1', 'on', 'true'].includes(multilineValue),
     nativeId,
+    options,
+    selectedValue: options[0]?.value ?? '',
     tag: tag ?? '',
-    type: textElement ? 'text' : 'richText',
+    type: checkboxElement
+      ? 'checkbox'
+      : dropDownElement
+        ? 'dropDownList'
+        : comboBoxElement
+          ? 'comboBox'
+          : dateElement
+            ? 'date'
+            : textElement
+              ? 'text'
+              : 'richText',
   };
+}
+
+function readDataBindingProperties(binding: Element): {
+  bindingPrefixMappings: string;
+  bindingStoreItemId: string;
+  bindingXPath: string;
+} | null {
+  if (!isDocxWordElement(binding) || binding.localName !== 'dataBinding') {
+    return null;
+  }
+  if (hasNonWhitespaceText(binding) || binding.children.length) return null;
+  const allowed = new Set(['prefixMappings', 'storeItemID', 'xpath']);
+  for (const attribute of Array.from(binding.attributes)) {
+    const namespace = xmlAttributeNamespace(binding, attribute);
+    if (namespace === 'http://www.w3.org/2000/xmlns/') continue;
+    if (namespace === MARKUP_COMPATIBILITY_NAMESPACE) continue;
+    if (
+      !WORD_NAMESPACES.has(namespace ?? '') ||
+      !allowed.has(xmlAttributeLocalName(attribute))
+    ) {
+      return null;
+    }
+  }
+  const storeItemId = wordAttribute(binding, 'storeItemID') ?? '';
+  const xpath = wordAttribute(binding, 'xpath') ?? '';
+  const prefixMappings = wordAttribute(binding, 'prefixMappings') ?? '';
+  const normalized = normalizeDocumentContentControlProperties({
+    bindingStoreItemId: storeItemId,
+    bindingXPath: xpath,
+    bindingPrefixMappings: prefixMappings,
+  });
+  if (!normalized.bindingStoreItemId || !normalized.bindingXPath) return null;
+  return {
+    bindingStoreItemId: normalized.bindingStoreItemId,
+    bindingXPath: normalized.bindingXPath,
+    bindingPrefixMappings: normalized.bindingPrefixMappings,
+  };
+}
+
+function readDateProperties(dateElement: Element): {
+  dateFormat: string;
+  dateLanguage: string;
+  dateMapping: 'date' | 'dateTime' | 'text';
+  fullDate: string;
+} | null {
+  if (!isDocxWordElement(dateElement) || dateElement.localName !== 'date') {
+    return null;
+  }
+  if (hasNonWhitespaceText(dateElement)) return null;
+  const attributes = Array.from(dateElement.attributes);
+  for (const attribute of attributes) {
+    const namespace = xmlAttributeNamespace(dateElement, attribute);
+    if (namespace === 'http://www.w3.org/2000/xmlns/') continue;
+    if (namespace === MARKUP_COMPATIBILITY_NAMESPACE) continue;
+    if (
+      !WORD_NAMESPACES.has(namespace ?? '') ||
+      xmlAttributeLocalName(attribute) !== 'fullDate'
+    ) {
+      return null;
+    }
+  }
+  const fullDate = wordAttribute(dateElement, 'fullDate') ?? '';
+  let dateFormat = 'yyyy年M月d日';
+  let dateLanguage = 'zh-CN';
+  let dateMapping: 'date' | 'dateTime' | 'text' = 'dateTime';
+  const seen = new Set<string>();
+  for (const child of Array.from(dateElement.children)) {
+    if (!isDocxWordElement(child) || !DATE_CHILD_NAMES.has(child.localName)) {
+      return null;
+    }
+    if (seen.has(child.localName)) return null;
+    seen.add(child.localName);
+    if (child.localName === 'dateFormat') {
+      if (!validLeaf(child, new Set(['val']))) return null;
+      const value = wordAttribute(child, 'val') ?? '';
+      if (
+        !value ||
+        value.length > 255 ||
+        /[\u0000-\u001f\u007f]/u.test(value)
+      ) {
+        return null;
+      }
+      dateFormat = value;
+      continue;
+    }
+    if (child.localName === 'lid') {
+      if (!validLeaf(child, new Set(['val']))) return null;
+      const value = wordAttribute(child, 'val') ?? '';
+      if (!/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/u.test(value)) return null;
+      dateLanguage = value;
+      continue;
+    }
+    if (child.localName === 'storeMappedDataAs') {
+      if (!validLeaf(child, new Set(['val']))) return null;
+      const value = wordAttribute(child, 'val') ?? 'dateTime';
+      if (!DATE_MAPPING_VALUES.has(value)) return null;
+      dateMapping = value as 'date' | 'dateTime' | 'text';
+      continue;
+    }
+    if (child.localName === 'calendar') {
+      if (!validLeaf(child, new Set(['val']))) return null;
+      const value = wordAttribute(child, 'val') ?? 'gregorian';
+      if (!DATE_CALENDAR_VALUES.has(value)) return null;
+    }
+  }
+  return { dateFormat, dateLanguage, dateMapping, fullDate };
+}
+
+function readListItemProperties(
+  container: Element,
+  localName: 'comboBox' | 'dropDownList',
+): Array<{ displayText: string; value: string }> | null {
+  if (!isDocxWordElement(container) || container.localName !== localName) {
+    return null;
+  }
+  if (!validContainerAttributes(container) || hasNonWhitespaceText(container)) {
+    return null;
+  }
+  const items: Array<{ displayText: string; value: string }> = [];
+  const seen = new Set<string>();
+  for (const child of Array.from(container.children)) {
+    if (!isDocxWordElement(child) || child.localName !== 'listItem')
+      return null;
+    if (!validLeaf(child, new Set(['displayText', 'value']))) return null;
+    const displayText = wordAttribute(child, 'displayText') ?? '';
+    const value = wordAttribute(child, 'value') ?? displayText;
+    if (
+      !displayText ||
+      !value ||
+      /[\u0000-\u001f\u007f]/u.test(displayText) ||
+      /[\u0000-\u001f\u007f]/u.test(value) ||
+      displayText.length > 255 ||
+      value.length > 255 ||
+      seen.has(value)
+    ) {
+      return null;
+    }
+    if (items.length >= 32) return null;
+    seen.add(value);
+    items.push({ displayText, value });
+  }
+  return items.length ? items : null;
+}
+
+function readCheckboxProperties(
+  checkbox: Element,
+): { checked: boolean } | null {
+  if ((checkbox.namespaceURI ?? '') !== CONTENT_CONTROL_WORD_2010_NAMESPACE) {
+    return null;
+  }
+  if (
+    Array.from(checkbox.attributes).some((item) => {
+      const namespace = xmlAttributeNamespace(checkbox, item);
+      return (
+        namespace !== 'http://www.w3.org/2000/xmlns/' &&
+        namespace !== MARKUP_COMPATIBILITY_NAMESPACE
+      );
+    })
+  ) {
+    return null;
+  }
+  if (hasNonWhitespaceText(checkbox)) return null;
+  const children = Array.from(checkbox.children);
+  const groups = new Map<string, Element[]>();
+  for (const child of children) {
+    if ((child.namespaceURI ?? '') !== CONTENT_CONTROL_WORD_2010_NAMESPACE) {
+      return null;
+    }
+    if (
+      child.localName !== 'checked' &&
+      child.localName !== 'checkedState' &&
+      child.localName !== 'uncheckedState'
+    ) {
+      return null;
+    }
+    const matches = groups.get(child.localName) ?? [];
+    matches.push(child);
+    groups.set(child.localName, matches);
+  }
+  if (Array.from(groups.values()).some((items) => items.length > 1)) {
+    return null;
+  }
+  const checkedElement = groups.get('checked')?.[0];
+  let checked = false;
+  if (checkedElement) {
+    if (
+      !validNamespacedLeaf(
+        checkedElement,
+        new Set(['val']),
+        CONTENT_CONTROL_WORD_2010_NAMESPACE,
+      )
+    ) {
+      return null;
+    }
+    const value = namespacedAttribute(
+      checkedElement,
+      'val',
+      CONTENT_CONTROL_WORD_2010_NAMESPACE,
+    );
+    if (value === null) {
+      // Present empty checked leaf means true in Word's checkbox contract.
+      checked = true;
+    } else if (!CHECKBOX_BOOLEAN_VALUES.has(value)) {
+      return null;
+    } else {
+      checked = CHECKBOX_TRUE_VALUES.has(value);
+    }
+  }
+  for (const name of ['checkedState', 'uncheckedState'] as const) {
+    const state = groups.get(name)?.[0];
+    if (!state) continue;
+    if (
+      !validNamespacedLeaf(
+        state,
+        CHECKBOX_STATE_ATTRIBUTES,
+        CONTENT_CONTROL_WORD_2010_NAMESPACE,
+      )
+    ) {
+      return null;
+    }
+    const value = namespacedAttribute(
+      state,
+      'val',
+      CONTENT_CONTROL_WORD_2010_NAMESPACE,
+    );
+    const font = namespacedAttribute(
+      state,
+      'font',
+      CONTENT_CONTROL_WORD_2010_NAMESPACE,
+    );
+    if (!value || !/^[0-9a-f]{1,6}$/i.test(value)) return null;
+    if (font !== null && /[\u0000-\u001f\u007f]/u.test(font)) return null;
+  }
+  return { checked };
 }
 
 function replaceControlWithMarkers(
@@ -576,6 +964,15 @@ function isDirectParagraphControl(control: Element): boolean {
   );
 }
 
+function isBodyLevelControl(control: Element): boolean {
+  const parent = control.parentElement;
+  return Boolean(
+    parent &&
+      isDocxWordElement(parent) &&
+      (parent.localName === 'body' || parent.localName === 'tc'),
+  );
+}
+
 function hasContentControlAncestor(control: Element): boolean {
   let current = control.parentElement;
   while (current) {
@@ -594,6 +991,18 @@ function isStructuralContentControl(control: Element): boolean {
     (child) =>
       isDocxWordElement(child) &&
       ['docPartObj', 'docPartList'].includes(child.localName),
+  );
+}
+
+function isRepeatingSectionControl(control: Element): boolean {
+  const properties = Array.from(control.children).find(
+    (child) => isDocxWordElement(child) && child.localName === 'sdtPr',
+  );
+  if (!properties) return false;
+  return Array.from(properties.children).some(
+    (child) =>
+      child.namespaceURI === CONTENT_CONTROL_WORD_2012_NAMESPACE &&
+      child.localName === 'repeatingSection',
   );
 }
 

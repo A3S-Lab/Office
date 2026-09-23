@@ -354,6 +354,7 @@ test('keeps public documentation on the neutral Traditional Office baseline', as
       'PRODUCT.md',
       'README.md',
       'ROADMAP.md',
+      'WPS_EDITOR_PARITY_PLAN.md',
       'tests/e2e/README.md',
     ].map((file) => path.join(repositoryRoot, file)),
     ...DOCUMENTATION_VERSIONS.flatMap((version) =>
@@ -555,7 +556,7 @@ test('publishes the WPS VML connector boundary across code, docs, and A3S Test e
   expect(connectorTest).toContain('WPS connector compatibility boundary');
   expect(connectorAcl).toContain('scenario "edit-wps-vml-connector-boundary"');
   expect(packageManifest).toContain('test:e2e:writer-wps-connector:check');
-  expect(packageManifest).toContain('"version": "0.310.0"');
+  expect(packageManifest).toContain('"version": "0.311.0"');
 });
 
 test('publishes Writer connector arrow-style parity across the current and frozen release', async () => {
@@ -606,7 +607,7 @@ test('publishes Writer connector arrow-style parity across the current and froze
   expect(changelog).toContain('BeginArrowheadStyle=3');
   expect(releaseData).toContain("version: '0.56.0'");
   expect(releaseData).toContain('一个类型化箭头样式模型');
-  expect(packageManifest).toContain('"version": "0.310.0"');
+  expect(packageManifest).toContain('"version": "0.311.0"');
 });
 
 test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release story', async () => {
@@ -645,7 +646,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
   expect(releaseData).toContain(
     'Writer connectors gain typed WPS shape parity',
   );
-  expect(packageManifest).toContain('"version": "0.310.0"');
+  expect(packageManifest).toContain('"version": "0.311.0"');
 });
 
 test('publishes Writer numbering revisions across implementation, native collaboration, docs, and release evidence', async () => {
@@ -1004,7 +1005,7 @@ test('publishes Writer move revisions across implementation, native collaboratio
   expect(moveTests).toContain(
     'round-trips native moveFrom and moveTo wrappers',
   );
-  expect(packageManifest).toContain('0.310.0');
+  expect(packageManifest).toContain('0.311.0');
 });
 
 test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen documentation', async () => {
@@ -1125,7 +1126,7 @@ test('publishes bounded Writer whole-paragraph revisions in the 0.52.0 frozen do
   expect(aclSuite).toContain(
     'scenario "review-wps-paragraph-mark-revisions-on-phone"',
   );
-  expect(packageManifest).toContain('"version": "0.310.0"');
+  expect(packageManifest).toContain('"version": "0.311.0"');
   expect(packageManifest).toContain('test:e2e:writer-paragraph-mark-revision');
 });
 
@@ -1191,7 +1192,7 @@ test('publishes bounded Writer Compare moves in the 0.51.0 frozen documentation'
   expect(changelog).toContain('WPS COM/UIA reference probe');
   expect(releaseData).toContain("version: '0.51.0'");
   expect(releaseData).toContain('document-compare-and-combine');
-  expect(packageManifest).toContain('"version": "0.310.0"');
+  expect(packageManifest).toContain('"version": "0.311.0"');
 });
 
 test('publishes Spreadsheet validation alert branches across implementation, docs, and release evidence', async () => {

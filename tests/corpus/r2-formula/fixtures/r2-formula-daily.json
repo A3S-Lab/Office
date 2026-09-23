@@ -1,0 +1,1627 @@
+[
+  {
+    "name": "daily SUM AVERAGE MIN MAX",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 20 } },
+          { "row": 2, "column": 0, "value": { "kind": "number", "value": 30 } },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=SUM(A1:A3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=AVERAGE(A1:A3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=MIN(A1:A3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "formula": "=MAX(A1:A3)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 60 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 20 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "number", "value": 10 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 1,
+        "value": { "kind": "number", "value": 30 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 },
+      { "sheetId": "sheet-1", "row": 3, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily IF COUNT AND OR",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 5 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 0 } },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=IF(A1>0,\"yes\",\"no\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=COUNT(A1:A2)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=AND(A1>0,A2=0)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "formula": "=OR(A1=0,A2=0)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "text", "value": "yes" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "boolean", "value": true }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 1,
+        "value": { "kind": "boolean", "value": true }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 },
+      { "sheetId": "sheet-1", "row": 3, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily ROUND POWER SQRT ABS",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "number", "value": 2.46 }
+          },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": -9 } },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=ROUND(A1,1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=POWER(2,3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=SQRT(16)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "formula": "=ABS(A2)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 2.5 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 8 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "number", "value": 4 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 1,
+        "value": { "kind": "number", "value": 9 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 },
+      { "sheetId": "sheet-1", "row": 3, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily CONCAT IFERROR MOD",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "text", "value": "A3S" }
+          },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 10 } },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=CONCAT(A1,\"-\",\"Office\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=IFERROR(A2/0,\"err\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=MOD(10,3)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "text", "value": "A3S-Office" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "text", "value": "err" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "number", "value": 1 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily dependency chain SUM of IF",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 3 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 7 } },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=IF(A1>0,A1,0)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=IF(A2>5,A2,0)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=SUM(B1:B2)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 3 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 7 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "number", "value": 10 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily SUBTOTAL COUNTA",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 4 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 6 } },
+          { "row": 2, "column": 0, "value": { "kind": "text", "value": "x" } },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=SUBTOTAL(9,A1:A2)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=COUNTA(A1:A3)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 10 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 3 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily text LEFT RIGHT LEN MID",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "text", "value": "A3S-Office" }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=LEFT(A1,3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=RIGHT(A1,6)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=LEN(A1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "formula": "=MID(A1,5,6)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "text", "value": "A3S" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "text", "value": "Office" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "number", "value": 10 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 1,
+        "value": { "kind": "text", "value": "Office" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 },
+      { "sheetId": "sheet-1", "row": 3, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily date DATE YEAR MONTH DAY",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=DATE(2024,1,15)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "formula": "=YEAR(A1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "formula": "=MONTH(A1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 0,
+            "formula": "=DAY(A1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "number", "value": 45306 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 0,
+        "value": { "kind": "number", "value": 2024 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 0,
+        "value": { "kind": "number", "value": 1 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 0,
+        "value": { "kind": "number", "value": 15 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 0 },
+      { "sheetId": "sheet-1", "row": 1, "column": 0 },
+      { "sheetId": "sheet-1", "row": 2, "column": 0 },
+      { "sheetId": "sheet-1", "row": 3, "column": 0 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily date DATE YEAR MONTH DAY 1904 system",
+    "dateSystem": "1904",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=DATE(2024,1,15)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "formula": "=YEAR(A1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "formula": "=MONTH(A1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 0,
+            "formula": "=DAY(A1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "number", "value": 43844 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 0,
+        "value": { "kind": "number", "value": 2024 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 0,
+        "value": { "kind": "number", "value": 1 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 0,
+        "value": { "kind": "number", "value": 15 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 0 },
+      { "sheetId": "sheet-1", "row": 1, "column": 0 },
+      { "sheetId": "sheet-1", "row": 2, "column": 0 },
+      { "sheetId": "sheet-1", "row": 3, "column": 0 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily SUMIF COUNTIF VLOOKUP",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 20 } },
+          { "row": 2, "column": 0, "value": { "kind": "number", "value": 30 } },
+          { "row": 0, "column": 1, "value": { "kind": "text", "value": "a" } },
+          { "row": 1, "column": 1, "value": { "kind": "text", "value": "b" } },
+          { "row": 2, "column": 1, "value": { "kind": "text", "value": "a" } },
+          { "row": 0, "column": 2, "value": { "kind": "text", "value": "x" } },
+          { "row": 1, "column": 2, "value": { "kind": "text", "value": "y" } },
+          { "row": 2, "column": 2, "value": { "kind": "text", "value": "z" } },
+          { "row": 0, "column": 3, "value": { "kind": "number", "value": 1 } },
+          { "row": 1, "column": 3, "value": { "kind": "number", "value": 2 } },
+          { "row": 2, "column": 3, "value": { "kind": "number", "value": 3 } },
+          {
+            "row": 0,
+            "column": 4,
+            "formula": "=SUMIF(B1:B3,\"a\",A1:A3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 4,
+            "formula": "=COUNTIF(B1:B3,\"a\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 4,
+            "formula": "=VLOOKUP(\"y\",C1:D3,2,FALSE)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 4,
+        "value": { "kind": "number", "value": 40 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 4,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 4,
+        "value": { "kind": "number", "value": 2 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 4 },
+      { "sheetId": "sheet-1", "row": 1, "column": 4 },
+      { "sheetId": "sheet-1", "row": 2, "column": 4 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily SUMIFS COUNTIFS",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 20 } },
+          { "row": 2, "column": 0, "value": { "kind": "number", "value": 30 } },
+          { "row": 3, "column": 0, "value": { "kind": "number", "value": 40 } },
+          {
+            "row": 0,
+            "column": 1,
+            "value": { "kind": "text", "value": "east" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "value": { "kind": "text", "value": "west" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "value": { "kind": "text", "value": "east" }
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "value": { "kind": "text", "value": "east" }
+          },
+          { "row": 0, "column": 2, "value": { "kind": "text", "value": "ok" } },
+          { "row": 1, "column": 2, "value": { "kind": "text", "value": "ok" } },
+          {
+            "row": 2,
+            "column": 2,
+            "value": { "kind": "text", "value": "hold" }
+          },
+          { "row": 3, "column": 2, "value": { "kind": "text", "value": "ok" } },
+          {
+            "row": 0,
+            "column": 3,
+            "formula": "=SUMIFS(A1:A4,B1:B4,\"east\",C1:C4,\"ok\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 3,
+            "formula": "=COUNTIFS(B1:B4,\"east\",C1:C4,\"ok\")",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 3,
+        "value": { "kind": "number", "value": 50 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 3,
+        "value": { "kind": "number", "value": 2 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 3 },
+      { "sheetId": "sheet-1", "row": 1, "column": 3 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily AVERAGEIF AVERAGEIFS",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 20 } },
+          { "row": 2, "column": 0, "value": { "kind": "number", "value": 30 } },
+          { "row": 3, "column": 0, "value": { "kind": "number", "value": 50 } },
+          { "row": 0, "column": 1, "value": { "kind": "text", "value": "a" } },
+          { "row": 1, "column": 1, "value": { "kind": "text", "value": "b" } },
+          { "row": 2, "column": 1, "value": { "kind": "text", "value": "a" } },
+          { "row": 3, "column": 1, "value": { "kind": "text", "value": "a" } },
+          { "row": 0, "column": 2, "value": { "kind": "text", "value": "ok" } },
+          { "row": 1, "column": 2, "value": { "kind": "text", "value": "ok" } },
+          {
+            "row": 2,
+            "column": 2,
+            "value": { "kind": "text", "value": "hold" }
+          },
+          { "row": 3, "column": 2, "value": { "kind": "text", "value": "ok" } },
+          {
+            "row": 0,
+            "column": 3,
+            "formula": "=AVERAGEIF(B1:B4,\"a\",A1:A4)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 3,
+            "formula": "=AVERAGEIFS(A1:A4,B1:B4,\"a\",C1:C4,\"ok\")",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 3,
+        "value": { "kind": "number", "value": 30 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 3,
+        "value": { "kind": "number", "value": 30 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 3 },
+      { "sheetId": "sheet-1", "row": 1, "column": 3 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily INDEX MATCH HLOOKUP",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "text", "value": "x" } },
+          { "row": 1, "column": 0, "value": { "kind": "text", "value": "y" } },
+          { "row": 2, "column": 0, "value": { "kind": "text", "value": "z" } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 1, "value": { "kind": "number", "value": 20 } },
+          { "row": 2, "column": 1, "value": { "kind": "number", "value": 30 } },
+          { "row": 0, "column": 2, "value": { "kind": "text", "value": "a" } },
+          { "row": 0, "column": 3, "value": { "kind": "text", "value": "b" } },
+          { "row": 0, "column": 4, "value": { "kind": "text", "value": "c" } },
+          { "row": 1, "column": 2, "value": { "kind": "number", "value": 1 } },
+          { "row": 1, "column": 3, "value": { "kind": "number", "value": 2 } },
+          { "row": 1, "column": 4, "value": { "kind": "number", "value": 3 } },
+          {
+            "row": 0,
+            "column": 5,
+            "formula": "=INDEX(B1:B3,2)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 5,
+            "formula": "=MATCH(\"y\",A1:A3,0)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 5,
+            "formula": "=INDEX(B1:B3,MATCH(\"z\",A1:A3,0))",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 5,
+            "formula": "=HLOOKUP(\"b\",C1:E2,2,FALSE)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 5,
+        "value": { "kind": "number", "value": 20 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 5,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 5,
+        "value": { "kind": "number", "value": 30 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 5,
+        "value": { "kind": "number", "value": 2 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 5 },
+      { "sheetId": "sheet-1", "row": 1, "column": 5 },
+      { "sheetId": "sheet-1", "row": 2, "column": 5 },
+      { "sheetId": "sheet-1", "row": 3, "column": 5 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily approximate VLOOKUP MATCH HLOOKUP",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 1 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 3 } },
+          { "row": 2, "column": 0, "value": { "kind": "number", "value": 5 } },
+          { "row": 3, "column": 0, "value": { "kind": "number", "value": 7 } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 1, "value": { "kind": "number", "value": 30 } },
+          { "row": 2, "column": 1, "value": { "kind": "number", "value": 50 } },
+          { "row": 3, "column": 1, "value": { "kind": "number", "value": 70 } },
+          { "row": 0, "column": 2, "value": { "kind": "text", "value": "a" } },
+          { "row": 0, "column": 3, "value": { "kind": "text", "value": "c" } },
+          { "row": 0, "column": 4, "value": { "kind": "text", "value": "e" } },
+          { "row": 1, "column": 2, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 3, "value": { "kind": "number", "value": 30 } },
+          { "row": 1, "column": 4, "value": { "kind": "number", "value": 50 } },
+          {
+            "row": 0,
+            "column": 5,
+            "formula": "=VLOOKUP(4,A1:B4,2,TRUE)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 5,
+            "formula": "=VLOOKUP(4,A1:B4,2)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 5,
+            "formula": "=MATCH(4,A1:A4,1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 5,
+            "formula": "=HLOOKUP(\"d\",C1:E2,2,TRUE)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 5,
+        "value": { "kind": "number", "value": 30 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 5,
+        "value": { "kind": "number", "value": 30 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 5,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 5,
+        "value": { "kind": "number", "value": 30 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 5 },
+      { "sheetId": "sheet-1", "row": 1, "column": 5 },
+      { "sheetId": "sheet-1", "row": 2, "column": 5 },
+      { "sheetId": "sheet-1", "row": 3, "column": 5 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily SUMPRODUCT PRODUCT VALUE",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 1 } },
+          { "row": 1, "column": 0, "value": { "kind": "number", "value": 2 } },
+          { "row": 2, "column": 0, "value": { "kind": "number", "value": 3 } },
+          { "row": 3, "column": 0, "value": { "kind": "number", "value": 4 } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 10 } },
+          { "row": 1, "column": 1, "value": { "kind": "number", "value": 20 } },
+          { "row": 2, "column": 1, "value": { "kind": "number", "value": 30 } },
+          { "row": 3, "column": 1, "value": { "kind": "number", "value": 40 } },
+          { "row": 0, "column": 2, "value": { "kind": "number", "value": 1 } },
+          { "row": 1, "column": 2, "value": { "kind": "number", "value": 0 } },
+          { "row": 2, "column": 2, "value": { "kind": "number", "value": 1 } },
+          { "row": 3, "column": 2, "value": { "kind": "number", "value": 1 } },
+          {
+            "row": 0,
+            "column": 3,
+            "value": { "kind": "text", "value": "12.5" }
+          },
+          {
+            "row": 0,
+            "column": 4,
+            "formula": "=SUMPRODUCT(A1:A4,B1:B4)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 4,
+            "formula": "=SUMPRODUCT(A1:A4,B1:B4,C1:C4)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 4,
+            "formula": "=PRODUCT(A1:A3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 4,
+            "formula": "=VALUE(D1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 4,
+        "value": { "kind": "number", "value": 300 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 4,
+        "value": { "kind": "number", "value": 260 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 4,
+        "value": { "kind": "number", "value": 6 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 4,
+        "value": { "kind": "number", "value": 12.5 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 4 },
+      { "sheetId": "sheet-1", "row": 1, "column": 4 },
+      { "sheetId": "sheet-1", "row": 2, "column": 4 },
+      { "sheetId": "sheet-1", "row": 3, "column": 4 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily NUMBERVALUE locale separators",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "text", "value": "12,5" }
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "value": { "kind": "text", "value": "1.234,56" }
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "value": { "kind": "text", "value": "12.5" }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=NUMBERVALUE(A1,\",\",\".\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=NUMBERVALUE(A2,\",\",\".\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=NUMBERVALUE(A3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "formula": "=NUMBERVALUE(A1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 12.5 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 1234.56 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "number", "value": 12.5 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 1,
+        "value": { "kind": "error", "value": "#VALUE!" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 },
+      { "sheetId": "sheet-1", "row": 3, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily VALUE locale guessing",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "text", "value": "12,5" }
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "value": { "kind": "text", "value": "1.234,56" }
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "value": { "kind": "text", "value": "1,234.56" }
+          },
+          {
+            "row": 3,
+            "column": 0,
+            "value": { "kind": "text", "value": "1,234" }
+          },
+          {
+            "row": 4,
+            "column": 0,
+            "value": { "kind": "text", "value": "12.5" }
+          },
+          {
+            "row": 5,
+            "column": 0,
+            "value": { "kind": "text", "value": "1,2,3" }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=VALUE(A1)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 1,
+            "column": 1,
+            "formula": "=VALUE(A2)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 1,
+            "formula": "=VALUE(A3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 3,
+            "column": 1,
+            "formula": "=VALUE(A4)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 4,
+            "column": 1,
+            "formula": "=VALUE(A5)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 5,
+            "column": 1,
+            "formula": "=VALUE(A6)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 12.5 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 1234.56 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "number", "value": 1234.56 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 1,
+        "value": { "kind": "number", "value": 1234 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 4,
+        "column": 1,
+        "value": { "kind": "number", "value": 12.5 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 5,
+        "column": 1,
+        "value": { "kind": "error", "value": "#VALUE!" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 },
+      { "sheetId": "sheet-1", "row": 3, "column": 1 },
+      { "sheetId": "sheet-1", "row": 4, "column": 1 },
+      { "sheetId": "sheet-1", "row": 5, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily SEQUENCE spill",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=SEQUENCE(2,3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 4,
+            "column": 0,
+            "formula": "=SEQUENCE(2,2)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 5,
+            "column": 1,
+            "value": { "kind": "text", "value": "blocked" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 2,
+        "value": { "kind": "number", "value": 3 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 0,
+        "value": { "kind": "number", "value": 4 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "number", "value": 5 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 2,
+        "value": { "kind": "number", "value": 6 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "number", "value": 1 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 4,
+        "column": 0,
+        "value": { "kind": "error", "value": "#SPILL!" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 0, "column": 2 },
+      { "sheetId": "sheet-1", "row": 1, "column": 0 },
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 1, "column": 2 },
+      { "sheetId": "sheet-1", "row": 0, "column": 0 },
+      { "sheetId": "sheet-1", "row": 4, "column": 0 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily TRANSPOSE spill",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "number", "value": 1 } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 2 } },
+          { "row": 0, "column": 2, "value": { "kind": "number", "value": 3 } },
+          {
+            "row": 2,
+            "column": 0,
+            "formula": "=TRANSPOSE(A1:C1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 3,
+        "column": 0,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 4,
+        "column": 0,
+        "value": { "kind": "number", "value": 3 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 0,
+        "value": { "kind": "number", "value": 1 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 3, "column": 0 },
+      { "sheetId": "sheet-1", "row": 4, "column": 0 },
+      { "sheetId": "sheet-1", "row": 2, "column": 0 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily UNIQUE spill",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "text", "value": "a" } },
+          { "row": 1, "column": 0, "value": { "kind": "text", "value": "b" } },
+          { "row": 2, "column": 0, "value": { "kind": "text", "value": "a" } },
+          { "row": 3, "column": 0, "value": { "kind": "text", "value": "c" } },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=UNIQUE(A1:A4)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 1,
+        "value": { "kind": "text", "value": "b" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 1,
+        "value": { "kind": "text", "value": "c" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "text", "value": "a" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 1, "column": 1 },
+      { "sheetId": "sheet-1", "row": 2, "column": 1 },
+      { "sheetId": "sheet-1", "row": 0, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily FILTER spill",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "text", "value": "a" } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 1 } },
+          { "row": 1, "column": 0, "value": { "kind": "text", "value": "b" } },
+          { "row": 1, "column": 1, "value": { "kind": "number", "value": 0 } },
+          { "row": 2, "column": 0, "value": { "kind": "text", "value": "c" } },
+          { "row": 2, "column": 1, "value": { "kind": "number", "value": 1 } },
+          { "row": 0, "column": 2, "value": { "kind": "number", "value": 0 } },
+          { "row": 1, "column": 2, "value": { "kind": "number", "value": 0 } },
+          { "row": 2, "column": 2, "value": { "kind": "number", "value": 0 } },
+          {
+            "row": 0,
+            "column": 3,
+            "formula": "=FILTER(A1:A3,B1:B3)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 5,
+            "formula": "=FILTER(A1:A3,C1:C3,\"none\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 7,
+            "formula": "=FILTER(A1:A3,C1:C3)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 3,
+        "value": { "kind": "text", "value": "c" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 3,
+        "value": { "kind": "text", "value": "a" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 5,
+        "value": { "kind": "text", "value": "none" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 7,
+        "value": { "kind": "error", "value": "#CALC!" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 1, "column": 3 },
+      { "sheetId": "sheet-1", "row": 0, "column": 3 },
+      { "sheetId": "sheet-1", "row": 0, "column": 5 },
+      { "sheetId": "sheet-1", "row": 0, "column": 7 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily SORT spill",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          { "row": 0, "column": 0, "value": { "kind": "text", "value": "b" } },
+          { "row": 0, "column": 1, "value": { "kind": "number", "value": 2 } },
+          { "row": 1, "column": 0, "value": { "kind": "text", "value": "a" } },
+          { "row": 1, "column": 1, "value": { "kind": "number", "value": 3 } },
+          { "row": 2, "column": 0, "value": { "kind": "text", "value": "c" } },
+          { "row": 2, "column": 1, "value": { "kind": "number", "value": 1 } },
+          {
+            "row": 0,
+            "column": 3,
+            "formula": "=SORT(A1:B3,2,1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 4,
+        "value": { "kind": "number", "value": 1 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 3,
+        "value": { "kind": "text", "value": "b" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 1,
+        "column": 4,
+        "value": { "kind": "number", "value": 2 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 3,
+        "value": { "kind": "text", "value": "a" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 4,
+        "value": { "kind": "number", "value": 3 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 3,
+        "value": { "kind": "text", "value": "c" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 4 },
+      { "sheetId": "sheet-1", "row": 1, "column": 3 },
+      { "sheetId": "sheet-1", "row": 1, "column": 4 },
+      { "sheetId": "sheet-1", "row": 2, "column": 3 },
+      { "sheetId": "sheet-1", "row": 2, "column": 4 },
+      { "sheetId": "sheet-1", "row": 0, "column": 3 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "daily volatility TODAY NOW RAND fail-closed",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=TODAY()",
+            "value": { "kind": "number", "value": 45000 }
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "formula": "=NOW()",
+            "value": { "kind": "number", "value": 45000.5 }
+          },
+          {
+            "row": 2,
+            "column": 0,
+            "formula": "=RAND()",
+            "value": { "kind": "number", "value": 0.42 }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      },
+      {
+        "cell": { "sheetId": "sheet-1", "row": 1, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      },
+      {
+        "cell": { "sheetId": "sheet-1", "row": 2, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      }
+    ]
+  }
+]

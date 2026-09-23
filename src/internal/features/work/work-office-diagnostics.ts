@@ -76,6 +76,7 @@ import { diagnoseXlsxCharts } from './work-xlsx-chart-diagnostics';
 import { diagnoseXlsxConditionalFormatting } from './work-xlsx-conditional-format-diagnostics';
 import { diagnoseXlsxFormulas } from './work-xlsx-formula-diagnostics';
 import type { XlsxFormulaFeatures } from './work-xlsx-formulas';
+import { readXlsxImageTransform } from './work-xlsx-image-transform';
 import {
   isSupportedXlsxWorksheetImageContentType,
   MAX_XLSX_WORKSHEET_IMAGE_BYTES,
@@ -318,7 +319,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.text-boxes',
             'Text boxes and shapes',
-            `${textBoxInspection.supported} isolated WPS text box or common shape(s) remain editable with bounded DrawingML geometry (rectangle, rounded rectangle, ellipse, diamond, or triangle), inline or floating layout, safe page-relative offsets, fill, outline, padding, and vertical alignment. Mixed paragraphs and connectors remain on the normal DOCX compatibility path.`,
+            `${textBoxInspection.supported} isolated WPS text box or common shape(s) remain editable with bounded DrawingML geometry (rectangle, rounded rectangle, ellipse, diamond, triangle, parallelogram, or hexagon), inline or floating layout, safe page-relative offsets, fill, outline, padding, and vertical alignment. Mixed paragraphs and connectors remain on the normal DOCX compatibility path.`,
             'info',
           ),
         );
@@ -347,7 +348,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.content-controls',
             'Content controls',
-            `${contentControlInspection.supported} inline text or rich-text content control(s) remain editable with aliases, tags, bounded locking, multiline text, appearance, color, and native DOCX w:sdt round-tripping. Data bindings, placeholders, repeating sections, form controls, and block or relationship-bound controls remain outside the safe subset.`,
+            `${contentControlInspection.supported} inline text, rich-text, checkbox, drop-down list, combo box, date, or passively data-bound content control(s) remain editable with aliases, tags, bounded locking, multiline text, appearance, color, checkbox state, list options, date values, custom-XML binding metadata, and native DOCX w:sdt round-tripping. Placeholders, live custom-XML sync, picture controls, and broader body-level block or relationship-bound controls remain outside the safe subset.`,
             'info',
           ),
         );
@@ -1091,16 +1092,13 @@ async function inspectXlsxPackage(
       }
       const sourceRectangle = firstDescendant(picture, 'srcRect');
       const transform = firstDescendant(directChild(picture, 'spPr'), 'xfrm');
-      if (
-        (sourceRectangle &&
-          Array.from(sourceRectangle.attributes).some(
-            (item) => Number(item.value) !== 0,
-          )) ||
-        (transform &&
-          (attribute(transform, 'rot') ||
-            attribute(transform, 'flipH') === '1' ||
-            attribute(transform, 'flipV') === '1'))
-      ) {
+      const transformRead = readXlsxImageTransform(transform);
+      const hasCrop =
+        !!sourceRectangle &&
+        Array.from(sourceRectangle.attributes).some(
+          (item) => Number(item.value) !== 0,
+        );
+      if (hasCrop || !transformRead.supported) {
         hasNormalizedImageFormatting = true;
       }
     }
@@ -1144,7 +1142,7 @@ async function inspectXlsxPackage(
       issue(
         'xlsx.images.format',
         'Worksheet image formatting',
-        'Worksheet image crop, rotation, or flip settings are normalized to an editable unrotated image.',
+        'Worksheet image crop or unsupported non-quadrant rotation/flip settings are normalized to an editable unrotated image. Supported 90-degree rotations and flips round-trip natively.',
       ),
     );
   }

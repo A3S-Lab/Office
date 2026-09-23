@@ -52,6 +52,13 @@ export default defineConfig(({ command, env }) => {
           to: 'pptxgen.LICENSE.txt',
         },
         {
+          // Classic script consumed by the Playground export button. Copy the
+          // published UMD bytes; do not let the JavaScript pipeline recompile
+          // them or `var PptxGenJS` is removed.
+          from: '../node_modules/pptxgenjs/dist/pptxgen.bundle.js',
+          to: 'vendor/pptxgen.bundle.js',
+        },
+        {
           from: './generated/a3s-office-skill.tar.gz',
           to: 'downloads/a3s-office-skill.tar.gz',
         },
@@ -62,6 +69,13 @@ export default defineConfig(({ command, env }) => {
       ],
       distPath: {
         root: '../playground-dist/playground',
+      },
+      // Same classic-script constraint as the library copy. Minifying
+      // vendor/pptxgen.bundle.js removes the global constructor.
+      minify: {
+        jsOptions: {
+          exclude: /pptxgen\.bundle\.js/,
+        },
       },
     },
     plugins: [pluginReact()],

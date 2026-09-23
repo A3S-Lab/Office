@@ -16,10 +16,15 @@ import {
   documentInitialSectionLayout,
   documentSectionDomAttributes,
 } from './work-document-section';
-import { serializePreservableDocxSectionPropertyRevision } from './work-document-table-property-revision';
-import { supportedDocxSectionFormattingChangeFromProperties } from './work-docx-section-format-change-import';
 import { normalizeDocumentTableOfContentsHtml } from './work-document-table-of-contents';
+import { serializePreservableDocxSectionPropertyRevision } from './work-document-table-property-revision';
 import { readDocxBibliography } from './work-docx-bibliography';
+import {
+  applyImportedDocxBlockContentControlMarkers,
+  hasImportedDocxBlockContentControlMarkers,
+  type ImportedDocxBlockContentControlMarkers,
+  markDocxBlockContentControls,
+} from './work-docx-block-content-control-import';
 import {
   applyImportedDocxBookmarkMarkers,
   hasImportedDocxBookmarkMarkers,
@@ -52,17 +57,17 @@ import {
   markDocxComments,
 } from './work-docx-comment-import';
 import {
-  applyImportedDocxContentControlMarkers,
-  hasImportedDocxContentControlMarkers,
-  type ImportedDocxContentControlMarkers,
-  markDocxContentControls,
-} from './work-docx-content-control-import';
-import {
   applyImportedDocxConnectorMarkers,
   hasImportedDocxConnectorMarkers,
   type ImportedDocxConnectorMarkers,
   markDocxConnectors,
 } from './work-docx-connector-import';
+import {
+  applyImportedDocxContentControlMarkers,
+  hasImportedDocxContentControlMarkers,
+  type ImportedDocxContentControlMarkers,
+  markDocxContentControls,
+} from './work-docx-content-control-import';
 import {
   applyImportedDocxEquationMarkers,
   type ImportedDocxEquationMarkers,
@@ -187,12 +192,19 @@ import {
 } from './work-docx-paragraph-spacing-import';
 import { createDocxParagraphStyleResolver } from './work-docx-paragraph-styles';
 import {
+  applyImportedDocxRepeatingSectionMarkers,
+  hasImportedDocxRepeatingSectionMarkers,
+  type ImportedDocxRepeatingSectionMarkers,
+  markDocxRepeatingSections,
+} from './work-docx-repeating-section-import';
+import {
   applyImportedDocxRunFormattingMarkers,
   createImportedDocxRunFormattingMarkerState,
   hasImportedDocxRunFormattingMarkers,
   type ImportedDocxRunFormattingMarkers,
   markDocxRunFormattingIntoState,
 } from './work-docx-run-formatting-import';
+import { supportedDocxSectionFormattingChangeFromProperties } from './work-docx-section-format-change-import';
 import {
   applyImportedDocxParagraphTabStopMarkers,
   hasImportedDocxParagraphTabStopMarkers,
@@ -243,15 +255,15 @@ import {
 } from './work-ooxml-package';
 import type {
   WorkDocumentContent,
+  WorkDocumentEndnotePos,
+  WorkDocumentEndnotePr,
+  WorkDocumentFootnoteNumRestart,
+  WorkDocumentFootnotePos,
+  WorkDocumentFootnotePr,
   WorkDocumentGrid,
   WorkDocumentGridType,
   WorkDocumentLnNumType,
   WorkDocumentPgNumFmt,
-  WorkDocumentFootnoteNumRestart,
-  WorkDocumentFootnotePos,
-  WorkDocumentFootnotePr,
-  WorkDocumentEndnotePos,
-  WorkDocumentEndnotePr,
   WorkDocumentPgNumType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
@@ -280,6 +292,8 @@ export interface PreparedDocxImport {
   textBoxMarkers: ImportedDocxTextBoxMarkers;
   connectorMarkers: ImportedDocxConnectorMarkers;
   contentControlMarkers: ImportedDocxContentControlMarkers;
+  blockContentControlMarkers: ImportedDocxBlockContentControlMarkers;
+  repeatingSectionMarkers: ImportedDocxRepeatingSectionMarkers;
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
   paragraphMarkChangeMarkers: ImportedDocxParagraphMarkChangeMarkers;
@@ -334,6 +348,8 @@ export async function prepareDocxImport(
       textBoxMarkers: { textBoxes: [] },
       connectorMarkers: { connectors: [] },
       contentControlMarkers: { controls: [], unsupported: 0 },
+      blockContentControlMarkers: { controls: [], unsupported: 0 },
+      repeatingSectionMarkers: { sections: [], unsupported: 0 },
       paragraphIdentityMarkers: { paragraphs: [] },
       paragraphFormattingChangeMarkers: { paragraphs: [] },
       paragraphMarkChangeMarkers: { paragraphs: [] },
@@ -384,6 +400,8 @@ export async function prepareDocxImport(
   );
   const tableOfContentsMarkers = markDocxTablesOfContents(document);
   const indexMarkers = markDocxIndexes(document);
+  const repeatingSectionMarkers = markDocxRepeatingSections(document);
+  const blockContentControlMarkers = markDocxBlockContentControls(document);
   const contentControlMarkers = markDocxContentControls(document);
   const textBoxMarkers = markDocxTextBoxes(document);
   const connectorMarkers = markDocxConnectors(document);
@@ -529,6 +547,8 @@ export async function prepareDocxImport(
         hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
         hasImportedDocxConnectorMarkers(connectorMarkers) ||
         hasImportedDocxContentControlMarkers(contentControlMarkers) ||
+        hasImportedDocxBlockContentControlMarkers(blockContentControlMarkers) ||
+        hasImportedDocxRepeatingSectionMarkers(repeatingSectionMarkers) ||
         hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
         hasImportedDocxParagraphFormattingChangeMarkers(
           paragraphFormattingChangeMarkers,
@@ -568,6 +588,8 @@ export async function prepareDocxImport(
       textBoxMarkers,
       connectorMarkers,
       contentControlMarkers,
+      blockContentControlMarkers,
+      repeatingSectionMarkers,
       paragraphIdentityMarkers,
       paragraphFormattingChangeMarkers,
       paragraphMarkChangeMarkers,
@@ -624,6 +646,8 @@ export async function prepareDocxImport(
       hasImportedDocxTextBoxMarkers(textBoxMarkers) ||
       hasImportedDocxConnectorMarkers(connectorMarkers) ||
       hasImportedDocxContentControlMarkers(contentControlMarkers) ||
+      hasImportedDocxBlockContentControlMarkers(blockContentControlMarkers) ||
+      hasImportedDocxRepeatingSectionMarkers(repeatingSectionMarkers) ||
       hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
       hasImportedDocxParagraphFormattingChangeMarkers(
         paragraphFormattingChangeMarkers,
@@ -661,6 +685,8 @@ export async function prepareDocxImport(
     textBoxMarkers,
     connectorMarkers,
     contentControlMarkers,
+    blockContentControlMarkers,
+    repeatingSectionMarkers,
     paragraphIdentityMarkers,
     paragraphFormattingChangeMarkers,
     paragraphMarkChangeMarkers,
@@ -757,6 +783,14 @@ export function applyDocxSectionsToHtml(
     controls: [],
     unsupported: 0,
   },
+  blockContentControlMarkers: ImportedDocxBlockContentControlMarkers = {
+    controls: [],
+    unsupported: 0,
+  },
+  repeatingSectionMarkers: ImportedDocxRepeatingSectionMarkers = {
+    sections: [],
+    unsupported: 0,
+  },
 ): string {
   const document = new DOMParser().parseFromString(html, 'text/html');
   applyImportedDocxRunFormattingMarkers(document, runFormattingMarkers);
@@ -808,6 +842,11 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxTableOfContentsMarkers(document, tableOfContentsMarkers);
   applyImportedDocxIndexMarkers(document, indexMarkers);
   applyImportedDocxContentControlMarkers(document, contentControlMarkers);
+  applyImportedDocxBlockContentControlMarkers(
+    document,
+    blockContentControlMarkers,
+  );
+  applyImportedDocxRepeatingSectionMarkers(document, repeatingSectionMarkers);
   const notes = extractMammothDocumentNotes(document);
   const sourceNodes = Array.from(document.body.childNodes);
   document.body.replaceChildren();

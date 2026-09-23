@@ -186,7 +186,7 @@ These are already the default contract. Do not trade them away for breadth:
 
 | Surface | Enough when | Remaining priority (ordered) |
 | --- | --- | --- |
-| Document (Writer) | Report, contract, academic, and review workflows finish inside the embedded editor; DOCX round trips stay trustworthy | 1) Close remaining R0 revision / move / compare blockers; 2) R1 daily paths that still force leaving the editor; keep pagination predictable rather than pixel-cloning desktop Word |
+| Document (Writer) | Report, contract, academic, and review workflows finish inside the embedded editor; DOCX round trips stay trustworthy | 1) R1 structural/object compare and mixed-content paragraph-mark follow-ups; 2) keep pagination predictable rather than pixel-cloning desktop Word |
 | Spreadsheet | Common finance / operations / reporting workbooks calculate, filter, and export XLSX with bounded diagnostics | 1) Versioned formula-compatibility corpus (locale, arrays, volatility, deps); 2) pivot / slicer depth; 3) replace remaining Fortune redraw ownership with an A3S virtual grid |
 | Presentation | Typical sales / training / classroom decks keep visual hierarchy and animation / media intent | 1) Broader native PPTX animation preservation; 2) safe audio / video relationships; 3) deeper master / layout authoring |
 | PDF | Annotate, form-fill, and page-organize with verified save / reopen | 1) Native text / image / link editing; 2) OCR and conversion provider contracts; 3) e-sign, true redaction, protection |
@@ -197,7 +197,7 @@ These are already the default contract. Do not trade them away for breadth:
 Do the next slice in this order. Skip a row only when a higher row’s exit
 evidence already exists in-repo.
 
-#### 1. R0 close (P0, active)
+#### 1. R0 close (P0, complete for product-enough bar)
 
 Attribute-free paragraph `CT_Empty` glyph admission inside revision /
 paragraph-break / move bodies is a **completed** family through `0.129.0`
@@ -205,136 +205,38 @@ paragraph-break / move bodies is a **completed** family through `0.129.0`
 and long/short date-field glyphs). Do not grow that treadmill without a
 review-workflow fixture that still fails closed today.
 
-Still required for R0 exit:
+R0 exit evidence (2026-09-22): permanent corpus gate green (`bun run
+test:corpus:r0`, 131/131); reviewable property / mark / break / move /
+companion admissions through `0.327.0`; Writer PDF tagged bootstrap through
+`0.333.0` (URI links, `/Link`+`/OBJR`, `/Figure`+MCID, `/Table`→`/TR`→`/TH`|`/TD`).
+Remaining decorative art borders and full PDF/UA certification are **deferred
+past R0** (R6 / accessibility). Keep growing the corpus when a real sample
+fails the contract; do not reopen R0 for art-border treadmills.
+
+Completed R0 families (summary):
 
 1. Drawing / picture admission for whole-paragraph mark and paragraph-break
-   bodies is **complete** through `0.135.0` (picture-only bodies through
-   `0.135.0`; untracked supported inline DrawingML picture siblings beside mark
-   wrappers through `0.134.0`; supported inline DrawingML pictures inside
-   wrappers through `0.133.0`; safe relationship-bound external hyperlinks
-   through `0.132.0`; untracked text-only sibling runs through `0.130.0`) with
-   fail-closed ineligible shapes.
-2. Move-range companion family is **largely complete** through `0.140.0`
-   (one-level nested-table companions with move ancestry ≤2 tables through
-   `0.140.0`; simple SDT-wrapped companion `w:move*Range*` bookmarks through
-   `0.139.0`; multi-cell table-spanning companion `w:move*Range*` bookmarks with
-   untracked sibling-cell text through `0.138.0`; Compare / same-document
-   text-only move-range generation through `0.137.0`; single-cell table
-   companion `w:move*Range*` bookmarks for supported text-only moves through
-   `0.136.0`; cross-section companions through `0.131.0`). Text-only nested tables beside the move in the same cell are admitted
-   through `0.183.0`; one simple SDT wrapping a one-level nested move-path
-   table is admitted through `0.184.0`; up to two nesting levels (three
-   move-path tables) are admitted through `0.185.0`. Move-range companion
-   nesting family is **complete** for R0 (four or more move-path tables stay
-   fail-closed).
-3. Remaining complex numbering edge cases that still normalize or diagnose as
-   opaque. Omitted `w:ilvl` defaults to OOXML level `0` when `w:numId` and a
-   supported `w:numberingChange` are present through `0.143.0`; opaque sibling
-   `ST_NumberFormat` values in multi-level `w:original` (while the current
-   `w:ilvl` stays common nfc 0–4) are admitted through `0.141.0`; current-level
-   bullet `w:numberingChange` (nfc `23`) is admitted through `0.186.0`; missing
-   `numId`, current-level picture formats, and malformed originals stay
-   fail-closed.
-4. Broader relationship-free `w:tblPr` / `w:trPr` / `w:tcPr` / `w:sectPr`
-   reviewable subsets only when each property has a bounded fixture and
-   accept/reject contract. Relationship-free attribute-only `w:tblpPr` priors
-   in `w:tblPrChange` (known anchors/specs, bounded twips, optional FromText)
-   are admitted through `0.142.0`; invalid or relationship-bound `tblpPr`
-   stays fail-closed (`w:printerSettings`, header/footer refs, and nested
-   cell/row ins/del stay permanently opaque).
-5. Note-adjacent empty glyphs family is **complete** through `0.147.0`
-   (attribute-free empty `w:separator` and `w:continuationSeparator` through
-   `0.147.0`; attribute-free empty `w:annotationRef` through `0.146.0`;
-   attribute-free empty `w:endnoteRef` through `0.145.0`; attribute-free empty
-   `w:footnoteRef` through `0.144.0`). Bounded `w:footnoteReference` with exactly
-   one Word-ns numeric `w:id` is admitted in whole-paragraph mark,
-   paragraph-break, and text-move revision bodies through `0.187.0`; bounded
-   `w:endnoteReference` with the same id contract is admitted through `0.188.0`.
-   Attributed `footnoteRef` / `endnoteRef` / `annotationRef` with exactly one
-   Word-ns numeric `w:val` are admitted in the same revision bodies through
-   `0.189.0`. Malformed attributed refs and attributed separators stay
-   fail-closed.
-6. Browser document PDF output toward searchable text, broader vector paint,
-   and tagged / PDF/UA structure without a second layout model. PDF bookmarks
-   include Writer outline-level paragraphs (`p[data-office-outline-level]`)
-   alongside h1–h6 with level nesting through `0.148.0`; Writer underlines
-   paint as vector paths (`single` / `double` / `thick`) through `0.149.0`;
-   Writer text highlights paint as vector fill strips through `0.150.0`;
-   Writer paragraph borders paint as vector strokes (top/left/bottom/right;
-   single/thick/double/dashed/dotted) through `0.151.0`; Writer `between` and
-   `bar` paragraph border edges paint as vector strokes through `0.152.0`;
-   catalog `/MarkInfo` and vector-run `/Span` ActualText deepen the tagged
-   bootstrap through `0.153.0`; a catalog-linked StructTreeRoot stub
-   (Document + outline-derived H1–H6/P with empty `/K`) lands through
-   `0.154.0`; ParentTree / MCID content links for vector-run Spans land
-   through `0.155.0`; Writer `wave` / `doubleWave` paragraph borders paint as
-   explicit sine polylines through `0.156.0`; Writer `threeDEmboss` /
-   `threeDEngrave` / `inset` / `outset` paragraph borders paint as dual-tone
-   highlight+shadow offsets through `0.157.0`; Writer `zigZag` /
-   `zigZagStitch` art paragraph borders paint as chevron polylines and catalog
-   `/ViewerPreferences << /DisplayDocTitle true >>` lands through `0.158.0`;
-   Writer `sawtooth` / `sharksTeeth` art paragraph borders paint as triangular
-   teeth through `0.159.0`; Writer `triangles` / `triangle1` / `triangle2` art
-   paragraph borders paint as closed isosceles triangles through `0.160.0`;
-   Writer `ovals` / `rings` art paragraph borders paint as ellipse motifs
-   through `0.161.0`; Writer `marquee` / `marqueeToothed` art paragraph borders
-   paint as rectangle motifs through `0.162.0`; Writer `moons` art paragraph
-   borders paint as crescent motifs through `0.163.0`; Writer
-   `basicBlackSquares` / `basicWhiteSquares` art paragraph borders paint as
-   discrete square stamps through `0.164.0`; Writer `basicBlackDots` /
-   `basicWhiteDots` art paragraph borders paint as discrete circular stamps
-   through `0.165.0`; Writer `basicBlackDashes` / `basicWhiteDashes` art
-   paragraph borders paint as discrete dash stamps through `0.166.0`; Writer
-   `basicThinLines` art paragraph borders paint as parallel hairlines through
-   `0.167.0`; Writer `basicWideInline` / `basicWideMidline` /
-   `basicWideOutline` art paragraph borders paint as thick geometric rails
-   through `0.168.0`; Writer `bats` art paragraph borders paint as winged
-   silhouettes through `0.169.0`; Writer `birds` / `birdsFlight` art paragraph borders
-   paint as bird silhouettes through `0.170.0`; Writer `cabins` art paragraph borders paint as house
-   silhouettes through `0.171.0`; Writer `apples` art paragraph borders paint as
-   apple silhouettes through `0.190.0`; Writer `vine` art paragraph borders paint
-   as curling vine silhouettes through `0.191.0`; Writer `archedScallops` art
-   paragraph borders paint as scallop arches through `0.192.0`; Writer
-   `babyPacifier` art paragraph borders paint as pacifier silhouettes through
-   `0.193.0`; Writer `babyRattle` art paragraph borders paint as rattle
-   silhouettes through `0.194.0`; Writer `balloons3Colors` art paragraph borders
-   paint as balloon silhouettes through `0.195.0`; Writer `balloonsHotAir` art paragraph borders
-   paint as hot-air balloon silhouettes through `0.196.0`; Writer `cakeSlice` art paragraph borders paint as cake-slice wedges through `0.199.0`; Writer `candyCorn` art paragraph borders paint as candy-corn triangles through `0.200.0`; Writer `celticKnotwork` art paragraph borders paint as interlaced diamond motifs through `0.201.0`; Writer `certificateBanner` art paragraph borders paint as notched ribbon motifs through `0.202.0`; Writer `chainLink` art paragraph borders paint as interlaced oval links through `0.203.0`; Writer `champagneBottle` art paragraph borders paint as bottle silhouettes through `0.204.0`; Writer `checkedBarBlack` art paragraph borders paint as checkered bars through `0.205.0`; Writer `checkedBarColor` art paragraph borders paint as light checkered bars through `0.206.0`; Writer `checkered` art paragraph borders paint as 2×2 tile grids through `0.207.0`; page-matched vector-run Span MCIDs nest
-   under outline-derived H1–H6/P StructElem `/K` through `0.172.0`;
-   outline-derived H1–H6/P StructElems nest by level under parent `/K`
-   through `0.173.0`; decorative highlight / underline / paragraph-border
-   vector paint wraps in `/Artifact << /Type /Layout >> BDC` through `0.175.0`; catalog MarkInfo adds `/Suspects false`, catalog `/Tabs /S`, and outline StructElems carry `/Pg` through `0.176.0`; unmatched Spans nest under page-level `/P` through `0.177.0`; H1–H6
-   page-matched Spans nest through child `/P` (H → P → Span) through `0.178.0`; document
-   language copies onto outline / `/P` / Span StructElems through `0.179.0`; catalog
-   `/Lang` via putCatalog covers tags beyond the jsPDF enum through `0.180.0`; Span
-   BDC carries `/Lang` when language is seeded before vector paint through `0.181.0`; Document StructElem `/Alt` carries the document title through `0.182.0`; companion move-range bookmarks admit a text-only nested table beside the move through `0.183.0`; one simple SDT may wrap a one-level nested move-path table through `0.184.0`; up to two nesting levels (three move-path tables) through `0.185.0`; current-level bullet `w:numberingChange` (nfc `23`) through `0.186.0`; bounded `w:footnoteReference` with numeric `w:id` in mark / break / move bodies through `0.187.0`; bounded `w:endnoteReference` with numeric `w:id` through `0.188.0`;    attributed `footnoteRef` / `endnoteRef` / `annotationRef` with numeric `w:val` through `0.189.0`;    Writer `apples` art paragraph borders paint as apple silhouettes through `0.190.0`; Writer `vine` art paragraph borders paint as curling vine silhouettes through `0.191.0`;    Writer `archedScallops` art paragraph borders paint as scallop arches through `0.192.0`; Writer `babyPacifier` art paragraph borders paint as pacifier silhouettes through `0.193.0`; Writer `babyRattle` art paragraph borders paint as rattle silhouettes through `0.194.0`; Writer `balloons3Colors` art paragraph borders paint as balloon silhouettes through `0.195.0`; Writer `balloonsHotAir` art paragraph borders paint as hot-air balloon silhouettes through `0.196.0`; Writer `cakeSlice` art paragraph borders paint as cake-slice wedges through `0.199.0`; Writer `candyCorn` art paragraph borders paint as candy-corn triangles through `0.200.0`; Writer `celticKnotwork` art paragraph borders paint as interlaced diamond motifs through `0.201.0`; Writer `certificateBanner` art paragraph borders paint as notched ribbon motifs through `0.202.0`; Writer `chainLink` art paragraph borders paint as interlaced oval links through `0.203.0`; Writer `champagneBottle` art paragraph borders paint as bottle silhouettes through `0.204.0`; Writer `checkedBarBlack` art paragraph borders paint as checkered bars through `0.205.0`; Writer `checkedBarColor` art paragraph borders paint as light checkered bars through `0.206.0`; Writer `checkered` art paragraph borders paint as 2×2 tile grids through `0.207.0`; remaining
-   decorative art borders and full PDF/UA certification remain open.
-7. Continuous no-clobber corpus growth for representative Traditional Office
-   fixtures (diagnose every intentional normalization). **Permanent gate in**
-   `tests/corpus/r0-no-clobber/` (`bun run test:corpus:r0`): bookmarks/external
-   links, internal bookmark-anchor hyperlinks, review track changes, review
-   comments, default headers/footers, first-page vs default header/footer text, even-page vs default header/footer text, first-page header PAGE live fields (fldSimple and complex fldChar), even-page header PAGE live fields (fldSimple and complex fldChar), first-page footer NUMPAGES live fields (fldSimple and complex fldChar), even-page footer NUMPAGES live fields (fldSimple and complex fldChar),
-   footnotes, endnotes, text and rich-text
-   content controls, body PAGE, bookmark-backed PAGEREF, NUMPAGES, SECTION,
-   SECTIONPAGES, NUMWORDS, NUMCHARS, DATE (bare and `\@` format), and TIME
-   fields, header/footer PAGE and NUMPAGES (`fldSimple` and complex `fldChar`),
-   header DATE (`\@` format) and footer TIME (fldSimple and complex fldChar),
-   header SECTION and footer SECTIONPAGES (`fldSimple` and complex `fldChar`),
-   figure SEQ captions and caption
-   REF targets, table SEQ captions,
-   XE index entries and INDEX field columns, TOC level/hyperlink options and
-   cached entry titles, contract tables, duplicate-bookmark identity
-   diagnostics, and active-content fail-closed export. Grow the corpus with
-   more representative fixtures; do not substitute decorative art-border
-   breadth for this gate.
+   bodies is **complete** through `0.135.0` with fail-closed ineligible shapes.
+2. Move-range companion family is **complete** for R0 through `0.185.0`
+   (four or more move-path tables stay fail-closed).
+3. Numbering edge cases admitted through `0.186.0` for current-level bullet
+   `w:numberingChange`; remaining opaque picture formats stay fail-closed.
+4. Relationship-free reviewable `w:tblPr` / `w:trPr` / `w:tcPr` / `w:sectPr`
+   subsets gated in the corpus through `0.327.0`.
+5. Note-adjacent empty glyphs and bounded note refs **complete** through
+   `0.189.0`.
+6. Browser document PDF tagged bootstrap **complete for R0** through
+   `0.333.0` as listed above.
+7. Permanent no-clobber corpus gate in `tests/corpus/r0-no-clobber/`
+   (`bun run test:corpus:r0`).
 
-R0 exit criteria (unchanged in substance): representative fixtures reopen
-without unreported data loss; edited native structures retain identity;
-malformed inputs fail closed; pagination and export have deterministic
-structural and visual evidence. The R0 no-clobber corpus v1 gate is a
-required permanent check for that exit.
+R0 exit criteria (satisfied for the product-enough bar): representative
+fixtures reopen without unreported data loss; edited native structures retain
+identity; malformed inputs fail closed; pagination and export have
+deterministic structural and visual evidence. The R0 no-clobber corpus gate
+remains a permanent check.
 
-#### 2. R1 — Writer daily-work parity (P0/P1, next after R0 exit)
+#### 2. R1 — Writer daily-work parity (P0/P1, active)
 
 Already complete and must stay gated: typed TOC, native index, bounded
 compare/combine for same-layout paragraphs/headings, field-authoring slice,
@@ -343,14 +245,37 @@ transforms, isolated WPS connector subset.
 
 Remaining, in order:
 
-1. Structural / object compare and richer mixed-content paragraph-mark /
-   paragraph-break follow-ups that still leave review workflows incomplete.
+1. Same-shape table cell text Compare is admitted through `0.334.0` (shape
+   mismatches stay fail-closed). Simple-text paragraph-break split/merge
+   Compare emission is admitted through `0.335.0`. Soft-break Compare (inline
+   and whole-paragraph mark export) is admitted through `0.336.0`. Richer
+   mixed-content paragraph-mark picture follow-ups that still leave review
+   workflows incomplete.
 2. Typed DrawingML shape model expansion only after each branch has native
-   fixtures (no silent WordArt / chart / SmartArt approximations).
+   fixtures (no silent WordArt / chart / SmartArt approximations). The
+   parallelogram and hexagon text-box / WPS shape presets are admitted through
+   `0.337.0` / `0.338.0`.
 3. Field instructions beyond the bounded authoring slice (nested fields,
-   document properties, mail fields) with independent contracts.
+   remaining document properties, mail fields) with independent contracts.
+   Bounded `FILENAME` (name only; `\p` deferred) is admitted through `0.339.0`.
+   Bounded `AUTHOR` is admitted through `0.340.0`.
+   Bounded `TITLE` is admitted through `0.341.0`.
+   Bounded `SUBJECT` is admitted through `0.342.0`.
+   Bounded `KEYWORDS` is admitted through `0.343.0`.
+   Bounded `LASTSAVEDBY` is admitted through `0.344.0`.
+   Bounded `COMMENTS` (document-property remarks) is admitted through `0.345.0`.
+   Bounded `CREATEDATE` (optional `\@` format) is admitted through `0.346.0`.
+   Bounded `SAVEDATE` (optional `\@` format) is admitted through `0.347.0`.
+   Bounded `PRINTDATE` (optional `\@` format) is admitted through `0.348.0`.
 4. Content-control depth beyond inline plain/rich text (block, form,
-   data-binding) with fail-closed fixtures.
+   data-binding) with fail-closed fixtures. Form controls are admitted through
+   checkbox / drop-down / combo / date (`0.349.0`–`0.353.0`). Repeating
+   sections are admitted through `0.355.0`. Passive custom-XML data bindings
+   are admitted through `0.356.0`. Single-paragraph body-level block controls
+   are admitted through `0.357.0`. Multi-paragraph plain-run bodies are admitted
+   through `0.368.0`. One nesting level of leaf block controls is admitted
+   through `0.369.0`. Two nesting levels are admitted through `0.372.0`.
+   Depth ≥ 3 block nesting remains fail-closed.
 5. Mail merge only after fields and an explicit host data-source contract
    exist.
 
@@ -358,11 +283,41 @@ Remaining, in order:
 
 1. Versioned formula-compatibility corpus vs Traditional Office/Excel
    (locale, errors, arrays, volatility, dates, dependency updates).
+   Bootstrap lands in `0.358.0` via `bun run test:corpus:r2` (kernel scalar
+   parity + daily `SUM`/`IF`/`ROUND`/`CONCAT` set; unsupported functions
+   fail-closed). `0.359.0` adds `SUBTOTAL`/`COUNTA` and fail-closed volatility
+   (`TODAY`/`NOW`/`RAND`). `0.361.0` admits daily text `LEFT`/`RIGHT`/`LEN`/
+   `MID`. `0.363.0` admits Excel 1900-system `DATE`/`YEAR`/`MONTH`/`DAY` serial
+   formulas. `0.365.0` admits daily `SUMIF`/`COUNTIF` and exact-match
+   `VLOOKUP`. `0.366.0` admits multi-criteria `SUMIFS`/`COUNTIFS`.
+   `0.367.0` admits `INDEX`/`MATCH` and exact-match `HLOOKUP`. `0.373.0` admits
+   `AVERAGEIF`/`AVERAGEIFS`. `0.311.0` admits approximate ascending-range
+   `VLOOKUP`/`HLOOKUP` and `MATCH` type `1`. `0.311.0` admits `SUMPRODUCT`,
+   `PRODUCT`, and `VALUE`. `0.311.0` admits bounded `NUMBERVALUE` with explicit
+   decimal/group separators. `0.311.0` admits workbook `dateSystem: '1904'` for
+   `DATE`/`YEAR`/`MONTH`/`DAY`. `0.311.0` admits locale-guessing `VALUE` for
+   unambiguous EU/US separators. `0.311.0` admits bounded `SEQUENCE` spill on
+   the JavaScript path. `0.311.0` admits bounded `TRANSPOSE` spill. `0.311.0`
+   admits bounded `UNIQUE` spill. `0.311.0` admits bounded `FILTER` /
+  `SORT` spill (`FILTER` empty → `#CALC!` without `if_empty`; `SORT`
+  `by_col` non-default stays fail-closed).
 2. Pivot depth: caches, grouping, calculated fields, slicers/timelines,
-   styles, pivot charts.
+   styles, pivot charts. `0.360.0` expands the built-in style authoring
+   catalog (24 Traditional Office styles) and splits fail-closed calculated-
+   field diagnostics from grouping. `0.361.0` promotes the permanent
+   `bun run test:corpus:r2-pivot` gate (styles + calculated-fields/grouping/
+   slicers fail-closed). `0.311.0` admits in-app slicer-style multi-select
+   report filters (`selectedItems` + pivot-panel checkboxes); native XLSX
+   slicer packages, timelines, and pivot charts remain.
 3. Advanced sort/filter and conditional-format precedence gaps that still
-   diverge from common Excel workflows.
-4. Drawing/image fidelity before specialist analysis tools.
+   diverge from common Excel workflows. `0.362.0` adds the permanent
+   `bun run test:corpus:r2-cf` gate for priority wins, non-conflicting merge,
+   Stop-if-true blocking, and XLSX priority export. Broader CF formula breadth
+   and large-range worker evaluation remain.
+4. Drawing/image fidelity before specialist analysis tools. `0.364.0` admits
+   bounded worksheet-image 90-degree rotations and flips on native XLSX round
+   trips; crop and non-quadrant angles stay normalized. Shape/connector
+   drawings and Canvas paint for transforms remain.
 5. Continue replacing Fortune-owned redraw with A3S virtual-grid ownership
    for large workbooks.
 
@@ -462,17 +417,17 @@ Do not schedule these as substitutes for R0–R4 exit work:
 | Document grid and script-aware typography | **Supported** for section grid, run snap overrides, bundled/host/imported font choices, four native script-font slots, theme/style inheritance, mixed-script spans, and Traditional Office layout fixtures | Font substitution, missing glyphs, and browser shaping can still alter pagination | P0 |
 | Tables, merges, sizing, margins, styles, row pagination, nested tables | **Partial**, with broad editable geometry, style inheritance, Word-style shared-edge border paint for rectangular and colspan/rowspan occupancy grids, opaque body `w:tblpPr` float round-trip, and reviewable relationship-free attribute-only `w:tblpPr` in `w:tblPrChange` through `0.142.0` | Full ECMA style matrix, editable floating placement UI, formulas, and advanced table tools are incomplete | P0/P1 |
 | Inline and floating pictures, crop, wrap contour, layer, identity, alt text, quarter-turn transforms | **Partial**, with strong DrawingML picture support plus editable 90-degree rotation and horizontal/vertical reflection | Arbitrary-angle transforms, broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
-| Editable text boxes and bounded shape geometry | **Partial**, with isolated native WordprocessingML text boxes editable through inline/floating layout, five explicit presets (rectangle, rounded rectangle, ellipse, diamond, triangle), bounded geometry, fill, outline, padding, vertical alignment, WPS `mc:AlternateContent` import, and native DOCX round trips; isolated straight WPS VML connectors now have a typed endpoint/color/width/line-style/arrow model and native DrawingML export | Mixed paragraphs, routed or VML-only non-straight connectors, arbitrary shapes, WordArt, SmartArt, charts, malformed bodies, and unsupported DrawingML branches remain explicit compatibility boundaries | P1 editable drawings |
+| Editable text boxes and bounded shape geometry | **Partial**, with isolated native WordprocessingML text boxes editable through inline/floating layout, seven explicit presets (rectangle, rounded rectangle, ellipse, diamond, triangle, parallelogram through `0.337.0`, hexagon through `0.338.0`), bounded geometry, fill, outline, padding, vertical alignment, WPS `mc:AlternateContent` import, and native DOCX round trips; isolated straight WPS VML connectors now have a typed endpoint/color/width/line-style/arrow model and native DrawingML export | Mixed paragraphs, routed or VML-only non-straight connectors, arbitrary shapes, WordArt, SmartArt, charts, malformed bodies, and unsupported DrawingML branches remain explicit compatibility boundaries | P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export; relationship-free unsupported roots preserve as atomic native OMML | Relationship-bound, spoofed, misplaced, or over-limit OMML still flatten; editable coverage of remaining branches is P2 | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
 | Track changes review | **Partial**: body-text insertions/deletions plus bounded whole-paragraph mark insertion/deletion (including multi-wrapper text-only bodies, soft breaks, tabs, carriage returns, last-rendered page breaks, page-number and long/short date-field glyphs, non-breaking and soft hyphens, relationship-free internal hyperlinks, relationship-free bookmarks, empty/`rPr`-only untracked sibling runs, and untracked text-only sibling runs), character-, paragraph-formatting, ordered-list numbering, **table-formatting** (`w:tblPrChange` with prior `w:jc` and/or `w:tblW` and/or `w:tblInd` and/or `w:tblCellMar` and/or `w:tblLayout` and/or `w:bidiVisual` and/or solid `w:shd`; live track-changes), **row-formatting** (`w:trPrChange` with prior `w:cantSplit`, `w:tblHeader`, and/or `w:trHeight` and/or `w:hidden` and/or `w:jc` and/or `w:gridBefore` and/or `w:gridAfter` and/or `w:wBefore` and/or `w:wAfter` and/or `w:cnfStyle` and/or `w:divId` and/or `w:tblCellSpacing`; live track-changes), **cell-formatting** (`w:tcPrChange` with prior `w:vAlign` and/or solid `w:shd` and/or `w:tcMar` and/or `w:tcW` and/or `w:noWrap` and/or `w:textDirection` and/or `w:tcFitText` and/or `w:hideMark` and/or `w:cnfStyle` and/or `w:hMerge` and/or `w:vMerge` and/or `w:gridSpan`; live track-changes), **section-formatting** (`w:sectPrChange` with prior orientation-only or complete `w:pgSz`, complete `w:pgMar`, `w:paperSrc`, equal-width `w:cols`, `w:titlePg`, `w:rtlGutter`, and/or bounded `w:docGrid`; live track-changes), text-only move revisions with soft breaks / internal hyperlinks / relationship-free bookmarks and companion `w:move*Range*` bookmarks (including cross-paragraph sandwich, cross-section destination sides, single-cell table enclosures, multi-cell tables whose sibling cells hold only untracked text-only content, simple SDT wrappers with `w:sdtPr` chrome, and one-level nested tables with move ancestry ≤2), and eligible text-only paragraph-break merge/split revisions; native `w:pPr/w:rPr/w:ins`/`w:del`, `w:rPrChange`, `w:pPrChange`, `w:numberingChange`, `w:tblPrChange` (alignment/preferred-width/indent/cell-margins/layout), `w:trPrChange` (cantSplit/tblHeader/trHeight/hidden/jc), `w:tcPrChange` (vAlign/solid-shd/tcMar/tcW/noWrap), `w:sectPrChange` (orientation/page-geometry/page-margins/paper-source/equal-width-cols), `w:moveFrom`, and `w:moveTo` round trips; broader relationship-free `w:tblPrChange` / `w:trPrChange` / `w:tcPrChange` / `w:sectPrChange` opaque metadata round-trip; navigation, atomic accept/reject, immutable collaboration audit, and long-list virtualization; ineligible isolated paragraph-break shapes stay `docx.revisions.paragraph-break`; unpaired move-range markers stay `docx.revisions.move-range` | Attribute-free paragraph `CT_Empty` glyphs in revision bodies are admitted through `0.129.0`; untracked text-only sibling runs beside whole-paragraph marks are admitted through `0.130.0`; cross-section companion `w:move*Range*` bookmarks for supported text-only moves are admitted through `0.131.0`; safe relationship-bound external hyperlinks through `0.132.0`; supported inline DrawingML pictures through `0.133.0`; untracked picture siblings through `0.134.0`; picture-only bodies through `0.135.0`; single-cell table companion `w:move*Range*` bookmarks through `0.136.0`; Compare / same-document text-only move-range generation through `0.137.0`; multi-cell table-spanning companions with untracked sibling-cell text through `0.138.0`; simple SDT-wrapped companions through `0.139.0`; one-level nested-table companions (move ancestry ≤2) through `0.140.0`; opaque sibling `ST_NumberFormat` values in multi-level numbering `w:original` (current `w:ilvl` common nfc 0–4) through `0.141.0`; relationship-free attribute-only `w:tblpPr` priors in `w:tblPrChange` (known anchors/specs, bounded twips, optional FromText) through `0.142.0`; omitted `w:ilvl` as OOXML default level `0` when `w:numId` + supported `w:numberingChange` through `0.143.0`; attribute-free empty `w:footnoteRef` in whole-paragraph mark, paragraph-break, and text-move revision bodies through `0.144.0`; attribute-free empty `w:endnoteRef` in the same revision bodies through `0.145.0`; attribute-free empty `w:annotationRef` in the same revision bodies through `0.146.0`; attribute-free empty `w:separator` and `w:continuationSeparator` in the same revision bodies through `0.147.0`. Still open: deeper nested-table / beside-move nested-table / SDT+nested move-range edges; rich/relationship-bound moves; attributed `footnoteRef` / `endnoteRef` / `annotationRef` / `footnoteReference` / `endnoteReference` with id; remaining complex numbering edge cases (missing `numId`, current-level bullet/picture, and malformed originals stay fail-closed); remaining table/row/cell/section property revisions not yet reviewable | P0 |
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Supported**: shared semantic-heading/native-outline model plus typed insert/customize/refresh, levels 1–9, hyperlinks, live page numbers, alignment, four leader styles, stable paragraph-identity targets, one-step Undo, and native DOCX `TOC` round trips | Custom style-to-level mappings, tables of figures, and deeper TOC style formatting remain open | Maintain / P1 fidelity |
 | Native index authoring | **Supported**: primary/secondary `XE` entries, cross-references, bold/italic page intent, stable marker targets, merged page numbers, typed insert/customize/refresh, 1–4 columns, indented/run-in layouts, four leader styles, one-step Undo, and native DOCX `XE`/`INDEX` round trips | Entry ranges, custom index types, letter-heading formats, authorities, and locale-specific collation controls remain open | Maintain / P1 fidelity |
-| Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, NUMWORDS, NUMCHARS, safe REF paths, and bookmark-backed PAGEREF with WPS numeric switches and bounded diagnostics | Broader Word field grammar, nested fields, switches outside the deterministic common subset, mail fields, document properties, and tables of figures/authorities remain incomplete | P1/P2 |
-| Mail merge | **Gap** | No data-source mapping, recipient filtering, preview, or batch generation | P2 |
-| Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, paragraph-formatting, and bounded text-move revisions within one section; exact text-only whole-paragraph changes round-trip with native paragraph-mark records; reviewed-copy combine requires an exact reject-all baseline match | Changed complex structures, isolated paragraph-break merge/split or mixed-content paragraph-mark revisions, cross-section/range move generation, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
-| Content controls and forms | **Partial**: inline plain-text and rich-text controls are editable with aliases, tags, bounded locks, multiline text, appearance/color, and direct-paragraph DOCX `w:sdt` round trips; static controls in note/comment preservation remain separately bounded | Data binding, repeating sections, date/dropdown/picture/form controls, block controls, nested or relationship-bound semantics, placeholders, and active behavior are intentionally limited | P1/P2 |
+| Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, NUMWORDS, NUMCHARS, FILENAME (through `0.339.0`; `\p` deferred), AUTHOR (through `0.340.0`), TITLE (through `0.341.0`), SUBJECT (through `0.342.0`), KEYWORDS (through `0.343.0`), LASTSAVEDBY (through `0.344.0`), COMMENTS (through `0.345.0`), CREATEDATE (through `0.346.0`), SAVEDATE (through `0.347.0`), PRINTDATE (through `0.348.0`), safe REF paths, and bookmark-backed PAGEREF with WPS numeric switches and bounded diagnostics | Broader Word field grammar, nested fields, switches outside the deterministic common subset, mail fields, remaining document properties, and tables of figures/authorities remain incomplete | P1/P2 |
+| Mail merge | **Partial**: bounded `MERGEFIELD` plus typed host `DocumentMailMergeSource` preview runners (`0.354.0`) with active-row refresh, batch DOCX generation (`0.370.0`), and recipient-filter UI (`0.371.0`) | Unsupported MERGEFIELD switches remain incomplete | P1/P2 |
+| Compare/combine documents | **Partial**: same-layout paragraphs/headings compare into deterministic insertion, deletion, character-formatting, paragraph-formatting, bounded text-move, simple-text paragraph-break split/merge, and soft-break-aware revisions within one section (break emission through `0.335.0`; soft breaks through `0.336.0`); same-shape tables with simple text cells compare into reviewable inline revisions through `0.334.0`; exact text-only whole-paragraph changes round-trip with native paragraph-mark records; reviewed-copy combine requires an exact reject-all baseline match | Table shape changes, other complex structures, richer mixed-content paragraph-mark picture revisions, cross-section/range move generation, layout changes, and multi-copy structural conflicts remain explicit fail-closed boundaries | P1 |
+| Content controls and forms | **Partial**: inline plain-text, rich-text, checkbox, drop-down list, combo box, and date controls plus bounded body-level repeating sections (`0.355.0`) with one plain-paragraph item, multi-paragraph body-level `text`/`richText` block controls (`0.368.0`), and up to two nesting levels of leaf block controls (`0.369.0`–`0.372.0`) are editable with aliases, tags, bounded locks, multiline text, appearance/color, and DOCX `w:sdt` / `w15:repeatingSection` round trips where admitted; static controls in note/comment preservation remain separately bounded | Data binding live sync, add/remove repeating items UI, multi-paragraph repeating items, nested repeating sections, depth ≥ 3 block nesting, picture/form controls beyond the admitted slices, and relationship-bound semantics remain intentionally limited | P1/P2 |
 | Spelling, grammar, language, translation | **Partial**: native Latin/East Asian/bidi `w:lang` metadata, explicit `w:noProof` authoring and round trips, browser spellcheck, and host actions | No suite-grade proofing dictionaries, grammar engine, or bundled translation service | Host/provider-owned; P2 adapter |
 | Find, navigation, physical thumbnails, long-document review | **Supported** with transferable Worker import, bounded auxiliary-pane virtualization, model-level text/table-row NodeView windows for eligible structurally plain large DOCX files, and model-boundary keyboard navigation | Rich-feature giant DOCX fallback paths still need the same bounded body rendering and broader performance fixtures | P0 |
 | PDF output | **Partial**: live browser pages share editor pagination; Latin/Latin-1 vector text clears under measured runs and paints Helvetica at the same geometry for search/copy; optional host `registerWorkPdfCjkFont` TrueType face enables searchable CJK vector text (fail-soft without it); title/`lang`/heading outline bootstrap including Writer outline-level paragraphs (`p[data-office-outline-level]`) alongside h1–h6 with level nesting through `0.148.0`; Writer underlines paint as vector paths (`single` / `double` / `thick`) through `0.149.0`; Writer text highlights paint as vector fill strips through `0.150.0`; Writer paragraph borders paint as vector strokes (top/left/bottom/right; single/thick/double/dashed/dotted) through `0.151.0`; Writer `between` and `bar` paragraph border edges paint as vector strokes through `0.152.0`; catalog `/MarkInfo` and vector-run `/Span` ActualText deepen the tagged bootstrap through `0.153.0`; catalog-linked StructTreeRoot stub (Document + outline-derived H1–H6/P with empty `/K`) through `0.154.0`; ParentTree / MCID content links for vector-run Spans through `0.155.0`; Writer `wave` / `doubleWave` paragraph borders paint as explicit sine polylines through `0.156.0`; Writer `threeDEmboss` / `threeDEngrave` / `inset` / `outset` paragraph borders paint as dual-tone highlight+shadow offsets through `0.157.0`; Writer `zigZag` / `zigZagStitch` art borders paint as chevron polylines and catalog `/DisplayDocTitle` through `0.158.0`; Writer `sawtooth` / `sharksTeeth` art borders paint as triangular teeth through `0.159.0`; Writer `triangles` / `triangle1` / `triangle2` art borders paint as closed isosceles triangles through `0.160.0`; Writer `ovals` / `rings` art borders paint as ellipse motifs through `0.161.0`; Writer `marquee` / `marqueeToothed` art borders paint as rectangle motifs through `0.162.0` | Full PDF/UA certification, bundled CJK fonts, remaining decorative art borders, and broader vector object fidelity remain gaps | P0/P1 |
@@ -495,7 +450,7 @@ Do not schedule these as substitutes for R0–R4 exit work:
 | Named ranges, print areas/titles, page setup, breaks, headers/footers | **Supported** for common workbook print workflows | Advanced print scaling, repeating content, and device-specific output need deeper parity | P1 |
 | Freeze panes, row/column structure, clear modes, sheet lifecycle | **Supported** for common Traditional Office workflows, including row/column hide and unhide menu actions, grid-scoped `Cmd/Ctrl+9`, `Cmd/Ctrl+0`, `Cmd/Ctrl+Shift+9`, and `Cmd/Ctrl+Shift+0`, plus pre-allocation bounds of 10,000 rows or 1,000 columns per visibility intent | Grouping/outlining and advanced view state remain incomplete | P1 |
 | Comments | **Partial**: legacy comments are editable | Rich comment formatting, threaded conversations, mentions, and live collaboration are incomplete/host-owned | P1 |
-| Images and drawings | **Partial**: worksheet images round-trip under bounded geometry | Crop/rotation/flip can normalize; shapes, connectors, SmartArt, and unsupported drawing frames are gaps | P1/P2 |
+| Images and drawings | **Partial**: worksheet images round-trip under bounded geometry, including editable 90-degree rotations and horizontal/vertical flips | Crop and non-quadrant transforms normalize; shapes, connectors, SmartArt, unsupported drawing frames, and full Canvas paint for transforms remain gaps | P1/P2 |
 | Protection | **Partial**: workbook/worksheet protection plus compact locked and passwordless editable ranges | Encryption, enterprise permissions, and every protection option are incomplete | P1/P2 |
 | External data, connections, queries, macros, add-ins | **Gap** | No Power Query-like pipeline, data connections, VBA execution, or add-in runtime | P2; macro execution not planned |
 | Advanced analysis | **Gap** for solver, scenarios, goal seek, consolidation, and equivalent specialist tools | Requires explicit bounded models rather than opaque workbook mutation | P2 |
@@ -830,13 +785,13 @@ resolver.
 
 The bounded compare/combine slice is complete for same-layout paragraphs and
 headings. Compare imports DOCX, HTML, or TXT and produces reviewable text,
-format, and bounded same-section cross-paragraph move revisions; Combine admits
-a reviewed copy only when rejecting every imported revision exactly reconstructs
-the current baseline. Exact text-only whole-paragraph changes now export and
-reopen with native paragraph-mark records. Complex structural changes, isolated
-paragraph-break merge/split or mixed-content paragraph-mark revisions,
-cross-section/range move generation, and multi-copy conflicts remain follow-up
-work rather than silent approximations. See
+format, bounded same-section cross-paragraph move, simple-text paragraph-break
+split/merge, and soft-break-aware revisions; Combine admits a reviewed copy only
+when rejecting every imported revision exactly reconstructs the current
+baseline. Exact text-only whole-paragraph changes now export and reopen with
+native paragraph-mark records. Complex structural changes, richer mixed-content
+paragraph-mark picture revisions, cross-section/range move generation, and
+multi-copy conflicts remain follow-up work rather than silent approximations. See
 [Remaining roadmap (product-enough bar)](#remaining-roadmap-product-enough-bar)
 for the ordered R1 leftovers after R0 exit.
 - Keep the bounded Writer picture transform slice native: quarter-turn rotation
@@ -850,10 +805,11 @@ for the ordered R1 leftovers after R0 exit.
   until each has its own native fixture and editor contract.
 - The bounded field-authoring slice is complete: typed insert/edit settings for
   page, section, and bookmark page-reference formats, WPS numeric switches,
-  date/time presets, bookmark targets, hyperlinks, MERGEFORMAT preservation,
-  responsive discovery, and A3S Test desktop/390px phone evidence. Keep
-  nested fields, document properties, mail fields, and unsupported switches
-  fail-closed until each has a native contract.
+  date/time presets, document-property fields through `PRINTDATE`, bounded
+  `MERGEFIELD` with host `mergeRecord` refresh, bookmark targets, hyperlinks,
+  MERGEFORMAT preservation, responsive discovery, and A3S Test desktop/390px
+  phone evidence. Keep nested fields, fuller mail-merge runners, and
+  unsupported switches fail-closed until each has a native contract.
 - The local WPS UI-reference slice is complete: typed `shell`, `fields`, and
   `all` COM profiles record the real Writer window, Ribbon/status shell, field
   command bars, command IDs, and WPS build metadata as deterministic JSON.
@@ -866,10 +822,34 @@ for the ordered R1 leftovers after R0 exit.
   preservation.
 - Extend common field instructions and reference workflows beyond this bounded
   authoring slice only with independent native fixtures and typed contracts.
-- Extend the bounded content-control slice beyond direct inline text and rich
-  text only after block, form, and data-binding semantics have independent
-  typed models and fail-closed native fixtures.
-- Add mail merge only after fields and data-source contracts are stable.
+- Checkbox content controls are admitted (`0.349.0`) with typed `checked`
+  state and native `w14:checkbox` round-trip. Drop-down list content controls
+  are admitted (`0.351.0`) with typed options and native `w:dropDownList`
+  round-trip. Combo box content controls are admitted (`0.352.0`) with typed
+  options, free-text body preservation, and native `w:comboBox` round-trip.
+  Date content controls are admitted (`0.353.0`) with typed `fullDate` /
+  `dateFormat` and native `w:date` round-trip. Bounded repeating sections are
+  admitted (`0.355.0`) with TipTap block nodes, one plain-paragraph item, and
+  native `w15:repeatingSection` export plus fixture import. Bounded custom-XML
+  data bindings are admitted (`0.356.0`) with typed store-item / XPath /
+  prefix-mapping metadata and native `w:dataBinding` round-trip (live custom-XML
+  sync stays host-owned). Bounded body-level block content controls are admitted
+  (`0.357.0`–`0.372.0`) with one or more plain-paragraph `text` / `richText`
+  bodies, up to two nesting levels of leaf block controls, and native body
+  `w:sdt` round-trip. Extend the bounded content-control slice beyond text, rich
+  text, checkbox, drop-down list, combo box, date, repeating sections, passive
+  data bindings, multi-paragraph bodies, and two-level nesting only after depth
+  ≥ 3 nested block semantics have independent typed models and fail-closed
+  native fixtures.
+- Bounded `MERGEFIELD` is admitted (`0.350.0`) with host `mergeRecord` refresh.
+  Bounded mail-merge data-source runners are admitted (`0.354.0`) with a typed
+  host `DocumentMailMergeSource`, MERGEFIELD name discovery, and active-row
+  preview refresh. Bounded batch DOCX generation is admitted (`0.370.0`) via
+  `generateMailMergeDocuments` (≤256 recipients per run). Bounded recipient
+  filtering is admitted (`0.371.0`) with AND filter rules on
+  `DocumentMailMergeSource`, filtered preview/batch, and the DocumentEditor
+  recipient-filter dialog when hosts provide `onMailMergeSourceChange`.
+  Unsupported MERGEFIELD switches remain fail-closed.
 
 Exit criteria: the most common Traditional Office Writer report, contract,
 academic-paper, and review workflows can be completed without leaving the
@@ -879,16 +859,29 @@ embedded editor.
 
 - Build a versioned formula-compatibility corpus against Traditional
   Office/Excel behavior, including locale, errors, arrays, volatility, dates,
-  and dependency updates.
+  and dependency updates. Bootstrap (`0.358.0`): `bun run test:corpus:r2`
+  pins kernel scalar parity plus a bounded daily-formula set; `0.359.0` adds
+  `SUBTOTAL`/`COUNTA` and fail-closed `TODAY`/`NOW`/`RAND`. Daily text, date,
+  conditional aggregate, exact lookup, approximate lookup, and average
+  companions continue through `0.311.0`. `0.311.0` admits `SUMPRODUCT` /
+  `PRODUCT` / `VALUE`. `0.311.0` admits bounded `NUMBERVALUE` with explicit
+  separators. `0.311.0` admits 1904-system `DATE`/`YEAR`/`MONTH`/`DAY`.
+  `0.311.0` admits locale-guessing `VALUE`. `0.311.0` admits bounded
+  `SEQUENCE` spill. `0.311.0` admits bounded `TRANSPOSE` spill. `0.311.0`
+  admits bounded `UNIQUE` / `FILTER` / `SORT` spill. Expand slicer coverage next.
 - Treat common native totals-row authoring as supported: retain per-column
   aggregate/label/custom-formula controls, filtered-row-aware `SUBTOTAL`,
   dense/sparse reconciliation, manual-cell authority, Yjs convergence, and
-  exact XLSX totals metadata as permanent gates. Continue with slicers,
-  external/query-table boundaries, and a broader structured-reference formula
-  corpus. Automatic calculated-column fill is now
+  exact XLSX totals metadata as permanent gates. `0.311.0` admits in-app
+  slicer-style multi-select report filters; continue with native XLSX slicer
+  packages, timelines, external/query-table boundaries, and a broader
+  structured-reference formula corpus. Automatic calculated-column fill is now
   supported for newly inserted body rows with manual-exception and conflict
   safeguards.
-- Complete advanced sort/filter and conditional-format precedence.
+- Complete advanced sort/filter and conditional-format precedence. Precedence
+  / Stop-if-true / XLSX priority export are gated by `bun run test:corpus:r2-cf`
+  (`0.362.0`); broader CF formula breadth and large-range worker evaluation
+  remain.
 - Expand pivot caches, grouping, calculated fields, slicers/timelines, styles,
   and pivot charts.
 - Improve drawing/image fidelity before adding specialist analysis tools.

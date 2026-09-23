@@ -655,6 +655,7 @@ function Playground() {
                 }
                 onNotice={showNotice}
                 onOpenSidebar={() => setSidebarOpen(true)}
+                onReopenFile={(file) => void importFile(file)}
                 onRename={(title) =>
                   updateActiveArtifact((artifact) => ({
                     ...artifact,

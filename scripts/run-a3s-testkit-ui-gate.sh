@@ -60,8 +60,8 @@ resolve_agent_browser() {
 
 a3s_test="$(resolve_a3s_test)"
 agent_browser="$(resolve_agent_browser)"
-[[ "$("$a3s_test" --version)" == "a3s-test 1.0.0" ]] || {
-  echo "The Test Kit gate requires a3s-test 1.0.0 (build crates/test)." >&2
+[[ "$("$a3s_test" --version)" == "a3s-test 1.0.1" ]] || {
+  echo "The Test Kit gate requires a3s-test 1.0.1 (build crates/test)." >&2
   exit 1
 }
 [[ "$("$agent_browser" --version)" == "agent-browser 0.26.0" ]] || {

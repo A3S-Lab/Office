@@ -95,6 +95,7 @@ export function EditorWorkspace({
   onAssistantWidthChange,
   onAgentRequest,
   onNotice,
+  onReopenFile,
 }: {
   artifact: OfficeArtifact;
   collaborationDemo: boolean;
@@ -113,9 +114,11 @@ export function EditorWorkspace({
   onAssistantWidthChange: (width: number) => void;
   onAgentRequest: (request: EditorAgentRequest) => void;
   onNotice: (message: string, tone?: NoticeTone) => void;
+  onReopenFile: (file: File) => void;
 }) {
   const [preview, setPreview] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportedFile, setExportedFile] = useState<File | null>(null);
   const [assistantQuestion, setAssistantQuestion] =
     useState<PlaygroundAssistantQuestionDraft | null>(null);
   const extension = fileKindExtension(artifact.kind);
@@ -248,8 +251,22 @@ export function EditorWorkspace({
   const exportArtifact = async () => {
     if (exporting) return;
     setExporting(true);
+    setExportedFile(null);
     try {
-      await downloadArtifact(artifact);
+      const file = await downloadArtifact(
+        artifact,
+        artifact.kind === 'presentation'
+          ? {
+              // The JS minimizer parses this classic script as a module and
+              // drops `var PptxGenJS`, so export never finishes. Load the raw copy.
+              pptxRuntimeUrl: new URL(
+                'vendor/pptxgen.bundle.js',
+                document.baseURI,
+              ).href,
+            }
+          : undefined,
+      );
+      setExportedFile(file);
       onNotice(
         `${artifact.title}.${extension.toLocaleLowerCase()} 已下载`,
         'success',
@@ -284,7 +301,7 @@ export function EditorWorkspace({
     async (pdf: Blob) => {
       registerSourceBlob(artifact.id, pdf);
       onTouch();
-      onNotice('PDF 批注已保存到当前浏览器会话', 'success');
+      onNotice('PDF 已保存到当前浏览器会话', 'success');
       return true;
     },
     [artifact.id, onNotice, onTouch],
@@ -754,6 +771,16 @@ export function EditorWorkspace({
                 <Sparkles size={15} />
                 <span>AI 助手</span>
               </button>
+              {exportedFile && (
+                <button
+                  type="button"
+                  className="work-export-button"
+                  aria-label="重新打开已导出文件"
+                  onClick={() => onReopenFile(exportedFile)}
+                >
+                  <span>重新打开</span>
+                </button>
+              )}
               <EditorExportButton
                 key={artifact.id}
                 kind={artifact.kind}

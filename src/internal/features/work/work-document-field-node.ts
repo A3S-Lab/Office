@@ -5,7 +5,7 @@ import {
   Node,
 } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
-import { NodeSelection, type EditorState } from '@tiptap/pm/state';
+import { type EditorState, NodeSelection } from '@tiptap/pm/state';
 import { createDocumentFieldIdentityPlugin } from './work-document-field-identity';
 import {
   documentFieldCodeDisplay,
@@ -15,6 +15,7 @@ import {
   documentFieldLabel,
   documentFieldOptionsFromDraft,
   documentFieldStatisticsFromText,
+  documentMergeFieldInstruction,
   documentPageReferenceInstruction,
   docxDocumentFieldKind,
   docxDocumentFieldTarget,
@@ -111,7 +112,9 @@ export const DocumentField = Node.create({
             instruction:
               kind === 'pageReference' && targetName
                 ? documentPageReferenceInstruction(targetName, instruction)
-                : instruction || documentFieldInstruction(kind),
+                : kind === 'mergeField' && targetName
+                  ? documentMergeFieldInstruction(targetName, instruction)
+                  : instruction || documentFieldInstruction(kind),
             display:
               node.dataset.fieldDisplay?.trim() ||
               node.textContent?.trim() ||
@@ -144,7 +147,9 @@ export const DocumentField = Node.create({
     const normalizedInstruction =
       kind === 'pageReference' && targetName
         ? documentPageReferenceInstruction(targetName, instruction)
-        : instruction || documentFieldInstruction(kind);
+        : kind === 'mergeField' && targetName
+          ? documentMergeFieldInstruction(targetName, instruction)
+          : instruction || documentFieldInstruction(kind);
     return [
       'span',
       mergeAttributes(HTMLAttributes, {
@@ -159,7 +164,7 @@ export const DocumentField = Node.create({
         node.attrs.targetId
           ? { 'data-field-target-id': node.attrs.targetId }
           : {}),
-        ...(kind === 'pageReference' &&
+        ...((kind === 'pageReference' || kind === 'mergeField') &&
         typeof node.attrs.targetName === 'string' &&
         node.attrs.targetName
           ? { 'data-field-target-name': node.attrs.targetName }
@@ -198,8 +203,12 @@ function insertDocumentFieldCommand(
   const targetName =
     typeof options.targetName === 'string' ? options.targetName.trim() : '';
   if (kind === 'pageReference' && !targetName) return false;
+  if (kind === 'mergeField' && !targetName) return false;
   if (!dispatch) return true;
   const instruction = documentFieldInstruction(kind, options);
+  if (kind === 'mergeField' && !docxDocumentFieldTarget(instruction)) {
+    return false;
+  }
   const statistics = documentFieldStatisticsFromText(
     state.doc.textBetween(0, state.doc.content.size, '\n', '\uFFFC'),
   );
@@ -235,8 +244,12 @@ function updateDocumentFieldCommand(
   if (!selectionNode || selectionNode.type !== fieldType) return false;
   const options = documentFieldOptionsFromDraft(draft);
   if (draft.kind === 'pageReference' && !draft.targetName) return false;
+  if (draft.kind === 'mergeField' && !draft.targetName) return false;
   if (!dispatch) return true;
   const instruction = documentFieldInstruction(draft.kind, options);
+  if (draft.kind === 'mergeField' && !docxDocumentFieldTarget(instruction)) {
+    return false;
+  }
   const statistics = documentFieldStatisticsFromText(
     state.doc.textBetween(0, state.doc.content.size, '\n', '\uFFFC'),
   );

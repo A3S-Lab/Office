@@ -817,7 +817,13 @@ Writer workflows. Compare treats the mounted controlled document as the
 original and imports a `.docx`, `.html`, `.htm`, or `.txt` file as the revised
 version. A deterministic section/block alignment and token diff generates the
 existing reviewable insertion, deletion, character-formatting, and
-paragraph-formatting revisions. When a lexical range appears exactly once in a
+paragraph-formatting revisions. When one simple text paragraph or heading
+becomes two (or two become one) with exact text concatenation, Compare emits a
+reviewable `paragraph-break` split or merge with the same accept/reject join
+semantics as native DOCX import. Soft breaks (`<br>` / `hardBreak`) are admitted
+inside simple paragraphs and headings for both inline diffs and whole-paragraph
+structural insert/delete (native paragraph-mark export). When a lexical range
+appears exactly once in a
 delete chunk and once in an insert chunk within the same simple paragraph or
 heading, or across aligned simple text blocks in the same document section,
 Compare additionally emits one paired `move` review item. Matching marks and
@@ -848,7 +854,9 @@ and page-layout attributes. Unchanged complex blocks may pass through, but a
 changed table, list, image, equation, content control, empty structural block,
 or other complex tree is never flattened into a misleading text diff. Existing
 revisions in either comparison input, unsupported review marks, and layout
-changes also fail closed.
+changes also fail closed. Same-shape tables whose cells hold only simple text
+paragraphs or headings are an admitted exception: cell text diffs become
+reviewable inline insertions and deletions.
 
 Generated inline revisions export as native `w:ins` and `w:del`, character
 format revisions as `w:rPrChange`, and paragraph-format revisions as
@@ -858,10 +866,10 @@ uses block-container metadata so rejecting an inserted block or accepting a
 deleted block removes the whole container. When that container is one exact
 text-only paragraph whose text is entirely owned by the matching insertion or
 deletion, export now maps it to the native paragraph-mark shape described
-above, and reopen preserves the atomic block decision. Isolated paragraph-break
-merge/split semantics, mixed content, and other structural changes still fail
-closed and are reported rather than presented as complete structural
-comparison fidelity.
+above, and reopen preserves the atomic block decision. Soft-break paragraphs
+follow the same mark path. Richer mixed-content paragraph-mark picture shapes
+and other structural changes still fail closed and are reported rather than
+presented as complete structural comparison fidelity.
 
 Open the Playground's **文档比较** template, choose Review → **比较文档**,
 and import a revised file to exercise the public path. The local A3S Test suite
@@ -1110,12 +1118,33 @@ field state together.
 ## Common live fields
 
 The Insert ribbon also exposes Word's bounded common field subset: `PAGE`,
-`NUMPAGES`, `SECTION`, `SECTIONPAGES`, `DATE`, `TIME`, `NUMWORDS`, and
-`NUMCHARS`. Numeric page and section fields resolve from the measured physical
+`NUMPAGES`, `SECTION`, `SECTIONPAGES`, `DATE`, `TIME`, `NUMWORDS`,
+`NUMCHARS`, `FILENAME`, `AUTHOR`, `TITLE`, `SUBJECT`, `KEYWORDS`,
+`LASTSAVEDBY`, `COMMENTS`, `CREATEDATE`, `SAVEDATE`, `PRINTDATE`, and
+`MERGEFIELD`. Numeric page and section fields resolve from the
+measured physical
 page that contains the atom. Word-count fields count visible body text while
 excluding generated field results; character counts include spaces and ignore
-line-break separators. Refresh and F9 update every eligible field in one
-controlled transaction, so a reflow never leaves a stale mixture of values.
+line-break separators. `FILENAME`, `AUTHOR`, `TITLE`, `SUBJECT`, `KEYWORDS`,
+`LASTSAVEDBY`, `COMMENTS`, `CREATEDATE`, `SAVEDATE`, and `PRINTDATE` refresh from host-provided
+context (or keep imported/cached display when none is supplied); the `FILENAME`
+path switch (`\p`) and formatting switches on property fields stay fail-closed.
+`CREATEDATE`, `SAVEDATE`, and `PRINTDATE` use the same bounded `\@` date formats as `DATE`.
+`MERGEFIELD` uses a named identifier and refreshes from host-provided
+`mergeRecord` values, showing `«Name»` when no record is supplied. Hosts can
+also pass a typed `mailMergeSource` (`DocumentMailMergeSource`) with ordered
+records and an active index; `DocumentEditor` layers the active row onto the
+field-context resolver for preview, and helpers expose MERGEFIELD name
+discovery plus next/previous stepping. Hosts can also call
+`generateMailMergeDocuments` for a bounded batch of DOCX buffers (at most 256
+records per call, each row refreshing MERGEFIELD values from that record).
+Optional AND `filter` rules on `mailMergeSource` narrow preview and batch to
+matching recipients; when hosts also pass `onMailMergeSourceChange`,
+`DocumentEditor` opens a recipient-filter dialog from the Insert ribbon.
+Unsupported mail-merge switches stay fail-closed.
+Refresh and F9
+update every eligible field in one controlled transaction, so a reflow never
+leaves a stale mixture of values.
 
 Page, section, and bookmark page-reference fields also accept the deterministic
 numeric switches emitted by WPS: Arabic, uppercase/lowercase Roman,
@@ -1176,8 +1205,9 @@ The Insert ribbon adds a bounded **Text Box** block. Selecting it opens a
 contextual Text Box ribbon with the same predictable controls on desktop and
 compact Web: inline or floating layout, width and height in millimeters,
 page/column/margin or paragraph-relative offsets, fill and outline, padding,
-top/center/bottom vertical alignment, and five explicit shape presets:
-rectangle, rounded rectangle, ellipse, diamond, and triangle. Every accepted
+top/center/bottom vertical alignment, and seven explicit shape presets:
+rectangle, rounded rectangle, ellipse, diamond, triangle, parallelogram, and
+hexagon. Every accepted
 change is one typed document update and one Undo step. The selected shape is
 visible in the control label and on the page, remains discoverable after a
 compact-ribbon scroll, and survives Undo/Redo. A text box keeps its rich inline
@@ -1235,11 +1265,16 @@ diagnostic keeps unsupported source branches visible to hosts.
 
 The Insert ribbon adds a bounded inline **Content Control** workflow for
 document templates and review forms. The responsive dialog keeps the control's
-intent together: choose plain text or rich text, give it a display name and
-program tag, allow multiline text where appropriate, choose a border, tag, or
-hidden appearance, and optionally set a theme-independent color. Selecting an
-existing control opens the same dialog for its metadata, while the control's
-accessible textbox name follows its alias or tag.
+intent together: choose plain text, rich text, checkbox, drop-down list, combo
+box, or date, give it a display name and program tag, allow multiline text
+where appropriate (text controls), toggle the default checked state for
+checkboxes, author up to 32 list options and the selected or suggested value
+for drop-downs and combo boxes, pick a calendar date and display format for
+date controls, choose a border, tag, or hidden appearance, and optionally set a
+theme-independent color. Selecting an existing control opens the same dialog
+for its metadata, while the control's accessible name follows its alias or tag
+(checkboxes use `role="checkbox"`; drop-downs use `role="listbox"`; combo boxes
+use `role="combobox"`).
 
 Content and shell locks are enforced by the editor transaction boundary rather
 than by styling alone. A content lock rejects typing, paste, and generic
@@ -1247,15 +1282,31 @@ metadata writes; a shell lock prevents replacement or deletion while still
 allowing the declared editable content path. Typed commands must explicitly
 request an unlock-sensitive deletion or property change. Insertion, property
 changes, and deletion each remain one document transaction and one Undo step.
+Checkbox controls insert ballot-box glyphs (`☐` / `☑`) and sync the glyph when
+the checked state changes. Drop-down and combo-box controls sync displayed text
+when a selected or suggested value (or the option list) changes; combo boxes
+also keep free-text bodies that do not match a list item. Date controls sync
+displayed text when `fullDate` or `dateFormat` changes.
 
 The native DOCX contract is intentionally narrow. Direct paragraph `w:sdt`
 controls in transitional or strict WordprocessingML can round-trip plain or
-rich inline runs, aliases, tags, native lock values, multiline text,
-collision-free IDs, and Word 2012 appearance and color. Empty controls are
-preserved as empty editable spans. Data bindings, placeholders, repeating
-regions, date/dropdown/picture/form controls, block or nested controls, and
-relationship-bound semantics are not represented by this model. They remain
-safe editable text (or a fail-closed import) and receive
+rich inline runs, bounded `w14:checkbox` state, bounded `w:dropDownList` and
+`w:comboBox` options, bounded `w:date` values (fullDate, dateFormat, lid,
+gregorian calendar, storeMappedDataAs), aliases, tags, native lock values,
+multiline text, collision-free IDs, Word 2012 appearance and color, and bounded
+passive custom-XML `w:dataBinding` metadata (`storeItemID`, `xpath`, optional
+`prefixMappings`). Empty text/rich-text controls are preserved as empty editable
+spans. Bounded body-level repeating sections (`0.355.0`) admit one
+plain-paragraph item with native `w15:repeatingSection` export and fixture
+import. Bounded body-level block content controls (`0.357.0`–`0.372.0`) admit one
+or more plain paragraphs typed as `text` or `richText`, optional passive
+`w:dataBinding` metadata, and up to two nesting levels of leaf block controls.
+Live custom-XML part sync, placeholders, add/remove repeating items,
+multi-paragraph repeating-section items, nested repeating sections, depth ≥ 3
+block nesting, picture and other form controls beyond the checkbox, drop-down,
+combo-box, date, repeating, data-binding, multi-paragraph, and two-level nested
+block slices, and relationship-bound semantics are not represented by this
+model. They remain safe editable text (or a fail-closed import) and receive
 `docx.content-controls.unsupported` diagnostics instead of an inexact editable
 promise.
 

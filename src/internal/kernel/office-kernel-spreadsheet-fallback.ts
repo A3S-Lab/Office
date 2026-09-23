@@ -1,7 +1,18 @@
 import type { FormulaParserCoordinate } from '@fortune-sheet/formula-parser';
 import {
   browserScalarFunctionArities,
+  evaluateParserDate,
+  evaluateParserDay,
+  evaluateParserFilter,
+  evaluateParserMonth,
+  evaluateParserNumberValue,
+  evaluateParserSequence,
+  evaluateParserSort,
   evaluateParserSubtotal,
+  evaluateParserTranspose,
+  evaluateParserUnique,
+  evaluateParserValue,
+  evaluateParserYear,
   normalizeFormulaForFortuneParser,
   normalizeSpreadsheetFunctionName,
 } from './office-kernel-spreadsheet-fallback-formula';
@@ -200,9 +211,60 @@ class JavaScriptSpreadsheetEvaluator {
     let unsupportedReference = false;
     let unsupportedFunction: string | undefined;
     let materializedRangeCells = 0;
+    let producedSpillGrid: unknown[][] | null = null;
 
+    const dateSystem = this.request.dateSystem === '1904' ? '1904' : '1900';
     parser
       .setFunction('IFERROR', evaluateParserIfError)
+      .setFunction('DATE', (parameters) =>
+        evaluateParserDate(parameters, dateSystem),
+      )
+      .setFunction('YEAR', (parameters) =>
+        evaluateParserYear(parameters, dateSystem),
+      )
+      .setFunction('MONTH', (parameters) =>
+        evaluateParserMonth(parameters, dateSystem),
+      )
+      .setFunction('DAY', (parameters) =>
+        evaluateParserDay(parameters, dateSystem),
+      )
+      .setFunction('NUMBERVALUE', evaluateParserNumberValue)
+      .setFunction('VALUE', evaluateParserValue)
+      .setFunction('SEQUENCE', (parameters) => {
+        const result = evaluateParserSequence(parameters);
+        if (Array.isArray(result)) {
+          producedSpillGrid = result as unknown[][];
+        }
+        return result;
+      })
+      .setFunction('TRANSPOSE', (parameters) => {
+        const result = evaluateParserTranspose(parameters);
+        if (Array.isArray(result)) {
+          producedSpillGrid = result as unknown[][];
+        }
+        return result;
+      })
+      .setFunction('UNIQUE', (parameters) => {
+        const result = evaluateParserUnique(parameters);
+        if (Array.isArray(result)) {
+          producedSpillGrid = result as unknown[][];
+        }
+        return result;
+      })
+      .setFunction('FILTER', (parameters) => {
+        const result = evaluateParserFilter(parameters);
+        if (Array.isArray(result)) {
+          producedSpillGrid = result as unknown[][];
+        }
+        return result;
+      })
+      .setFunction('SORT', (parameters) => {
+        const result = evaluateParserSort(parameters);
+        if (Array.isArray(result)) {
+          producedSpillGrid = result as unknown[][];
+        }
+        return result;
+      })
       .setFunction('ROW', (parameters) =>
         parameters.length ? null : coordinate.row + 1,
       )
@@ -312,10 +374,93 @@ class JavaScriptSpreadsheetEvaluator {
         ),
       );
     }
+    const spillGrid = producedSpillGrid;
+    if (spillGrid) {
+      return this.materializeSpill(coordinate, spillGrid);
+    }
     return {
       successful: true,
       value: spreadsheetValueFromParser(parsed.result),
     };
+  }
+
+  private materializeSpill(
+    anchor: OfficeKernelSpreadsheetCoordinate,
+    grid: unknown[][],
+  ): EvaluationState {
+    const rowCount = grid.length;
+    const columnCount = Math.max(0, ...grid.map((row) => row.length));
+    if (rowCount === 0 || columnCount === 0) {
+      return { successful: true, value: { kind: 'blank' } };
+    }
+    if (rowCount === 1 && columnCount === 1) {
+      return {
+        successful: true,
+        value: spreadsheetValueFromParser(grid[0]?.[0]),
+      };
+    }
+    for (let rowOffset = 0; rowOffset < rowCount; rowOffset += 1) {
+      for (
+        let columnOffset = 0;
+        columnOffset < columnCount;
+        columnOffset += 1
+      ) {
+        if (rowOffset === 0 && columnOffset === 0) continue;
+        const target = {
+          sheetId: anchor.sheetId,
+          row: anchor.row + rowOffset,
+          column: anchor.column + columnOffset,
+        };
+        if (this.spillTargetObstructed(target)) {
+          return {
+            successful: true,
+            value: { kind: 'error', value: '#SPILL!' },
+          };
+        }
+      }
+    }
+    for (let rowOffset = 0; rowOffset < rowCount; rowOffset += 1) {
+      const row = grid[rowOffset] ?? [];
+      for (
+        let columnOffset = 0;
+        columnOffset < columnCount;
+        columnOffset += 1
+      ) {
+        if (rowOffset === 0 && columnOffset === 0) continue;
+        const target = {
+          sheetId: anchor.sheetId,
+          row: anchor.row + rowOffset,
+          column: anchor.column + columnOffset,
+        };
+        this.recordSpillChild(
+          target,
+          spreadsheetValueFromParser(row[columnOffset]),
+        );
+      }
+    }
+    return {
+      successful: true,
+      value: spreadsheetValueFromParser(grid[0]?.[0]),
+    };
+  }
+
+  private spillTargetObstructed(
+    coordinate: OfficeKernelSpreadsheetCoordinate,
+  ): boolean {
+    const indexed = this.cells.get(coordinateKey(coordinate));
+    if (!indexed) return false;
+    if (indexed.cell.formula) return true;
+    return indexed.cell.value.kind !== 'blank';
+  }
+
+  private recordSpillChild(
+    coordinate: OfficeKernelSpreadsheetCoordinate,
+    value: OfficeKernelSpreadsheetValue,
+  ): void {
+    const key = coordinateKey(coordinate);
+    if (this.states.has(key)) return;
+    this.states.set(key, { value, successful: true });
+    this.calculationOrder.push(coordinate);
   }
 
   private rangeValues(

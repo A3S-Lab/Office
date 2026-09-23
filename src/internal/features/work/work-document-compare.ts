@@ -13,6 +13,7 @@ import {
 import {
   boundedDocumentSequenceAlignment,
   boundedDocumentSequenceDiff,
+  type DocumentSequenceAlignment,
 } from './work-document-compare-diff';
 import {
   type ComparisonIdentityFactory,
@@ -346,7 +347,32 @@ function compareSectionBlocks(
     return null;
   }
   const slots: ComparisonBlockSlot[] = [];
-  for (const [blockIndex, step] of alignment.entries()) {
+  for (let blockIndex = 0; blockIndex < alignment.length; blockIndex += 1) {
+    const step = alignment[blockIndex]!;
+    const splitBreak = inferParagraphBreakSplit(
+      alignment,
+      blockIndex,
+      sectionIndex,
+      factory,
+    );
+    if (splitBreak) {
+      slots.push({ kind: 'node', node: splitBreak.first });
+      slots.push({ kind: 'node', node: splitBreak.second });
+      blockIndex += splitBreak.consumed - 1;
+      continue;
+    }
+    const mergeBreak = inferParagraphBreakMerge(
+      alignment,
+      blockIndex,
+      sectionIndex,
+      factory,
+    );
+    if (mergeBreak) {
+      slots.push({ kind: 'node', node: mergeBreak.first });
+      slots.push({ kind: 'node', node: mergeBreak.second });
+      blockIndex += mergeBreak.consumed - 1;
+      continue;
+    }
     if (step.kind === 'equal') {
       slots.push({ kind: 'node', node: step.left });
       continue;
@@ -386,6 +412,16 @@ function compareSectionBlocks(
     );
     if (prepared) {
       slots.push({ kind: 'paired', comparison: prepared });
+      continue;
+    }
+    const tableCompared = compareSameShapeTable(
+      step.left,
+      step.right,
+      `section-${sectionIndex}-block-${blockIndex}`,
+      factory,
+    );
+    if (tableCompared) {
+      slots.push({ kind: 'node', node: tableCompared });
       continue;
     }
     const deleted = structuralChangeBlock(
@@ -514,6 +550,72 @@ function preparePairedBlock(
   return comparison ? { current, revised, scope, inline: comparison } : null;
 }
 
+/**
+ * Same-shape tables whose cells contain only simple text paragraphs/headings
+ * can carry reviewable inline revisions. Shape or nested-structure mismatches
+ * stay fail-closed (caller falls through to changed-complex-structure).
+ */
+function compareSameShapeTable(
+  current: ProseMirrorNode,
+  revised: ProseMirrorNode,
+  scope: string,
+  factory: ComparisonIdentityFactory,
+): ProseMirrorNode | null {
+  if (!isSameShapeSimpleTable(current, revised)) return null;
+  const rows: ProseMirrorNode[] = [];
+  for (let rowIndex = 0; rowIndex < current.childCount; rowIndex += 1) {
+    const currentRow = current.child(rowIndex);
+    const revisedRow = revised.child(rowIndex);
+    const cells: ProseMirrorNode[] = [];
+    for (let cellIndex = 0; cellIndex < currentRow.childCount; cellIndex += 1) {
+      const currentCell = currentRow.child(cellIndex);
+      const revisedCell = revisedRow.child(cellIndex);
+      const cellChildren: ProseMirrorNode[] = [];
+      for (
+        let blockIndex = 0;
+        blockIndex < currentCell.childCount;
+        blockIndex += 1
+      ) {
+        const currentBlock = currentCell.child(blockIndex);
+        const revisedBlock = revisedCell.child(blockIndex);
+        const prepared = preparePairedBlock(
+          currentBlock,
+          revisedBlock,
+          `${scope}-r${rowIndex}-c${cellIndex}-p${blockIndex}`,
+        );
+        if (!prepared) return null;
+        const rendered = renderPairedBlock(
+          prepared,
+          factory,
+          undefined,
+          prepared.inline.variant,
+        );
+        if (!rendered) return null;
+        cellChildren.push(rendered);
+      }
+      cells.push(
+        currentCell.type.create(
+          currentCell.attrs,
+          Fragment.fromArray(cellChildren),
+          currentCell.marks,
+        ),
+      );
+    }
+    rows.push(
+      currentRow.type.create(
+        currentRow.attrs,
+        Fragment.fromArray(cells),
+        currentRow.marks,
+      ),
+    );
+  }
+  return current.type.create(
+    current.attrs,
+    Fragment.fromArray(rows),
+    current.marks,
+  );
+}
+
 function renderPairedBlock(
   comparison: PreparedPairedBlock,
   factory: ComparisonIdentityFactory,
@@ -554,7 +656,9 @@ function prepareInlineComparison(
   const diff = boundedDocumentSequenceDiff(
     baseCurrentUnits,
     baseRevisedUnits,
-    (left, right) => left.text === right.text,
+    (left, right) =>
+      left.text === right.text &&
+      Boolean(left.hardBreak) === Boolean(right.hardBreak),
     MAX_INLINE_DIFF_CELLS,
   );
   const baseVariant: InlineComparisonVariant = {
@@ -583,7 +687,9 @@ function prepareInlineComparison(
     const moveDiff = boundedDocumentSequenceDiff(
       moveCurrentUnits,
       moveRevisedUnits,
-      (left, right) => left.text === right.text,
+      (left, right) =>
+        left.text === right.text &&
+        Boolean(left.hardBreak) === Boolean(right.hardBreak),
       MAX_INLINE_DIFF_CELLS,
     );
     if (moveDiff) {
@@ -644,12 +750,16 @@ function renderInlineComparison(
       const left = change.left[index] as InlineUnit;
       const right = change.right[index] as InlineUnit;
       if (marksEqual(left.marks, right.marks)) {
-        nodes.push(current.type.schema.text(left.text, [...left.marks]));
+        nodes.push(inlineUnitNode(current.type.schema, right));
         formattingIdentity = null;
         formattingSignature = '';
         continue;
       }
-      if (nonCharacterMarksEqual(left.marks, right.marks)) {
+      if (
+        !left.hardBreak &&
+        !right.hardBreak &&
+        nonCharacterMarksEqual(left.marks, right.marks)
+      ) {
         const before = serializeDocumentCharacterFormatting(left.marks);
         const after = serializeDocumentCharacterFormatting(right.marks);
         const signature = `${before}\u0000${after}`;
@@ -730,6 +840,218 @@ function structuralChangeBlock(
   );
 }
 
+/**
+ * Detects 1→2 paragraph split: original text equals first+second revised texts.
+ * Emits revised paragraphs with split attrs on the second (reject joins to previous).
+ */
+function inferParagraphBreakSplit(
+  alignment: readonly DocumentSequenceAlignment<ProseMirrorNode>[],
+  index: number,
+  sectionIndex: number,
+  factory: ComparisonIdentityFactory,
+): {
+  first: ProseMirrorNode;
+  second: ProseMirrorNode;
+  consumed: number;
+} | null {
+  const firstStep = alignment[index];
+  const secondStep = alignment[index + 1];
+  if (!firstStep || !secondStep) return null;
+
+  let source: ProseMirrorNode | null = null;
+  let first: ProseMirrorNode | null = null;
+  let second: ProseMirrorNode | null = null;
+  let consumed = 0;
+
+  if (
+    firstStep.kind === 'delete' &&
+    secondStep.kind === 'insert' &&
+    alignment[index + 2]?.kind === 'insert'
+  ) {
+    source = firstStep.left;
+    first = secondStep.right;
+    second = alignment[index + 2]!.right;
+    consumed = 3;
+  } else if (
+    (firstStep.kind === 'substitute' || firstStep.kind === 'equal') &&
+    secondStep.kind === 'insert'
+  ) {
+    source = firstStep.left;
+    first = firstStep.right;
+    second = secondStep.right;
+    consumed = 2;
+  } else if (
+    firstStep.kind === 'insert' &&
+    (secondStep.kind === 'substitute' || secondStep.kind === 'equal')
+  ) {
+    source = secondStep.left;
+    first = firstStep.right;
+    second = secondStep.right;
+    consumed = 2;
+  } else {
+    return null;
+  }
+
+  if (
+    !source ||
+    !first ||
+    !second ||
+    !isSimpleTextBlock(source) ||
+    !isSimpleTextBlock(first) ||
+    !isSimpleTextBlock(second) ||
+    source.type !== first.type ||
+    first.type !== second.type ||
+    !source.textContent ||
+    !first.textContent ||
+    !second.textContent ||
+    source.textContent !== first.textContent + second.textContent
+  ) {
+    return null;
+  }
+
+  const identity = factory.create('paragraph-break');
+  const channel = `section-${sectionIndex}-paragraph-break-split-${index}`;
+  return {
+    first: plainComparisonParagraph(first, factory, `${channel}-first`),
+    second: paragraphBreakMarkedBlock(
+      second,
+      'split',
+      identity,
+      factory,
+      `${channel}-second`,
+    ),
+    consumed,
+  };
+}
+
+/**
+ * Detects 2→1 paragraph merge: first+second original texts equal joined revised text.
+ * Emits original paragraphs with merge attrs on the first (accept joins with next).
+ */
+function inferParagraphBreakMerge(
+  alignment: readonly DocumentSequenceAlignment<ProseMirrorNode>[],
+  index: number,
+  sectionIndex: number,
+  factory: ComparisonIdentityFactory,
+): {
+  first: ProseMirrorNode;
+  second: ProseMirrorNode;
+  consumed: number;
+} | null {
+  const firstStep = alignment[index];
+  const secondStep = alignment[index + 1];
+  if (!firstStep || !secondStep) return null;
+
+  let first: ProseMirrorNode | null = null;
+  let second: ProseMirrorNode | null = null;
+  let joined: ProseMirrorNode | null = null;
+  let consumed = 0;
+
+  if (
+    firstStep.kind === 'delete' &&
+    secondStep.kind === 'delete' &&
+    alignment[index + 2]?.kind === 'insert'
+  ) {
+    first = firstStep.left;
+    second = secondStep.left;
+    joined = alignment[index + 2]!.right;
+    consumed = 3;
+  } else if (
+    (firstStep.kind === 'substitute' || firstStep.kind === 'equal') &&
+    secondStep.kind === 'delete'
+  ) {
+    first = firstStep.left;
+    second = secondStep.left;
+    joined = firstStep.right;
+    consumed = 2;
+  } else if (
+    firstStep.kind === 'delete' &&
+    (secondStep.kind === 'substitute' || secondStep.kind === 'equal')
+  ) {
+    first = firstStep.left;
+    second = secondStep.left;
+    joined = secondStep.right;
+    consumed = 2;
+  } else {
+    return null;
+  }
+
+  if (
+    !first ||
+    !second ||
+    !joined ||
+    !isSimpleTextBlock(first) ||
+    !isSimpleTextBlock(second) ||
+    !isSimpleTextBlock(joined) ||
+    first.type !== second.type ||
+    second.type !== joined.type ||
+    !first.textContent ||
+    !second.textContent ||
+    !joined.textContent ||
+    first.textContent + second.textContent !== joined.textContent
+  ) {
+    return null;
+  }
+
+  const identity = factory.create('paragraph-break');
+  const channel = `section-${sectionIndex}-paragraph-break-merge-${index}`;
+  return {
+    first: paragraphBreakMarkedBlock(
+      first,
+      'merge',
+      identity,
+      factory,
+      `${channel}-first`,
+    ),
+    second: plainComparisonParagraph(second, factory, `${channel}-second`),
+    consumed,
+  };
+}
+
+function plainComparisonParagraph(
+  block: ProseMirrorNode,
+  factory: ComparisonIdentityFactory,
+  identityChannel: string,
+): ProseMirrorNode {
+  const paragraphIdentity = factory.paragraphIdentity(identityChannel);
+  const attrs: Record<string, unknown> = {
+    ...block.attrs,
+    ...paragraphIdentity,
+  };
+  for (const name of BLOCK_CHANGE_ATTRIBUTE_NAMES) {
+    if (name === 'blockChangeKind') attrs[name] = null;
+    else attrs[name] = '';
+  }
+  attrs.paragraphBreakChangeKind = null;
+  attrs.paragraphBreakChangeId = '';
+  attrs.paragraphBreakChangeAuthor = '';
+  attrs.paragraphBreakChangeDate = '';
+  return block.type.create(attrs, block.content, block.marks);
+}
+
+function paragraphBreakMarkedBlock(
+  block: ProseMirrorNode,
+  kind: 'merge' | 'split',
+  identity: WorkDocumentChangeIdentity,
+  factory: ComparisonIdentityFactory,
+  identityChannel: string,
+): ProseMirrorNode {
+  const paragraphIdentity = factory.paragraphIdentity(identityChannel);
+  const attrs: Record<string, unknown> = {
+    ...block.attrs,
+    ...paragraphIdentity,
+    paragraphBreakChangeKind: kind,
+    paragraphBreakChangeId: identity.id,
+    paragraphBreakChangeAuthor: identity.author,
+    paragraphBreakChangeDate: identity.date,
+  };
+  for (const name of BLOCK_CHANGE_ATTRIBUTE_NAMES) {
+    if (name === 'blockChangeKind') attrs[name] = null;
+    else attrs[name] = '';
+  }
+  return block.type.create(attrs, block.content, block.marks);
+}
+
 function comparisonMark(
   node: ProseMirrorNode,
   kind: WorkDocumentChangeKind,
@@ -744,6 +1066,17 @@ function comparisonMark(
     date: identity.date,
     before,
   });
+}
+
+function inlineUnitNode(
+  schema: ProseMirrorNode['type']['schema'],
+  unit: InlineUnit,
+): ProseMirrorNode {
+  if (unit.hardBreak) {
+    const hardBreak = schema.nodes.hardBreak;
+    if (hardBreak) return hardBreak.create(null, null, [...unit.marks]);
+  }
+  return schema.text(unit.text, [...unit.marks]);
 }
 
 function parseComparisonDocument(
@@ -802,6 +1135,12 @@ function blockSubstitutionCost(
     comparisonSemanticSignature(revised)
   )
     return 0;
+  if (isSameShapeSimpleTable(current, revised)) {
+    return documentTextSimilarity(current.textContent, revised.textContent) >=
+      0.18
+      ? 0.8
+      : 2.1;
+  }
   if (!isSimpleTextBlock(current) || !isSimpleTextBlock(revised)) return 2.1;
   if (current.type !== revised.type) return 2.1;
   if (!current.textContent && !revised.textContent) return 0.8;
@@ -849,6 +1188,7 @@ function isSimpleTextBlock(node: ProseMirrorNode): boolean {
     return false;
   let simple = true;
   node.forEach((child) => {
+    if (child.type.name === 'hardBreak') return;
     if (
       !child.isText ||
       child.marks.some((mark) => REVIEW_ONLY_MARK_NAMES.has(mark.type.name))
@@ -857,6 +1197,62 @@ function isSimpleTextBlock(node: ProseMirrorNode): boolean {
     }
   });
   return simple;
+}
+
+/** Same row/cell/block counts; every cell child is a simple text paragraph/heading. */
+function isSameShapeSimpleTable(
+  current: ProseMirrorNode,
+  revised: ProseMirrorNode,
+): boolean {
+  if (current.type.name !== 'table' || revised.type.name !== 'table') {
+    return false;
+  }
+  if (current.childCount !== revised.childCount || current.childCount === 0) {
+    return false;
+  }
+  for (let rowIndex = 0; rowIndex < current.childCount; rowIndex += 1) {
+    const currentRow = current.child(rowIndex);
+    const revisedRow = revised.child(rowIndex);
+    if (
+      currentRow.type.name !== 'tableRow' ||
+      revisedRow.type.name !== 'tableRow' ||
+      currentRow.childCount !== revisedRow.childCount ||
+      currentRow.childCount === 0
+    ) {
+      return false;
+    }
+    for (let cellIndex = 0; cellIndex < currentRow.childCount; cellIndex += 1) {
+      const currentCell = currentRow.child(cellIndex);
+      const revisedCell = revisedRow.child(cellIndex);
+      if (
+        currentCell.type !== revisedCell.type ||
+        (currentCell.type.name !== 'tableCell' &&
+          currentCell.type.name !== 'tableHeader') ||
+        currentCell.childCount !== revisedCell.childCount ||
+        currentCell.childCount === 0
+      ) {
+        return false;
+      }
+      for (
+        let blockIndex = 0;
+        blockIndex < currentCell.childCount;
+        blockIndex += 1
+      ) {
+        const currentBlock = currentCell.child(blockIndex);
+        const revisedBlock = revisedCell.child(blockIndex);
+        if (
+          !isSimpleTextBlock(currentBlock) ||
+          !isSimpleTextBlock(revisedBlock) ||
+          currentBlock.type !== revisedBlock.type ||
+          blockStructuralSignature(currentBlock) !==
+            blockStructuralSignature(revisedBlock)
+        ) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 }
 
 function simpleDocumentShape(document: ProseMirrorNode): boolean {
@@ -890,6 +1286,14 @@ function inlineUnits(
   if (!isSimpleTextBlock(node)) return null;
   const units: InlineUnit[] = [];
   node.forEach((child) => {
+    if (child.type.name === 'hardBreak') {
+      units.push({
+        text: '\n',
+        marks: child.marks,
+        hardBreak: true,
+      });
+      return;
+    }
     const text = child.text ?? '';
     let pendingWhitespace = '';
     for (const part of text.match(/\s+|[\p{L}\p{N}_]+|[^\s\p{L}\p{N}_]/gu) ??

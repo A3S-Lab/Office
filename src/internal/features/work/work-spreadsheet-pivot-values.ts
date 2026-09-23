@@ -1,5 +1,43 @@
 import type { Cell } from '@fortune-sheet/core';
-import type { WorkSpreadsheetPivotFilterValue } from './work-types';
+import type {
+  WorkSpreadsheetPivotFilterValue,
+  WorkSpreadsheetPivotReportFilter,
+} from './work-types';
+
+export type SpreadsheetPivotReportFilterSelection =
+  | { kind: 'all' }
+  | { kind: 'none' }
+  | { kind: 'items'; items: WorkSpreadsheetPivotFilterValue[] };
+
+export function spreadsheetPivotReportFilterSelection(
+  filter: WorkSpreadsheetPivotReportFilter,
+): SpreadsheetPivotReportFilterSelection {
+  if (filter.selectedItems !== undefined) {
+    if (!filter.selectedItems.length) return { kind: 'none' };
+    return { kind: 'items', items: filter.selectedItems };
+  }
+  if (filter.selectedItem !== undefined) {
+    return { kind: 'items', items: [filter.selectedItem] };
+  }
+  return { kind: 'all' };
+}
+
+export function displaySpreadsheetPivotReportFilterSelection(
+  filter: WorkSpreadsheetPivotReportFilter,
+): string {
+  const selection = spreadsheetPivotReportFilterSelection(filter);
+  if (selection.kind === 'all') return '(全部)';
+  if (selection.kind === 'none') return '(无)';
+  return selection.items.map(displaySpreadsheetPivotValue).join(', ');
+}
+
+/** True when native XLSX pageFields can represent the filter without multi-select XML. */
+export function spreadsheetPivotReportFilterIsSingleSelectExportable(
+  filter: WorkSpreadsheetPivotReportFilter,
+): boolean {
+  if (filter.selectedItems === undefined) return true;
+  return filter.selectedItems.length === 1;
+}
 
 export function spreadsheetPivotCellValue(
   cell: Cell | null | undefined,

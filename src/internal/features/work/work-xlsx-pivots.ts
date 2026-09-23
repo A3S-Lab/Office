@@ -9,11 +9,12 @@ import {
   parseXml,
   xmlNamespacePrefix,
 } from './work-ooxml-package';
+import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
+import { spreadsheetPivotValidation } from './work-spreadsheet-pivots';
 import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
 } from './work-spreadsheet-ranges';
-import { spreadsheetPivotValidation } from './work-spreadsheet-pivots';
 import { createWorkId } from './work-templates';
 import type {
   WorkSpreadsheetContent,
@@ -408,16 +409,19 @@ function parsePivotCache(document: Document): XlsxPivotCache {
       message:
         'Only worksheet pivots with an explicit cell-range source are editable.',
     };
+  } else if (descendants(root, 'fieldGroup').length) {
+    unsupported = {
+      code: 'xlsx.pivots.grouping',
+      message: 'Grouped pivot-cache fields remain cached values only.',
+    };
   } else if (
-    descendants(root, 'fieldGroup').length ||
     directChildren(directChild(root, 'cacheFields') ?? root, 'cacheField').some(
       (field) => attribute(field, 'formula'),
     )
   ) {
     unsupported = {
-      code: 'xlsx.pivots.grouping',
-      message:
-        'Grouped or calculated pivot-cache fields remain cached values only.',
+      code: 'xlsx.pivots.calculated-fields',
+      message: 'Calculated pivot-cache fields remain cached values only.',
     };
   } else if (
     descendants(root, 'calculatedItems').length ||
@@ -707,7 +711,7 @@ function parsePivotTable(
       columnGrandTotals: booleanAttribute(root, 'colGrandTotals', true),
       styleName:
         attribute(directChild(root, 'pivotTableStyleInfo') ?? root, 'name') ||
-        'PivotStyleLight16',
+        WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
       refreshOnLoad: cache.refreshOnLoad,
     },
   };

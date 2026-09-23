@@ -2,7 +2,9 @@ use a3s_use_core::UseResult;
 
 use super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMutation,
+    NativeOfficeCollaborationPresentationContainer,
     NativeOfficeCollaborationPresentationContainerKind,
+    NativeOfficeCollaborationPresentationElementAddress, NativeOfficeCollaborationProjectedContent,
 };
 
 mod element;
@@ -22,6 +24,42 @@ pub(super) fn validate_presentation_mutation(
         }
         _ => element::validate_element_mutation(mutation),
     }
+}
+
+pub(in crate::collaboration) fn project_presentation_content(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<NativeOfficeCollaborationProjectedContent> {
+    let kinds = [
+        NativeOfficeCollaborationPresentationContainerKind::Slide,
+        NativeOfficeCollaborationPresentationContainerKind::Master,
+        NativeOfficeCollaborationPresentationContainerKind::Layout,
+    ];
+    let mut containers = Vec::new();
+    for container_kind in kinds {
+        for container_id in state::ordered_container_ids(doc, manifest, container_kind)? {
+            let sheet = state::read_element_state(doc, manifest, container_kind, &container_id)?;
+            let mut elements = Vec::with_capacity(sheet.active_order.len());
+            for element_id in &sheet.active_order {
+                let Some(record) = sheet.records.get(element_id) else {
+                    continue;
+                };
+                if record.tombstoned {
+                    continue;
+                }
+                elements.push(NativeOfficeCollaborationPresentationElementAddress {
+                    element_id: element_id.clone(),
+                    element: record.value.clone(),
+                });
+            }
+            containers.push(NativeOfficeCollaborationPresentationContainer {
+                container_kind,
+                container_id,
+                elements,
+            });
+        }
+    }
+    Ok(NativeOfficeCollaborationProjectedContent::Presentation { containers })
 }
 
 pub(super) fn apply_presentation_mutation(

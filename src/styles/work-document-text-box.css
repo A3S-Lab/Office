@@ -67,6 +67,24 @@
     .work-document-preview-page,
     .work-pdf-export-page.document
   )
+  [data-document-text-box][data-text-box-shape="parallelogram"] {
+  clip-path: polygon(25% 0, 100% 0, 75% 100%, 0 100%);
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  [data-document-text-box][data-text-box-shape="hexagon"] {
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
   [data-document-text-box][data-text-box-vertical-align="center"] {
   justify-content: center;
 }

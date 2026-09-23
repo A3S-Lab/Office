@@ -5,7 +5,7 @@ use serde_json::Value as JsonValue;
 
 use super::super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMutation,
-    NativeOfficeCollaborationPdfAnnotationSource,
+    NativeOfficeCollaborationPdfAnnotationAddress, NativeOfficeCollaborationPdfAnnotationSource,
 };
 use super::records::{
     append_record_with_fingerprint, assert_allowed_keys, canonical_json, json_equal, patch_record,
@@ -84,6 +84,32 @@ pub(super) fn validate_pdf_annotation_mutation(
             "The supplied mutation is not a PDF annotation mutation.",
         )),
     }
+}
+
+pub(super) fn project_pdf_annotation_addresses(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<(u32, Vec<NativeOfficeCollaborationPdfAnnotationAddress>)> {
+    let state = read_pdf_annotation_state(doc, manifest)?;
+    let mut annotations = Vec::new();
+    for id in &state.annotations.order {
+        let record = &state.annotations.by_id[id];
+        if record.get("deleted") == Some(&JsonValue::Bool(true)) {
+            continue;
+        }
+        let identity = shared_annotation_identity(record, id, state.page_count)?;
+        let annotation = record.get("annotation").cloned().ok_or_else(|| {
+            super::invalid_shared_pdf("The shared PDF annotation record is missing its value.")
+        })?;
+        annotations.push(NativeOfficeCollaborationPdfAnnotationAddress {
+            annotation_id: id.clone(),
+            page_index: identity.page_index,
+            annotation_type: identity.annotation_type,
+            source: identity.source.to_owned(),
+            annotation,
+        });
+    }
+    Ok((state.page_count, annotations))
 }
 
 pub(super) fn apply_pdf_annotation_mutation(

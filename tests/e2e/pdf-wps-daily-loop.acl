@@ -1,0 +1,95 @@
+suite "office-pdf-wps-daily-loop" {
+    version = 1
+
+    scenario "organize-insert-download-reopen" {
+        name = "Insert a blank PDF page, download the PDF, then reopen and keep the page count"
+        surface = "web"
+        timeout_ms = 300000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-primary-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-ready" {
+            visible = css(".work-pdf-embed[data-ready='true']")
+        }
+
+        wait "initial-page-count" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='4']")
+        }
+
+        wait "page-organizer-entry-is-ready" {
+            visible = css("button[aria-label='组织 PDF 页面']:not(:disabled)")
+        }
+
+        click "open-organizer" {
+            target = role("button", "组织 PDF 页面")
+        }
+
+        click "insert-blank-page" {
+            target = role("button", "插入空白页")
+        }
+
+        wait "blank-page-was-inserted" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='5']")
+        }
+
+        click "download-pdf" {
+            target = css("button.work-export-button[aria-label='下载 PDF']")
+        }
+
+        wait "pdf-downloaded" {
+            text = "pdf-thumbnail-keyboard.pdf 已下载"
+        }
+
+        wait "reopen-exported-file" {
+            visible = css("button[aria-label='重新打开已导出文件']")
+        }
+
+        click "reopen-saved-pdf" {
+            target = role("button", "重新打开已导出文件")
+        }
+
+        wait "saved-pdf-opened" {
+            text = "pdf-thumbnail-keyboard.pdf 已打开"
+        }
+
+        wait "reopened-pdf-ready" {
+            visible = css(".work-pdf-embed[data-ready='true']")
+        }
+
+        wait "reopened-page-count" {
+            visible = css(".work-pdf-thumbnail-rail[data-pdf-page-count='5']")
+        }
+
+        accessibility "pdf-wps-daily-loop-accessibility" {
+            path = "evidence/pdf-wps-daily-loop-accessibility.json"
+            interactive = true
+        }
+
+        console "pdf-wps-daily-loop-console" {
+            path = "diagnostics/pdf-wps-daily-loop-console.json"
+            clear = false
+        }
+
+        page_errors "pdf-wps-daily-loop-page-errors" {
+            path = "diagnostics/pdf-wps-daily-loop-page-errors.json"
+            clear = false
+        }
+    }
+}

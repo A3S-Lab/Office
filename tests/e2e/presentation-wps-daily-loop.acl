@@ -1,0 +1,193 @@
+suite "office-presentation-wps-daily-loop" {
+    version = 1
+
+    scenario "add-slide-edit-notes-duplicate-shape-save-reopen" {
+        name = "Add a slide, edit text and speaker notes, duplicate it, insert a shape, then reopen the saved PPTX"
+        surface = "web"
+        timeout_ms = 300000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/playground/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "create-blank-presentation" {
+            target = css("button[data-template-id='blank-presentation']")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-presentation-editor")
+        }
+
+        expect "initial-slide" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='0']")
+        }
+
+        click "focus-active-thumbnail" {
+            target = css(".work-slide-strip [data-slide-thumbnail].active")
+        }
+
+        press "add-slide" {
+            key = "Control+m"
+        }
+
+        wait "new-slide-active" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1'].active")
+        }
+
+        double_click "edit-new-slide-title" {
+            target = css(".work-slide-canvas.interactive .work-slide-placeholder-text")
+        }
+
+        wait "new-slide-title-editable" {
+            visible = css(".work-slide-canvas.interactive [data-presentation-text-engine='tiptap']")
+        }
+
+        type "enter-slide-text" {
+            target = css(".work-slide-canvas.interactive [data-presentation-text-engine='tiptap']")
+            value = "WPSDAILY slide text"
+        }
+
+        expect "slide-text-entered" {
+            target = css(".work-slide-canvas.interactive [data-presentation-text-engine='tiptap']")
+            rendered_text = "WPSDAILY slide text"
+        }
+
+        press "leave-title-editing-for-notes" {
+            key = "Escape"
+        }
+
+        expect "notes-pane-visible" {
+            visible = css(".work-presentation-editor[data-notes='visible'] [aria-label='演讲者备注']")
+        }
+
+        click "focus-speaker-notes" {
+            target = css("[aria-label='演讲者备注']")
+        }
+
+        fill "enter-speaker-notes" {
+            target = css("[aria-label='演讲者备注']")
+            value = "WPSDAILY speaker notes"
+        }
+
+        expect "speaker-notes-status" {
+            text = "已添加演讲者备注"
+        }
+
+        click "focus-active-thumbnail-before-duplicate" {
+            target = css(".work-slide-strip [data-slide-thumbnail].active")
+        }
+
+        expect "duplicate-slide-shortcut" {
+            visible = css("button[aria-label='复制幻灯片'][aria-keyshortcuts='Control+D Meta+D']")
+        }
+
+        press "duplicate-slide" {
+            key = "Control+d"
+        }
+
+        wait "duplicated-slide-active" {
+            visible = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='2'].active")
+        }
+
+        expect "duplicated-slide-text" {
+            text = "WPSDAILY slide text"
+        }
+
+        expect "duplicated-speaker-notes-status" {
+            text = "已添加演讲者备注"
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "insert-shape" {
+            target = role("button", "形状")
+        }
+
+        wait "shape-inserted" {
+            visible = css(".work-slide-canvas .work-slide-element.shape")
+        }
+
+        press "leave-text-editing" {
+            key = "Escape"
+        }
+
+        click "save-pptx" {
+            target = css("button.work-export-button[aria-label='导出']")
+        }
+
+        wait "pptx-downloaded" {
+            text = "无标题演示.pptx 已下载"
+        }
+
+        wait "reopen-exported-file" {
+            visible = css("button[aria-label='重新打开已导出文件']")
+        }
+
+        click "reopen-saved-pptx" {
+            target = role("button", "重新打开已导出文件")
+        }
+
+        wait "saved-pptx-opened" {
+            text = "无标题演示.pptx 已打开"
+        }
+
+        wait "reopened-presentation" {
+            visible = css(".work-presentation-editor")
+        }
+
+        click "show-saved-new-slide" {
+            target = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='1']")
+        }
+
+        expect "reopened-slide-text" {
+            text = "WPSDAILY slide text"
+        }
+
+        expect "reopened-speaker-notes-status" {
+            text = "已添加演讲者备注"
+        }
+
+        click "show-saved-duplicated-slide" {
+            target = css(".work-slide-strip [data-slide-thumbnail][data-slide-index='2']")
+        }
+
+        expect "reopened-duplicated-slide-text" {
+            text = "WPSDAILY slide text"
+        }
+
+        expect "reopened-duplicated-speaker-notes-status" {
+            text = "已添加演讲者备注"
+        }
+
+        expect "reopened-shape" {
+            visible = css(".work-slide-canvas .work-slide-element.shape")
+        }
+
+        accessibility "presentation-wps-daily-loop-accessibility" {
+            path = "evidence/presentation-wps-daily-loop-accessibility.json"
+            interactive = true
+        }
+
+        console "presentation-wps-daily-loop-console" {
+            path = "diagnostics/presentation-wps-daily-loop-console.json"
+            clear = false
+        }
+
+        page_errors "presentation-wps-daily-loop-page-errors" {
+            path = "diagnostics/presentation-wps-daily-loop-page-errors.json"
+            clear = false
+        }
+    }
+}

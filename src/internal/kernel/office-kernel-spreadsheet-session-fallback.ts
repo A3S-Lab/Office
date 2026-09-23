@@ -137,6 +137,7 @@ export async function calculateSpreadsheetSessionInJavaScript(
       request.calculation.kind === 'targets'
         ? request.calculation.targets
         : undefined,
+    dateSystem: request.dateSystem,
   };
   const result = await calculateSpreadsheetInJavaScript(calculationRequest);
   const formulaKeys = new Set(

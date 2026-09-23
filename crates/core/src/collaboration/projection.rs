@@ -10,11 +10,15 @@ use super::mutation::document::identity::{
 use super::mutation::document::suggestion::{
     project_document_change_decisions, project_document_suggestions,
 };
+use super::mutation::{
+    project_pdf_content, project_presentation_content, project_spreadsheet_content,
+};
 use super::{
     collaboration_error, sha256_hex, NativeOfficeCollaborationArtifactKind,
     NativeOfficeCollaborationDocumentParagraph, NativeOfficeCollaborationManifest,
-    NativeOfficeCollaborationProjectedContent, NativeOfficeCollaborationProjection,
-    NATIVE_OFFICE_COLLABORATION_PROJECTION_SCHEMA, NATIVE_OFFICE_COLLABORATION_PROJECTION_VERSION,
+    NativeOfficeCollaborationMarkdownSlice, NativeOfficeCollaborationProjectedContent,
+    NativeOfficeCollaborationProjection, NATIVE_OFFICE_COLLABORATION_PROJECTION_SCHEMA,
+    NATIVE_OFFICE_COLLABORATION_PROJECTION_VERSION,
 };
 
 const MAX_PROJECTED_DOCUMENT_PARAGRAPHS: usize = 1_048_576;
@@ -45,31 +49,26 @@ pub(super) fn project_collaboration_document(
         .with_suggestion("Deliver the missing Yjs updates before reading agent-visible content."));
     }
 
-    let transaction = document.transact();
-    let state_vector = canonical_state_vector(&transaction.state_vector());
+    let state_vector = {
+        let transaction = document.transact();
+        canonical_state_vector(&transaction.state_vector())
+    };
     let content = match manifest.kind {
         NativeOfficeCollaborationArtifactKind::Markdown => {
-            let root = format!("{}.markdown.source", manifest.namespace);
-            let source = match transaction.get(&root) {
-                Some(Out::YText(text)) => text.get_string(&transaction),
-                Some(_) => return Err(invalid_root(&root, "Y.Text")),
-                None => return Err(missing_root(&root)),
-            };
-            ensure_projected_text_size(source.len())?;
-            NativeOfficeCollaborationProjectedContent::Markdown { source }
+            let transaction = document.transact();
+            project_markdown(&transaction, manifest)?
         }
         NativeOfficeCollaborationArtifactKind::Document => {
+            let transaction = document.transact();
             project_document_content(&transaction, manifest)?
         }
-        kind => {
-            return Err(collaboration_error(
-                "office.collaboration.projection_unsupported",
-                format!(
-                "Native content projection is not yet available for '{}' collaboration artifacts.",
-                kind.as_str()
-            ),
-            ))
+        NativeOfficeCollaborationArtifactKind::Spreadsheet => {
+            project_spreadsheet_content(document, manifest)?
         }
+        NativeOfficeCollaborationArtifactKind::Presentation => {
+            project_presentation_content(document, manifest)?
+        }
+        NativeOfficeCollaborationArtifactKind::Pdf => project_pdf_content(document, manifest)?,
     };
 
     Ok(NativeOfficeCollaborationProjection {
@@ -207,11 +206,93 @@ fn project_paragraph<T: ReadTxn>(
         paragraph_id,
         text_id,
         container_path,
-        text,
+        text: text.clone(),
+        start_utf16: 0,
+        end_utf16: utf16_len(&text)?,
         replaceable,
         has_inline_objects,
         has_review_marks,
     })
+}
+
+fn project_markdown<T: ReadTxn>(
+    transaction: &T,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<NativeOfficeCollaborationProjectedContent> {
+    let root = format!("{}.markdown.source", manifest.namespace);
+    let source = match transaction.get(&root) {
+        Some(Out::YText(text)) => text.get_string(transaction),
+        Some(_) => return Err(invalid_root(&root, "Y.Text")),
+        None => return Err(missing_root(&root)),
+    };
+    ensure_projected_text_size(source.len())?;
+    let slices = markdown_slices(&source)?;
+    Ok(NativeOfficeCollaborationProjectedContent::Markdown { source, slices })
+}
+
+fn markdown_slices(source: &str) -> UseResult<Vec<NativeOfficeCollaborationMarkdownSlice>> {
+    let mut slices = Vec::new();
+    let mut index = 0_u32;
+    let mut cursor = 0_u32;
+    let mut slice_start = 0_u32;
+    let mut text = String::new();
+    for character in source.chars() {
+        let width = u32::try_from(character.len_utf16()).map_err(|_| utf16_overflow())?;
+        if character == '\n' {
+            push_markdown_slice(&mut slices, index, slice_start, cursor, &text)?;
+            text.clear();
+            index = index.checked_add(1).ok_or_else(utf16_overflow)?;
+            cursor = cursor.checked_add(width).ok_or_else(utf16_overflow)?;
+            slice_start = cursor;
+        } else {
+            text.push(character);
+            cursor = cursor.checked_add(width).ok_or_else(utf16_overflow)?;
+        }
+        if slices.len() > MAX_PROJECTED_DOCUMENT_PARAGRAPHS {
+            return Err(too_many_slices());
+        }
+    }
+    push_markdown_slice(&mut slices, index, slice_start, cursor, &text)?;
+    Ok(slices)
+}
+
+fn push_markdown_slice(
+    slices: &mut Vec<NativeOfficeCollaborationMarkdownSlice>,
+    index: u32,
+    start_utf16: u32,
+    end_utf16: u32,
+    text: &str,
+) -> UseResult<()> {
+    if slices.len() >= MAX_PROJECTED_DOCUMENT_PARAGRAPHS {
+        return Err(too_many_slices());
+    }
+    ensure_projected_text_size(text.len())?;
+    slices.push(NativeOfficeCollaborationMarkdownSlice {
+        index,
+        start_utf16,
+        end_utf16,
+        text: text.to_owned(),
+    });
+    Ok(())
+}
+
+fn utf16_len(value: &str) -> UseResult<u32> {
+    u32::try_from(value.encode_utf16().count()).map_err(|_| utf16_overflow())
+}
+
+fn utf16_overflow() -> a3s_use_core::UseError {
+    collaboration_error(
+        "office.collaboration.projection_too_large",
+        "The native Office text projection exceeds the supported UTF-16 offset range.",
+    )
+}
+
+fn too_many_slices() -> a3s_use_core::UseError {
+    collaboration_error(
+        "office.collaboration.projection_too_large",
+        "The collaborative Markdown contains too many slices for a bounded native projection.",
+    )
+    .with_detail("maximumSlices", MAX_PROJECTED_DOCUMENT_PARAGRAPHS as u64)
 }
 
 fn container_path(paragraph: &yrs::XmlElementRef) -> UseResult<Vec<String>> {

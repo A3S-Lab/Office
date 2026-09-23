@@ -168,6 +168,22 @@
   gap: 6px;
 }
 
+.work-spreadsheet-pivot-manager .pivot-slicer-filter {
+  display: grid;
+  gap: 2px;
+  max-height: 96px;
+  overflow: auto;
+  margin: 0;
+  min-width: 0;
+  border: none;
+  padding: 2px 0;
+}
+
+.work-spreadsheet-pivot-manager .filter-hint {
+  color: var(--a3s-faint);
+  font-size: 8px;
+}
+
 .work-spreadsheet-pivot-empty.ds-state-view {
   display: grid;
   align-content: center;

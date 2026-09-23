@@ -224,6 +224,50 @@ describe('document fields', () => {
 
   test('keeps the bounded instruction grammar explicit', () => {
     expect(docxDocumentFieldKind('NUMWORDS \\* MERGEFORMAT')).toBe('wordCount');
+    expect(docxDocumentFieldKind('FILENAME')).toBe('fileName');
+    expect(docxDocumentFieldKind('FILENAME \\* MERGEFORMAT')).toBe('fileName');
+    expect(docxDocumentFieldKind('AUTHOR')).toBe('author');
+    expect(docxDocumentFieldKind('AUTHOR \\* MERGEFORMAT')).toBe('author');
+    expect(docxDocumentFieldKind('TITLE')).toBe('title');
+    expect(docxDocumentFieldKind('TITLE \\* MERGEFORMAT')).toBe('title');
+    expect(docxDocumentFieldKind('SUBJECT')).toBe('subject');
+    expect(docxDocumentFieldKind('SUBJECT \\* MERGEFORMAT')).toBe('subject');
+    expect(docxDocumentFieldKind('KEYWORDS')).toBe('keywords');
+    expect(docxDocumentFieldKind('KEYWORDS \\* MERGEFORMAT')).toBe('keywords');
+    expect(docxDocumentFieldKind('LASTSAVEDBY')).toBe('lastSavedBy');
+    expect(docxDocumentFieldKind('LASTSAVEDBY \\* MERGEFORMAT')).toBe(
+      'lastSavedBy',
+    );
+    expect(docxDocumentFieldKind('COMMENTS')).toBe('comments');
+    expect(docxDocumentFieldKind('COMMENTS \\* MERGEFORMAT')).toBe('comments');
+    expect(docxDocumentFieldKind('CREATEDATE')).toBe('createDate');
+    expect(docxDocumentFieldKind('CREATEDATE \\@ "yyyy-MM-dd"')).toBe(
+      'createDate',
+    );
+    expect(docxDocumentFieldKind('SAVEDATE')).toBe('saveDate');
+    expect(docxDocumentFieldKind('SAVEDATE \\@ "yyyy-MM-dd"')).toBe('saveDate');
+    expect(docxDocumentFieldKind('PRINTDATE')).toBe('printDate');
+    expect(docxDocumentFieldKind('PRINTDATE \\@ "yyyy-MM-dd"')).toBe(
+      'printDate',
+    );
+    expect(docxDocumentFieldKind('MERGEFIELD CustomerName')).toBe('mergeField');
+    expect(
+      docxDocumentFieldKind('MERGEFIELD CustomerName \\* MERGEFORMAT'),
+    ).toBe('mergeField');
+    expect(
+      supportedDocxDocumentFieldInstruction('MERGEFIELD CustomerName'),
+    ).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction(
+        'MERGEFIELD CustomerName \\* MERGEFORMAT',
+      ),
+    ).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('MERGEFIELD Customer Name'),
+    ).toBe(false);
+    expect(
+      supportedDocxDocumentFieldInstruction('MERGEFIELD CustomerName \\b'),
+    ).toBe(false);
     expect(documentFieldCodeDisplay('PAGE \\* ROMAN \\* MERGEFORMAT')).toBe(
       '{ PAGE \\* ROMAN \\* MERGEFORMAT }',
     );
@@ -244,6 +288,78 @@ describe('document fields', () => {
     expect(supportedDocxDocumentFieldInstruction('NUMWORDS unexpected')).toBe(
       false,
     );
+    expect(supportedDocxDocumentFieldInstruction('FILENAME')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('FILENAME \\* MERGEFORMAT'),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('FILENAME \\p')).toBe(false);
+    expect(supportedDocxDocumentFieldInstruction('AUTHOR')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('AUTHOR \\* MERGEFORMAT'),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('AUTHOR \\* Caps')).toBe(
+      false,
+    );
+    expect(supportedDocxDocumentFieldInstruction('TITLE')).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('TITLE \\* MERGEFORMAT')).toBe(
+      true,
+    );
+    expect(supportedDocxDocumentFieldInstruction('TITLE \\* Caps')).toBe(false);
+    expect(supportedDocxDocumentFieldInstruction('SUBJECT')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('SUBJECT \\* MERGEFORMAT'),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('SUBJECT \\* Caps')).toBe(
+      false,
+    );
+    expect(supportedDocxDocumentFieldInstruction('KEYWORDS')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('KEYWORDS \\* MERGEFORMAT'),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('KEYWORDS \\* Caps')).toBe(
+      false,
+    );
+    expect(supportedDocxDocumentFieldInstruction('LASTSAVEDBY')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('LASTSAVEDBY \\* MERGEFORMAT'),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('LASTSAVEDBY \\* Caps')).toBe(
+      false,
+    );
+    expect(supportedDocxDocumentFieldInstruction('COMMENTS')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('COMMENTS \\* MERGEFORMAT'),
+    ).toBe(true);
+    expect(supportedDocxDocumentFieldInstruction('COMMENTS \\* Caps')).toBe(
+      false,
+    );
+    expect(supportedDocxDocumentFieldInstruction('CREATEDATE')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction(
+        'CREATEDATE \\@ "yyyy-MM-dd" \\* MERGEFORMAT',
+      ),
+    ).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('CREATEDATE \\@ "yyyy" extra'),
+    ).toBe(false);
+    expect(supportedDocxDocumentFieldInstruction('SAVEDATE')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction(
+        'SAVEDATE \\@ "yyyy-MM-dd" \\* MERGEFORMAT',
+      ),
+    ).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('SAVEDATE \\@ "yyyy" extra'),
+    ).toBe(false);
+    expect(supportedDocxDocumentFieldInstruction('PRINTDATE')).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction(
+        'PRINTDATE \\@ "yyyy-MM-dd" \\* MERGEFORMAT',
+      ),
+    ).toBe(true);
+    expect(
+      supportedDocxDocumentFieldInstruction('PRINTDATE \\@ "yyyy" extra'),
+    ).toBe(false);
     expect(
       supportedDocxDocumentFieldInstruction(
         'DATE \\@ "yyyy-MM-dd" \\* MERGEFORMAT',
@@ -293,6 +409,303 @@ describe('document fields', () => {
         '9',
       ),
     ).toBe('引用缺失');
+    expect(
+      documentFieldDisplay(
+        'fileName',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          fileName: 'contract.docx',
+        },
+        'FILENAME',
+        'stale.docx',
+      ),
+    ).toBe('contract.docx');
+    expect(
+      documentFieldDisplay(
+        'fileName',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'FILENAME',
+        'cached.docx',
+      ),
+    ).toBe('cached.docx');
+    expect(
+      documentFieldDisplay(
+        'author',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          author: 'Morgan',
+        },
+        'AUTHOR',
+        'stale',
+      ),
+    ).toBe('Morgan');
+    expect(
+      documentFieldDisplay(
+        'title',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          title: 'Quarterly Review',
+        },
+        'TITLE',
+        'stale',
+      ),
+    ).toBe('Quarterly Review');
+    expect(
+      documentFieldDisplay(
+        'title',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'TITLE',
+        'Cached Title',
+      ),
+    ).toBe('Cached Title');
+    expect(
+      documentFieldDisplay(
+        'subject',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          subject: 'Compliance',
+        },
+        'SUBJECT',
+        'stale',
+      ),
+    ).toBe('Compliance');
+    expect(
+      documentFieldDisplay(
+        'subject',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'SUBJECT',
+        'Cached Subject',
+      ),
+    ).toBe('Cached Subject');
+    expect(
+      documentFieldDisplay(
+        'keywords',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          keywords: 'contract; review',
+        },
+        'KEYWORDS',
+        'stale',
+      ),
+    ).toBe('contract; review');
+    expect(
+      documentFieldDisplay(
+        'keywords',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'KEYWORDS',
+        'cached; tags',
+      ),
+    ).toBe('cached; tags');
+    expect(
+      documentFieldDisplay(
+        'lastSavedBy',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          lastSavedBy: 'Riley',
+        },
+        'LASTSAVEDBY',
+        'stale',
+      ),
+    ).toBe('Riley');
+    expect(
+      documentFieldDisplay(
+        'lastSavedBy',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'LASTSAVEDBY',
+        'Cached Saver',
+      ),
+    ).toBe('Cached Saver');
+    expect(
+      documentFieldDisplay(
+        'comments',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          comments: 'Ready for legal review',
+        },
+        'COMMENTS',
+        'stale',
+      ),
+    ).toBe('Ready for legal review');
+    expect(
+      documentFieldDisplay(
+        'comments',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'COMMENTS',
+        'Cached remarks',
+      ),
+    ).toBe('Cached remarks');
+    expect(
+      documentFieldDisplay(
+        'createDate',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          createDate: new Date(2024, 2, 15),
+        },
+        'CREATEDATE \\@ "yyyy-MM-dd"',
+        'stale',
+      ),
+    ).toBe('2024-03-15');
+    expect(
+      documentFieldDisplay(
+        'createDate',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'CREATEDATE \\@ "yyyy年M月d日"',
+        '2020年1月1日',
+      ),
+    ).toBe('2020年1月1日');
+    expect(
+      documentFieldDisplay(
+        'saveDate',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          saveDate: new Date(2025, 5, 8),
+        },
+        'SAVEDATE \\@ "yyyy-MM-dd"',
+        'stale',
+      ),
+    ).toBe('2025-06-08');
+    expect(
+      documentFieldDisplay(
+        'saveDate',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'SAVEDATE \\@ "yyyy年M月d日"',
+        '2021年2月2日',
+      ),
+    ).toBe('2021年2月2日');
+    expect(
+      documentFieldDisplay(
+        'printDate',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          printDate: new Date(2023, 10, 20),
+        },
+        'PRINTDATE \\@ "yyyy-MM-dd"',
+        'stale',
+      ),
+    ).toBe('2023-11-20');
+    expect(
+      documentFieldDisplay(
+        'printDate',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'PRINTDATE \\@ "yyyy年M月d日"',
+        '2022年3月3日',
+      ),
+    ).toBe('2022年3月3日');
+    expect(
+      documentFieldDisplay(
+        'mergeField',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+          mergeRecord: { CustomerName: 'Ada Lovelace' },
+        },
+        'MERGEFIELD CustomerName',
+        '«CustomerName»',
+      ),
+    ).toBe('Ada Lovelace');
+    expect(
+      documentFieldDisplay(
+        'mergeField',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'MERGEFIELD CustomerName',
+        '',
+      ),
+    ).toBe('«CustomerName»');
+    expect(
+      documentFieldDisplay(
+        'mergeField',
+        {
+          pageNumber: 1,
+          totalPages: 1,
+          sectionNumber: 1,
+          sectionPages: 1,
+        },
+        'MERGEFIELD CustomerName',
+        'Cached merge',
+      ),
+    ).toBe('Cached merge');
   });
 
   test('resolves common numeric field switches without widening the grammar', () => {
@@ -533,6 +946,708 @@ describe('document fields', () => {
     await expectNativeCommonFields(await createArtifactBlob(imported));
   });
 
+  test('round-trips FILENAME as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('fileName', 'name', 'FILENAME', 'contract.docx'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('FILENAME');
+    expect(documentXml).toContain('contract.docx');
+
+    const imported = await importOfficeFile(
+      new File([first], 'filename-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('fileName');
+    expect(importedField?.dataset.fieldInstruction).toBe('FILENAME');
+    expect(importedField?.textContent).toContain('contract.docx');
+    expect(imported.compatibility.issues).toContainEqual(
+      expect.objectContaining({ code: 'docx.fields.body', severity: 'info' }),
+    );
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            fileName: 'reviewed-contract.docx',
+          }),
+        }),
+      ).toBe(true);
+      expect(Object.values(fieldDisplays(editor))).toEqual([
+        'reviewed-contract.docx',
+      ]);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'fileName', display: 'reviewed-contract.docx' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips AUTHOR as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('author', 'author', 'AUTHOR', 'Ada Reviewer'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('AUTHOR');
+    expect(documentXml).toContain('Ada Reviewer');
+
+    const imported = await importOfficeFile(
+      new File([first], 'author-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('author');
+    expect(importedField?.dataset.fieldInstruction).toBe('AUTHOR');
+    expect(importedField?.textContent).toContain('Ada Reviewer');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            author: 'Morgan',
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'author', display: 'Morgan' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips TITLE as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('title', 'title', 'TITLE', 'Draft Contract'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('TITLE');
+    expect(documentXml).toContain('Draft Contract');
+
+    const imported = await importOfficeFile(
+      new File([first], 'title-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('title');
+    expect(importedField?.dataset.fieldInstruction).toBe('TITLE');
+    expect(importedField?.textContent).toContain('Draft Contract');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            title: 'Quarterly Review',
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'title', display: 'Quarterly Review' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips SUBJECT as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('subject', 'subject', 'SUBJECT', 'Legal Review'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('SUBJECT');
+    expect(documentXml).toContain('Legal Review');
+
+    const imported = await importOfficeFile(
+      new File([first], 'subject-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('subject');
+    expect(importedField?.dataset.fieldInstruction).toBe('SUBJECT');
+    expect(importedField?.textContent).toContain('Legal Review');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            subject: 'Compliance',
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'subject', display: 'Compliance' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips KEYWORDS as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('keywords', 'keywords', 'KEYWORDS', 'draft; legal'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('KEYWORDS');
+    expect(documentXml).toContain('draft; legal');
+
+    const imported = await importOfficeFile(
+      new File([first], 'keywords-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('keywords');
+    expect(importedField?.dataset.fieldInstruction).toBe('KEYWORDS');
+    expect(importedField?.textContent).toContain('draft; legal');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            keywords: 'contract; review',
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'keywords', display: 'contract; review' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips LASTSAVEDBY as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('lastSavedBy', 'last-saved', 'LASTSAVEDBY', 'Ada Reviewer'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('LASTSAVEDBY');
+    expect(documentXml).toContain('Ada Reviewer');
+
+    const imported = await importOfficeFile(
+      new File([first], 'lastsavedby-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('lastSavedBy');
+    expect(importedField?.dataset.fieldInstruction).toBe('LASTSAVEDBY');
+    expect(importedField?.textContent).toContain('Ada Reviewer');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            lastSavedBy: 'Riley',
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'lastSavedBy', display: 'Riley' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips COMMENTS as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('comments', 'comments', 'COMMENTS', 'Draft for counsel'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('COMMENTS');
+    expect(documentXml).toContain('Draft for counsel');
+
+    const imported = await importOfficeFile(
+      new File([first], 'comments-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('comments');
+    expect(importedField?.dataset.fieldInstruction).toBe('COMMENTS');
+    expect(importedField?.textContent).toContain('Draft for counsel');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            comments: 'Ready for legal review',
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'comments', display: 'Ready for legal review' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips CREATEDATE as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field(
+        'createDate',
+        'created',
+        'CREATEDATE \\@ "yyyy-MM-dd"',
+        '2020-01-01',
+      ),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('CREATEDATE');
+    expect(documentXml).toContain('2020-01-01');
+
+    const imported = await importOfficeFile(
+      new File([first], 'createdate-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('createDate');
+    expect(importedField?.dataset.fieldInstruction).toBe(
+      'CREATEDATE \\@ "yyyy-MM-dd"',
+    );
+    expect(importedField?.textContent).toContain('2020-01-01');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            createDate: new Date(2024, 2, 15),
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'createDate', display: '2024-03-15' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips SAVEDATE as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('saveDate', 'saved', 'SAVEDATE \\@ "yyyy-MM-dd"', '2021-02-02'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('SAVEDATE');
+    expect(documentXml).toContain('2021-02-02');
+
+    const imported = await importOfficeFile(
+      new File([first], 'savedate-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('saveDate');
+    expect(importedField?.dataset.fieldInstruction).toBe(
+      'SAVEDATE \\@ "yyyy-MM-dd"',
+    );
+    expect(importedField?.textContent).toContain('2021-02-02');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            saveDate: new Date(2025, 5, 8),
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'saveDate', display: '2025-06-08' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips PRINTDATE as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      field('printDate', 'printed', 'PRINTDATE \\@ "yyyy-MM-dd"', '2022-03-03'),
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('PRINTDATE');
+    expect(documentXml).toContain('2022-03-03');
+
+    const imported = await importOfficeFile(
+      new File([first], 'printdate-field.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('printDate');
+    expect(importedField?.dataset.fieldInstruction).toBe(
+      'PRINTDATE \\@ "yyyy-MM-dd"',
+    );
+    expect(importedField?.textContent).toContain('2022-03-03');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            printDate: new Date(2023, 10, 20),
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'printDate', display: '2023-11-20' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test('round-trips MERGEFIELD as a live native field', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true"><p>',
+      '<span data-document-field="true" data-field-id="customer" data-field-kind="mergeField" data-field-instruction="MERGEFIELD CustomerName" data-field-target-name="CustomerName" data-field-display="«CustomerName»">«CustomerName»</span>',
+      '</p></section>',
+    ].join('');
+
+    const first = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await first.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(documentXml).toContain('MERGEFIELD');
+    expect(documentXml).toContain('CustomerName');
+
+    const imported = await importOfficeFile(
+      new File([first], 'mergefield.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const document = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedField = document.body.querySelector<HTMLElement>(
+      '[data-document-field]',
+    );
+    expect(importedField?.dataset.fieldKind).toBe('mergeField');
+    expect(importedField?.dataset.fieldInstruction).toBe(
+      'MERGEFIELD CustomerName',
+    );
+    expect(importedField?.dataset.fieldTargetName).toBe('CustomerName');
+    expect(importedField?.textContent).toContain('CustomerName');
+
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+    try {
+      expect(
+        editor.commands.refreshDocumentFields(documentContent(editor), {
+          resolveContext: () => ({
+            pageNumber: 1,
+            totalPages: 1,
+            sectionNumber: 1,
+            sectionPages: 1,
+            mergeRecord: { CustomerName: 'Ada Lovelace' },
+          }),
+        }),
+      ).toBe(true);
+      expect(
+        documentFields(editor).map((entry) => ({
+          kind: entry.kind,
+          display: entry.display,
+        })),
+      ).toEqual([{ kind: 'mergeField', display: 'Ada Lovelace' }]);
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test('round-trips WPS numeric page switches as live native fields', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
@@ -655,6 +1770,17 @@ function fieldInstruction(kind: WorkDocumentFieldKind): string {
     time: 'TIME',
     wordCount: 'NUMWORDS',
     characterCount: 'NUMCHARS',
+    fileName: 'FILENAME',
+    author: 'AUTHOR',
+    title: 'TITLE',
+    subject: 'SUBJECT',
+    keywords: 'KEYWORDS',
+    lastSavedBy: 'LASTSAVEDBY',
+    comments: 'COMMENTS',
+    createDate: 'CREATEDATE \\@ "yyyy年M月d日"',
+    saveDate: 'SAVEDATE \\@ "yyyy年M月d日"',
+    printDate: 'PRINTDATE \\@ "yyyy年M月d日"',
+    mergeField: 'MERGEFIELD FieldName',
     pageReference: 'PAGEREF Target \\h',
   }[kind];
 }

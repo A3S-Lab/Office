@@ -48,6 +48,8 @@ On phone widths, open the page drawer through its semantic toggle and assert
 that the viewer is inert while the drawer owns focus.
 
 Use the PDF collaboration mutation route for durable annotations and event
-exchange. A browser download or semantic preview does not prove that a saved
+exchange. Read the stable edit address (`pageIndex`, `annotationId`, or
+`fieldId`) from `collab read` or `office_collaboration_read`, then patch that
+annotation or form field. Do not overwrite the whole document. A browser download or semantic preview does not prove that a saved
 PDF has the intended bytes; use the focused A3S Test evidence plus an explicit
 artifact readback when the task depends on export content.

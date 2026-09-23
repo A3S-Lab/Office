@@ -45,6 +45,8 @@ checks all guards against one sheet snapshot before one transaction, so one
 conflict leaves every cell and the durable event cursor unchanged. See
 [MCP: Real-time Collaboration](mcp.md#real-time-collaboration) for the complete
 request envelope and JSON example.
+Read the stable edit address from `collab read` or `office_collaboration_read`,
+then patch only that `sheetId` / `row` / `column` cell. Do not overwrite the whole document.
 
 ## Values and Formulas
 
@@ -112,9 +114,9 @@ cached values and dynamic-array spills. The same operation is available as the
 `recalculate-spreadsheet-formulas` batch/MCP mutation and as read-only or
 writeback Rust APIs. Supported functions are `ABS`, `AND`, `AVERAGE`,
 `AVERAGEIF`, `COLUMN`, `CONCAT`, `CONCATENATE`, `COUNT`, `COUNTA`, `COUNTIF`,
-`IF`, `IFERROR`, `MAX`, `MIN`, `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`,
-`ROUND`, `ROW`, `SEQUENCE`, `SQRT`, `SUBTOTAL`, `SUM`, `SUMIF`, and
-`TRANSPOSE`. Cross-sheet ranges, scoped names, typed errors,
+`IF`, `IFERROR`, `LEFT`, `LEN`, `MAX`, `MID`, `MIN`, `MOD`, `NA`, `NOT`, `OR`,
+`PI`, `POWER`, `RIGHT`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`, `SUBTOTAL`, `SUM`,
+`SUMIF`, and `TRANSPOSE`. Cross-sheet ranges, scoped names, typed errors,
 array broadcasting, spill references, and ordinary Excel operators are
 supported. ListObject structured references resolve a table `name` or
 `displayName`: `Sales[Qty]` selects one data column,

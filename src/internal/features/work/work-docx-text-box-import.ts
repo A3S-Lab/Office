@@ -201,6 +201,8 @@ const SUPPORTED_PRESET_GEOMETRIES = new Map<
   ['ellipse', 'ellipse'],
   ['diamond', 'diamond'],
   ['triangle', 'triangle'],
+  ['parallelogram', 'parallelogram'],
+  ['hexagon', 'hexagon'],
 ]);
 
 /**

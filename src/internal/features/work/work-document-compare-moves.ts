@@ -13,6 +13,8 @@ export interface InlineUnit {
   text: string;
   marks: readonly ProseMirrorMark[];
   leadingWhitespaceAttached?: boolean;
+  /** Soft line break (`hardBreak`); text is empty and must not be tokenized. */
+  hardBreak?: boolean;
 }
 
 export type InlineDiffStep =
@@ -91,19 +93,28 @@ export function appendRevisionUnits(
   schema: Schema,
   stripReviewMarks: StripReviewMarks,
 ): void {
+  const revisionMark = schema.marks.documentChange.create({
+    kind,
+    id: identity.id,
+    actorId: identity.actorId ?? '',
+    author: identity.author,
+    date: identity.date,
+    before: '',
+  });
   for (const unit of units) {
+    if (unit.hardBreak) {
+      const hardBreak = schema.nodes.hardBreak;
+      if (!hardBreak) continue;
+      target.push(
+        hardBreak.create(null, null, [
+          ...stripReviewMarks(unit.marks),
+          revisionMark,
+        ]),
+      );
+      continue;
+    }
     target.push(
-      schema.text(unit.text, [
-        ...stripReviewMarks(unit.marks),
-        schema.marks.documentChange.create({
-          kind,
-          id: identity.id,
-          actorId: identity.actorId ?? '',
-          author: identity.author,
-          date: identity.date,
-          before: '',
-        }),
-      ]),
+      schema.text(unit.text, [...stripReviewMarks(unit.marks), revisionMark]),
     );
   }
 }

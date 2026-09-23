@@ -14,6 +14,10 @@ pub(in crate::collaboration) mod pdf;
 pub(in crate::collaboration) mod presentation;
 pub(in crate::collaboration) mod spreadsheet;
 
+pub(in crate::collaboration) use pdf::project_pdf_content;
+pub(in crate::collaboration) use presentation::project_presentation_content;
+pub(in crate::collaboration) use spreadsheet::project_spreadsheet_content;
+
 use document::{apply_document_mutation, validate_document_mutation};
 use markdown::{
     apply_markdown_replace, apply_markdown_splice, replace_markdown_text,

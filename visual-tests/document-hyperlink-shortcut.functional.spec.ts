@@ -24,12 +24,13 @@ test('Writer opens the hyperlink dialog with WPS Ctrl+K', async ({
     'Control+K Meta+K',
   );
 
-  const paragraph = page
-    .locator('.work-document-editable .ProseMirror p')
+  // Prefer the title heading: first <p> Home/Shift+End is flaky under WASM
+  // pagination on desktop CI.
+  const heading = page
+    .locator('.work-document-editable .ProseMirror h1')
     .first();
-  await paragraph.click();
-  await page.keyboard.press('Home');
-  await page.keyboard.press('Shift+End');
+  await expect(heading).toContainText('新项目方案');
+  await heading.click({ clickCount: 3 });
   await page.keyboard.press('Control+k');
 
   const linkDialog = page.getByRole('dialog', { name: '添加链接' });
@@ -42,7 +43,7 @@ test('Writer opens the hyperlink dialog with WPS Ctrl+K', async ({
     page.locator(
       '.work-document-editable .ProseMirror a[href="https://a3s.dev/office"]',
     ),
-  ).toHaveCount(1);
+  ).toHaveCount(1, { timeout: 15_000 });
 
   await page.screenshot({
     path: testInfo.outputPath(

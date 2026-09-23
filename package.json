@@ -1,6 +1,6 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.310.0",
+  "version": "0.311.0",
   "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
@@ -213,6 +213,16 @@
     "test:e2e:collaboration-presentation-elements:check": "a3s-test check tests/e2e/collaboration-presentation-elements.acl --json",
     "test:e2e:wps-layout": "bun run test:e2e:fixtures && a3s-test run tests/e2e/word-wps-layout-parity.acl --json && a3s-test run tests/e2e/word-wps-font-grid-parity.acl --json",
     "test:e2e:wps-layout:check": "bun run test:e2e:fixtures && a3s-test check tests/e2e/word-wps-layout-parity.acl --json && a3s-test check tests/e2e/word-wps-font-grid-parity.acl --json",
+    "test:e2e:wps-daily:writer": "bun run test:e2e:fixtures && bun run office:ops -- a3s run tests/e2e/word-wps-daily-loop.acl --cdp-port 9345 --command-timeout-ms 120000 --json",
+    "test:e2e:wps-daily:writer:check": "a3s-test check tests/e2e/word-wps-daily-loop.acl --json",
+    "test:e2e:wps-daily:spreadsheet": "bun run test:e2e:fixtures && bun run office:ops -- a3s run tests/e2e/spreadsheet-wps-daily-loop.acl --cdp-port 9347 --command-timeout-ms 120000 --json",
+    "test:e2e:wps-daily:spreadsheet:check": "a3s-test check tests/e2e/spreadsheet-wps-daily-loop.acl --json",
+    "test:e2e:wps-daily:presentation": "bun run test:e2e:fixtures && bun run office:ops -- a3s run tests/e2e/presentation-wps-daily-loop.acl --cdp-port 9348 --command-timeout-ms 120000 --json",
+    "test:e2e:wps-daily:presentation:check": "a3s-test check tests/e2e/presentation-wps-daily-loop.acl --json",
+    "test:e2e:wps-daily:pdf": "bun run test:e2e:fixtures && bun run office:ops -- a3s run tests/e2e/pdf-wps-daily-loop.acl --cdp-port 9349 --command-timeout-ms 120000 --json",
+    "test:e2e:wps-daily:pdf:check": "a3s-test check tests/e2e/pdf-wps-daily-loop.acl --json",
+    "test:e2e:wps-daily": "bun run test:e2e:wps-daily:writer && bun run test:e2e:wps-daily:spreadsheet && bun run test:e2e:wps-daily:presentation && bun run test:e2e:wps-daily:pdf",
+    "test:e2e:wps-daily:check": "bun run test:e2e:wps-daily:writer:check && bun run test:e2e:wps-daily:spreadsheet:check && bun run test:e2e:wps-daily:presentation:check && bun run test:e2e:wps-daily:pdf:check",
     "test:e2e:writer-ribbon": "a3s-test run tests/e2e/word-ribbon-collapse.acl --json",
     "test:e2e:writer-ribbon:check": "a3s-test check tests/e2e/word-ribbon-collapse.acl --json",
     "test:e2e:spreadsheet-ribbon": "a3s-test run tests/e2e/spreadsheet-ribbon-alignment.acl --json",
@@ -328,8 +338,11 @@
     "test:wps-layout": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-wps-layout-parity.ps1",
     "test:office-layout": "bun run test:wps-layout",
     "test:corpus:r0": "rstest tests/corpus/r0-no-clobber/r0-no-clobber.test.ts",
+    "test:corpus:r2": "rstest tests/corpus/r2-formula/r2-formula.test.ts",
+    "test:corpus:r2-pivot": "rstest tests/corpus/r2-pivot/r2-pivot.test.ts",
     "test:watch": "rstest --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:corpus:r2-cf": "rstest tests/corpus/r2-cf/r2-cf.test.ts"
   },
   "dependencies": {
     "@embedpdf/fonts-arabic": "1.0.0",

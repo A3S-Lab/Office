@@ -2,17 +2,19 @@ import type { Cell, CellMatrix, Selection } from '@fortune-sheet/core';
 import {
   buildSpreadsheetPivotOutput,
   defaultPivotValueCaption,
-  spreadsheetPivotAggregationLabel,
-  spreadsheetPivotFilterItemsFromSource,
   type SpreadsheetPivotBounds as PivotBounds,
   type SpreadsheetPivotField,
   type SpreadsheetPivotFilterItem,
+  spreadsheetPivotAggregationLabel,
+  spreadsheetPivotFilterItemsFromSource,
 } from './work-spreadsheet-pivot-engine';
+import { WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE } from './work-spreadsheet-pivot-styles';
 import {
   displaySpreadsheetPivotValue,
   finiteSpreadsheetPivotNumber,
   spreadsheetPivotCellValue,
   spreadsheetPivotFilterValueKey,
+  spreadsheetPivotReportFilterSelection,
 } from './work-spreadsheet-pivot-values';
 import {
   formatSpreadsheetCellRanges,
@@ -30,8 +32,8 @@ const MAXIMUM_OUTPUT_CELLS = 20_000;
 const MAXIMUM_XLSX_ROW = 1_048_575;
 const MAXIMUM_XLSX_COLUMN = 16_383;
 
-export { defaultPivotValueCaption, spreadsheetPivotAggregationLabel };
 export type { SpreadsheetPivotField, SpreadsheetPivotFilterItem };
+export { defaultPivotValueCaption, spreadsheetPivotAggregationLabel };
 
 export interface SpreadsheetPivotValidation {
   valid: boolean;
@@ -159,7 +161,7 @@ export function createSpreadsheetPivotFromSelection(
     values: [],
     rowGrandTotals: true,
     columnGrandTotals: true,
-    styleName: 'PivotStyleLight16',
+    styleName: WORK_SPREADSHEET_DEFAULT_PIVOT_STYLE,
     refreshOnLoad: true,
   };
   const fields = spreadsheetPivotFields(content, draftPivot);
@@ -476,12 +478,21 @@ function pivotFailure(
     );
   }
   for (const filter of reportFilters) {
+    const available = spreadsheetPivotFilterItems(
+      content,
+      pivot,
+      filter.fieldIndex,
+    );
+    const selection = spreadsheetPivotReportFilterSelection(filter);
     if (
-      filter.selectedItem !== undefined &&
-      !spreadsheetPivotFilterItems(content, pivot, filter.fieldIndex).some(
+      selection.kind === 'items' &&
+      selection.items.some(
         (item) =>
-          spreadsheetPivotFilterValueKey(item.value) ===
-          spreadsheetPivotFilterValueKey(filter.selectedItem!),
+          !available.some(
+            (entry) =>
+              spreadsheetPivotFilterValueKey(entry.value) ===
+              spreadsheetPivotFilterValueKey(item),
+          ),
       )
     ) {
       return invalid(

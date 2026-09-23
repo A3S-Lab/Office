@@ -85,7 +85,8 @@
         "tests/e2e/word-bullet-list-shortcut.acl",
         "tests/e2e/word-heading-shortcuts.acl",
         "tests/e2e/word-move-block-shortcuts.acl",
-        "tests/e2e/word-strike-shortcut.acl"
+        "tests/e2e/word-strike-shortcut.acl",
+        "tests/e2e/word-wps-daily-loop.acl"
       ],
       "fixtures": [
         "word-wps-connector.docx",
@@ -174,7 +175,8 @@
         "tests/e2e/spreadsheet-phone-rename.acl",
         "tests/e2e/spreadsheet-hyperlink.acl",
         "tests/e2e/spreadsheet-underline-styles.acl",
-        "tests/e2e/spreadsheet-copy-from-above.acl"
+        "tests/e2e/spreadsheet-copy-from-above.acl",
+        "tests/e2e/spreadsheet-wps-daily-loop.acl"
       ],
       "fixtures": ["spreadsheet-1904-date-system.xlsx"],
       "agent": {
@@ -216,7 +218,8 @@
         "tests/e2e/presentation-delete-slide.acl",
         "tests/e2e/presentation-group-shortcut.acl",
         "tests/e2e/presentation-view-notes.acl",
-        "tests/e2e/presentation-ribbon-collapse.acl"
+        "tests/e2e/presentation-ribbon-collapse.acl",
+        "tests/e2e/presentation-wps-daily-loop.acl"
       ],
       "fixtures": [],
       "agent": {
@@ -258,6 +261,7 @@
         "visual-tests/pdf-menu.functional.spec.ts"
       ],
       "acl": [
+        "tests/e2e/pdf-wps-daily-loop.acl",
         "tests/e2e/pdf-page-organization.acl",
         "tests/e2e/pdf-thumbnail-keyboard.acl",
         "tests/e2e/pdf-page-drawer-phone.acl",

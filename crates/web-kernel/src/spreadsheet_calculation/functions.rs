@@ -81,6 +81,12 @@ impl SpreadsheetEvaluator<'_> {
             "OR" => logical_aggregate(&values, false),
             "NOT" => logical_not(&values),
             "CONCAT" | "CONCATENATE" => concatenate(&values),
+            "LEFT" => text_left(&values),
+            "RIGHT" => text_right(&values),
+            "LEN" => text_len(&values),
+            "MID" => text_mid(&values),
+            "ROW" => row_or_column(current, true),
+            "COLUMN" => row_or_column(current, false),
             "PI" => finite_number(std::f64::consts::PI),
             "NA" => SpreadsheetValue::error(SpreadsheetFormulaErrorLiteral::NotAvailable),
             _ => {
@@ -802,6 +808,84 @@ fn single_cell_reference(
     }
 }
 
+fn text_left(values: &[EvaluatedValue]) -> SpreadsheetValue {
+    let Ok(text) = first_scalar_text(values) else {
+        return value_error();
+    };
+    let count = optional_text_count(values, 1).unwrap_or(1.0);
+    if !count.is_finite() || count < 0.0 {
+        return value_error();
+    }
+    let take = count.floor() as usize;
+    SpreadsheetValue::Text {
+        value: text.chars().take(take).collect(),
+    }
+}
+
+fn text_right(values: &[EvaluatedValue]) -> SpreadsheetValue {
+    let Ok(text) = first_scalar_text(values) else {
+        return value_error();
+    };
+    let count = optional_text_count(values, 1).unwrap_or(1.0);
+    if !count.is_finite() || count < 0.0 {
+        return value_error();
+    }
+    let take = count.floor() as usize;
+    let total = text.chars().count();
+    let skip = total.saturating_sub(take);
+    SpreadsheetValue::Text {
+        value: text.chars().skip(skip).collect(),
+    }
+}
+
+fn text_len(values: &[EvaluatedValue]) -> SpreadsheetValue {
+    let Ok(text) = first_scalar_text(values) else {
+        return value_error();
+    };
+    finite_number(text.chars().count() as f64)
+}
+
+fn text_mid(values: &[EvaluatedValue]) -> SpreadsheetValue {
+    let Ok(text) = first_scalar_text(values) else {
+        return value_error();
+    };
+    let Some(start) = optional_text_count(values, 1) else {
+        return value_error();
+    };
+    let Some(count) = optional_text_count(values, 2) else {
+        return value_error();
+    };
+    if !start.is_finite() || start < 1.0 || !count.is_finite() || count < 0.0 {
+        return value_error();
+    }
+    let start_index = start.floor() as usize - 1;
+    let take = count.floor() as usize;
+    SpreadsheetValue::Text {
+        value: text.chars().skip(start_index).take(take).collect(),
+    }
+}
+
+fn first_scalar_text(values: &[EvaluatedValue]) -> Result<String, ()> {
+    let Some(value) = values
+        .first()
+        .cloned()
+        .and_then(|value| value.into_values().into_iter().next())
+    else {
+        return Err(());
+    };
+    scalar_text(value).map_err(|_| ())
+}
+
+fn optional_text_count(values: &[EvaluatedValue], index: usize) -> Option<f64> {
+    let value = values
+        .get(index)?
+        .clone()
+        .into_values()
+        .into_iter()
+        .next()?;
+    scalar_number(value).ok()
+}
+
 fn row_or_column(current: &CellKey, row: bool) -> SpreadsheetValue {
     let value = if row {
         current.row + 1
@@ -832,7 +916,10 @@ fn function_arity(name: &str) -> Option<(usize, Option<usize>)> {
         "SUMIF" => (2, Some(3)),
         "COUNTIF" => (2, Some(2)),
         "AVERAGEIF" => (2, Some(3)),
-        "ABS" | "SQRT" | "NOT" => (1, Some(1)),
+        "ABS" | "SQRT" | "NOT" | "LEN" => (1, Some(1)),
+        "LEFT" | "RIGHT" => (1, Some(2)),
+        "MID" => (3, Some(3)),
+        "ROW" | "COLUMN" => (0, Some(0)),
         "POWER" | "MOD" | "ROUND" => (2, Some(2)),
         "PI" | "NA" => (0, Some(0)),
         _ => return None,

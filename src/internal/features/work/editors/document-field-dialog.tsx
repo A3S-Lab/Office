@@ -9,6 +9,7 @@ import {
   OfficeCheckbox,
   OfficeSelect,
   type OfficeSelectOption,
+  OfficeTextField,
 } from './office-controls';
 
 export interface DocumentFieldTargetOption {
@@ -27,6 +28,8 @@ export interface DocumentFieldDialogProps {
   onSubmit: () => void;
 }
 
+const MERGE_FIELD_NAME_PATTERN = /^[\p{L}_][\p{L}\p{N}_]*$/u;
+
 export function DocumentFieldDialog({
   editing,
   draft,
@@ -39,7 +42,14 @@ export function DocumentFieldDialog({
 }: DocumentFieldDialogProps) {
   const numeric = isNumericField(draft.kind);
   const clockKind =
-    draft.kind === 'date' ? 'date' : draft.kind === 'time' ? 'time' : null;
+    draft.kind === 'date' ||
+    draft.kind === 'createDate' ||
+    draft.kind === 'saveDate' ||
+    draft.kind === 'printDate'
+      ? 'date'
+      : draft.kind === 'time'
+        ? 'time'
+        : null;
   const clock = clockKind !== null;
   const hasTarget =
     draft.kind !== 'pageReference' ||
@@ -49,12 +59,17 @@ export function DocumentFieldDialog({
         target.id === draft.targetId &&
         target.name === draft.targetName,
     );
+  const hasMergeFieldName =
+    draft.kind !== 'mergeField' ||
+    MERGE_FIELD_NAME_PATTERN.test(draft.targetName.trim());
   const targetValue = `${draft.targetId}:${draft.targetName}`;
+  const canSubmit =
+    (draft.kind !== 'pageReference' || hasTarget) && hasMergeFieldName;
 
   return (
     <Dialog
       title={editing ? '编辑字段' : '插入字段'}
-      description="设置页码、日期、统计和书签引用；插入后可使用 F9 更新结果。"
+      description="设置页码、日期、统计、合并域和书签引用；插入后可使用 F9 更新结果。"
       className="work-document-field-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onCancel}
@@ -63,11 +78,7 @@ export function DocumentFieldDialog({
           <Button tone="quiet" onClick={onCancel}>
             取消
           </Button>
-          <Button
-            tone="primary"
-            disabled={draft.kind === 'pageReference' && !hasTarget}
-            onClick={onSubmit}
-          >
+          <Button tone="primary" disabled={!canSubmit} onClick={onSubmit}>
             {editing ? '应用字段' : '插入字段'}
           </Button>
         </>
@@ -89,7 +100,10 @@ export function DocumentFieldDialog({
                 kind,
                 format: defaultFormat(kind),
                 targetId: kind === 'pageReference' ? draft.targetId : '',
-                targetName: kind === 'pageReference' ? draft.targetName : '',
+                targetName:
+                  kind === 'pageReference' || kind === 'mergeField'
+                    ? draft.targetName
+                    : '',
                 hyperlink: kind === 'pageReference' ? draft.hyperlink : false,
               });
             }}
@@ -121,7 +135,7 @@ export function DocumentFieldDialog({
 
         {clock && (
           <div className="work-document-dialog-field">
-            <span>{draft.kind === 'date' ? '日期格式' : '时间格式'}</span>
+            <span>{draft.kind === 'time' ? '时间格式' : '日期格式'}</span>
             <OfficeSelect
               ariaLabel={clockKind === 'date' ? '日期格式' : '时间格式'}
               value={
@@ -143,6 +157,26 @@ export function DocumentFieldDialog({
                 });
               }}
             />
+          </div>
+        )}
+
+        {draft.kind === 'mergeField' && (
+          <div className="work-document-dialog-field">
+            <span>合并域名</span>
+            <OfficeTextField
+              aria-label="合并域名"
+              value={draft.targetName}
+              maxLength={64}
+              placeholder="例如：CustomerName"
+              onChange={(event) =>
+                onChange({ ...draft, targetName: event.target.value })
+              }
+            />
+            {!hasMergeFieldName && (
+              <small className="work-document-field-dialog-help">
+                使用字母或下划线开头的标识符；空格与特殊开关保持失败关闭。
+              </small>
+            )}
           </div>
         )}
 
@@ -207,9 +241,13 @@ export function DocumentFieldDialog({
         </output>
       </div>
       <p className="work-document-field-dialog-note">
-        {draft.mergeFormat
-          ? '将写入 WPS 的 MERGEFORMAT 开关，F9 更新时保留结果格式。'
-          : '应用后仍可使用 F9 更新分页、日期和统计结果。'}
+        {draft.kind === 'mergeField'
+          ? draft.mergeFormat
+            ? '合并域由宿主提供当前记录；将写入 MERGEFORMAT，F9 更新时保留结果格式。'
+            : '合并域由宿主提供当前记录；未提供时显示 «域名»。F9 可刷新结果。'
+          : draft.mergeFormat
+            ? '将写入 WPS 的 MERGEFORMAT 开关，F9 更新时保留结果格式。'
+            : '应用后仍可使用 F9 更新分页、日期和统计结果。'}
       </p>
     </Dialog>
   );
@@ -222,8 +260,19 @@ const fieldKindOptions = [
   { value: 'sectionPages', label: '本节页数' },
   { value: 'date', label: '当前日期' },
   { value: 'time', label: '当前时间' },
+  { value: 'createDate', label: '创建日期' },
+  { value: 'saveDate', label: '保存日期' },
+  { value: 'printDate', label: '打印日期' },
   { value: 'wordCount', label: '字数' },
   { value: 'characterCount', label: '字符数' },
+  { value: 'fileName', label: '文件名' },
+  { value: 'author', label: '作者' },
+  { value: 'title', label: '标题' },
+  { value: 'subject', label: '主题' },
+  { value: 'keywords', label: '关键字' },
+  { value: 'lastSavedBy', label: '最后保存者' },
+  { value: 'comments', label: '备注' },
+  { value: 'mergeField', label: '合并域' },
   { value: 'pageReference', label: '目标页码' },
 ] as const satisfies readonly OfficeSelectOption<WorkDocumentFieldKind>[];
 
@@ -262,7 +311,12 @@ function isNumericField(kind: WorkDocumentFieldKind): boolean {
 function defaultFormat(kind: WorkDocumentFieldKind) {
   if (isNumericField(kind))
     return { kind: 'numeric' as const, value: 'arabic' as const };
-  if (kind === 'date') {
+  if (
+    kind === 'date' ||
+    kind === 'createDate' ||
+    kind === 'saveDate' ||
+    kind === 'printDate'
+  ) {
     return { kind: 'clock' as const, value: 'yyyy年M月d日' as const };
   }
   if (kind === 'time') {

@@ -54,6 +54,15 @@ assert(
   ].join('\n'),
 );
 
+const pptxRuntimePath = resolve(playgroundOutput, 'vendor/pptxgen.bundle.js');
+const pptxRuntime = existsSync(pptxRuntimePath)
+  ? readFileSync(pptxRuntimePath, 'utf8')
+  : '';
+assert(
+  pptxRuntime.includes('var PptxGenJS='),
+  'Playground PowerPoint runtime must be the classic pptxgen script that assigns var PptxGenJS.',
+);
+
 for (const editorChunk of [
   'document-editor',
   'markdown-editor',

@@ -2,18 +2,18 @@ import {
   createWorkDocumentBlob,
   importWorkDocumentFile,
 } from './work-document-file-io';
+import { materializeWorkFileSource } from './work-file-data';
 import {
   downloadBlob,
   fileNameWithoutExtension,
   safeFileName,
 } from './work-file-download';
-import { workFileExtension, workKindForFile } from './work-file-kind';
-import { materializeWorkFileSource } from './work-file-data';
 import {
   type WorkFileImportContext,
   WorkFileImportController,
   type WorkFileImportOptions,
 } from './work-file-import';
+import { workFileExtension, workKindForFile } from './work-file-kind';
 import {
   createWorkMarkdownBlob,
   importWorkMarkdownFile,
@@ -119,12 +119,15 @@ function normalizedReservedSpreadsheetSheetIds(
 export async function exportWorkArtifact(
   artifact: WorkArtifact,
   options?: WorkArtifactExportOptions,
-): Promise<void> {
+): Promise<File> {
   const blob = await createWorkArtifactBlob(artifact, options);
-  downloadBlob(
-    blob,
-    `${safeFileName(artifact.title)}.${workArtifactExtension(artifact.kind)}`,
-  );
+  const name = `${safeFileName(artifact.title)}.${workArtifactExtension(artifact.kind)}`;
+  const file = new File([blob], name, {
+    type: blob.type,
+    lastModified: Date.now(),
+  });
+  downloadBlob(file, name);
+  return file;
 }
 
 export async function createWorkArtifactBlob(

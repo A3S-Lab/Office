@@ -1,9 +1,9 @@
 import type { Extensions } from '@tiptap/core';
-import { DocumentTextAlign } from './work-document-text-align';
 import Color from '@tiptap/extension-color';
 import { TableKit } from '@tiptap/extension-table';
 import FontSize from '@tiptap/extension-text-style/font-size';
 import StarterKit from '@tiptap/starter-kit';
+import { DocumentBlockContentControl } from './work-document-block-content-control';
 import { DocumentBookmarkBoundary } from './work-document-bookmarks';
 import {
   DocumentCaption,
@@ -25,10 +25,10 @@ import {
   DocumentCitation,
 } from './work-document-citation-nodes';
 import { DocumentComment } from './work-document-comments';
-import { DocumentContentControl } from './work-document-content-control';
 import { DocumentConnector } from './work-document-connector';
-import { DocumentEquation } from './work-document-equations';
+import { DocumentContentControl } from './work-document-content-control';
 import { DocumentEquationOpaque } from './work-document-equation-opaque';
+import { DocumentEquation } from './work-document-equations';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
 import { DocumentIndex, DocumentIndexEntry } from './work-document-index-nodes';
@@ -45,6 +45,10 @@ import {
 import { DocumentPageBreak } from './work-document-page-break';
 import { DocumentParagraphFormatting } from './work-document-paragraph-formatting';
 import { DocumentParagraphIdentity } from './work-document-paragraph-identity';
+import {
+  DocumentRepeatingSection,
+  DocumentRepeatingSectionItem,
+} from './work-document-repeating-section';
 import { DocumentScriptFontFormatting } from './work-document-script-font-extension';
 import { DocumentSection } from './work-document-section-node';
 import { DocumentStrike } from './work-document-strike';
@@ -63,6 +67,7 @@ import {
   DocumentTable,
   DocumentTableSizing,
 } from './work-document-table-sizing';
+import { DocumentTextAlign } from './work-document-text-align';
 import { DocumentTextBox } from './work-document-text-box';
 import { DocumentUnderline } from './work-document-underline';
 import {
@@ -142,6 +147,9 @@ export function createWorkDocumentExtensions(
     DocumentIndex,
     DocumentField,
     DocumentContentControl,
+    DocumentBlockContentControl,
+    DocumentRepeatingSectionItem,
+    DocumentRepeatingSection,
     DocumentEquation,
     DocumentEquationOpaque,
     commentExtension,

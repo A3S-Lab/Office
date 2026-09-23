@@ -5,6 +5,7 @@ use yrs::{Any, Array, ArrayRef, Map, MapRef, Out, Transact};
 
 use super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMutation,
+    NativeOfficeCollaborationPdfFormField, NativeOfficeCollaborationProjectedContent,
 };
 use super::{is_utf16_boundary, utf16_len};
 
@@ -13,7 +14,10 @@ mod find;
 mod records;
 mod review;
 
-use annotation::{apply_pdf_annotation_mutation, validate_pdf_annotation_mutation};
+use annotation::{
+    apply_pdf_annotation_mutation, project_pdf_annotation_addresses,
+    validate_pdf_annotation_mutation,
+};
 use review::{apply_pdf_review_mutation, validate_pdf_review_mutation};
 
 pub(in crate::collaboration) use find::find_pdf_text;
@@ -49,6 +53,23 @@ pub(super) fn validate_pdf_mutation(mutation: &NativeOfficeCollaborationMutation
             "The supplied mutation is not a PDF mutation.",
         )),
     }
+}
+
+pub(in crate::collaboration) fn project_pdf_content(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<NativeOfficeCollaborationProjectedContent> {
+    let (page_count, annotations) = project_pdf_annotation_addresses(doc, manifest)?;
+    let form_roots = PdfRecordCollectionRoots::new(doc, manifest, "form-values");
+    let form_fields = ordered_pdf_form_values(doc, &form_roots)?
+        .into_iter()
+        .map(|(field_id, value)| NativeOfficeCollaborationPdfFormField { field_id, value })
+        .collect();
+    Ok(NativeOfficeCollaborationProjectedContent::Pdf {
+        page_count,
+        annotations,
+        form_fields,
+    })
 }
 
 pub(super) fn apply_pdf_mutation(

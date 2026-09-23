@@ -12,6 +12,7 @@ import {
   FilePlus2,
   FileStack,
   FileText,
+  Filter,
   GitCompareArrows,
   Globe2,
   Hash,
@@ -169,6 +170,7 @@ interface DocumentToolbarProps {
   onInsertTextBox?: () => void;
   onInsertConnector?: () => void;
   onInsertContentControl?: () => void;
+  onOpenMailMergeRecipientFilter?: () => void;
   onPageChromeEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onClosePageChrome: () => void;
   onTogglePageChromePageNumber: () => void;
@@ -253,6 +255,7 @@ export function DocumentToolbar({
   onInsertTextBox,
   onInsertConnector,
   onInsertContentControl,
+  onOpenMailMergeRecipientFilter,
   onPageChromeEditingPartChange,
   onClosePageChrome,
   onTogglePageChromePageNumber,
@@ -381,6 +384,21 @@ export function DocumentToolbar({
       editor.chain().extendMarkRange('link').unsetLink().run();
       return;
     }
+    // Capture the editing selection before the modal steals focus; restoring
+    // only `editor.view.dom` can collapse Shift+End ranges and leave setLink
+    // with an empty selection (no visible <a href>).
+    let { from, to } = editor.state.selection;
+    if (from === to) {
+      // Cursor-only: wrap the current textblock so the link is visible, matching
+      // daily Writer expectation when Ctrl+K is pressed without a range.
+      const $pos = editor.state.doc.resolve(from);
+      const blockFrom = $pos.start();
+      const blockTo = $pos.end();
+      if (blockFrom < blockTo) {
+        from = blockFrom;
+        to = blockTo;
+      }
+    }
     const href = await prompt({
       title: '添加链接',
       description: '输入网页、邮箱地址，或使用 #书签名称 跳转到文档内位置。',
@@ -396,7 +414,17 @@ export function DocumentToolbar({
     });
     if (href === null) return;
     const normalized = normalizeDocumentHref(href);
-    if (normalized) editor.chain().focus().setLink({ href: normalized }).run();
+    if (!normalized) return;
+    const docSize = editor.state.doc.content.size;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({
+        from: Math.min(from, docSize),
+        to: Math.min(to, docSize),
+      })
+      .setLink({ href: normalized })
+      .run();
   }, [editor, prompt]);
   const toggleBookmark = useCallback(async () => {
     if (activeBookmark) {
@@ -853,6 +881,16 @@ export function DocumentToolbar({
                 >
                   <SlidersHorizontal size={19} />
                 </ToolbarButton>
+                {onOpenMailMergeRecipientFilter ? (
+                  <ToolbarButton
+                    label="筛选收件人"
+                    title="按条件筛选邮件合并收件人"
+                    displayLabel
+                    onClick={onOpenMailMergeRecipientFilter}
+                  >
+                    <Filter size={19} />
+                  </ToolbarButton>
+                ) : null}
               </RibbonGroup>
             </>
           ),
@@ -1316,8 +1354,18 @@ const documentFieldInsertActions = [
   { value: 'sectionPages', label: '本节页数' },
   { value: 'date', label: '当前日期' },
   { value: 'time', label: '当前时间' },
+  { value: 'createDate', label: '创建日期' },
+  { value: 'saveDate', label: '保存日期' },
+  { value: 'printDate', label: '打印日期' },
   { value: 'wordCount', label: '字数' },
   { value: 'characterCount', label: '字符数' },
+  { value: 'fileName', label: '文件名' },
+  { value: 'author', label: '作者' },
+  { value: 'title', label: '标题' },
+  { value: 'subject', label: '主题' },
+  { value: 'keywords', label: '关键字' },
+  { value: 'lastSavedBy', label: '最后保存者' },
+  { value: 'comments', label: '备注' },
 ] as const satisfies readonly {
   value: WorkDocumentFieldKind;
   label: string;

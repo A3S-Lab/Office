@@ -16,20 +16,20 @@ import {
 } from '../work-xlsx-rich-text-edit';
 import { officeFontFamilies } from './office-font-families';
 import type { OfficeSelectOption } from './office-select';
+import {
+  materializeSpreadsheetDependentListsForFortune,
+  restoreSpreadsheetDependentListProjections,
+} from './spreadsheet-data-validation-list';
+import { reconcileSpreadsheetFiltersAfterFortune } from './spreadsheet-filter-reconciliation';
 import { spreadsheetFontSizes } from './spreadsheet-font-size';
-import { takeSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import {
   MAXIMUM_INCREMENTAL_SPREADSHEET_OPERATIONS,
   projectSpreadsheetSheetsFromFortuneOperations,
   spreadsheetCellOperationCoordinates,
   spreadsheetCellOperationKey,
 } from './spreadsheet-operation-projection';
-import { reconcileSpreadsheetFiltersAfterFortune } from './spreadsheet-filter-reconciliation';
+import { takeSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
 import { reconcileSpreadsheetTablesAfterFortune } from './spreadsheet-table-reconciliation';
-import {
-  materializeSpreadsheetDependentListsForFortune,
-  restoreSpreadsheetDependentListProjections,
-} from './spreadsheet-data-validation-list';
 
 export interface SpreadsheetSelectionSummary {
   average: number | null;
@@ -72,6 +72,26 @@ export function spreadsheetSingleRange(
     row: finiteSpreadsheetSelectionAxis(selection.row),
     column: finiteSpreadsheetSelectionAxis(selection.column),
   };
+}
+
+export function spreadsheetFormulaResultText(
+  cell: Cell | null | undefined,
+): string | null {
+  if (!cell || typeof cell.f !== 'string' || cell.f.trim().length === 0) {
+    return null;
+  }
+  if (typeof cell.m === 'string') {
+    const display = cell.m.trim();
+    if (display && display !== cell.f.trim()) return display;
+  }
+  if (typeof cell.v === 'number' && Number.isFinite(cell.v)) {
+    return String(cell.v);
+  }
+  if (typeof cell.v === 'string') {
+    const display = cell.v.trim();
+    if (display && display !== cell.f.trim()) return display;
+  }
+  return null;
 }
 
 export function spreadsheetCellAt(

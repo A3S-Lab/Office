@@ -9,6 +9,17 @@ export type WorkDocumentFieldKind =
   | 'time'
   | 'wordCount'
   | 'characterCount'
+  | 'fileName'
+  | 'author'
+  | 'title'
+  | 'subject'
+  | 'keywords'
+  | 'lastSavedBy'
+  | 'comments'
+  | 'createDate'
+  | 'saveDate'
+  | 'printDate'
+  | 'mergeField'
   | 'pageReference';
 
 export interface WorkDocumentFieldContext {
@@ -20,6 +31,31 @@ export interface WorkDocumentFieldContext {
   wordCount?: number;
   /** Number of visible body characters, including spaces. */
   characterCount?: number;
+  /** Document file name for FILENAME fields (host/source provided). */
+  fileName?: string;
+  /** Document author for AUTHOR fields (host/source provided). */
+  author?: string;
+  /** Document title for TITLE fields (host/source provided). */
+  title?: string;
+  /** Document subject for SUBJECT fields (host/source provided). */
+  subject?: string;
+  /** Document keywords for KEYWORDS fields (host/source provided). */
+  keywords?: string;
+  /** Last-saved-by name for LASTSAVEDBY fields (host/source provided). */
+  lastSavedBy?: string;
+  /** Document comments property for COMMENTS fields (host/source provided). */
+  comments?: string;
+  /** Document creation time for CREATEDATE fields (host/source provided). */
+  createDate?: Date;
+  /** Document last-saved time for SAVEDATE fields (host/source provided). */
+  saveDate?: Date;
+  /** Document last-printed time for PRINTDATE fields (host/source provided). */
+  printDate?: Date;
+  /**
+   * Current mail-merge record values keyed by MERGEFIELD name (host
+   * provided). Missing keys keep the cached or «Name» display.
+   */
+  mergeRecord?: Readonly<Record<string, string>>;
   /** Page number resolved for a PAGEREF target, when the target is present. */
   referencePageNumber?: number | null;
   /** Page numbers keyed by `id:<bookmark-id>` or `name:<bookmark-name>`. */
@@ -102,6 +138,17 @@ const FIELD_COMMANDS: Record<WorkDocumentFieldKind, string> = {
   time: 'TIME \\@ "HH:mm"',
   wordCount: 'NUMWORDS',
   characterCount: 'NUMCHARS',
+  fileName: 'FILENAME',
+  author: 'AUTHOR',
+  title: 'TITLE',
+  subject: 'SUBJECT',
+  keywords: 'KEYWORDS',
+  lastSavedBy: 'LASTSAVEDBY',
+  comments: 'COMMENTS',
+  createDate: 'CREATEDATE \\@ "yyyy年M月d日"',
+  saveDate: 'SAVEDATE \\@ "yyyy年M月d日"',
+  printDate: 'PRINTDATE \\@ "yyyy年M月d日"',
+  mergeField: 'MERGEFIELD',
   pageReference: 'PAGEREF',
 };
 
@@ -114,6 +161,17 @@ const FIELD_LABELS: Record<WorkDocumentFieldKind, string> = {
   time: '当前时间',
   wordCount: '字数',
   characterCount: '字符数',
+  fileName: '文件名',
+  author: '作者',
+  title: '标题',
+  subject: '主题',
+  keywords: '关键字',
+  lastSavedBy: '最后保存者',
+  comments: '备注',
+  createDate: '创建日期',
+  saveDate: '保存日期',
+  printDate: '打印日期',
+  mergeField: '合并域',
   pageReference: '目标页码',
 };
 
@@ -129,6 +187,17 @@ export function documentFieldKind(
     value === 'time' ||
     value === 'wordCount' ||
     value === 'characterCount' ||
+    value === 'fileName' ||
+    value === 'author' ||
+    value === 'title' ||
+    value === 'subject' ||
+    value === 'keywords' ||
+    value === 'lastSavedBy' ||
+    value === 'comments' ||
+    value === 'createDate' ||
+    value === 'saveDate' ||
+    value === 'printDate' ||
+    value === 'mergeField' ||
     value === 'pageReference'
   ) {
     return value;
@@ -150,6 +219,17 @@ export function docxDocumentFieldKind(
   if (command === 'TIME') return 'time';
   if (command === 'NUMWORDS') return 'wordCount';
   if (command === 'NUMCHARS') return 'characterCount';
+  if (command === 'FILENAME') return 'fileName';
+  if (command === 'AUTHOR') return 'author';
+  if (command === 'TITLE') return 'title';
+  if (command === 'SUBJECT') return 'subject';
+  if (command === 'KEYWORDS') return 'keywords';
+  if (command === 'LASTSAVEDBY') return 'lastSavedBy';
+  if (command === 'COMMENTS') return 'comments';
+  if (command === 'CREATEDATE') return 'createDate';
+  if (command === 'SAVEDATE') return 'saveDate';
+  if (command === 'PRINTDATE') return 'printDate';
+  if (command === 'MERGEFIELD') return 'mergeField';
   if (command === 'PAGEREF') return 'pageReference';
   return null;
 }
@@ -165,6 +245,12 @@ export function documentFieldInstruction(
       options.hyperlink ?? true,
     );
     return appendFieldSwitches(base, options);
+  }
+  if (kind === 'mergeField') {
+    return appendFieldSwitches(
+      documentMergeFieldInstruction(options.targetName, ''),
+      options,
+    );
   }
   return appendFieldSwitches(FIELD_COMMANDS[kind], options);
 }
@@ -250,10 +336,22 @@ function fieldFormatFromInstruction(
       value: numericFieldFormatSwitchValue(instruction),
     };
   }
-  if (kind !== 'date' && kind !== 'time') return { kind: 'none' };
+  if (
+    kind !== 'date' &&
+    kind !== 'time' &&
+    kind !== 'createDate' &&
+    kind !== 'saveDate' &&
+    kind !== 'printDate'
+  ) {
+    return { kind: 'none' };
+  }
   const source = dateFormatSwitch(instruction);
-  const fallback = kind === 'date' ? 'yyyy年M月d日' : 'HH:mm';
-  const value = isClockFieldFormat(kind, source) ? source : fallback;
+  const fallback =
+    kind === 'time'
+      ? 'HH:mm'
+      : ('yyyy年M月d日' as WorkDocumentClockFieldFormat);
+  const clockKind = kind === 'time' ? 'time' : 'date';
+  const value = isClockFieldFormat(clockKind, source) ? source : fallback;
   return {
     kind: 'clock',
     value,
@@ -299,6 +397,20 @@ export function documentPageReferenceInstruction(
   return `PAGEREF ${target}${switches.length ? ` ${switches.join(' ')}` : ''}`;
 }
 
+/** Builds a stable MERGEFIELD instruction while retaining MERGEFORMAT. */
+export function documentMergeFieldInstruction(
+  fieldName: unknown,
+  source = '',
+): string {
+  const name = normalizeFieldTarget(fieldName);
+  if (!name) return FIELD_COMMANDS.mergeField;
+  const switches: string[] = [];
+  if (/(?:^|\s)\\\*\s+MERGEFORMAT(?:\s|$)/i.test(source)) {
+    switches.push('\\* MERGEFORMAT');
+  }
+  return `MERGEFIELD ${name}${switches.length ? ` ${switches.join(' ')}` : ''}`;
+}
+
 export function documentFieldLabel(kind: WorkDocumentFieldKind): string {
   return FIELD_LABELS[kind];
 }
@@ -339,6 +451,90 @@ export function documentFieldDisplay(
     return String(nonNegativeInteger(context.wordCount, cachedValue));
   if (kind === 'characterCount')
     return String(nonNegativeInteger(context.characterCount, cachedValue));
+  if (kind === 'fileName') {
+    const provided = context.fileName?.trim();
+    if (provided) return provided;
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'author') {
+    const provided = context.author?.trim();
+    if (provided) return provided;
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'title') {
+    const provided = context.title?.trim();
+    if (provided) return provided;
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'subject') {
+    const provided = context.subject?.trim();
+    if (provided) return provided;
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'keywords') {
+    const provided = context.keywords?.trim();
+    if (provided) return provided;
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'lastSavedBy') {
+    const provided = context.lastSavedBy?.trim();
+    if (provided) return provided;
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'comments') {
+    const provided = context.comments?.trim();
+    if (provided) return provided;
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'createDate') {
+    const provided = validDate(context.createDate);
+    const format = dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
+    if (provided) {
+      const display = formatWordDate(provided, format);
+      return display || cachedValue.trim() || documentFieldLabel(kind);
+    }
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'saveDate') {
+    const provided = validDate(context.saveDate);
+    const format = dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
+    if (provided) {
+      const display = formatWordDate(provided, format);
+      return display || cachedValue.trim() || documentFieldLabel(kind);
+    }
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'printDate') {
+    const provided = validDate(context.printDate);
+    const format = dateFormatSwitch(instruction) ?? 'yyyy年M月d日';
+    if (provided) {
+      const display = formatWordDate(provided, format);
+      return display || cachedValue.trim() || documentFieldLabel(kind);
+    }
+    const cached = cachedValue.trim();
+    return cached || documentFieldLabel(kind);
+  }
+  if (kind === 'mergeField') {
+    const name = docxDocumentFieldTarget(instruction);
+    if (
+      name &&
+      context.mergeRecord &&
+      Object.prototype.hasOwnProperty.call(context.mergeRecord, name)
+    ) {
+      return context.mergeRecord[name] ?? '';
+    }
+    const cached = cachedValue.trim();
+    return cached || (name ? `«${name}»` : documentFieldLabel(kind));
+  }
   if (kind === 'pageReference') {
     const target = docxDocumentFieldTarget(instruction);
     const hasResolutionContext =
@@ -390,20 +586,24 @@ export function normalizeDocumentFieldsHtml(source: string): string {
     element.dataset.fieldKind = kind;
     element.dataset.fieldInstruction =
       instruction || documentFieldInstruction(kind);
-    if (kind === 'pageReference') {
+    if (kind === 'pageReference' || kind === 'mergeField') {
       const targetName =
         normalizeFieldTarget(element.dataset.fieldTargetName) ??
         docxDocumentFieldTarget(instruction);
       if (targetName) {
         element.dataset.fieldTargetName = targetName;
-        element.dataset.fieldInstruction = documentPageReferenceInstruction(
-          targetName,
-          instruction,
-        );
+        element.dataset.fieldInstruction =
+          kind === 'pageReference'
+            ? documentPageReferenceInstruction(targetName, instruction)
+            : documentMergeFieldInstruction(targetName, instruction);
         delete element.dataset.fieldOrphaned;
       } else {
         delete element.dataset.fieldTargetName;
-        element.dataset.fieldOrphaned = 'true';
+        if (kind === 'pageReference') {
+          element.dataset.fieldOrphaned = 'true';
+        } else {
+          delete element.dataset.fieldOrphaned;
+        }
       }
     }
     element.dataset.fieldDisplay = display;
@@ -484,13 +684,20 @@ function dateFormatSwitch(instruction: string): string | null {
   return /\\@\s+"([^"]+)"/i.exec(instruction)?.[1] ?? null;
 }
 
-/** Returns the bookmark name used by a bounded PAGEREF instruction. */
+/** Returns the named argument used by bounded PAGEREF or MERGEFIELD. */
 export function docxDocumentFieldTarget(instruction: string): string | null {
   const kind = docxDocumentFieldKind(instruction);
-  if (kind !== 'pageReference') return null;
-  return normalizeFieldTarget(
-    /^\s*PAGEREF\s+([^\s\\]+)/i.exec(instruction)?.[1],
-  );
+  if (kind === 'pageReference') {
+    return normalizeFieldTarget(
+      /^\s*PAGEREF\s+([^\s\\]+)/i.exec(instruction)?.[1],
+    );
+  }
+  if (kind === 'mergeField') {
+    return normalizeFieldTarget(
+      /^\s*MERGEFIELD\s+([^\s\\]+)/i.exec(instruction)?.[1],
+    );
+  }
+  return null;
 }
 
 /**
@@ -514,8 +721,29 @@ export function supportedDocxDocumentFieldInstruction(
     if (hyperlink) rest = rest.slice(hyperlink[0].length);
     return onlyNumericFieldSwitches(rest);
   }
-  if (kind === 'date' || kind === 'time') {
-    const command = kind === 'date' ? 'DATE' : 'TIME';
+  if (kind === 'mergeField') {
+    const match = /^MERGEFIELD\s+([^\s\\]+)([\s\S]*)$/i.exec(source);
+    const name = normalizeFieldTarget(match?.[1]);
+    if (!name || !match) return false;
+    return onlyMergeFormatSwitch(match[2] ?? '');
+  }
+  if (
+    kind === 'date' ||
+    kind === 'time' ||
+    kind === 'createDate' ||
+    kind === 'saveDate' ||
+    kind === 'printDate'
+  ) {
+    const command =
+      kind === 'date'
+        ? 'DATE'
+        : kind === 'time'
+          ? 'TIME'
+          : kind === 'createDate'
+            ? 'CREATEDATE'
+            : kind === 'saveDate'
+              ? 'SAVEDATE'
+              : 'PRINTDATE';
     const match = new RegExp(`^${command}\\b([\\s\\S]*)$`, 'i').exec(source);
     if (!match) return false;
     let rest = match[1] ?? '';

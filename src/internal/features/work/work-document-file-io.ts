@@ -202,6 +202,8 @@ export async function importWorkDocumentFile(
           prepared.textBoxMarkers,
           prepared.connectorMarkers,
           prepared.contentControlMarkers,
+          prepared.blockContentControlMarkers,
+          prepared.repeatingSectionMarkers,
         )
       : result.value;
     recordDocumentImportMeasure(

@@ -1,10 +1,15 @@
 import type { Image } from '@fortune-sheet/core';
 import type { WorkSpreadsheetChartLayout } from './work-spreadsheet-chart-layout';
+import type { WorkSpreadsheetImageTransform } from './work-xlsx-image-transform';
+
+export type { WorkSpreadsheetImageTransform } from './work-xlsx-image-transform';
 
 export interface WorkSpreadsheetImage extends Image {
   name?: string;
   altText?: string;
   contentType?: string;
+  /** Bounded 90-degree / flip transform preserved on native XLSX round trips. */
+  transform?: WorkSpreadsheetImageTransform;
 }
 
 export type WorkSpreadsheetChartType =

@@ -119,6 +119,8 @@ const SHAPE_PRESETS: Readonly<Record<WorkDocumentShapeType, string>> = {
   ellipse: 'ellipse',
   diamond: 'diamond',
   triangle: 'triangle',
+  parallelogram: 'parallelogram',
+  hexagon: 'hexagon',
 };
 
 function patchShapeGeometry(
