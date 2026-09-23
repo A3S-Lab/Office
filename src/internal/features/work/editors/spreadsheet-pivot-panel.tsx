@@ -521,10 +521,9 @@ export function SpreadsheetPivotPanel({
                         </>
                       ) : role === 'filter' && filter ? (
                         <>
-                          <div
+                          <fieldset
                             className="pivot-slicer-filter"
-                            role="group"
-                            aria-label={`${field.name} 切片器筛选`}
+                            aria-label={`${field.name} slicer filter`}
                           >
                             <OfficeCheckbox
                               className="check"
@@ -581,7 +580,7 @@ export function SpreadsheetPivotPanel({
                                 </OfficeCheckbox>
                               );
                             })}
-                          </div>
+                          </fieldset>
                           <span className="filter-hint">切片器多选筛选</span>
                         </>
                       ) : (
