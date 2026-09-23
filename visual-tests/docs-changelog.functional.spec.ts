@@ -4,6 +4,9 @@ import { OFFICE_RELEASE_NOTES } from '../website/theme/release-notes-data';
 test('documentation changelog stays scannable, localized, and version-aware', async ({
   page,
 }, testInfo) => {
+  // Scans many release cards and deep-links before the English page; CI load
+  // routinely exceeds the default 60s budget near the final locale switch.
+  test.setTimeout(180_000);
   await page.goto('/docs/changelog.html');
 
   await expect(

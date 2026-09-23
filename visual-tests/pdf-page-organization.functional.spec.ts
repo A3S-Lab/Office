@@ -193,7 +193,7 @@ async function expectPdfPageCount(
 
 async function savePdfAndDownload(page: Page): Promise<Download> {
   await page.getByRole('button', { name: '保存' }).click();
-  await expect(page.getByText('PDF 批注已保存到当前浏览器会话')).toBeVisible();
+  await expect(page.getByText('PDF 已保存到当前浏览器会话')).toBeVisible();
   await expect(page.locator('.work-pdf-embed')).toHaveAttribute(
     'data-ready',
     'true',

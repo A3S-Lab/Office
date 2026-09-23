@@ -329,11 +329,10 @@ test('Word PDF export crops the live WASM pagination surface', async ({
   );
 
   await page.getByRole('button', { name: '导出', exact: true }).click();
+  const pdfDownload = page.waitForEvent('download', { timeout: 40_000 });
   await page.getByRole('menuitem', { name: '导出 PDF' }).click();
-  await expect(page.locator('.playground-toast.success')).toContainText(
-    '.pdf 已下载',
-    { timeout: 40_000 },
-  );
+  await pdfDownload;
+  await expect(page.getByText(/\.pdf 已下载/)).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('.work-pdf-export-surface')).toHaveCount(0);
   expect(pageErrors).toEqual([]);
 });
