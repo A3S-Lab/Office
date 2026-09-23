@@ -868,7 +868,7 @@ embedded editor.
   separators. `0.311.0` admits 1904-system `DATE`/`YEAR`/`MONTH`/`DAY`.
   `0.311.0` admits locale-guessing `VALUE`. `0.311.0` admits bounded
   `SEQUENCE` spill. `0.311.0` admits bounded `TRANSPOSE` spill. `0.311.0`
-  admits bounded `UNIQUE` spill. Expand remaining spill / slicer coverage next.
+  admits bounded `UNIQUE` / `FILTER` / `SORT` spill. Expand slicer coverage next.
 - Treat common native totals-row authoring as supported: retain per-column
   aggregate/label/custom-formula controls, filtered-row-aware `SUBTOTAL`,
   dense/sparse reconciliation, manual-cell authority, Yjs convergence, and
