@@ -65,6 +65,35 @@ ship in the same change:
 5. Verify the entry is visible and operable at desktop and compact viewport
    sizes before publishing Pages.
 
+## Publishing `@a3s-lab/office`
+
+Releases publish from `.github/workflows/release.yml` (GitHub Release `v*` tags
+or `workflow_dispatch`). Preferred auth is **npm Trusted Publishing (OIDC)**;
+classic `NPM_TOKEN` secrets are a fallback only when `npm whoami` succeeds.
+
+### One-time Trusted Publisher setup (npm package owner)
+
+1. Sign in to npm as a publisher for `@a3s-lab/office` (currently `linzhixiao`).
+2. Open https://www.npmjs.com/package/@a3s-lab/office → **Settings** →
+   **Trusted Publisher**.
+3. Add GitHub Actions with:
+   - Organization: `A3S-Lab`
+   - Repository: `Office`
+   - Workflow filename: `release.yml` (filename only, including `.yml`)
+   - Allowed action: `npm publish`
+4. Confirm with a dry run:
+
+```bash
+gh workflow run "Publish npm package" --repo A3S-Lab/Office --ref main -f ref=v0.311.2
+npm view @a3s-lab/office version --registry https://registry.npmjs.org/
+```
+
+If publish fails with `ENEEDAUTH`, the Trusted Publisher fields do not match
+the workflow above. If it fails with scoped `PUT` `404` / `whoami` `401`, the
+stored `NPM_TOKEN` is invalid — refresh a granular token or use OIDC only.
+
+Tracking: https://github.com/A3S-Lab/Office/issues/162
+
 ## Pull requests
 
 Describe the user-facing problem, the chosen behavior, and the validation that
