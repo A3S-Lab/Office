@@ -113,7 +113,7 @@ test('exposes slicer-style multi-select checkboxes on report filter fields', () 
     />,
   );
 
-  expect(screen.getByRole('group', { name: '区域 切片器筛选' })).toBeTruthy();
+  expect(screen.getByRole('group', { name: '区域 slicer filter' })).toBeTruthy();
   expect(screen.getByText('切片器多选筛选')).toBeTruthy();
   // From the default "all" state, clearing one value leaves the rest selected.
   fireEvent.click(screen.getByRole('checkbox', { name: '区域 西' }));
