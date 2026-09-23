@@ -1342,9 +1342,8 @@ async fn mcp_markdown(
         )
         .await,
     );
-    let source_after_splice = content(
-        &mcp_read(stdin, stdout, id, &whole, timeout).await,
-    )["source"]
+    let source_after_splice = content(&mcp_read(stdin, stdout, id, &whole, timeout).await)
+        ["source"]
         .as_str()
         .unwrap()
         .to_owned();
