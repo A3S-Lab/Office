@@ -340,9 +340,9 @@ available.
   `office native recalculate` or the typed
   `recalculate-spreadsheet-formulas` mutation. The closed native registry is
   `ABS`, `AND`, `AVERAGE`, `AVERAGEIF`, `COLUMN`, `CONCAT`, `CONCATENATE`,
-  `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `MAX`, `MIN`, `MOD`, `NA`,
-  `NOT`, `OR`, `PI`, `POWER`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`, `SUBTOTAL`,
-  `SUM`, `SUMIF`, and `TRANSPOSE`. Write the formula, then recalculate in that
+  `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `LEFT`, `LEN`, `MAX`, `MID`,
+  `MIN`, `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`, `RIGHT`, `ROUND`, `ROW`,
+  `SEQUENCE`, `SQRT`, `SUBTOTAL`, `SUM`, `SUMIF`, and `TRANSPOSE`. Write the formula, then recalculate in that
   same native batch. Call functions with bare names; sheet or workbook
   qualifiers are not calculated. External-workbook references, unsupported
   structured references, and 3D named references (`Sheet1:Sheet2!Name`) fail

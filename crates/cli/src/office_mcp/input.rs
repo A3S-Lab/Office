@@ -826,9 +826,10 @@ pub(super) enum OfficeMutation {
     },
     /// Calculate supported formulas and write cached values and dynamic spills.
     /// Closed registry: `ABS`, `AND`, `AVERAGE`, `AVERAGEIF`, `COLUMN`, `CONCAT`,
-    /// `CONCATENATE`, `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `MAX`, `MIN`,
-    /// `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`, `ROUND`, `ROW`, `SEQUENCE`, `SQRT`,
-    /// `SUBTOTAL`, `SUM`, `SUMIF`, `TRANSPOSE`. Call functions with bare names;
+    /// `CONCATENATE`, `COUNT`, `COUNTA`, `COUNTIF`, `IF`, `IFERROR`, `LEFT`, `LEN`,
+    /// `MAX`, `MID`, `MIN`, `MOD`, `NA`, `NOT`, `OR`, `PI`, `POWER`, `RIGHT`,
+    /// `ROUND`, `ROW`, `SEQUENCE`, `SQRT`, `SUBTOTAL`, `SUM`, `SUMIF`, `TRANSPOSE`.
+    /// Call functions with bare names;
     /// sheet or workbook qualifiers are not calculated. Match each function's
     /// closed-registry argument count. External-workbook reads, unsupported
     /// structured references, and 3D named references fail closed with
