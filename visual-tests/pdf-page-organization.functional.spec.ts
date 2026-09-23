@@ -152,27 +152,6 @@ async function openPageOrganizer(page: Page) {
   return dialog;
 }
 
-async function runPdfToolbarAction(page: Page, name: string): Promise<void> {
-  const dialog = page.getByRole('dialog', { name: '组织 PDF 页面' });
-  if (await dialog.isVisible().catch(() => false)) {
-    await dialog.getByRole('button', { name: '完成' }).click();
-    await expect(dialog).toBeHidden();
-  }
-  const directAction = page.getByRole('button', { name, exact: true });
-  if (await directAction.isVisible().catch(() => false)) {
-    await expect(directAction).toBeEnabled();
-    await directAction.click();
-    return;
-  }
-  const overflow = page.getByRole('button', { name: '更多 PDF 工具' });
-  await overflow.click();
-  const menu = page.getByRole('menu', { name: '更多 PDF 工具' });
-  await expect(menu).toBeVisible();
-  const item = menu.getByRole('menuitem', { name, exact: true });
-  await expect(item).toBeEnabled();
-  await item.click();
-}
-
 async function expectPdfPageCount(
   page: Page,
   pageCount: number,
