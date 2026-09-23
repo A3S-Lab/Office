@@ -94,7 +94,7 @@ fn mutate(
     operation: &str,
     mutation: Value,
 ) -> Value {
-    run(&args([
+    let output = execute(&args([
         "collab",
         "mutate",
         replica.to_str().unwrap(),
@@ -111,7 +111,13 @@ fn mutate(
         "--mode",
         "edit",
         "--json",
-    ]))
+    ]));
+    let value = parse_output(&output);
+    assert!(
+        output.status.success(),
+        "mutate failed op={operation} mutation={mutation} response={value}"
+    );
+    value
 }
 
 fn mutate_conflict(
@@ -297,7 +303,6 @@ fn cli_markdown(root: &Path) {
     );
     let whole_read = read_replica(&whole);
     let whole_beta = slice(&whole_read, "Yjs to Yrs.");
-    let source = content(&whole_read)["source"].as_str().unwrap().to_owned();
     mutate(
         &whole,
         "fixture-markdown",
@@ -306,6 +311,10 @@ fn cli_markdown(root: &Path) {
         "markdown-whole-outside",
         splice(&whole_beta, "Yjs to Yrs!"),
     );
+    let source_after_splice = content(&read_replica(&whole))["source"]
+        .as_str()
+        .unwrap()
+        .to_owned();
     mutate(
         &whole,
         "fixture-markdown",
@@ -314,8 +323,8 @@ fn cli_markdown(root: &Path) {
         "markdown-whole-replace",
         json!({
             "type": "markdown-replace",
-            "expectedMarkdown": source,
-            "markdown": source.replacen("# Shared", "# Shared live", 1),
+            "expectedMarkdown": source_after_splice,
+            "markdown": source_after_splice.replacen("# Shared", "# Shared live", 1),
         }),
     );
     assert_eq!(
@@ -768,7 +777,7 @@ fn cli_pdf(root: &Path) {
             "type": "pdf-set-form-value",
             "fieldId": "Applicant.Email",
             "value": "beta@example.test",
-            "expectedValue": null
+            "expectedValue": ""
         }),
     );
     let read = read_replica(&replica);
@@ -818,7 +827,7 @@ fn cli_pdf(root: &Path) {
             "type": "pdf-set-form-value",
             "fieldId": "Applicant.Email",
             "value": "beta@example.test",
-            "expectedValue": null
+            "expectedValue": ""
         }),
     );
     let stale_read = read_replica(&stale);
@@ -863,7 +872,7 @@ fn cli_pdf(root: &Path) {
             "type": "pdf-set-form-value",
             "fieldId": "Applicant.Email",
             "value": "beta@example.test",
-            "expectedValue": null
+            "expectedValue": ""
         }),
     );
     let whole_read = read_replica(&whole);
@@ -885,7 +894,7 @@ fn cli_pdf(root: &Path) {
         "pdf-whole-name",
         set_field("Applicant.Name", "Grace", &whole_name),
     );
-    mutate(
+    mutate_conflict(
         &whole,
         "fixture-pdf",
         "pdf",
@@ -939,7 +948,7 @@ fn splice(slice: &Value, insert: &str) -> Value {
         "type": "markdown-splice",
         "indexUtf16": start,
         "deleteUtf16": end - start,
-        "expectedText": slice["text"],
+        "expectedSlice": slice["text"],
         "insert": insert,
     })
 }
@@ -1317,7 +1326,6 @@ async fn mcp_markdown(
     )
     .await;
     let whole_read = mcp_read(stdin, stdout, id, &whole, timeout).await;
-    let source = content(&whole_read)["source"].as_str().unwrap().to_owned();
     let whole_beta = slice(&whole_read, "Yjs to Yrs.");
     mcp_ok(
         &mcp_mutate(
@@ -1334,6 +1342,12 @@ async fn mcp_markdown(
         )
         .await,
     );
+    let source_after_splice = content(
+        &mcp_read(stdin, stdout, id, &whole, timeout).await,
+    )["source"]
+        .as_str()
+        .unwrap()
+        .to_owned();
     mcp_ok(
         &mcp_mutate(
             stdin,
@@ -1346,8 +1360,8 @@ async fn mcp_markdown(
             "mcp-markdown-whole-replace",
             json!({
                 "type": "markdown-replace",
-                "expectedMarkdown": source,
-                "markdown": source.replacen("# Shared", "# Shared live", 1),
+                "expectedMarkdown": source_after_splice,
+                "markdown": source_after_splice.replacen("# Shared", "# Shared live", 1),
             }),
             timeout,
         )
@@ -2028,7 +2042,7 @@ async fn mcp_pdf(
     )
     .await;
     mcp_ok(&mcp_mutate(stdin, stdout, id, &replica, "fixture-pdf", "pdf", "agent-pdf", "mcp-pdf-seed", json!({
-        "type": "pdf-set-form-value", "fieldId": "Applicant.Email", "value": "beta@example.test", "expectedValue": null
+        "type": "pdf-set-form-value", "fieldId": "Applicant.Email", "value": "beta@example.test", "expectedValue": ""
     }), timeout).await);
     let read = mcp_read(stdin, stdout, id, &replica, timeout).await;
     assert_eq!(content(&read)["pageCount"], 3);
@@ -2082,7 +2096,7 @@ async fn mcp_pdf(
     )
     .await;
     mcp_ok(&mcp_mutate(stdin, stdout, id, &stale, "fixture-pdf", "pdf", "agent-pdf", "mcp-pdf-stale-seed", json!({
-        "type": "pdf-set-form-value", "fieldId": "Applicant.Email", "value": "beta@example.test", "expectedValue": null
+        "type": "pdf-set-form-value", "fieldId": "Applicant.Email", "value": "beta@example.test", "expectedValue": ""
     }), timeout).await);
     let stale_read = mcp_read(stdin, stdout, id, &stale, timeout).await;
     let stale_name = field(&stale_read, "Applicant.Name");
@@ -2139,7 +2153,7 @@ async fn mcp_pdf(
     )
     .await;
     mcp_ok(&mcp_mutate(stdin, stdout, id, &whole, "fixture-pdf", "pdf", "agent-pdf", "mcp-pdf-whole-seed", json!({
-        "type": "pdf-set-form-value", "fieldId": "Applicant.Email", "value": "beta@example.test", "expectedValue": null
+        "type": "pdf-set-form-value", "fieldId": "Applicant.Email", "value": "beta@example.test", "expectedValue": ""
     }), timeout).await);
     let whole_read = mcp_read(stdin, stdout, id, &whole, timeout).await;
     let whole_email = field(&whole_read, "Applicant.Email");
@@ -2174,7 +2188,7 @@ async fn mcp_pdf(
         )
         .await,
     );
-    mcp_ok(
+    mcp_conflict(
         &mcp_mutate(
             stdin,
             stdout,
