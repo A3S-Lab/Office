@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { expect, type Download, type Page, test } from '@playwright/test';
+import { type Download, expect, type Page, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 import {
   createPdfFixture,
@@ -23,6 +23,10 @@ test('PDF page organization mutates, exports, saves, and restores exact history'
   await expect(organizer.getByText('已选择 1 / 4 页')).toBeVisible();
   await organizer.getByRole('button', { name: '插入空白页' }).click();
   await expectPdfPageCount(page, 5);
+  // Close the organizer before undo/redo so toolbar actions are not covered /
+  // disabled behind the modal (overflow 撤销 menuitem then never stabilizes).
+  await organizer.getByRole('button', { name: '完成' }).click();
+  await expect(organizer).toBeHidden();
 
   await runPdfToolbarAction(page, '撤销');
   await expectPdfPageCount(page, 4);
@@ -155,16 +159,24 @@ async function openPageOrganizer(page: Page) {
 }
 
 async function runPdfToolbarAction(page: Page, name: string): Promise<void> {
+  const dialog = page.getByRole('dialog', { name: '组织 PDF 页面' });
+  if (await dialog.isVisible().catch(() => false)) {
+    await dialog.getByRole('button', { name: '完成' }).click();
+    await expect(dialog).toBeHidden();
+  }
   const directAction = page.getByRole('button', { name, exact: true });
-  if (await directAction.isVisible()) {
+  if (await directAction.isVisible().catch(() => false)) {
+    await expect(directAction).toBeEnabled();
     await directAction.click();
     return;
   }
-  await page.getByRole('button', { name: '更多 PDF 工具' }).click();
-  await page
-    .getByRole('menu', { name: '更多 PDF 工具' })
-    .getByRole('menuitem', { name, exact: true })
-    .click();
+  const overflow = page.getByRole('button', { name: '更多 PDF 工具' });
+  await overflow.click();
+  const menu = page.getByRole('menu', { name: '更多 PDF 工具' });
+  await expect(menu).toBeVisible();
+  const item = menu.getByRole('menuitem', { name, exact: true });
+  await expect(item).toBeEnabled();
+  await item.click();
 }
 
 async function expectPdfPageCount(
