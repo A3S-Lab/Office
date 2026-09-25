@@ -193,7 +193,11 @@ export interface DocumentEditorProps {
    * control.
    */
   onMailMergeSourceChange?: (source: WorkDocumentMailMergeSource) => void;
+  /** Opens the comment task pane on first mount. Hosts use this for review. */
+  defaultCommentsOpen?: boolean;
   onChange: (content: WorkDocumentContent) => void;
+  /** Hands the live TipTap editor to the host without binding Yjs Awareness. */
+  onEditorReady?: (editor: Editor) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
   onReviewConflict?: (event: WorkDocumentReviewConflictEvent) => void;
 }
@@ -347,7 +351,9 @@ function DocumentEditorSurface({
   getSelectionMenuItems,
   mailMergeSource = null,
   onMailMergeSourceChange,
+  defaultCommentsOpen = false,
   onChange,
+  onEditorReady,
   onAgentRequest,
   onReviewConflict,
 }: DocumentEditorSurfaceProps) {
@@ -766,6 +772,7 @@ function DocumentEditorSurface({
     },
     onCreate: ({ editor: current }) => {
       editorRef.current = current;
+      onEditorReady?.(current);
       publishedDocumentRef.current = current.state.doc;
       const mountedAt = documentEditorNow();
       const detachedMountAt = editorDetachedMountAtRef.current;
@@ -872,6 +879,7 @@ function DocumentEditorSurface({
   const documentComments = useDocumentComments({
     actor: collaboration?.actor,
     contentRef,
+    defaultOpen: defaultCommentsOpen,
     deleteOwnOnly: commentOnly,
     editor,
     enabled: canCommentDocument,

@@ -2258,6 +2258,7 @@
 .work-document-comment-connectors path {
   fill: none;
   stroke: #d65c5c;
+  stroke-dasharray: 4 3;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1;
@@ -2274,10 +2275,6 @@
 
 .work-document-comment-connectors g.resolved {
   opacity: 0.36;
-}
-
-.work-document-comment-connectors g.draft path {
-  stroke-dasharray: 4 3;
 }
 
 .work-document-comment-connectors g.draft circle {
@@ -2361,6 +2358,8 @@
   border-radius: 8px;
   background: var(--a3s-panel);
   box-shadow: 0 5px 16px rgb(34 38 48 / 8%);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
   transition:
     border-color 120ms ease,
     box-shadow 120ms ease,

@@ -116,12 +116,16 @@ export function DocumentCommentsPanel({
   const anchorRefs = useRef(new Map<string, HTMLButtonElement>());
   const measuredCardHeightsRef = useRef(new Map<string, number>());
   const layoutRef = useRef<CommentTrackLayout>(emptyLayout);
+  /** Suppress MutationObserver while measure mutates mark classes (feedback loop). */
+  const measuringRef = useRef(false);
+  const mutationIdleTimerRef = useRef(0);
   const completedDraftIdRef = useRef<string | null>(null);
   const pendingFocusRef = useRef<PendingCommentFocus | null>(null);
   const pendingRevealCommentIdRef = useRef<string | null>(null);
   const frameRef = useRef(0);
   const pendingFocusFrameRef = useRef(0);
   const windowFrameRef = useRef(0);
+  const cardResizeObserverRef = useRef<ResizeObserver | null>(null);
   const officeDialog = useOfficeDialog();
   const modal = useOfficeTaskPaneModal();
   const modalAttributes = modal
@@ -289,165 +293,164 @@ export function DocumentCommentsPanel({
     const track = trackRef.current;
     if (!surface || !panel || !track) return;
 
-    const surfaceRect = surface.getBoundingClientRect();
-    const panelRect = panel.getBoundingClientRect();
-    const trackRect = track.getBoundingClientRect();
-    const scroll = surface.closest<HTMLElement>('.work-document-scroll');
-    const scrollRect = scroll?.getBoundingClientRect();
-    const panelHeader = panel.firstElementChild;
-    const panelHeaderRect =
-      panelHeader instanceof HTMLElement
-        ? panelHeader.getBoundingClientRect()
-        : undefined;
-    const trackOffset = trackRect.top - surfaceRect.top;
-    const visibleTrackTop = Math.max(
-      8,
-      Math.max(
-        scrollRect?.top ?? trackRect.top,
-        panelHeaderRect?.bottom ?? trackRect.top,
-      ) -
-        trackRect.top +
+    measuringRef.current = true;
+    try {
+      const surfaceRect = surface.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      const trackRect = track.getBoundingClientRect();
+      const scroll = surface.closest<HTMLElement>('.work-document-scroll');
+      const scrollRect = scroll?.getBoundingClientRect();
+      const panelHeader = panel.firstElementChild;
+      const panelHeaderRect =
+        panelHeader instanceof HTMLElement
+          ? panelHeader.getBoundingClientRect()
+          : undefined;
+      const trackOffset = trackRect.top - surfaceRect.top;
+      const visibleTrackTop = Math.max(
         8,
-    );
-    const visibleTrackBottom =
-      Math.min(scrollRect?.bottom ?? trackRect.bottom, panelRect.bottom) -
-      trackRect.top -
-      8;
-    const marks = [
-      ...editor.view.dom.querySelectorAll<HTMLElement>(
-        '[data-document-comment][data-comment-id]',
-      ),
-    ];
-    const anchorRectsById = new Map<string, CommentAnchorRect>();
+        Math.max(
+          scrollRect?.top ?? trackRect.top,
+          panelHeaderRect?.bottom ?? trackRect.top,
+        ) -
+          trackRect.top +
+          8,
+      );
+      const visibleTrackBottom =
+        Math.min(scrollRect?.bottom ?? trackRect.bottom, panelRect.bottom) -
+        trackRect.top -
+        8;
+      const marks = [
+        ...editor.view.dom.querySelectorAll<HTMLElement>(
+          '[data-document-comment][data-comment-id]',
+        ),
+      ];
+      const anchorRectsById = new Map<string, CommentAnchorRect>();
 
-    for (const mark of marks) {
-      const id = mark.dataset.commentId ?? '';
-      mark.classList.toggle(
-        'is-active-comment',
-        id === effectiveActiveCommentId,
-      );
-      mark.classList.toggle(
-        'is-resolved-comment',
-        Boolean(commentsById.get(id)?.resolved),
-      );
-      const anchorRect = [...mark.getClientRects()].at(-1);
-      if (id && anchorRect) {
-        anchorRectsById.set(id, {
-          right: anchorRect.right,
-          top: anchorRect.top,
-          height: anchorRect.height,
+      for (const mark of marks) {
+        const id = mark.dataset.commentId ?? '';
+        const anchorRect = [...mark.getClientRects()].at(-1);
+        if (id && anchorRect) {
+          anchorRectsById.set(id, {
+            right: anchorRect.right,
+            top: anchorRect.top,
+            height: anchorRect.height,
+          });
+        }
+      }
+
+      const entries: Array<{
+        id: string;
+        kind: CommentTrackItem['kind'];
+        commentId?: string;
+        from: number;
+        detached?: boolean;
+        anchorRect?: CommentAnchorRect;
+      }> = comments.map((comment) => ({
+        id: comment.id,
+        kind: 'comment',
+        commentId: comment.id,
+        from: comment.from ?? Number.MAX_SAFE_INTEGER,
+        detached: comment.detached,
+        anchorRect: anchorRectsById.get(comment.id),
+      }));
+      if (draft) {
+        const range = documentCommentDraftRange(editor) ?? draft;
+        entries.push({
+          id: `draft:${draft.id}`,
+          kind: 'draft',
+          from: range.from,
+          anchorRect: draftCommentAnchorRect(editor, range),
         });
       }
-    }
+      entries.sort(
+        (left, right) =>
+          left.from - right.from || left.kind.localeCompare(right.kind),
+      );
 
-    const entries: Array<{
-      id: string;
-      kind: CommentTrackItem['kind'];
-      commentId?: string;
-      from: number;
-      detached?: boolean;
-      anchorRect?: CommentAnchorRect;
-    }> = comments.map((comment) => ({
-      id: comment.id,
-      kind: 'comment',
-      commentId: comment.id,
-      from: comment.from ?? Number.MAX_SAFE_INTEGER,
-      detached: comment.detached,
-      anchorRect: anchorRectsById.get(comment.id),
-    }));
-    if (draft) {
-      const range = documentCommentDraftRange(editor) ?? draft;
-      entries.push({
-        id: `draft:${draft.id}`,
-        kind: 'draft',
-        from: range.from,
-        anchorRect: draftCommentAnchorRect(editor, range),
-      });
-    }
-    entries.sort(
-      (left, right) =>
-        left.from - right.from || left.kind.localeCompare(right.kind),
-    );
-
-    let nextCardTop = 8;
-    const items = entries.map((entry) => {
-      const { anchorRect } = entry;
-      const card = cardRefs.current.get(entry.id);
-      const measuredCardHeight = card?.getBoundingClientRect().height ?? 0;
-      let cardHeight = 164;
-      if (entry.kind === 'comment') {
-        const comment = commentsById.get(entry.id);
-        const measurementKey = comment
-          ? commentCardMeasurementKey(
-              comment,
-              comment.id === effectiveActiveCommentId,
-            )
-          : entry.id;
-        if (measuredCardHeight > 0) {
-          measuredCardHeightsRef.current.set(
-            measurementKey,
-            measuredCardHeight,
-          );
-        }
-        cardHeight =
-          measuredCardHeightsRef.current.get(measurementKey) ??
-          (comment
-            ? estimateCommentCardHeight(
+      let nextCardTop = 8;
+      const items = entries.map((entry) => {
+        const { anchorRect } = entry;
+        const card = cardRefs.current.get(entry.id);
+        const measuredCardHeight = card?.getBoundingClientRect().height ?? 0;
+        let cardHeight = 164;
+        if (entry.kind === 'comment') {
+          const comment = commentsById.get(entry.id);
+          const measurementKey = comment
+            ? commentCardMeasurementKey(
                 comment,
                 comment.id === effectiveActiveCommentId,
               )
-            : 112);
-      } else if (measuredCardHeight > 0) {
-        cardHeight = measuredCardHeight;
-      }
-      const preferredTop = anchorRect
-        ? anchorRect.top - trackRect.top - 18
-        : nextCardTop;
-      const minimumTop = Math.max(8, nextCardTop);
-      let cardTop = Math.max(minimumTop, preferredTop);
-      if (entry.kind === 'draft' && scrollRect) {
-        const maximumVisibleTop = Math.max(
-          visibleTrackTop,
-          visibleTrackBottom - cardHeight,
-        );
-        if (minimumTop <= maximumVisibleTop) {
-          cardTop = Math.min(
-            maximumVisibleTop,
-            Math.max(minimumTop, visibleTrackTop, preferredTop),
-          );
+            : entry.id;
+          if (measuredCardHeight > 0) {
+            measuredCardHeightsRef.current.set(
+              measurementKey,
+              measuredCardHeight,
+            );
+          }
+          cardHeight =
+            measuredCardHeightsRef.current.get(measurementKey) ??
+            (comment
+              ? estimateCommentCardHeight(
+                  comment,
+                  comment.id === effectiveActiveCommentId,
+                )
+              : 112);
+        } else if (measuredCardHeight > 0) {
+          cardHeight = measuredCardHeight;
         }
-      }
-      nextCardTop = cardTop + cardHeight + 10;
-      const endX = panelRect.left - surfaceRect.left + 1;
-      const endY = trackOffset + cardTop + 24;
-      const startX = anchorRect
-        ? Math.min(anchorRect.right - surfaceRect.left + 3, endX - 24)
-        : endX - 24;
-      const startY = anchorRect
-        ? anchorRect.top - surfaceRect.top + Math.min(anchorRect.height / 2, 12)
-        : endY;
-      return {
-        id: entry.id,
-        kind: entry.kind,
-        commentId: entry.commentId,
-        cardTop,
-        startX,
-        startY,
-        endX,
-        endY,
-        detached: entry.detached,
+        const preferredTop = anchorRect
+          ? anchorRect.top - trackRect.top - 18
+          : nextCardTop;
+        const minimumTop = Math.max(8, nextCardTop);
+        let cardTop = Math.max(minimumTop, preferredTop);
+        if (entry.kind === 'draft' && scrollRect) {
+          const maximumVisibleTop = Math.max(
+            visibleTrackTop,
+            visibleTrackBottom - cardHeight,
+          );
+          if (minimumTop <= maximumVisibleTop) {
+            cardTop = Math.min(
+              maximumVisibleTop,
+              Math.max(minimumTop, visibleTrackTop, preferredTop),
+            );
+          }
+        }
+        nextCardTop = cardTop + cardHeight + 10;
+        const endX = panelRect.left - surfaceRect.left + 1;
+        const endY = trackOffset + cardTop + 24;
+        const startX = anchorRect
+          ? Math.min(anchorRect.right - surfaceRect.left + 3, endX - 24)
+          : endX - 24;
+        const startY = anchorRect
+          ? anchorRect.top -
+            surfaceRect.top +
+            Math.min(anchorRect.height / 2, 12)
+          : endY;
+        return {
+          id: entry.id,
+          kind: entry.kind,
+          commentId: entry.commentId,
+          cardTop,
+          startX,
+          startY,
+          endX,
+          endY,
+          detached: entry.detached,
+        };
+      });
+      const nextLayout = {
+        width: Math.max(1, surfaceRect.width),
+        height: Math.max(1, surfaceRect.height, trackOffset + nextCardTop),
+        trackHeight: Math.max(1, nextCardTop),
+        items,
       };
-    });
-    const nextLayout = {
-      width: Math.max(1, surfaceRect.width),
-      height: Math.max(1, surfaceRect.height, trackOffset + nextCardTop),
-      trackHeight: Math.max(1, nextCardTop),
-      items,
-    };
-    layoutRef.current = nextLayout;
-    setLayout((current) =>
-      sameCommentTrackLayout(current, nextLayout) ? current : nextLayout,
-    );
+      layoutRef.current = nextLayout;
+      setLayout((current) =>
+        sameCommentTrackLayout(current, nextLayout) ? current : nextLayout,
+      );
+    } finally {
+      measuringRef.current = false;
+    }
   }, [
     comments,
     commentsById,
@@ -461,6 +464,40 @@ export function DocumentCommentsPanel({
     cancelAnimationFrame(frameRef.current);
     frameRef.current = requestAnimationFrame(measure);
   }, [measure]);
+
+  /** Coalesce TipTap decorate / annotate storms — one layout after the burst. */
+  const scheduleMeasureAfterMutations = useCallback(() => {
+    if (measuringRef.current) return;
+    window.clearTimeout(mutationIdleTimerRef.current);
+    mutationIdleTimerRef.current = window.setTimeout(() => {
+      mutationIdleTimerRef.current = 0;
+      scheduleMeasure();
+    }, 48);
+  }, [scheduleMeasure]);
+
+  /**
+   * Window drag-resize fires dozens of events. Prefer ResizeObserver on the
+   * surface for live geometry; only do a trailing settle measure here so we
+   * do not pay full getClientRects work on every pixel.
+   */
+  const scheduleMeasureAfterWindowResize = useCallback(() => {
+    window.clearTimeout(mutationIdleTimerRef.current);
+    mutationIdleTimerRef.current = window.setTimeout(() => {
+      mutationIdleTimerRef.current = 0;
+      scheduleMeasure();
+    }, 64);
+  }, [scheduleMeasure]);
+
+  // Mark active/resolved classes are visual only — keep them off the geometry
+  // measure path so resize does not write attributes (and re-enter MutationObserver).
+  useLayoutEffect(() => {
+    if (editor.isDestroyed) return;
+    syncDocumentCommentMarkClasses(
+      editor.view.dom,
+      effectiveActiveCommentId,
+      commentsById,
+    );
+  }, [commentsById, editor, effectiveActiveCommentId]);
 
   const updateWindowFromViewport = useCallback(() => {
     const surface = surfaceRef.current;
@@ -515,6 +552,7 @@ export function DocumentCommentsPanel({
     return () => {
       cancelAnimationFrame(frameRef.current);
       cancelAnimationFrame(windowFrameRef.current);
+      window.clearTimeout(mutationIdleTimerRef.current);
     };
   }, [measure]);
 
@@ -580,7 +618,16 @@ export function DocumentCommentsPanel({
     const observer =
       typeof ResizeObserver === 'undefined'
         ? null
-        : new ResizeObserver(scheduleMeasure);
+        : new ResizeObserver((entries) => {
+            // Editor DOM resizes on every attention decorate — coalesce with
+            // annotate storms. Panel/surface/card resizes stay immediate.
+            const editorOnly = entries.every(
+              (entry) => entry.target === editor.view.dom,
+            );
+            if (editorOnly) scheduleMeasureAfterMutations();
+            else scheduleMeasure();
+          });
+    cardResizeObserverRef.current = observer;
     observer?.observe(surface);
     observer?.observe(panel);
     observer?.observe(editor.view.dom);
@@ -588,33 +635,56 @@ export function DocumentCommentsPanel({
     const mutationObserver =
       typeof MutationObserver === 'undefined'
         ? null
-        : new MutationObserver(scheduleMeasure);
+        : new MutationObserver((records) => {
+            if (measuringRef.current) return;
+            if (!commentConnectorMutationNeedsLayout(records)) return;
+            scheduleMeasureAfterMutations();
+          });
     mutationObserver?.observe(editor.view.dom, {
       attributes: true,
       childList: true,
       characterData: true,
       subtree: true,
+      attributeFilter: ['data-comment-id', 'data-document-comment', 'class'],
     });
     const scroll = surface.closest<HTMLElement>('.work-document-scroll');
     const handleScroll = draft ? scheduleMeasure : scheduleWindowUpdate;
     scroll?.addEventListener('scroll', handleScroll, { passive: true });
     panel.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', scheduleMeasure);
+    // Surface ResizeObserver already tracks live pane size. Window resize is
+    // a trailing settle only — drag-resize must not remount observers or pay
+    // full measure on every pixel.
+    window.addEventListener('resize', scheduleMeasureAfterWindowResize);
     return () => {
+      cardResizeObserverRef.current = null;
       observer?.disconnect();
       mutationObserver?.disconnect();
       scroll?.removeEventListener('scroll', handleScroll);
       panel.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', scheduleMeasure);
+      window.removeEventListener('resize', scheduleMeasureAfterWindowResize);
+      window.clearTimeout(mutationIdleTimerRef.current);
     };
   }, [
     draft,
     editor,
-    mountedCommentIndicesKey,
     scheduleMeasure,
+    scheduleMeasureAfterMutations,
+    scheduleMeasureAfterWindowResize,
     scheduleWindowUpdate,
     surfaceRef,
   ]);
+
+  const attachCommentCard = useCallback(
+    (id: string, element: HTMLElement | null) => {
+      if (element) {
+        cardRefs.current.set(id, element);
+        cardResizeObserverRef.current?.observe(element);
+      } else {
+        cardRefs.current.delete(id);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (editor.isDestroyed) return;
@@ -709,9 +779,7 @@ export function DocumentCommentsPanel({
               <DocumentCommentComposer
                 author={draftAuthor}
                 ref={(element) => {
-                  const id = `draft:${draft.id}`;
-                  if (element) cardRefs.current.set(id, element);
-                  else cardRefs.current.delete(id);
+                  attachCommentCard(`draft:${draft.id}`, element);
                 }}
                 draft={draft}
                 top={layoutItemsById.get(`draft:${draft.id}`)?.cardTop ?? 8}
@@ -731,8 +799,7 @@ export function DocumentCommentsPanel({
                 aria-posinset={index + 1}
                 aria-setsize={comments.length}
                 ref={(element) => {
-                  if (element) cardRefs.current.set(comment.id, element);
-                  else cardRefs.current.delete(comment.id);
+                  attachCommentCard(comment.id, element);
                 }}
                 className={`work-document-comment-card${comment.resolved ? ' resolved' : ''}${comment.detached ? ' detached' : ''}${active ? ' active' : ''}`}
                 data-comment-id={comment.id}
@@ -938,6 +1005,64 @@ function sameCommentTrackLayout(
       Math.abs(candidate.endY - item.endY) <= 0.5
     );
   });
+}
+
+/**
+ * Ignore paint-only DOM churn (attention highlight, active/resolved toggles)
+ * that does not move comment anchors. Structural comment mark changes still
+ * schedule a connector layout.
+ */
+export function commentConnectorMutationNeedsLayout(
+  records: readonly MutationRecord[],
+): boolean {
+  for (const record of records) {
+    if (record.type === 'childList' || record.type === 'characterData') {
+      return true;
+    }
+    if (record.type !== 'attributes') continue;
+    const target = record.target;
+    if (!(target instanceof Element)) return true;
+    if (
+      target.classList.contains('workspace-review-attention') ||
+      target.closest('.workspace-review-attention')
+    ) {
+      continue;
+    }
+    if (
+      record.attributeName === 'class' &&
+      target.hasAttribute('data-document-comment')
+    ) {
+      // Active/resolved class toggles from measure itself — not a geometry change.
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Sync highlight classes without writing when already correct — resize measure
+ * must not touch attributes or it re-enters MutationObserver.
+ */
+export function syncDocumentCommentMarkClasses(
+  root: ParentNode,
+  activeCommentId: string | null,
+  commentsById: ReadonlyMap<string, WorkDocumentCommentView>,
+): void {
+  const marks = root.querySelectorAll<HTMLElement>(
+    '[data-document-comment][data-comment-id]',
+  );
+  for (const mark of marks) {
+    const id = mark.dataset.commentId ?? '';
+    const wantActive = id === activeCommentId;
+    if (mark.classList.contains('is-active-comment') !== wantActive) {
+      mark.classList.toggle('is-active-comment', wantActive);
+    }
+    const wantResolved = Boolean(commentsById.get(id)?.resolved);
+    if (mark.classList.contains('is-resolved-comment') !== wantResolved) {
+      mark.classList.toggle('is-resolved-comment', wantResolved);
+    }
+  }
 }
 
 function commentCardMeasurementKey(

@@ -663,10 +663,16 @@ export function useDocumentPagination({
       markDirty(0);
       schedule();
     };
+    let windowResizeTimer = 0;
     const handleWindowResize = () => {
-      updateDiagnostic('viewportTriggers', 'paginationViewportTriggers');
-      markDirty(0);
-      schedule();
+      // Drag-resize fires many events; full-doc invalidate must settle once.
+      window.clearTimeout(windowResizeTimer);
+      windowResizeTimer = window.setTimeout(() => {
+        windowResizeTimer = 0;
+        updateDiagnostic('viewportTriggers', 'paginationViewportTriggers');
+        markDirty(0);
+        schedule();
+      }, 64);
     };
     const fonts = document.fonts;
     editor.on('update', handleDocumentUpdate);
@@ -679,6 +685,7 @@ export function useDocumentPagination({
 
     return () => {
       disposed = true;
+      window.clearTimeout(windowResizeTimer);
       stopObservingBlocks();
       editor.off('update', handleDocumentUpdate);
       editorDom.removeEventListener('compositionstart', handleCompositionStart);
