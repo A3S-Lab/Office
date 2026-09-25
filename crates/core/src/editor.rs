@@ -804,6 +804,25 @@ impl NativeOfficeEditor {
                         path
                     })
                 }
+                NativeOfficeMutation::ReplacePlaceholder {
+                    path,
+                    key,
+                    replace,
+                    expected_matches,
+                } => template_merge::replace_placeholder(
+                    &mut self.package,
+                    key,
+                    replace,
+                    *expected_matches,
+                )
+                .map(|result| {
+                    result
+                        .changed_parts
+                        .into_iter()
+                        .next()
+                        .or_else(|| path.clone())
+                        .unwrap_or_else(|| "/".to_string())
+                }),
                 NativeOfficeMutation::SetText { path, text } => {
                     set_text(&mut self.package, path, text).map(|()| path.clone())
                 }

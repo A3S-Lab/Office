@@ -793,6 +793,29 @@ pub(super) enum OfficeMutation {
         path: String,
         replacement: OfficeTextReplacement,
     },
+    /// Replace every `{{key}}` in the open document, including a token split
+    /// across runs. Omit `expectedMatches` to fill a key that appears more
+    /// than once (for example the issuer in both the banner and the title).
+    /// `expectedMatches: 1` still fills every occurrence of that one key.
+    ReplacePlaceholder {
+        /// Accepted for callers that also send a body path. The key is replaced
+        /// across the document's text parts.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        path: Option<String>,
+        /// Bare placeholder key, without braces.
+        key: String,
+        /// Text that replaces `{{key}}`.
+        #[serde(alias = "value", alias = "with")]
+        replace: String,
+        /// Optional exact occurrence count. `1` means this one key, and a
+        /// repeated key is still fully replaced.
+        #[serde(
+            default,
+            rename = "expectedMatches",
+            skip_serializing_if = "Option::is_none"
+        )]
+        expected_matches: Option<u32>,
+    },
     SetText {
         path: String,
         text: String,
@@ -1028,6 +1051,17 @@ impl OfficeMutation {
             Self::ReplaceText { path, replacement } => NativeOfficeMutation::ReplaceText {
                 path,
                 replacement: replacement.into_native()?,
+            },
+            Self::ReplacePlaceholder {
+                path,
+                key,
+                replace,
+                expected_matches,
+            } => NativeOfficeMutation::ReplacePlaceholder {
+                path,
+                key,
+                replace,
+                expected_matches,
             },
             Self::SetText { path, text } => NativeOfficeMutation::SetText { path, text },
             Self::SetTextFormat { path, format } => NativeOfficeMutation::SetTextFormat {

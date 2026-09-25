@@ -64,6 +64,56 @@ pub(crate) fn merge(
     })
 }
 
+/// Replace every `{{key}}` in native OOXML text, including a token split across runs.
+///
+/// `expected_matches`, when set, must equal the number of occurrences. Callers
+/// that pass `1` while the key is repeated (banner and title) still replace
+/// every occurrence: that value means "this one key", not "only the first span".
+pub(crate) fn replace_placeholder(
+    package: &mut NativeOfficePackage,
+    key: &str,
+    value: &str,
+    expected_matches: Option<u32>,
+) -> UseResult<NativeOfficeTemplateMergeResult> {
+    let key = key.trim();
+    if !valid_placeholder_key(key) {
+        return Err(merge_error(
+            "use.office.template_placeholder_invalid",
+            "Native Office placeholder keys must be non-empty and use letters, digits, '_', '.', '-', '[', ']', or spaces.",
+        )
+        .with_detail("key", key));
+    }
+    validate_xml_text(key, value)?;
+    let data = serde_json::json!({ key: value });
+    let original = package.clone();
+    let result = merge(package, &data)?;
+    let observed = u32::try_from(result.replaced_count).unwrap_or(u32::MAX);
+    if observed == 0 || !result.used_keys.iter().any(|used| used == key) {
+        *package = original;
+        return Err(merge_error(
+            "use.office.template_placeholder_missing",
+            format!("Native Office document has no '{{{{{key}}}}}' placeholder."),
+        )
+        .with_detail("key", key));
+    }
+    if let Some(expected) = expected_matches {
+        let repeated_key = expected == 1 && observed > 1;
+        if expected != observed && !repeated_key {
+            *package = original;
+            return Err(merge_error(
+                "use.office.template_placeholder_count",
+                format!(
+                    "Native Office placeholder '{key}' occurs {observed} time(s); expectedMatches was {expected}. Omit expectedMatches to replace every occurrence."
+                ),
+            )
+            .with_detail("key", key)
+            .with_detail("observedMatches", u64::from(observed))
+            .with_detail("expectedMatches", u64::from(expected)));
+        }
+    }
+    Ok(result)
+}
+
 #[derive(Debug)]
 pub(super) struct MergeData {
     values: BTreeMap<String, String>,

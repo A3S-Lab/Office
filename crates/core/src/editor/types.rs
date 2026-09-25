@@ -709,6 +709,20 @@ pub enum NativeOfficeMutation {
         path: String,
         replacement: NativeOfficeTextReplacement,
     },
+    /// Replace every `{{key}}` in the document's native text, including tokens
+    /// split across runs. `expected_matches` of 1 still fills a repeated key.
+    ReplacePlaceholder {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        path: Option<String>,
+        key: String,
+        replace: String,
+        #[serde(
+            default,
+            rename = "expectedMatches",
+            skip_serializing_if = "Option::is_none"
+        )]
+        expected_matches: Option<u32>,
+    },
     SetText {
         path: String,
         text: String,

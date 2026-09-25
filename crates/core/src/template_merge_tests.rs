@@ -9,6 +9,44 @@ fn part_text(package: &NativeOfficePackage, name: &str) -> String {
 }
 
 #[test]
+fn replace_placeholder_fills_a_repeated_key_split_across_runs() {
+    let mut package = package(DocumentKind::Word);
+    package
+        .set_part(
+            "word/document.xml",
+            br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>{{issuer}} file</w:t></w:r></w:p><w:p><w:r><w:t>{{iss</w:t></w:r><w:r><w:t>uer}} on {{subject}}</w:t></w:r></w:p></w:body></w:document>"#.to_vec(),
+        )
+        .unwrap();
+    let result =
+        template_merge::replace_placeholder(&mut package, "issuer", "Education Bureau", Some(1))
+            .unwrap();
+    assert_eq!(result.replaced_count, 2);
+    let xml = part_text(&package, "word/document.xml");
+    assert!(xml.contains("Education Bureau file"));
+    assert!(xml.contains("Education Bureau"));
+    assert!(xml.contains("{{subject}}"));
+    assert!(!xml.contains("{{issuer}}"));
+    assert!(!xml.contains("{{iss"));
+}
+
+#[test]
+fn replace_placeholder_rejects_a_wrong_exact_count_and_reports_the_observation() {
+    let mut package = package(DocumentKind::Word);
+    package
+        .set_part(
+            "word/document.xml",
+            br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>{{signature}}</w:t></w:r></w:p></w:body></w:document>"#.to_vec(),
+        )
+        .unwrap();
+    let error =
+        template_merge::replace_placeholder(&mut package, "signature", "Education Bureau", Some(2))
+            .unwrap_err();
+    assert_eq!(error.code, "use.office.template_placeholder_count");
+    assert_eq!(error.details["observedMatches"], serde_json::json!(1));
+    assert!(part_text(&package, "word/document.xml").contains("{{signature}}"));
+}
+
+#[test]
 fn word_merge_preserves_split_run_formatting_and_processes_auxiliary_parts() {
     let mut package = package(DocumentKind::Word);
     package
