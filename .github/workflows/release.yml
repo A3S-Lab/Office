@@ -4,7 +4,7 @@ on:
   release:
     types:
       - published
-  # Manual retry after Trusted Publisher / NPM_TOKEN is restored (Office#162).
+  # Manual retry. Registry auth is the NPM_TOKEN secret, not Trusted Publishing.
   workflow_dispatch:
     inputs:
       ref:
@@ -44,9 +44,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          # Do not set registry-url here: it writes an empty/stale
-          # //registry.npmjs.org/:_authToken= line that breaks OIDC Trusted
-          # Publishing (Office#162). Registry is set explicitly below.
+          # Registry auth is the NPM_TOKEN secret, written in the publish step.
+          # Leave registry-url unset so setup-node does not add an empty token line.
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -60,27 +59,23 @@ jobs:
           bun run test
           bun run build
 
-      # Prefer npm Trusted Publishing (OIDC). Classic NPM_TOKEN secrets across
-      # A3S-Lab repos currently 401 (Office#162). If a valid granular token is
-      # restored later, set NODE_AUTH_TOKEN and it will be used as fallback.
+      # Registry login is NPM_TOKEN. id-token stays so `npm publish --provenance`
+      # can sign the attestation; it is not used to authenticate to the registry.
       - name: Publish package
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          # Drop setup-node / empty auth lines so OIDC can authenticate.
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN secret is empty"
+            exit 1
+          fi
           if [ -f "$HOME/.npmrc" ]; then
             sed -i '/_authToken/d' "$HOME/.npmrc" || true
           fi
           if [ -f .npmrc ]; then
             sed -i '/_authToken/d' .npmrc || true
           fi
-          # Only re-inject token auth when the secret is non-empty AND whoami works.
-          if [ -n "${NODE_AUTH_TOKEN:-}" ] && npm whoami --registry https://registry.npmjs.org/ >/dev/null 2>&1; then
-            echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> "$HOME/.npmrc"
-            echo "Publishing with NPM_TOKEN (whoami ok)"
-          else
-            unset NODE_AUTH_TOKEN || true
-            echo "Publishing with GitHub OIDC Trusted Publisher (no usable NPM_TOKEN)"
-          fi
+          printf '%s\n' "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> "$HOME/.npmrc"
+          echo "Publishing as $(npm whoami --registry https://registry.npmjs.org/)"
           npm publish --access public --provenance --registry https://registry.npmjs.org/
