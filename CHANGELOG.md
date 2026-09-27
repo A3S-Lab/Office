@@ -1,13 +1,5 @@
 # Changelog
 
-## 0.311.2 - 2026-09-23
-
-### Packaging
-
-- Restore `NODE_AUTH_TOKEN` (`NPM_TOKEN`) on the Publish workflow so registry
-  publish works again (OIDC-only tip failed with scoped PUT 404; Office#162).
-  Provenance via GitHub OIDC is unchanged.
-
 ## Unreleased
 
 ## 0.312.0 - 2026-09-27
@@ -24,6 +16,19 @@
 - A host save writes the replica back into DOCX, XLSX, PPTX, or an
   uncompressed PDF literal. Other package parts stay byte-identical. While
   the replica is live, `office_open` does not open a second session.
+
+### Packaging
+
+- Publish `@a3s-lab/office@0.312.0` with the repository `NPM_TOKEN`. GitHub
+  OIDC signs the provenance statement and is not the registry login.
+
+## 0.311.2 - 2026-09-23
+
+### Packaging
+
+- Restore `NODE_AUTH_TOKEN` (`NPM_TOKEN`) on the Publish workflow so registry
+  publish works again (OIDC-only tip failed with scoped PUT 404; Office#162).
+  Provenance via GitHub OIDC is unchanged.
 
 ## 0.311.1 - 2026-09-23
 

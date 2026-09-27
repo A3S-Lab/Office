@@ -42,13 +42,13 @@ description: 在应用中接入五种宿主可控的 Office 编辑器，支持�
 - [协作协议与状态边界](./components/collaboration.html)
 - [完整 A3S Boot 后端示例](./components/collaboration-server.html)
 
-## `main` 更新内容（0.310.0）
+## `main` 更新内容（0.312.0）
 
-在宿主可见表面上写明其余比较交换字段：
+智能体的一次编辑和它的光标是同一会话帧：
 
-- CLI 帮助与 MCP mutate 说明写明 `expectedCell`、`expectedElement`、`expectedAnnotation`。
-- 读不到 Skill 的 MCP 宿主仍能看到失败关闭基线。
-- Spreadsheet、Presentation 与 PDF FreeText 基线漂移时仍不写入。
+- 文档、Markdown、表格或演示文稿的 splice 在同一次结果里返回下一个光标。排版只把这个位置换成像素。
+- 纯文本单元格和演示文稿文本框在同一个协作片段里 splice。PDF 帧只指向表单域或批注，不带文本偏移。
+- 宿主保存把副本写回 Office 包。副本仍在线时，`office_open` 不会再开第二个会话。
 
 
 

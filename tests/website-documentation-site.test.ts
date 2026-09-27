@@ -409,15 +409,15 @@ test('routes the concise README and documentation homes to the current release s
   ]);
 
   expect(readme).toContain('## Current release');
-  expect(readme).toContain('Version `0.310.0`');
-  expect(readme).toContain('expectedCell');
-  expect(readme).toContain('writes nothing');
-  expect(englishHome).toContain("## What's new on `main` (0.310.0)");
-  expect(englishHome).toContain('expectedCell');
-  expect(englishHome).toContain('writes nothing');
-  expect(chineseHome).toContain('## `main` 更新内容（0.310.0）');
-  expect(chineseHome).toContain('expectedCell');
-  expect(chineseHome).toContain('不写入');
+  expect(readme).toContain('Version `0.312.0`');
+  expect(readme).toContain('same collaboration frame');
+  expect(readme).toContain('does not open a second session');
+  expect(englishHome).toContain("## What's new on `main` (0.312.0)");
+  expect(englishHome).toContain('same result');
+  expect(englishHome).toContain('second `office_open`');
+  expect(chineseHome).toContain('## `main` 更新内容（0.312.0）');
+  expect(chineseHome).toContain('同一个协作片段');
+  expect(chineseHome).toContain('不会再开第二个会话');
   expect(englishHome).not.toContain("## What's new on `main` (0.76.0)");
   expect(chineseHome).not.toContain('## `main` 更新内容（0.76.0）');
   expect(readme).toContain(
@@ -429,7 +429,7 @@ test('routes the concise README and documentation homes to the current release s
     '[live Playground](https://a3s-lab.github.io/Office/playground/)',
   );
 
-  expect(englishHome).toContain("## What's new on `main` (0.310.0)");
+  expect(englishHome).toContain("## What's new on `main` (0.312.0)");
   expect(englishHome).toContain('## Explore by surface');
   expect(englishHome).not.toContain('Current product highlights');
   expect(englishHome).toContain("[What's new](./changelog.html)");
@@ -457,7 +457,7 @@ test('routes the concise README and documentation homes to the current release s
   expect(englishHome).toContain('document.html#common-live-fields');
   expect(englishHome).toContain('document.html#built-in-content-controls');
 
-  expect(chineseHome).toContain('## `main` 更新内容（0.310.0）');
+  expect(chineseHome).toContain('## `main` 更新内容（0.312.0）');
   expect(chineseHome).toContain('## 按表面探索');
   expect(chineseHome).not.toContain('当前产品亮点');
   expect(chineseHome).toContain('[更新日志](./changelog.html)');
@@ -634,7 +634,7 @@ test('publishes the WPS connector-kind A3S Test matrix in the 0.57.0 release sto
 
   for (const document of [latestEnglish, latestChinese]) {
     expect(document).toContain('A3S Test');
-    expect(document).toContain('0.310.0');
+    expect(document).toContain('0.312.0');
   }
   for (const document of [frozenEnglish, frozenChinese]) {
     expect(document).toContain('A3S Test');

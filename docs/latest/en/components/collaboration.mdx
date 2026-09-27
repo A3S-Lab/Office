@@ -18,6 +18,19 @@ Markdown, Document, Presentation, Spreadsheet, and PDF have browser editor
 bindings. Native Yrs replicas expose the same Yjs v1 state-vector and update
 protocol through the CLI and MCP.
 
+## One session frame
+
+An agent edit is one ordered update. The caret is the end of that update: the
+next UTF-16 index after a document, Markdown, spreadsheet text, or presentation
+text splice. Layout, zoom, and pagination only turn that index into pixels.
+A caret-only move is the next frame, not a second clock.
+
+Formula cells, numbers, and styles stay field-addressed. A PDF frame names the
+form field or annotation and does not carry a text offset. A host save writes
+the replica back into DOCX, XLSX, PPTX, or an uncompressed PDF literal, and
+leaves every other package part byte-identical. While the replica is live,
+`office_open` does not open a second session.
+
 For a complete authenticated and persistent service, run the
 [A3S Boot collaboration server](./collaboration-server.mdx). It includes the
 Rust backend, browser transport adapter, ACL configuration, and integration

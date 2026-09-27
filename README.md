@@ -371,11 +371,11 @@ Codex editor operations typed and reproducible across all five surfaces.
 
 ## Current release
 
-Version `0.310.0` names remaining compare-and-swap fields on host-visible surfaces:
+Version `0.312.0` returns the caret in the same collaboration frame as the edit:
 
-- CLI help and MCP mutate instructions name `expectedCell`, `expectedElement`, and `expectedAnnotation`.
-- MCP hosts that cannot read Skill refs still see the fail-closed baselines.
-- A drifted Spreadsheet, Presentation, or PDF FreeText base still writes nothing.
+- A document, Markdown, spreadsheet, or presentation splice carries the next caret in that result. Layout only turns it into pixels.
+- Plain-text spreadsheet cells and presentation text boxes splice inside one collaborative fragment. PDF frames name the field or annotation and carry no text offset.
+- A host save writes the replica back into the Office package. While that replica is live, `office_open` does not open a second session.
 
 Earlier releases stay on the product
 [What's new](https://a3s-lab.github.io/Office/docs/changelog.html) timeline and

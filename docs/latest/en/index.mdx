@@ -44,13 +44,13 @@ identity, authorization, providers, offline buffering, and persistence.
 - [Collaboration protocol and state boundaries](./components/collaboration.html)
 - [Complete A3S Boot backend example](./components/collaboration-server.html)
 
-## What's new on `main` (0.310.0)
+## What's new on `main` (0.312.0)
 
-Name remaining compare-and-swap fields on host-visible surfaces:
+An agent edit and its caret are one session frame:
 
-- CLI help and MCP mutate instructions name `expectedCell`, `expectedElement`, and `expectedAnnotation`.
-- MCP hosts that cannot read Skill refs still see the fail-closed baselines.
-- A drifted Spreadsheet, Presentation, or PDF FreeText base still writes nothing.
+- A document, Markdown, spreadsheet, or presentation splice returns the next caret in that same result. Layout only turns it into pixels.
+- Plain-text cells and presentation text boxes splice inside one collaborative fragment. PDF frames name the field or annotation and carry no text offset.
+- A host save writes the replica back into the Office package. A live replica blocks a second `office_open`.
 
 
 

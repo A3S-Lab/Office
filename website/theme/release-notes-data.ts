@@ -37,6 +37,70 @@ export type OfficeReleaseNote = {
 
 export const OFFICE_RELEASE_NOTES: readonly OfficeReleaseNote[] = [
   {
+    version: '0.312.0',
+    date: '2026-09-27',
+    kind: 'new',
+    surfaces: [
+      'shared',
+      'writer',
+      'markdown',
+      'spreadsheet',
+      'presentation',
+      'pdf',
+    ],
+    title: {
+      en: 'Return the caret in the same session frame',
+      zh: '在同一会话帧里返回光标',
+    },
+    summary: {
+      en: 'An agent splice and its caret are one ordered update. Layout only turns that caret into pixels, and a host save writes the replica back into the Office package.',
+      zh: '智能体的 splice 和它的光标是同一次有序更新。排版只把这个光标换成像素，宿主保存再把副本写回 Office 包。',
+    },
+    highlights: [
+      {
+        title: { en: 'Document and Markdown', zh: '文档与 Markdown' },
+        detail: {
+          en: 'The splice result carries the next UTF-16 caret. A caret-only move is the next frame.',
+          zh: 'splice 结果带上下一个 UTF-16 光标。只移动光标是下一帧。',
+        },
+      },
+      {
+        title: { en: 'Spreadsheet and presentation', zh: '表格与演示文稿' },
+        detail: {
+          en: 'Plain-text cells and text boxes splice inside one collaborative fragment. Formula cells, numbers, and styles stay field-addressed.',
+          zh: '纯文本单元格和文本框在同一个协作片段里 splice。公式单元格、数字和样式仍按字段寻址。',
+        },
+      },
+      {
+        title: { en: 'PDF and package save', zh: 'PDF 与包保存' },
+        detail: {
+          en: 'A PDF frame names the field or annotation and carries no text offset. A live replica blocks a second office_open.',
+          zh: 'PDF 帧只指向表单域或批注，不带文本偏移。副本仍在线时会拒绝第二次 office_open。',
+        },
+      },
+    ],
+    links: [
+      {
+        href: {
+          en: './components/collaboration.html#one-session-frame',
+          zh: './components/collaboration.html#同一会话帧',
+        },
+        label: { en: 'One session frame', zh: '同一会话帧' },
+      },
+      {
+        href: { en: './changelog.html', zh: './changelog.html' },
+        label: { en: 'Changelog', zh: '更新日志' },
+      },
+      {
+        href: {
+          en: 'https://github.com/A3S-Lab/Office/releases/tag/v0.312.0',
+          zh: 'https://github.com/A3S-Lab/Office/releases/tag/v0.312.0',
+        },
+        label: { en: 'GitHub release', zh: 'GitHub 发布' },
+      },
+    ],
+  },
+  {
     version: '0.310.0',
     date: '2026-09-22',
     kind: 'improved',
