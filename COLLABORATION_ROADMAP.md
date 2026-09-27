@@ -4,6 +4,13 @@ This roadmap defines one versioned collaboration protocol for every A3S Office
 editor and for native CLI/coding-agent clients. It complements `ROADMAP.md`,
 which tracks editor capability parity with Traditional Office.
 
+Agent realtime collaboration is the primary goal. The order of work is
+`AGENT_REALTIME_COLLABORATION_PLAN.md`. There is one clock: the replica's
+session stream. A document update carries its caret. A caret move with no
+edit is the next frame on that same stream. Layout only computes pixels.
+OOXML bytes are import and export. Parity that does not make that caret true
+waits. This file stays the protocol.
+
 ## Design invariants
 
 - Yjs is the browser protocol implementation. Yrs is the native Rust
@@ -285,8 +292,8 @@ coverage are pending.
 
 Remaining:
 
-- Bind editable scene text to collaborative XML fragments instead of scalar
-  text/run replacement.
+- Scene text typing uses `presentation-splice` on a collaborative text
+  fragment. Scalar `presentation-replace-text` remains search/replace.
 - Add structural native operations and explicit conflict handling for slide
   order, grouping, and theme changes; extend z-order beyond stable scene-element
   moves where a concrete browser workflow requires it.
@@ -503,7 +510,10 @@ format mutations are pending.
   precondition.
 - `collab mutate` and `office_collaboration_mutate` accept a closed typed
   operation instead of caller-authored Yjs bytes. Markdown splice writes one
-  canonical `Y.Text` range after `expectedText` matches that UTF-16 slice.
+  canonical `Y.Text` range after `expectedSlice` matches that UTF-16 slice and
+  returns the next caret in the same result. `document-splice` does the same
+  inside one `Y.XmlText` and does not rotate `textId`. That caret is part of the
+  frame, not a follow-up awareness message, and it is not written into the Y.Doc.
   Markdown replace applies only the diff from required `expectedMarkdown` to
   the supplied Markdown, so text outside that diff is kept. Document exact-match
   replacement edits ProseMirror `Y.XmlText` in place, preserves the first

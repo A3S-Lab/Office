@@ -463,6 +463,144 @@ fn replace_presentation_text_changes_only_the_matched_span() {
     );
 }
 
+#[test]
+fn presentation_splice_is_element_local_and_survives_an_unrelated_shape_edit() {
+    let temp = tempfile::tempdir().unwrap();
+    let first = initialized_presentation_store(&temp.path().join("first"), 900_041);
+    let second = initialized_presentation_store(&temp.path().join("second"), 900_042);
+    let title = projected_element_text(&first, "element-title");
+    assert_eq!(title, "Shared presentation");
+    let end = u32::try_from(title.encode_utf16().count()).unwrap();
+    let inserted = first
+        .mutate(presentation_mutation_request(
+            "presentation-splice-cjk",
+            NativeOfficeCollaborationMutation::PresentationSplice {
+                container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+                container_id: "slide-1".to_owned(),
+                element_id: "element-title".to_owned(),
+                index_utf16: end,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "中".to_owned(),
+            },
+        ))
+        .unwrap();
+    let NativeOfficeCollaborationFrameCaret::Presentation {
+        element_id,
+        index_utf16,
+        ..
+    } = inserted.caret.unwrap()
+    else {
+        panic!("presentation splice must return an element caret");
+    };
+    assert_eq!(element_id, "element-title");
+    assert_eq!(index_utf16, Some(end + 1));
+
+    second
+        .apply(presentation_apply_request(
+            "apply-first-splice",
+            first.synchronize(None).unwrap().update,
+        ))
+        .unwrap();
+    let followed = second
+        .mutate(presentation_mutation_request(
+            "presentation-splice-follow",
+            NativeOfficeCollaborationMutation::PresentationSplice {
+                container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+                container_id: "slide-1".to_owned(),
+                element_id: "element-title".to_owned(),
+                index_utf16: end + 1,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "文".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        followed.caret.unwrap(),
+        NativeOfficeCollaborationFrameCaret::Presentation {
+            container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+            container_id: "slide-1".to_owned(),
+            element_id: "element-title".to_owned(),
+            index_utf16: Some(end + 2),
+        }
+    );
+    first
+        .apply(presentation_apply_request(
+            "apply-second-splice",
+            second
+                .synchronize(Some(&first.synchronize(None).unwrap().state_vector))
+                .unwrap()
+                .update,
+        ))
+        .unwrap();
+
+    assert_eq!(
+        projected_element_text(&first, "element-title"),
+        "Shared presentation中文"
+    );
+    assert_eq!(
+        projected_element_text(&second, "element-title"),
+        "Shared presentation中文"
+    );
+
+    let mut styled = title_element();
+    styled["fill"] = json!("#DBEAFE");
+    first
+        .mutate(presentation_mutation_request(
+            "presentation-fill-does-not-move-text",
+            NativeOfficeCollaborationMutation::PresentationUpdateElement {
+                container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+                container_id: "slide-1".to_owned(),
+                element_id: "element-title".to_owned(),
+                expected_element: title_element(),
+                next_element: styled,
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        projected_element_text(&first, "element-title"),
+        "Shared presentation中文"
+    );
+
+    let drifted = first
+        .mutate(presentation_mutation_request(
+            "presentation-splice-drift",
+            NativeOfficeCollaborationMutation::PresentationSplice {
+                container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+                container_id: "slide-1".to_owned(),
+                element_id: "element-title".to_owned(),
+                index_utf16: 0,
+                delete_utf16: 1,
+                expected_slice: "X".to_owned(),
+                insert: "Y".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(drifted.code, "office.collaboration.mutation_match_conflict");
+    assert_eq!(
+        projected_element_text(&first, "element-title"),
+        "Shared presentation中文"
+    );
+}
+
+fn projected_element_text(store: &NativeOfficeCollaborationStore, element_id: &str) -> String {
+    let projection = store.project().unwrap();
+    let NativeOfficeCollaborationProjectedContent::Presentation { containers } = projection.content
+    else {
+        panic!("expected a presentation projection");
+    };
+    containers
+        .iter()
+        .flat_map(|container| container.elements.iter())
+        .find(|element| element.element_id == element_id)
+        .unwrap_or_else(|| panic!("missing element {element_id}"))
+        .element["text"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
 fn initialized_presentation_store(root: &Path, client_id: u64) -> NativeOfficeCollaborationStore {
     let store =
         NativeOfficeCollaborationStore::create(presentation_create_request(root, client_id))

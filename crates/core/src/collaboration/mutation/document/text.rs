@@ -6,10 +6,11 @@ use super::super::super::{
     collaboration_error, NativeOfficeCollaborationDocumentTextFindResult,
     NativeOfficeCollaborationDocumentTextMatch, NativeOfficeCollaborationManifest,
 };
+use super::super::is_utf16_boundary;
 use super::super::utf16_len;
 use super::identity::{
-    ancestor_table_rows, paragraph_text_id_rotations, table_row_text_id_rotations,
-    PARAGRAPH_ID_ATTRIBUTE, ROW_TEXT_ID_ATTRIBUTE, TEXT_ID_ATTRIBUTE,
+    ancestor_table_rows, document_identity_attribute, paragraph_text_id_rotations,
+    table_row_text_id_rotations, PARAGRAPH_ID_ATTRIBUTE, ROW_TEXT_ID_ATTRIBUTE, TEXT_ID_ATTRIBUTE,
 };
 
 const MAX_DOCUMENT_TEXT_REPLACEMENTS: u32 = 4_096;
@@ -333,6 +334,224 @@ pub(super) fn replace_document_text(
     Ok(())
 }
 
+pub(super) fn validate_document_splice(paragraph_id: &str, text_id: &str) -> UseResult<()> {
+    if paragraph_id.is_empty() || text_id.is_empty() {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_invalid",
+            "Document splice requires a non-empty paragraphId and textId.",
+        ));
+    }
+    Ok(())
+}
+
+pub(super) fn splice_document_text(
+    doc: &yrs::Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+    paragraph_id: &str,
+    text_id: &str,
+    index_utf16: u32,
+    delete_utf16: u32,
+    expected_slice: &str,
+    insert: &str,
+) -> UseResult<()> {
+    let root = format!("{}.document.content", manifest.namespace);
+    let fragment = doc.get_or_insert_xml_fragment(root);
+    let transaction = doc.transact();
+    let (paragraph, text) = paragraph_text_node(&fragment, &transaction, paragraph_id)?;
+    let actual_text_id = document_identity_attribute(&paragraph, &transaction, TEXT_ID_ATTRIBUTE)?;
+    if actual_text_id.as_deref() != Some(text_id) {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_match_conflict",
+            "Document splice textId no longer matches the paragraph.",
+        )
+        .with_suggestion(
+            "Read the paragraph again and retry document-splice with the current textId. Do not rotate textId for an insert or delete that stays inside the node.",
+        )
+        .with_detail("expectedTextId", text_id)
+        .with_detail("actualTextId", actual_text_id.unwrap_or_default()));
+    }
+    let runs = plain_text_runs(&text, &transaction)?;
+    let current = xml_plain_text(&runs);
+    let current_len = utf16_len(&current)?;
+    let end_utf16 = index_utf16
+        .checked_add(delete_utf16)
+        .ok_or_else(|| invalid_document_splice_range(index_utf16, delete_utf16, current_len))?;
+    if index_utf16 > current_len
+        || end_utf16 > current_len
+        || !is_utf16_boundary(&current, index_utf16)
+        || !is_utf16_boundary(&current, end_utf16)
+    {
+        return Err(invalid_document_splice_range(
+            index_utf16,
+            delete_utf16,
+            current_len,
+        ));
+    }
+    let observed = utf16_slice(&current, index_utf16, end_utf16)
+        .ok_or_else(|| invalid_document_splice_range(index_utf16, delete_utf16, current_len))?;
+    if observed != expected_slice {
+        return Err(collaboration_error(
+            "office.collaboration.mutation_match_conflict",
+            "Document splice range no longer matches expectedSlice.",
+        )
+        .with_suggestion(
+            "Read the UTF-16 slice again. Pass that text as expectedSlice, or empty when deleteUtf16 is 0.",
+        )
+        .with_detail("indexUtf16", index_utf16 as u64)
+        .with_detail("deleteUtf16", delete_utf16 as u64)
+        .with_detail("observed", observed));
+    }
+    let attributes = if delete_utf16 == 0 && insert.is_empty() {
+        None
+    } else {
+        typing_attributes(&runs, index_utf16, delete_utf16)
+    };
+    drop(transaction);
+    if delete_utf16 == 0 && insert.is_empty() {
+        return Ok(());
+    }
+    let mut transaction = doc.transact_mut();
+    if delete_utf16 > 0 {
+        text.remove_range(&mut transaction, index_utf16, delete_utf16);
+    }
+    if !insert.is_empty() {
+        match attributes {
+            Some(attributes) => {
+                text.insert_with_attributes(&mut transaction, index_utf16, insert, attributes);
+            }
+            None => text.insert(&mut transaction, index_utf16, insert),
+        }
+    }
+    Ok(())
+}
+
+fn paragraph_text_node<T: ReadTxn>(
+    fragment: &impl XmlFragment,
+    transaction: &T,
+    paragraph_id: &str,
+) -> UseResult<(XmlElementRef, XmlTextRef)> {
+    let mut matches = Vec::new();
+    for node in fragment.successors(transaction) {
+        let XmlOut::Element(element) = node else {
+            continue;
+        };
+        if document_identity_attribute(&element, transaction, PARAGRAPH_ID_ATTRIBUTE)?.as_deref()
+            == Some(paragraph_id)
+        {
+            matches.push(element);
+        }
+    }
+    let paragraph = match matches.len() {
+        1 => matches.pop().expect("length checked"),
+        0 => {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_target_missing",
+                format!("Document paragraph '{paragraph_id}' does not exist."),
+            ))
+        }
+        count => {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_identity_conflict",
+                format!(
+                    "Document paragraph ID '{paragraph_id}' is assigned to {count} live nodes."
+                ),
+            ))
+        }
+    };
+    let mut texts = Vec::new();
+    for child in paragraph.children(transaction) {
+        if let XmlOut::Text(text) = child {
+            texts.push(text);
+        }
+    }
+    let text = match texts.len() {
+        1 => texts.pop().expect("length checked"),
+        0 => {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_target_missing",
+                format!("Document paragraph '{paragraph_id}' has no text node to splice."),
+            ))
+        }
+        count => {
+            return Err(collaboration_error(
+                "office.collaboration.mutation_identity_conflict",
+                format!(
+                    "Document paragraph '{paragraph_id}' has {count} text nodes; document-splice addresses one Y.XmlText."
+                ),
+            ))
+        }
+    };
+    Ok((paragraph, text))
+}
+
+fn xml_plain_text(runs: &[PlainTextRun]) -> String {
+    let mut plain = String::new();
+    let mut cursor = 0_u32;
+    for run in runs {
+        while cursor < run.start_utf16 {
+            plain.push('\u{FFFC}');
+            cursor = cursor.saturating_add(1);
+        }
+        plain.push_str(&run.text);
+        cursor = cursor.saturating_add(u32::try_from(run.text.encode_utf16().count()).unwrap_or(0));
+    }
+    plain
+}
+
+fn typing_attributes(runs: &[PlainTextRun], index_utf16: u32, delete_utf16: u32) -> Option<Attrs> {
+    for run in runs {
+        for span in &run.format_spans {
+            let inside = if delete_utf16 == 0 && index_utf16 > 0 {
+                span.start_utf16 < index_utf16 && index_utf16 <= span.end_utf16
+            } else {
+                span.start_utf16 <= index_utf16 && index_utf16 < span.end_utf16
+            };
+            if inside {
+                return span.attributes.clone();
+            }
+        }
+    }
+    None
+}
+
+fn utf16_slice(value: &str, start: u32, end: u32) -> Option<&str> {
+    let mut utf16 = 0_u32;
+    let mut start_byte = None;
+    let mut end_byte = None;
+    for (byte, character) in value.char_indices() {
+        if utf16 == start {
+            start_byte = Some(byte);
+        }
+        if utf16 == end {
+            end_byte = Some(byte);
+            break;
+        }
+        utf16 = utf16.saturating_add(character.len_utf16() as u32);
+    }
+    if end_byte.is_none() && utf16 == end {
+        end_byte = Some(value.len());
+    }
+    if start == end {
+        let byte = start_byte.or(end_byte)?;
+        return Some(&value[byte..byte]);
+    }
+    Some(&value[start_byte?..end_byte?])
+}
+
+fn invalid_document_splice_range(
+    index_utf16: u32,
+    delete_utf16: u32,
+    current_len: u32,
+) -> a3s_use_core::UseError {
+    collaboration_error(
+        "office.collaboration.mutation_range_invalid",
+        "Document splice range is outside the text node or splits a surrogate pair.",
+    )
+    .with_detail("indexUtf16", index_utf16 as u64)
+    .with_detail("deleteUtf16", delete_utf16 as u64)
+    .with_detail("textUtf16", current_len as u64)
+}
+
 fn xml_string_attribute<T: ReadTxn>(
     element: &XmlElementRef,
     transaction: &T,
@@ -457,6 +676,7 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
+    use yrs::undo::UndoManager;
     use yrs::{Any, GetString, Text, Transact, Xml, XmlElementPrelim, XmlFragment, XmlTextPrelim};
 
     use super::*;
@@ -772,6 +992,97 @@ mod tests {
         .unwrap_err();
         assert_eq!(error.code, "office.collaboration.content_invalid");
         assert_eq!(text.get_string(&doc.transact()), "Unchanged");
+    }
+
+    #[test]
+    fn splice_keeps_text_id_and_the_mark_before_the_caret() {
+        let doc = new_replica_document(
+            7,
+            "a3s.office",
+            NativeOfficeCollaborationArtifactKind::Document,
+        );
+        let fragment = doc.get_or_insert_xml_fragment("a3s.office.document.content");
+        let (paragraph, text) = {
+            let mut transaction = doc.transact_mut();
+            let paragraph =
+                fragment.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+            paragraph.insert_attribute(&mut transaction, "paragraphId", "00000001");
+            paragraph.insert_attribute(&mut transaction, "textId", "00000002");
+            let text =
+                paragraph.push_back(&mut transaction, XmlTextPrelim::new("plain bold bold end"));
+            let mut attributes = Attrs::new();
+            attributes.insert("bold".into(), Any::Map(Arc::new(HashMap::new())));
+            text.format(&mut transaction, 6, 9, attributes);
+            (paragraph, text)
+        };
+        let manifest = manifest();
+
+        splice_document_text(&doc, &manifest, "00000001", "00000002", 15, 0, "", "中").unwrap();
+
+        let transaction = doc.transact();
+        let chunks = text.diff(&transaction, |_| ());
+        assert!(chunks.iter().any(|chunk| {
+            matches!(&chunk.insert, Out::Any(Any::String(value)) if value.as_ref().contains('中'))
+                && chunk
+                    .attributes
+                    .as_ref()
+                    .is_some_and(|attributes| attributes.contains_key("bold"))
+        }));
+        assert!(matches!(
+            paragraph.get_attribute(&transaction, "textId"),
+            Some(Out::Any(Any::String(value))) if value.as_ref() == "00000002"
+        ));
+        drop(transaction);
+
+        let mut undo = UndoManager::<()>::new();
+        undo.expand_scope(&doc, &text);
+        undo.include_origin("local-typing");
+        {
+            let mut local = doc.transact_mut_with("local-typing");
+            text.insert(&mut local, 0, "Q");
+        }
+        assert!(undo.undo_blocking());
+        assert_eq!(plain_xml_text(&doc, &text), "plain bold bold中 end");
+
+        let stale_text_id =
+            splice_document_text(&doc, &manifest, "00000001", "00000003", 15, 0, "", "!")
+                .unwrap_err();
+        assert_eq!(
+            stale_text_id.code,
+            "office.collaboration.mutation_match_conflict"
+        );
+        assert_eq!(plain_xml_text(&doc, &text), "plain bold bold中 end");
+
+        let split = splice_document_text(&doc, &manifest, "00000001", "00000002", 1, 0, "", "😀");
+        assert!(split.is_ok());
+        let inside = splice_document_text(
+            &doc,
+            &manifest,
+            "00000001",
+            "00000002",
+            text_utf16_index(&plain_xml_text(&doc, &text), '😀') + 1,
+            0,
+            "",
+            "!",
+        )
+        .unwrap_err();
+        assert_eq!(inside.code, "office.collaboration.mutation_range_invalid");
+    }
+
+    fn plain_xml_text(doc: &yrs::Doc, text: &XmlTextRef) -> String {
+        let transaction = doc.transact();
+        text.diff(&transaction, |_| ())
+            .into_iter()
+            .filter_map(|chunk| match chunk.insert {
+                Out::Any(Any::String(value)) => Some(value.to_string()),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn text_utf16_index(value: &str, needle: char) -> u32 {
+        let byte = value.find(needle).expect("needle");
+        value[..byte].encode_utf16().count() as u32
     }
 
     fn manifest() -> NativeOfficeCollaborationManifest {

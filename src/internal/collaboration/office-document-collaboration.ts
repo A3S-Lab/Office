@@ -33,6 +33,7 @@ import type {
   WorkDocumentContent,
   WorkDocumentNode,
 } from '../features/work/work-types';
+import { frameCaretFromOrigin } from './office-collaboration-frame-caret';
 import {
   assertWorkOfficeCollaborationEditable,
   assertWorkOfficeCollaborationOrigin,
@@ -90,6 +91,7 @@ export interface WorkOfficeDocumentCollaborationChange {
   content: WorkDocumentContent;
   local: boolean;
   origin: unknown;
+  caret?: import('./office-collaboration-frame-caret').WorkOfficeCollaborationFrameCaret;
 }
 
 export interface WorkOfficeDocumentChangeDecisionOptions {
@@ -555,10 +557,12 @@ class WorkOfficeDocumentCollaborationBindingImpl
     this.#pendingLocal = true;
     this.#pendingOrigin = undefined;
     try {
+      const caret = frameCaretFromOrigin(origin);
       const change = {
         content: this.content(),
         local,
         origin,
+        ...(caret ? { caret } : {}),
       } satisfies WorkOfficeDocumentCollaborationChange;
       for (const listener of this.#listeners) listener(change);
     } catch (error) {

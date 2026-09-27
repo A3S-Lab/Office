@@ -47,6 +47,7 @@ import {
 } from 'react';
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
 import { usePlaygroundCollaborationPresenceFixture } from './collaboration-presence-fixture';
+import { usePlaygroundDocumentLiveCaretFixture } from './document-live-caret-fixture';
 import {
   type PlaygroundNativeDocumentSuggestionStage,
   usePlaygroundDocumentSuggestionFixture,
@@ -232,6 +233,12 @@ export function EditorWorkspace({
     usePlaygroundPresentationCollaborationFixture(
       presentationCollaborationFixtureEnabled,
     );
+  const liveCaretFixtureEnabled =
+    e2eFixture === 'collaboration-document-live-caret' &&
+    artifact.content.type === 'document';
+  const liveCaretFixture = usePlaygroundDocumentLiveCaretFixture(
+    liveCaretFixtureEnabled,
+  );
 
   const handleAgentRequest = useCallback(
     (request: EditorAgentRequest) => {
@@ -794,8 +801,46 @@ export function EditorWorkspace({
               />
             </div>
           </header>
+          {liveCaretFixtureEnabled && liveCaretFixture && (
+            <>
+              <output
+                className="playground-collaboration-fixture-status"
+                data-testid="native-live-caret-status"
+                data-applied={liveCaretFixture.applied}
+                data-caret-index={liveCaretFixture.caretIndex ?? ''}
+                data-peer={liveCaretFixture.peer}
+              >
+                本地插入 {liveCaretFixture.applied}
+              </output>
+              {liveCaretFixture.peer === 'source' && (
+                <button
+                  type="button"
+                  disabled={liveCaretFixture.done}
+                  onClick={liveCaretFixture.advance}
+                >
+                  插入下一字
+                </button>
+              )}
+              <OfficeEditorTestBoundary
+                boundaryId="office-editor-document-live-caret"
+                boundaryName="Office Document live caret"
+                artifact={artifact}
+                preview={preview}
+              >
+                <DocumentEditor
+                  artifactId={liveCaretFixture.collaboration.artifactId}
+                  collaboration={liveCaretFixture.collaboration}
+                  content={liveCaretFixture.content}
+                  onChange={liveCaretFixture.updateContent}
+                  preview={false}
+                  saveStatus="实时插入已同步"
+                />
+              </OfficeEditorTestBoundary>
+            </>
+          )}
           {artifact.content.type === 'document' &&
             !documentSuggestionFixtureEnabled &&
+            !liveCaretFixtureEnabled &&
             (!collaborationPresenceFixtureEnabled ||
               collaborationPresenceFixture) && (
               <OfficeEditorTestBoundary

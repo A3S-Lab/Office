@@ -415,7 +415,7 @@ fn flatten_json_value(
     Ok(())
 }
 
-fn encode_flat_json_key(kind: FlatJsonEntryKind, path: &[String]) -> UseResult<String> {
+pub(super) fn encode_flat_json_key(kind: FlatJsonEntryKind, path: &[String]) -> UseResult<String> {
     if path.is_empty() || path.iter().any(|part| invalid_json_key(part)) {
         return Err(invalid_spreadsheet_mutation(
             "A Spreadsheet cell field path contains an empty or unsafe key.",

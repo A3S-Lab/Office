@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use a3s_use_core::UseResult;
 use serde_json::Value as JsonValue;
-use yrs::{Any, Array, ArrayRef, Map, MapRef, Out, Transact};
+use yrs::{Any, Array, ArrayRef, GetString, Map, MapRef, Out, Transact};
 
 use super::json::{
     any_to_json, decode_flat_json_key, reconstruct_cell, validate_shared_cell_json,
@@ -19,6 +19,7 @@ const SHEETS_ROOT: &str = "spreadsheet.sheets";
 const CELLS_KEY: &str = "cells";
 const CELL_PRESENCE_KEY: &str = "cellPresence";
 const CELL_MODE_KEY: &str = "cellMode";
+pub(super) const CELL_TEXT_KEY: &str = "cellText";
 const DATA_ROW_LENGTHS_KEY: &str = "dataRowLengths";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -176,6 +177,28 @@ pub(super) fn read_sheet_state(
             }
         }
         _ => {}
+    }
+    if let Some(value) = record.get(&transaction, CELL_TEXT_KEY) {
+        let Out::YMap(texts) = value else {
+            return Err(invalid_shared_spreadsheet(
+                "The shared Spreadsheet cell text map is not a map.",
+            ));
+        };
+        for (encoded, value) in texts.iter(&transaction) {
+            let coordinate = decode_coordinate(encoded)?;
+            let Out::YText(text) = value else {
+                return Err(invalid_shared_spreadsheet(format!(
+                    "Shared Spreadsheet cell text '{encoded}' is not a text node."
+                )));
+            };
+            let plain = text.get_string(&transaction);
+            let cell = cells.get_mut(&coordinate).ok_or_else(|| {
+                invalid_shared_spreadsheet(format!(
+                    "Shared Spreadsheet cell text '{encoded}' has no cell."
+                ))
+            })?;
+            overlay_plain_text(cell, &plain)?;
+        }
     }
     drop(transaction);
 
@@ -401,7 +424,31 @@ pub(super) fn ordered_sheet_ids(
     Ok(ids)
 }
 
-fn encode_coordinate(row: u32, column: u32) -> String {
+pub(super) fn overlay_plain_text(cell: &mut JsonValue, plain: &str) -> UseResult<()> {
+    let object = cell.as_object_mut().ok_or_else(|| {
+        invalid_shared_spreadsheet("A shared Spreadsheet cell with text is not an object.")
+    })?;
+    if object.contains_key("f") {
+        return Err(invalid_shared_spreadsheet(
+            "A formula cell cannot own collaborative text.",
+        ));
+    }
+    match object.get("v") {
+        Some(JsonValue::Number(_)) => {
+            return Err(invalid_shared_spreadsheet(
+                "A numeric cell cannot own collaborative text.",
+            ));
+        }
+        Some(JsonValue::String(_)) | None => {
+            object.insert("v".to_owned(), JsonValue::String(plain.to_owned()));
+        }
+        _ => {}
+    }
+    object.insert("m".to_owned(), JsonValue::String(plain.to_owned()));
+    Ok(())
+}
+
+pub(super) fn encode_coordinate(row: u32, column: u32) -> String {
     format!("{row}:{column}")
 }
 
@@ -427,7 +474,7 @@ fn decode_coordinate(encoded: &str) -> UseResult<(u32, u32)> {
     }
 }
 
-fn encode_cell_field_key(row: u32, column: u32, flat_key: &str) -> UseResult<String> {
+pub(super) fn encode_cell_field_key(row: u32, column: u32, flat_key: &str) -> UseResult<String> {
     serde_json::to_string(&(row, column, flat_key)).map_err(|error| {
         super::invalid_spreadsheet_mutation(format!(
             "Failed to encode a Spreadsheet cell field identity: {error}"

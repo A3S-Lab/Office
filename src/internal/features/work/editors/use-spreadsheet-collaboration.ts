@@ -7,6 +7,7 @@ import {
   replaceWorkOfficeSpreadsheetCollaboration,
   type WorkOfficeSpreadsheetCollaborationBinding,
 } from '../../../collaboration/office-spreadsheet-collaboration';
+import type { SpreadsheetFrameCell } from './spreadsheet-collaboration-presence';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { finiteSpreadsheetSelection } from './spreadsheet-editor-support';
 
@@ -63,6 +64,9 @@ export function useSpreadsheetCollaboration({
     WorkOfficeSpreadsheetCollaborationBinding | undefined
   >(undefined);
   const [historyRevision, refreshHistory] = useState(0);
+  const [writtenCell, setWrittenCell] = useState<SpreadsheetFrameCell | null>(
+    null,
+  );
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   contentRef.current = content;
@@ -80,8 +84,15 @@ export function useSpreadsheetCollaboration({
   useEffect(() => {
     const binding = createWorkOfficeSpreadsheetCollaborationBinding(session);
     bindingRef.current = binding;
-    const unsubscribeContent = binding.subscribe(({ content: next }) => {
-      onChangeRef.current(project(next));
+    const unsubscribeContent = binding.subscribe((change) => {
+      if (change.caret?.kind === 'spreadsheet') {
+        setWrittenCell({
+          column: change.caret.column,
+          row: change.caret.row,
+          sheetId: change.caret.sheetId,
+        });
+      }
+      onChangeRef.current(project(change.content));
     });
     const unsubscribeError = binding.subscribeError((error) => {
       queueMicrotask(() => {
@@ -194,6 +205,7 @@ export function useSpreadsheetCollaboration({
     onDerivedChange: commitDerived,
     readOnly: session.mode !== 'edit',
     view,
+    writtenCell,
   };
 }
 

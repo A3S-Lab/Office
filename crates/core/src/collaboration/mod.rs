@@ -11,6 +11,7 @@ mod mutation;
 mod persistence;
 mod presence;
 mod projection;
+mod snapshot;
 mod transport;
 mod types;
 mod validation;
@@ -31,13 +32,18 @@ use document::{
 };
 use mutation::document::comment::validate_authorized_comment_update;
 use mutation::document::suggestion::validate_authorized_suggestion_update;
-use mutation::{apply_mutation, validate_mutation_contract};
+use mutation::{apply_mutation, frame_caret, validate_mutation_contract};
 use persistence::{
     compact, create_store, load_store, open_store, write_archived_operation, write_checkpoint,
     write_update_entry, HostAuthorizationRecord, LoadedStore, OperationRecord, StoreLock,
 };
 pub use presence::NativeOfficeCollaborationPresenceSession;
 use projection::project_collaboration_document;
+pub use snapshot::{
+    import_document_snapshot, live_replica_blocks_office_session, write_document_snapshot,
+    write_pdf_snapshot, write_presentation_snapshot, write_spreadsheet_snapshot,
+    DocumentSnapshotImport,
+};
 pub use transport::NativeOfficeCollaborationTransportSession;
 pub use types::*;
 use validation::{
@@ -156,6 +162,7 @@ impl NativeOfficeCollaborationStore {
             state_changed: request.initial_update.is_some(),
             origin: None,
             host_authorization: None,
+            caret: None,
         };
         let root = match create_store(&request.store, &manifest, &doc, &operation) {
             Ok(root) => root,
@@ -398,6 +405,7 @@ impl NativeOfficeCollaborationStore {
                 before_state_vector_sha256: entry.operation.before_state_vector_sha256.clone(),
                 after_state_vector_sha256: entry.operation.after_state_vector_sha256.clone(),
                 origin: entry.operation.origin.clone(),
+                caret: entry.operation.caret.clone(),
             })
             .collect::<Vec<_>>();
         let cursor_sequence = updates
@@ -643,6 +651,7 @@ impl NativeOfficeCollaborationStore {
             request.update,
             before_state_vector,
             before_state_sha256,
+            None,
         )
     }
 
@@ -788,6 +797,7 @@ impl NativeOfficeCollaborationStore {
             request.update,
             before_state_vector,
             before_state_sha256,
+            None,
         )
     }
 
@@ -818,6 +828,7 @@ impl NativeOfficeCollaborationStore {
             &request.mutation,
             request.if_state_vector.as_deref(),
         )?;
+        let caret = frame_caret(&request.mutation)?;
         if let Some(existing) = loaded.find_operation(&operation_id)? {
             assert_operation_replay(&existing, &payload_sha256)?;
             return duplicate_update_result(operation_id, &existing, &loaded);
@@ -851,6 +862,7 @@ impl NativeOfficeCollaborationStore {
             update,
             before_state_vector,
             before_state_sha256,
+            caret,
         )
     }
 
@@ -861,6 +873,7 @@ impl NativeOfficeCollaborationStore {
         update: Vec<u8>,
         before_state_vector: StateVector,
         before_state_sha256: String,
+        caret: Option<NativeOfficeCollaborationFrameCaret>,
     ) -> UseResult<NativeOfficeCollaborationApplyResult> {
         if document_update_sha256(&loaded.doc) != before_state_sha256 {
             loaded.doc = replay_update_sequence(
@@ -904,6 +917,7 @@ impl NativeOfficeCollaborationStore {
                     actor_name,
                 }
             }),
+            caret: caret.clone(),
         };
         if state_changed {
             write_update_entry(&self.root, loaded.next_sequence, &update, &operation)?;
@@ -928,6 +942,7 @@ impl NativeOfficeCollaborationStore {
             state_vector_sha256: sha256_hex(&state_vector),
             state_vector,
             checkpointed: should_checkpoint,
+            caret,
         })
     }
 
@@ -1009,6 +1024,7 @@ impl NativeOfficeCollaborationStore {
             state_changed: false,
             origin: None,
             host_authorization: None,
+            caret: None,
         };
         write_archived_operation(&self.root, &operation)?;
         Ok(NativeOfficeCollaborationCheckpointResult {
@@ -1052,6 +1068,7 @@ fn duplicate_update_result(
         state_vector_sha256: sha256_hex(&state_vector),
         state_vector,
         checkpointed: false,
+        caret: existing.caret.clone(),
     })
 }
 

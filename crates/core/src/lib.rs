@@ -38,12 +38,15 @@ mod xml_edit;
 mod xml_tree;
 
 pub use collaboration::{
-    NativeOfficeCollaborationActorKind, NativeOfficeCollaborationApplyRequest,
-    NativeOfficeCollaborationApplyResult, NativeOfficeCollaborationArtifactKind,
-    NativeOfficeCollaborationAwarenessMessage, NativeOfficeCollaborationCheckpointRequest,
-    NativeOfficeCollaborationCheckpointResult, NativeOfficeCollaborationCreateRequest,
-    NativeOfficeCollaborationDocumentChangeDecision, NativeOfficeCollaborationDocumentChangeKind,
-    NativeOfficeCollaborationDocumentParagraph, NativeOfficeCollaborationDocumentSuggestion,
+    import_document_snapshot, live_replica_blocks_office_session, write_document_snapshot,
+    write_pdf_snapshot, write_presentation_snapshot, write_spreadsheet_snapshot,
+    DocumentSnapshotImport, NativeOfficeCollaborationActorKind,
+    NativeOfficeCollaborationApplyRequest, NativeOfficeCollaborationApplyResult,
+    NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationAwarenessMessage,
+    NativeOfficeCollaborationCheckpointRequest, NativeOfficeCollaborationCheckpointResult,
+    NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationDocumentChangeDecision,
+    NativeOfficeCollaborationDocumentChangeKind, NativeOfficeCollaborationDocumentParagraph,
+    NativeOfficeCollaborationDocumentSuggestion,
     NativeOfficeCollaborationDocumentSuggestionDecision,
     NativeOfficeCollaborationDocumentSuggestionKind,
     NativeOfficeCollaborationDocumentSuggestionMatch,

@@ -18,6 +18,7 @@ export const SPREADSHEET_RECORD_CELLS = 'cells';
 export const SPREADSHEET_RECORD_CELL_PRESENCE = 'cellPresence';
 export const SPREADSHEET_RECORD_CELL_MODE = 'cellMode';
 export const SPREADSHEET_RECORD_DATA_ROW_LENGTHS = 'dataRowLengths';
+export const SPREADSHEET_RECORD_CELL_TEXT = 'cellText';
 
 type SpreadsheetCellMode = 'data' | 'celldata';
 
@@ -94,7 +95,83 @@ export function patchSpreadsheetCells(
     );
   }
 
+  syncExistingCellText(record, before, after);
   patchCellProjectionMetadata(record, rowLengths, previous, next);
+}
+
+export function overlaySpreadsheetCellText(
+  record: Y.Map<unknown>,
+  sheet: WorkSpreadsheetSheet,
+): void {
+  const texts = record.get(SPREADSHEET_RECORD_CELL_TEXT);
+  if (texts === undefined) return;
+  if (!(texts instanceof Y.Map)) invalidSharedSpreadsheet('sheet cell text');
+  for (const [coordinate, value] of texts.entries()) {
+    if (!(value instanceof Y.Text)) {
+      invalidSharedSpreadsheet(`cell text '${coordinate}'`);
+    }
+    const { row, column } = decodedCoordinate(coordinate);
+    const cell = cellAt(sheet, row, column);
+    if (!cell) invalidSharedSpreadsheet(`cell text '${coordinate}' has no cell`);
+    if (typeof cell.f === 'string' && cell.f.length > 0) {
+      invalidSharedSpreadsheet(`cell text '${coordinate}' is a formula`);
+    }
+    const text = value.toString();
+    cell.m = text;
+    if (typeof cell.v === 'string' || cell.v === undefined) cell.v = text;
+  }
+}
+
+function syncExistingCellText(
+  record: Y.Map<unknown>,
+  before: readonly SpreadsheetCellEntry[],
+  after: readonly SpreadsheetCellEntry[],
+): void {
+  const texts = record.get(SPREADSHEET_RECORD_CELL_TEXT);
+  if (!(texts instanceof Y.Map)) return;
+  const afterByCoordinate = new Map(
+    after.map((entry) => [entry.coordinate, entry]),
+  );
+  for (const entry of before) {
+    if (!afterByCoordinate.has(entry.coordinate)) texts.delete(entry.coordinate);
+  }
+  for (const entry of after) {
+    const text = texts.get(entry.coordinate);
+    if (!(text instanceof Y.Text)) continue;
+    const plain = plainCellText(entry.cell);
+    if (plain === null) {
+      texts.delete(entry.coordinate);
+      continue;
+    }
+    if (text.toString() === plain) continue;
+    text.delete(0, text.length);
+    if (plain.length > 0) text.insert(0, plain);
+  }
+}
+
+function plainCellText(cell: Cell): string | null {
+  if (typeof cell.f === 'string' && cell.f.length > 0) return null;
+  if (
+    typeof cell.v === 'string' &&
+    (cell.m === undefined || cell.m === cell.v)
+  ) {
+    return cell.v;
+  }
+  if (cell.v === undefined && typeof cell.m === 'string') return cell.m;
+  return null;
+}
+
+function cellAt(
+  sheet: WorkSpreadsheetSheet,
+  row: number,
+  column: number,
+): Cell | null {
+  const dense = sheet.data?.[row]?.[column];
+  if (dense) return dense;
+  return (
+    sheet.celldata?.find((entry) => entry.r === row && entry.c === column)?.v ??
+    null
+  );
 }
 
 export function readSpreadsheetCells(

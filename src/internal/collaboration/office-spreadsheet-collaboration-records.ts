@@ -15,7 +15,9 @@ import {
   SPREADSHEET_RECORD_CELLS,
   SPREADSHEET_RECORD_CELL_MODE,
   SPREADSHEET_RECORD_CELL_PRESENCE,
+  SPREADSHEET_RECORD_CELL_TEXT,
   SPREADSHEET_RECORD_DATA_ROW_LENGTHS,
+  overlaySpreadsheetCellText,
 } from './office-spreadsheet-collaboration-cells';
 import { invalidWorkOfficeSpreadsheetShared as invalidSharedSpreadsheet } from './office-spreadsheet-collaboration-validation';
 
@@ -34,6 +36,7 @@ const NESTED_SHEET_FIELDS = new Set([
   SPREADSHEET_RECORD_CELLS,
   SPREADSHEET_RECORD_CELL_PRESENCE,
   SPREADSHEET_RECORD_CELL_MODE,
+  SPREADSHEET_RECORD_CELL_TEXT,
   SPREADSHEET_RECORD_DATA_ROW_LENGTHS,
   SPREADSHEET_RECORD_CONFIG,
   SPREADSHEET_RECORD_FORMULA_METADATA,
@@ -189,6 +192,7 @@ export function readSpreadsheetSheetRecord(
   }
   const sheet = result as WorkSpreadsheetSheet;
   readSpreadsheetCells(record, sheet);
+  overlaySpreadsheetCellText(record, sheet);
   readOptionalCollection(
     record,
     SPREADSHEET_RECORD_IMAGES,

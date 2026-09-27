@@ -41,6 +41,12 @@ fn typed_pdf_form_value_mutations_are_browser_compatible_durable_and_idempotent(
     );
     let replaced = store.mutate(replace_request.clone()).unwrap();
     assert!(replaced.state_changed);
+    let caret = replaced.caret.clone().unwrap();
+    let caret_json = serde_json::to_value(&caret).unwrap();
+    assert_eq!(caret_json["kind"], "pdf-field");
+    assert_eq!(caret_json["fieldId"], "Applicant.Name");
+    assert!(caret_json.get("indexUtf16").is_none());
+    assert!(caret_json.get("pageIndex").is_none());
     assert_eq!(replaced.sequence, Some(2));
     assert_eq!(
         pdf_form_value(&store, "Applicant.Name"),
@@ -227,6 +233,11 @@ fn typed_pdf_annotation_mutations_merge_leaves_tombstone_and_survive_restart() {
         ))
         .unwrap();
     assert!(merged.state_changed);
+    let note = serde_json::to_value(merged.caret.unwrap()).unwrap();
+    assert_eq!(note["kind"], "pdf-annotation");
+    assert_eq!(note["annotationId"], "annotation-native-1");
+    assert!(note.get("indexUtf16").is_none());
+    assert!(note.get("pageIndex").is_none());
     let record = pdf_record(&store, "annotations", "annotation-native-1");
     assert_eq!(record["annotation"]["color"], "#ff0000");
     assert_eq!(record["annotation"]["strokeColor"], "#ff0000");

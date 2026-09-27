@@ -53,6 +53,24 @@ pub(super) fn validate_cell_mutation(
             validate_sheet_id(sheet_id)?;
             validate_batch_changes(changes)
         }
+        NativeOfficeCollaborationMutation::SpreadsheetSplice {
+            sheet_id,
+            row,
+            column,
+            index_utf16,
+            delete_utf16,
+            expected_slice,
+            insert,
+        } => {
+            validate_sheet_id(sheet_id)?;
+            validate_coordinate(*row, *column)?;
+            super::cell_text::validate_spreadsheet_splice(
+                *index_utf16,
+                *delete_utf16,
+                expected_slice,
+                insert,
+            )
+        }
         _ => Err(invalid_spreadsheet_mutation(
             "The supplied mutation is not a Spreadsheet cell mutation.",
         )),
@@ -101,6 +119,25 @@ pub(super) fn apply_cell_mutation(
         NativeOfficeCollaborationMutation::SpreadsheetBatchCells { sheet_id, changes } => {
             apply_cell_changes(doc, manifest, sheet_id, changes)
         }
+        NativeOfficeCollaborationMutation::SpreadsheetSplice {
+            sheet_id,
+            row,
+            column,
+            index_utf16,
+            delete_utf16,
+            expected_slice,
+            insert,
+        } => super::cell_text::splice_spreadsheet_text(
+            doc,
+            manifest,
+            sheet_id,
+            *row,
+            *column,
+            *index_utf16,
+            *delete_utf16,
+            expected_slice,
+            insert,
+        ),
         _ => Err(invalid_spreadsheet_mutation(
             "The supplied mutation is not a Spreadsheet cell mutation.",
         )),
@@ -258,6 +295,16 @@ fn apply_cell_changes(
         state.mode.is_none() && has_set,
         next_row_lengths,
     )?;
+    for change in changes {
+        super::cell_text::reconcile_cell_text(
+            doc,
+            manifest,
+            sheet_id,
+            change.row,
+            change.column,
+            change.next_cell.as_ref(),
+        )?;
+    }
 
     let verified = read_sheet_state(doc, manifest, sheet_id)?;
     for (coordinate, expected) in expected_after {

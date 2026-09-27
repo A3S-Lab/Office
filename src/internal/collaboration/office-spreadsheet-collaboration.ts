@@ -11,6 +11,7 @@ import {
   type WorkOfficeCollaborationSession,
   WorkOfficeCollaborationError,
 } from './office-collaboration';
+import { frameCaretFromOrigin } from './office-collaboration-frame-caret';
 import { workOfficeCollaborationJsonEqual as jsonEqual } from './office-collaboration-json';
 import {
   assertWorkOfficeSpreadsheetRootsEmpty,
@@ -26,6 +27,7 @@ export interface WorkOfficeSpreadsheetCollaborationChange {
   content: WorkSpreadsheetContent;
   local: boolean;
   origin: unknown;
+  caret?: import('./office-collaboration-frame-caret').WorkOfficeCollaborationFrameCaret;
 }
 
 export interface WorkOfficeSpreadsheetCollaborationBindingOptions {
@@ -262,10 +264,12 @@ class WorkOfficeSpreadsheetCollaborationBindingImpl
     this.#pendingLocal = true;
     this.#pendingOrigin = undefined;
     try {
+      const caret = frameCaretFromOrigin(origin);
       const change = {
         content: this.content(),
         local,
         origin,
+        ...(caret ? { caret } : {}),
       } satisfies WorkOfficeSpreadsheetCollaborationChange;
       for (const listener of this.#listeners) listener(change);
     } catch (error) {

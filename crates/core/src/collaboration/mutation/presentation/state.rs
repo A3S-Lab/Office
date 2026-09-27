@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use a3s_use_core::UseResult;
 use serde_json::{Map as JsonMap, Value as JsonValue};
-use yrs::{Any, Array, ArrayRef, Map, MapRef, Out, Transact};
+use yrs::{Any, Array, ArrayRef, GetString, Map, MapRef, Out, Transact};
 
 use super::json::{
     any_to_json, canonical_json, validate_presentation_identifier, validate_shared_element,
@@ -194,7 +194,21 @@ fn read_element_record<T: yrs::ReadTxn>(
 ) -> UseResult<PresentationElementRecord> {
     let mut object = JsonMap::new();
     let mut tombstoned = false;
+    let mut fragment_text = None;
     for (key, output) in map.iter(transaction) {
+        if key == super::text_fragment::TEXT_FRAGMENT {
+            match output {
+                Out::YText(text) => {
+                    fragment_text = Some(text.get_string(transaction));
+                    continue;
+                }
+                _ => {
+                    return Err(invalid_shared_presentation(
+                        "The presentation text fragment is not a collaborative text node.",
+                    ));
+                }
+            }
+        }
         if key == "tombstone" {
             if !matches!(output, Out::Any(Any::Bool(true))) {
                 return Err(invalid_shared_presentation(
@@ -213,6 +227,9 @@ fn read_element_record<T: yrs::ReadTxn>(
             }
         };
         object.insert(key.to_owned(), value);
+    }
+    if let Some(text) = fragment_text {
+        object.insert("text".to_owned(), JsonValue::String(text));
     }
     let value = JsonValue::Object(object);
     let identity = validate_shared_element(&value, "scene element")?;

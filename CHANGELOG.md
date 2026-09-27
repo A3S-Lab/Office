@@ -10,6 +10,21 @@
 
 ## Unreleased
 
+## 0.312.0 - 2026-09-27
+
+### Collaboration
+
+- Agent edits are one ordered session frame. A document, Markdown,
+  spreadsheet, or presentation splice returns the caret in that same result.
+  Layout only turns that position into pixels after pagination.
+- Plain-text spreadsheet cells and presentation text boxes splice inside one
+  collaborative fragment. Formula cells, numbers, and styles stay
+  field-addressed. PDF frames name the form field or annotation and do not
+  carry a text offset.
+- A host save writes the replica back into DOCX, XLSX, PPTX, or an
+  uncompressed PDF literal. Other package parts stay byte-identical. While
+  the replica is live, `office_open` does not open a second session.
+
 ## 0.311.1 - 2026-09-23
 
 ### Packaging

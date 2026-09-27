@@ -17,7 +17,11 @@ import { OfficeCollaborationPresenceProvider } from '../src/internal/features/wo
 import { MarkdownSourcePresenceLayer } from '../src/internal/features/work/editors/office-collaboration-presence-ui';
 import { PdfCollaborationPresenceLayer } from '../src/internal/features/work/editors/pdf-collaboration-presence';
 import { PresentationCollaborationPresenceLayer } from '../src/internal/features/work/editors/presentation-collaboration-presence';
-import { spreadsheetPresenceProjection } from '../src/internal/features/work/editors/spreadsheet-collaboration-presence';
+import {
+  spreadsheetPresenceProjection,
+  spreadsheetWrittenCellProjection,
+  useSpreadsheetCollaborationPresenceProjection,
+} from '../src/internal/features/work/editors/spreadsheet-collaboration-presence';
 import type {
   WorkSlideElement,
   WorkSpreadsheetContent,
@@ -93,6 +97,61 @@ test('projects spreadsheet participants through the native workbook Presence mod
   } finally {
     fixture.destroy();
   }
+});
+
+test('highlights the cell a frame wrote and does not blink when that cell is unchanged', () => {
+  const content: WorkSpreadsheetContent = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-data',
+        name: 'Data',
+        row: 20,
+        column: 10,
+        celldata: [],
+      },
+    ],
+  };
+  const cell = { sheetId: 'sheet-data', row: 1, column: 0 };
+  const written = spreadsheetWrittenCellProjection(content, cell, {
+    kind: 'spreadsheet',
+    sheetId: 'somewhere-else',
+    row: 9,
+    column: 9,
+  });
+  expect(written).toEqual([
+    {
+      sheetId: 'sheet-data',
+      username: 'Agent',
+      userId: 'a3s-office:frame-cell',
+      color: '#6d28d9',
+      selection: { r: 1, c: 0 },
+    },
+  ]);
+  expect(JSON.stringify(spreadsheetWrittenCellProjection(content, cell))).toBe(
+    JSON.stringify(written),
+  );
+
+  const adds: number[] = [];
+  const removes: number[] = [];
+  const workbook = {
+    addPresences: () => adds.push(1),
+    removePresences: () => removes.push(1),
+  };
+  function Probe({ tick }: { tick: number }) {
+    useSpreadsheetCollaborationPresenceProjection({
+      content,
+      frameCell: cell,
+      refreshKey: 0,
+      workbook: workbook as never,
+    });
+    return <span>{tick}</span>;
+  }
+  const view = render(<Probe tick={0} />);
+  view.rerender(<Probe tick={1} />);
+  expect(adds).toEqual([1]);
+  expect(removes).toEqual([]);
+  view.unmount();
 });
 
 test('projects presentation object geometry without disturbing local focus', async () => {

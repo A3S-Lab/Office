@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { paintFrameCaretAfterLayout } from '../../../collaboration/office-collaboration-frame-caret';
 import type {
   WorkOfficeCollaborationParticipant,
   WorkOfficeCollaborationPresence,
@@ -175,22 +176,32 @@ interface OfficePresenceRect {
 export function OfficeTiptapPresenceLayer({
   containerRef,
   editor,
+  frameCaretHead = null,
   kind,
+  layoutSettled = true,
   markdownSurface,
 }: {
   containerRef: RefObject<HTMLElement | null>;
   editor: Editor | null;
+  /** Model position from the collaboration frame. Not an awareness location. */
+  frameCaretHead?: number | null;
   kind: 'document' | 'markdown';
+  /** False until pagination of the same update has settled. */
+  layoutSettled?: boolean;
   markdownSurface?: 'visual';
 }) {
   const remoteParticipants = useOfficeRemoteParticipants();
   const [geometry, setGeometry] = useState<
     readonly OfficeTextPresenceGeometry[]
   >([]);
+  const [frameCaret, setFrameCaret] = useState<OfficePresenceRect | null>(
+    null,
+  );
 
   useLayoutEffect(() => {
     if (!editor || editor.isDestroyed) {
       setGeometry([]);
+      setFrameCaret(null);
       return;
     }
     let frame: number | null = null;
@@ -203,6 +214,14 @@ export function OfficeTiptapPresenceLayer({
           remoteParticipants,
           kind,
           markdownSurface,
+        ),
+      );
+      setFrameCaret(
+        measureFrameCaret(
+          editor,
+          containerRef.current,
+          frameCaretHead,
+          layoutSettled,
         ),
       );
     };
@@ -227,15 +246,31 @@ export function OfficeTiptapPresenceLayer({
       window.removeEventListener('scroll', schedule, true);
       observer?.disconnect();
     };
-  }, [containerRef, editor, kind, markdownSurface, remoteParticipants]);
+  }, [
+    containerRef,
+    editor,
+    frameCaretHead,
+    kind,
+    layoutSettled,
+    markdownSurface,
+    remoteParticipants,
+  ]);
 
-  if (!geometry.length) return null;
+  if (!geometry.length && !frameCaret) return null;
   return (
     <div
       className="work-office-remote-presence-layer"
       data-presence-surface={kind}
       aria-hidden="true"
     >
+      {frameCaret ? (
+        <span
+          className="work-office-remote-caret"
+          data-frame-caret="true"
+          key="frame-caret"
+          style={frameCaret}
+        />
+      ) : null}
       {geometry.flatMap(({ caret, participant, ranges }) => {
         const style = officePresenceColorStyle(participant);
         return [
@@ -378,6 +413,60 @@ export function MarkdownSourcePresenceLayer({
       })}
     </div>
   );
+}
+
+function measureFrameCaret(
+  editor: Editor,
+  container: HTMLElement | null,
+  head: number | null,
+  layoutSettled: boolean,
+): OfficePresenceRect | null {
+  if (!layoutSettled || head === null || !container?.isConnected || editor.isDestroyed) {
+    return null;
+  }
+  const containerBounds = container.getBoundingClientRect();
+  if (containerBounds.width <= 0 || containerBounds.height <= 0) return null;
+  const scaleX = safeElementScale(containerBounds.width, container.offsetWidth);
+  const scaleY = safeElementScale(containerBounds.height, container.offsetHeight);
+  try {
+    const caretBounds = editor.view.coordsAtPos(head);
+    const local = localPresenceRect(
+      {
+        height: Math.max(1, caretBounds.bottom - caretBounds.top),
+        left: caretBounds.left,
+        top: caretBounds.top,
+        width: 2,
+      },
+      container,
+      containerBounds,
+      scaleX,
+      scaleY,
+    );
+    const painted = paintFrameCaretAfterLayout({
+      documentSize: editor.state.doc.content.size,
+      head,
+      layoutSettled: true,
+      lines: [
+        {
+          bottom: local.top + local.height,
+          from: head,
+          left: local.left,
+          right: local.left + local.width,
+          to: head,
+          top: local.top,
+        },
+      ],
+    });
+    if (!painted || painted.head !== head) return null;
+    return {
+      height: painted.height,
+      left: painted.left,
+      top: painted.top,
+      width: painted.width,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function measureTiptapPresence(

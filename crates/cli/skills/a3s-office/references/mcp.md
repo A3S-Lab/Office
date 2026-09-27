@@ -149,7 +149,11 @@ current source, and a drifted base writes nothing. Prefer
 `markdown-replace-text` (with find-hit `indexUtf16` under concurrent peers) or
 `markdown-splice` so a live replica is not overwritten. `markdown-splice`
 requires `expectedSlice` equal to the UTF-16 range being deleted, or empty when
-`deleteUtf16` is 0; a drifted slice writes nothing. Splice positions are
+`deleteUtf16` is 0; a drifted slice writes nothing. The same result carries
+`caret` (`kind: markdown`, `indexUtf16` just after the inserted text). Do not
+send a follow-up location message. A stale `ifStateVectorBase64` fails closed
+so a concurrent insert before that caret is re-read instead of landing on the
+old index. Splice positions are
 UTF-16 code-unit offsets and may not split a surrogate pair:
 
 ```json
@@ -170,6 +174,12 @@ UTF-16 code-unit offsets and may not split a surrogate pair:
   "ifStateVectorBase64": "..."
 }
 ```
+
+`document-splice` edits one `Y.XmlText` inside `paragraphId` / `textId`. It returns
+`caret` (`kind: document`, same `paragraphId` and `textId`, `indexUtf16` just
+after the inserted text) in that result. It does not rotate `textId`. A drifted
+`textId` or `expectedSlice` writes nothing. Do not send a follow-up location
+message. `document-replace-text` remains the substitution that rotates `textId`.
 
 Document exact replacement edits ProseMirror `Y.XmlText` in place and fails
 unless `expectedMatches` equals the current non-overlapping match count. Locate

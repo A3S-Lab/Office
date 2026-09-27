@@ -360,10 +360,74 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
     assert!(spliced.state_changed);
     assert_eq!(spliced.sequence, Some(3));
     assert_eq!(markdown_source(&store), "A🦀B");
+    assert_eq!(
+        spliced.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Markdown { index_utf16: 3 })
+    );
+    assert!(store
+        .inspect()
+        .unwrap()
+        .root_names
+        .iter()
+        .all(|name| !name.contains("caret")));
+    let splice_event = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(2),
+            limit: 1,
+        })
+        .unwrap();
+    assert_eq!(splice_event.updates[0].caret, spliced.caret);
 
     let replay = store.mutate(spliced_request).unwrap();
     assert!(replay.duplicate);
     assert_eq!(replay.sequence, Some(3));
+    assert_eq!(replay.caret, spliced.caret);
+
+    let seen = spliced.state_vector.clone();
+    let human = store
+        .mutate(mutation_request(
+            "typed-splice-human",
+            NativeOfficeCollaborationMutation::MarkdownSplice {
+                index_utf16: 0,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "X".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        human.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Markdown { index_utf16: 1 })
+    );
+    let mut stale_next = mutation_request(
+        "typed-splice-stale-vector",
+        NativeOfficeCollaborationMutation::MarkdownSplice {
+            index_utf16: 3,
+            delete_utf16: 0,
+            expected_slice: String::new(),
+            insert: "中".to_owned(),
+        },
+    );
+    stale_next.if_state_vector = Some(seen);
+    let stale_vector = store.mutate(stale_next).unwrap_err();
+    assert_eq!(stale_vector.code, "office.collaboration.stale_state");
+    assert_eq!(markdown_source(&store), "XA🦀B");
+    let shifted = store
+        .mutate(mutation_request(
+            "typed-splice-shifted",
+            NativeOfficeCollaborationMutation::MarkdownSplice {
+                index_utf16: 4,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "中".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        shifted.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Markdown { index_utf16: 5 })
+    );
+    assert_eq!(markdown_source(&store), "XA🦀中B");
 
     let before_stale_splice = store.inspect().unwrap();
     let stale_splice = store
@@ -381,7 +445,7 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
         stale_splice.code,
         "office.collaboration.mutation_match_conflict"
     );
-    assert_eq!(markdown_source(&store), "A🦀B");
+    assert_eq!(markdown_source(&store), "XA🦀中B");
     let after_stale_splice = store.inspect().unwrap();
     assert_eq!(
         after_stale_splice.current_sequence,
@@ -397,7 +461,7 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
         .mutate(mutation_request(
             "typed-splice-invalid",
             NativeOfficeCollaborationMutation::MarkdownSplice {
-                index_utf16: 2,
+                index_utf16: 3,
                 delete_utf16: 0,
                 expected_slice: String::new(),
                 insert: "!".to_owned(),
@@ -417,7 +481,7 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
 
     drop(store);
     let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
-    assert_eq!(markdown_source(&reopened), "A🦀B");
+    assert_eq!(markdown_source(&reopened), "XA🦀中B");
     let events = reopened
         .events(NativeOfficeCollaborationEventsRequest {
             after_sequence: Some(1),
@@ -612,6 +676,274 @@ fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
         .updates
         .iter()
         .all(|event| event.operation_kind == NativeOfficeCollaborationOperationKind::Mutate));
+}
+
+#[test]
+fn document_splice_returns_the_caret_without_rotating_text_id() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("document-splice");
+    let store = NativeOfficeCollaborationStore::create(document_create_request(&root)).unwrap();
+    store
+        .apply(document_apply_request(
+            "bootstrap-browser-document",
+            STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+
+    let splice_request = document_mutation_request(
+        "document-splice-1",
+        NativeOfficeCollaborationMutation::DocumentSplice {
+            paragraph_id: "00000001".to_owned(),
+            text_id: "00000002".to_owned(),
+            index_utf16: 6,
+            delete_utf16: 2,
+            expected_slice: "😀".to_owned(),
+            insert: "🦀".to_owned(),
+        },
+    );
+    let spliced = store.mutate(splice_request.clone()).unwrap();
+    assert_eq!(
+        spliced.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Document {
+            paragraph_id: "00000001".to_owned(),
+            text_id: "00000002".to_owned(),
+            index_utf16: 8,
+        })
+    );
+    assert_eq!(
+        document_state(&store).paragraphs,
+        vec![document_paragraph("00000001", "00000002", "Hello 🦀 world")]
+    );
+    let mut package_parts = std::collections::BTreeMap::new();
+    package_parts.insert(
+        "word/document.xml".to_owned(),
+        "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:w14=\"http://schemas.microsoft.com/office/word/2010/wordml\"><w:body><w:p w14:paraId=\"00000001\"><w:r><w:t>Hello 😀 world</w:t></w:r></w:p></w:body></w:document>".as_bytes().to_vec(),
+    );
+    package_parts.insert("customXml/item1.xml".to_owned(), b"<kept/>".to_vec());
+    let snapshot = super::snapshot::write_document_snapshot(
+        package_parts.clone(),
+        &[("00000001", "Hello 🦀 world")],
+    )
+    .unwrap();
+    let saved = String::from_utf8(snapshot["word/document.xml"].clone()).unwrap();
+    assert!(saved.contains("Hello 🦀 world"));
+    assert!(!saved.contains('😀'));
+    assert_eq!(
+        snapshot["customXml/item1.xml"],
+        package_parts["customXml/item1.xml"]
+    );
+    let splice_event = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(1),
+            limit: 1,
+        })
+        .unwrap();
+    assert_eq!(splice_event.updates[0].caret, spliced.caret);
+    let replay = store.mutate(splice_request).unwrap();
+    assert!(replay.duplicate);
+    assert_eq!(replay.caret, spliced.caret);
+
+    let stale_text_id = store
+        .mutate(document_mutation_request(
+            "document-splice-stale-text-id",
+            NativeOfficeCollaborationMutation::DocumentSplice {
+                paragraph_id: "00000001".to_owned(),
+                text_id: "00000003".to_owned(),
+                index_utf16: 8,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "!".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(
+        stale_text_id.code,
+        "office.collaboration.mutation_match_conflict"
+    );
+    assert_eq!(
+        document_state(&store).paragraphs,
+        vec![document_paragraph("00000001", "00000002", "Hello 🦀 world")]
+    );
+
+    let seen = spliced.state_vector.clone();
+    store
+        .mutate(document_mutation_request(
+            "document-splice-human",
+            NativeOfficeCollaborationMutation::DocumentSplice {
+                paragraph_id: "00000001".to_owned(),
+                text_id: "00000002".to_owned(),
+                index_utf16: 0,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "X".to_owned(),
+            },
+        ))
+        .unwrap();
+    let mut stale_next = document_mutation_request(
+        "document-splice-stale-vector",
+        NativeOfficeCollaborationMutation::DocumentSplice {
+            paragraph_id: "00000001".to_owned(),
+            text_id: "00000002".to_owned(),
+            index_utf16: 8,
+            delete_utf16: 0,
+            expected_slice: String::new(),
+            insert: "中".to_owned(),
+        },
+    );
+    stale_next.if_state_vector = Some(seen);
+    let stale_vector = store.mutate(stale_next).unwrap_err();
+    assert_eq!(stale_vector.code, "office.collaboration.stale_state");
+    let shifted = store
+        .mutate(document_mutation_request(
+            "document-splice-shifted",
+            NativeOfficeCollaborationMutation::DocumentSplice {
+                paragraph_id: "00000001".to_owned(),
+                text_id: "00000002".to_owned(),
+                index_utf16: 9,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "中".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        shifted.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Document {
+            paragraph_id: "00000001".to_owned(),
+            text_id: "00000002".to_owned(),
+            index_utf16: 10,
+        })
+    );
+    assert_eq!(
+        document_state(&store).paragraphs,
+        vec![document_paragraph(
+            "00000001",
+            "00000002",
+            "XHello 🦀中 world"
+        )]
+    );
+}
+
+#[test]
+fn native_agent_inserts_cjk_graphemes_for_two_peers() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("document-live");
+    let store = NativeOfficeCollaborationStore::create(document_create_request(&root)).unwrap();
+    store
+        .apply(document_apply_request(
+            "bootstrap-browser-document",
+            STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+
+    let wrapping = "字".repeat(80);
+    let before_setup = store.synchronize(None).unwrap().state_vector;
+    store
+        .mutate(document_splice("document-live-setup", 14, 0, "", &wrapping))
+        .unwrap();
+    let initial = store.synchronize(Some(&before_setup)).unwrap();
+    let full = store.synchronize(None).unwrap();
+
+    let mut frames = Vec::new();
+    for (operation_id, index, grapheme) in [
+        ("document-live-zhong", 94_u32, "中"),
+        ("document-live-wen", 95, "文"),
+    ] {
+        let before = store.synchronize(None).unwrap().state_vector;
+        let applied = store
+            .mutate(document_splice(operation_id, index, 0, "", grapheme))
+            .unwrap();
+        let update = store.synchronize(Some(&before)).unwrap();
+        assert_eq!(
+            applied.caret,
+            Some(NativeOfficeCollaborationFrameCaret::Document {
+                paragraph_id: "00000001".to_owned(),
+                text_id: "00000002".to_owned(),
+                index_utf16: index + 1,
+            })
+        );
+        frames.push(serde_json::json!({
+            "updateBase64": STANDARD.encode(&update.update),
+            "caret": applied.caret,
+        }));
+    }
+    let drifted = store
+        .mutate(document_splice("document-live-drift", 0, 1, "X", "!"))
+        .unwrap_err();
+    assert_eq!(drifted.code, "office.collaboration.mutation_match_conflict");
+
+    let peer_root = temp.path().join("document-live-peer");
+    let mut peer_create = document_create_request(&peer_root);
+    peer_create.client_id = Some(900_083);
+    peer_create.operation_id = "create-document-live-peer".to_owned();
+    peer_create.initial_update = Some(full.update.clone());
+    let peer = NativeOfficeCollaborationStore::create(peer_create).unwrap();
+    for (index, frame) in frames.iter().enumerate() {
+        let encoded = frame["updateBase64"].as_str().unwrap();
+        peer.apply(document_apply_request(
+            &format!("document-live-peer-{index}"),
+            STANDARD.decode(encoded).unwrap(),
+        ))
+        .unwrap();
+    }
+    let expected = format!("Hello 😀 world{wrapping}中文");
+    assert_eq!(
+        document_state(&store).paragraphs,
+        vec![document_paragraph("00000001", "00000002", &expected)]
+    );
+    assert_eq!(
+        document_state(&peer).paragraphs,
+        document_state(&store).paragraphs
+    );
+
+    let seen = store.synchronize(None).unwrap().state_vector;
+    store
+        .mutate(document_splice("document-live-human", 0, 0, "", "人"))
+        .unwrap();
+    let mut stale = document_splice("document-live-stale", 96, 0, "", "!");
+    stale.if_state_vector = Some(seen);
+    let stale_state = store.mutate(stale).unwrap_err();
+    assert_eq!(stale_state.code, "office.collaboration.stale_state");
+    let shifted = store
+        .mutate(document_splice("document-live-shifted", 97, 0, "", "!"))
+        .unwrap();
+    assert_eq!(
+        shifted.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Document {
+            paragraph_id: "00000001".to_owned(),
+            text_id: "00000002".to_owned(),
+            index_utf16: 98,
+        })
+    );
+
+    let fixture = serde_json::json!({
+        "initialUpdateBase64": STANDARD.encode(full.update),
+        "setupUpdateBase64": STANDARD.encode(initial.update),
+        "frames": frames,
+    });
+    let fixture_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../target/native-document-live-frames.json");
+    fs::write(&fixture_path, serde_json::to_vec_pretty(&fixture).unwrap()).unwrap();
+}
+
+fn document_splice(
+    operation_id: &str,
+    index_utf16: u32,
+    delete_utf16: u32,
+    expected_slice: &str,
+    insert: &str,
+) -> NativeOfficeCollaborationMutationRequest {
+    document_mutation_request(
+        operation_id,
+        NativeOfficeCollaborationMutation::DocumentSplice {
+            paragraph_id: "00000001".to_owned(),
+            text_id: "00000002".to_owned(),
+            index_utf16,
+            delete_utf16,
+            expected_slice: expected_slice.to_owned(),
+            insert: insert.to_owned(),
+        },
+    )
 }
 
 #[test]

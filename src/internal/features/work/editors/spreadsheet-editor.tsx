@@ -74,7 +74,10 @@ import {
   spreadsheetCellBordersAt,
   spreadsheetRenderableDiagonalBorders,
 } from './spreadsheet-cell-border';
-import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-collaboration-presence';
+import {
+  type SpreadsheetFrameCell,
+  useSpreadsheetCollaborationPresenceProjection,
+} from './spreadsheet-collaboration-presence';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   createSpreadsheetEditorExtensions,
@@ -270,6 +273,7 @@ function CollaborativeSpreadsheetEditor(
       content={shared.content}
       collaborationHistory={shared.history}
       collaborationView={shared.view}
+      collaborationWrittenCell={shared.writtenCell}
       onChange={shared.onChange}
       onDerivedChange={shared.onDerivedChange}
       preview={props.preview || shared.readOnly}
@@ -280,6 +284,7 @@ function CollaborativeSpreadsheetEditor(
 interface SpreadsheetEditorSurfaceProps extends SpreadsheetEditorProps {
   collaborationHistory?: SpreadsheetCollaborationHistory;
   collaborationView?: SpreadsheetCollaborationViewController;
+  collaborationWrittenCell?: SpreadsheetFrameCell | null;
   onDerivedChange?: (content: WorkSpreadsheetContent) => void;
 }
 
@@ -288,6 +293,7 @@ function SpreadsheetEditorSurface({
   content,
   collaborationHistory,
   collaborationView,
+  collaborationWrittenCell = null,
   kernelWasmUrl,
   preview,
   saveStatus = '已自动保存',
@@ -1266,6 +1272,7 @@ function SpreadsheetEditorSurface({
   useOfficePublishPresenceLocation(spreadsheetPresenceLocation);
   useSpreadsheetCollaborationPresenceProjection({
     content: materializedContent,
+    frameCell: collaborationWrittenCell,
     workbook: workbookInstance,
   });
   const toolbarRow = toolbarSelection.row_focus ?? toolbarSelection.row[0];

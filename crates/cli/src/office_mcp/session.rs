@@ -130,6 +130,7 @@ impl NativeOfficeSessions {
             }
         }
 
+        a3s_office::live_replica_blocks_office_session(path.as_ref())?;
         let editor = if create {
             NativeOfficeEditor::create(path).await?
         } else {
@@ -255,5 +256,34 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(duplicate_create.code, "use.office.session_exists");
+    }
+
+    #[tokio::test]
+    async fn office_open_refuses_a_package_whose_replica_is_live() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("letter.docx");
+        std::fs::write(&path, b"snapshot").unwrap();
+        let document = "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:w14=\"http://schemas.microsoft.com/office/word/2010/wordml\"><w:body><w:p w14:paraId=\"00000001\" w14:textId=\"00000002\"><w:r><w:t>Hello</w:t></w:r></w:p></w:body></w:document>";
+        let mut parts = std::collections::BTreeMap::new();
+        parts.insert("word/document.xml".to_owned(), document.as_bytes().to_vec());
+        a3s_office::import_document_snapshot(
+            &path,
+            &parts,
+            &temp.path().join("replica"),
+            "letter-artifact",
+        )
+        .unwrap();
+
+        let sessions = NativeOfficeSessions::default();
+        let opened = sessions
+            .open_existing("letter".to_string(), &path, false)
+            .await
+            .unwrap_err();
+        assert_eq!(opened.code, "office.collaboration.replica_live");
+        let created = sessions
+            .create("fresh".to_string(), &path)
+            .await
+            .unwrap_err();
+        assert_eq!(created.code, "office.collaboration.replica_live");
     }
 }

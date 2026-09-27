@@ -89,6 +89,10 @@ active element (`containerKind`, `containerId`, `elementId`). Pass
 only that text; add `occurrence` to change one match. For realtime peers, also
 pass the hit's `containerKind`, `containerId`, `elementId`, and `indexUtf16` so
 the mutation fails closed if that span drifted while the count stayed equal.
+Typing inside one text box uses `presentation-splice` on that element's
+collaborative text fragment: `indexUtf16`, `deleteUtf16`, `expectedSlice`, and
+`insert`. The result caret is the index after the insert in the same element.
+An unrelated field edit does not move that text. A drifted slice writes nothing.
 Use `collab mutate` or
 `office_collaboration_mutate`. `presentation-create-element` accepts one complete
 element in a stable `slide`, `master`, or `layout` container and may include an

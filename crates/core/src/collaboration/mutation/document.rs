@@ -32,6 +32,11 @@ pub(super) fn validate_document_mutation(
             text_id.as_deref(),
             *index_utf16,
         ),
+        NativeOfficeCollaborationMutation::DocumentSplice {
+            paragraph_id,
+            text_id,
+            ..
+        } => text::validate_document_splice(paragraph_id, text_id),
         NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
             paragraph_id,
             expected_text_id,
@@ -100,6 +105,23 @@ pub(super) fn apply_document_mutation(
             paragraph_id.as_deref(),
             text_id.as_deref(),
             *index_utf16,
+        ),
+        NativeOfficeCollaborationMutation::DocumentSplice {
+            paragraph_id,
+            text_id,
+            index_utf16,
+            delete_utf16,
+            expected_slice,
+            insert,
+        } => text::splice_document_text(
+            doc,
+            manifest,
+            paragraph_id,
+            text_id,
+            *index_utf16,
+            *delete_utf16,
+            expected_slice,
+            insert,
         ),
         NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
             paragraph_id,

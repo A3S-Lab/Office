@@ -117,6 +117,7 @@ export type WorkOfficeCollaborationErrorCode =
   | 'office.collaboration.bootstrap_ambiguous'
   | 'office.collaboration.bootstrap_invalid'
   | 'office.collaboration.content_invalid'
+  | 'office.collaboration.frame_caret_invalid'
   | 'office.collaboration.identifier_invalid'
   | 'office.collaboration.kind_invalid'
   | 'office.collaboration.kind_mismatch'

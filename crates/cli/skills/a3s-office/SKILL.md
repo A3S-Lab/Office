@@ -104,7 +104,9 @@ interactive A3S Test session unless an explicit adapter has been reviewed.
    `expectedMarkdown` equal to the source just read; a drifted base fails
    closed and writes nothing. `markdown-splice` requires `expectedSlice` equal to
    the UTF-16 range being deleted, or empty when `deleteUtf16` is 0; a drifted
-   slice fails closed and writes nothing.    Prefer `markdown-replace-text` or a
+   slice fails closed and writes nothing. The splice result carries
+   `caret.indexUtf16` just after the inserted text; do not send a follow-up
+   location message. Prefer `markdown-replace-text` or a
    guarded splice so a live replica is not overwritten. For a live Spreadsheet replica,
    `collab find` returns `sheetId`, `row`, and `column`; edit that cell with
    `spreadsheet-set-cell` and pass `expectedCell` equal to the current leaf, or

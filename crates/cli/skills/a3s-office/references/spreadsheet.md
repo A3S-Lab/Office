@@ -47,6 +47,10 @@ conflict leaves every cell and the durable event cursor unchanged. See
 request envelope and JSON example.
 Read the stable edit address from `collab read` or `office_collaboration_read`,
 then patch only that `sheetId` / `row` / `column` cell. Do not overwrite the whole document.
+Typing inside a plain-text cell uses `spreadsheet-splice` (`indexUtf16`,
+`deleteUtf16`, `expectedSlice`, `insert`). The result caret is that cell plus
+`indexUtf16` just after the insert. Formula cells, cached numbers, and styles
+stay on `spreadsheet-set-cell`. A drifted slice writes nothing.
 
 ## Values and Formulas
 

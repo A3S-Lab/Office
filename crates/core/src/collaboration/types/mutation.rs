@@ -262,6 +262,18 @@ pub enum NativeOfficeCollaborationMutation {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         index_utf16: Option<u32>,
     },
+    /// Splice one `Y.XmlText` inside a stable paragraph. `expected_slice` must
+    /// equal the UTF-16 range being deleted, or be empty when `delete_utf16`
+    /// is 0. A drifted slice or `text_id` writes nothing. Insert and delete
+    /// that stay inside the node do not rotate `text_id`.
+    DocumentSplice {
+        paragraph_id: String,
+        text_id: String,
+        index_utf16: u32,
+        delete_utf16: u32,
+        expected_slice: String,
+        insert: String,
+    },
     /// Replace the complete visible text of one stable plain paragraph after
     /// matching its current Word text identity and exact text. This is the
     /// preferred conflict-local operation after reading a native projection.
@@ -381,6 +393,19 @@ pub enum NativeOfficeCollaborationMutation {
         sheet_id: String,
         changes: Vec<NativeOfficeCollaborationSpreadsheetCellChange>,
     },
+    /// Splice the plain text of one cell. `expectedSlice` must equal the
+    /// deleted UTF-16 range, or be empty when `deleteUtf16` is 0. Formula
+    /// cells, cached numbers, and styles stay field-addressed and are not
+    /// spliced. A drifted slice writes nothing.
+    SpreadsheetSplice {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        index_utf16: u32,
+        delete_utf16: u32,
+        expected_slice: String,
+        insert: String,
+    },
     /// Create one scene element inside a slide, master, or layout. The full
     /// element is fingerprinted in the browser-compatible record-claims root,
     /// preventing different records from converging under one stable ID.
@@ -416,6 +441,19 @@ pub enum NativeOfficeCollaborationMutation {
         element_id: String,
         expected_after_element_id: Option<String>,
         after_element_id: Option<String>,
+    },
+    /// Insert or delete inside one scene element's collaborative text fragment.
+    /// The address is the element. `expectedSlice` is the deleted UTF-16 range,
+    /// empty when `deleteUtf16` is 0. The caret is the index after the insert
+    /// in that same fragment. This does not replace the element record.
+    PresentationSplice {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element_id: String,
+        index_utf16: u32,
+        delete_utf16: u32,
+        expected_slice: String,
+        insert: String,
     },
     /// Replace non-overlapping matches inside scene-element `text` fields.
     /// Locate first with `collab find` / `office_collaboration_find`, then pass

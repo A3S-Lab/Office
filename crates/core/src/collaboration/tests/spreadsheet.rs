@@ -62,6 +62,21 @@ fn typed_spreadsheet_cells_merge_leaves_preserve_projection_and_survive_restart(
     let value = store.mutate(value_request.clone()).unwrap();
     assert!(value.state_changed);
     assert_eq!(value.sequence, Some(2));
+    assert_eq!(
+        value.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Spreadsheet {
+            sheet_id: "sheet-data".to_owned(),
+            row: 1,
+            column: 0,
+            index_utf16: None,
+        })
+    );
+    assert!(store
+        .inspect()
+        .unwrap()
+        .root_names
+        .iter()
+        .all(|name| !name.contains("caret")));
 
     let style = store
         .mutate(spreadsheet_mutation_request(
@@ -649,6 +664,163 @@ fn find_lists_spreadsheet_display_text_by_coordinate() {
     let limited = store.find_text("Draft", 1).unwrap().1;
     assert_eq!(limited.match_count, 1);
     assert!(!limited.truncated);
+}
+
+#[test]
+fn spreadsheet_splice_is_cell_local_and_keeps_formula_cells_field_addressed() {
+    let temp = tempfile::tempdir().unwrap();
+    let first = initialized_spreadsheet_store(&temp.path().join("first"));
+    let text = json!({ "v": "Hello", "m": "Hello" });
+    first
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-create-plain-text",
+            NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+                sheet_id: "sheet-data".to_owned(),
+                row: 6,
+                column: 0,
+                expected_cell: None,
+                next_cell: text.clone(),
+            },
+        ))
+        .unwrap();
+
+    let mut peer_request = spreadsheet_create_request(&temp.path().join("peer"));
+    peer_request.client_id = Some(900_073);
+    peer_request.operation_id = "create-spreadsheet-peer".to_owned();
+    peer_request.initial_update = Some(first.synchronize(None).unwrap().update);
+    let second = NativeOfficeCollaborationStore::create(peer_request).unwrap();
+
+    let inserted = first
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-splice-cjk",
+            NativeOfficeCollaborationMutation::SpreadsheetSplice {
+                sheet_id: "sheet-data".to_owned(),
+                row: 6,
+                column: 0,
+                index_utf16: 5,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "中".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert_eq!(
+        inserted.caret,
+        Some(NativeOfficeCollaborationFrameCaret::Spreadsheet {
+            sheet_id: "sheet-data".to_owned(),
+            row: 6,
+            column: 0,
+            index_utf16: Some(6),
+        })
+    );
+    assert!(first
+        .inspect()
+        .unwrap()
+        .root_names
+        .iter()
+        .all(|name| !name.contains("caret")));
+
+    second
+        .apply(spreadsheet_apply_request(
+            "apply-first-splice",
+            first.synchronize(None).unwrap().update,
+        ))
+        .unwrap();
+    second
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-splice-follow",
+            NativeOfficeCollaborationMutation::SpreadsheetSplice {
+                sheet_id: "sheet-data".to_owned(),
+                row: 6,
+                column: 0,
+                index_utf16: 6,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "文".to_owned(),
+            },
+        ))
+        .unwrap();
+    first
+        .apply(spreadsheet_apply_request(
+            "apply-second-splice",
+            second
+                .synchronize(Some(&first.synchronize(None).unwrap().state_vector))
+                .unwrap()
+                .update,
+        ))
+        .unwrap();
+    assert_eq!(projected_cell_display(&first, 6, 0), "Hello中文");
+    assert_eq!(projected_cell_display(&second, 6, 0), "Hello中文");
+
+    first
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-style-after-splice",
+            NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+                sheet_id: "sheet-data".to_owned(),
+                row: 6,
+                column: 0,
+                expected_cell: Some(json!({ "v": "Hello中文", "m": "Hello中文" })),
+                next_cell: json!({ "v": "Hello中文", "m": "Hello中文", "bg": "#DBEAFE" }),
+            },
+        ))
+        .unwrap();
+    assert_eq!(projected_cell_display(&first, 6, 0), "Hello中文");
+    assert_eq!(
+        cell_string(&first, "sheet-data", 6, 0, &["bg"]),
+        Some("#DBEAFE".to_owned())
+    );
+
+    let stale = first
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-splice-stale",
+            NativeOfficeCollaborationMutation::SpreadsheetSplice {
+                sheet_id: "sheet-data".to_owned(),
+                row: 6,
+                column: 0,
+                index_utf16: 0,
+                delete_utf16: 1,
+                expected_slice: "X".to_owned(),
+                insert: "Y".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(stale.code, "office.collaboration.mutation_match_conflict");
+    assert_eq!(projected_cell_display(&first, 6, 0), "Hello中文");
+
+    let formula = first
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-splice-formula",
+            NativeOfficeCollaborationMutation::SpreadsheetSplice {
+                sheet_id: "sheet-data".to_owned(),
+                row: 1,
+                column: 0,
+                index_utf16: 0,
+                delete_utf16: 0,
+                expected_slice: String::new(),
+                insert: "中".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(formula.code, "office.collaboration.mutation_match_conflict");
+}
+
+fn projected_cell_display(store: &NativeOfficeCollaborationStore, row: u32, column: u32) -> String {
+    let NativeOfficeCollaborationProjectedContent::Spreadsheet { sheets } =
+        store.project().unwrap().content
+    else {
+        panic!("spreadsheet projection");
+    };
+    let cell = sheets
+        .iter()
+        .find(|sheet| sheet.sheet_id == "sheet-data")
+        .and_then(|sheet| {
+            sheet
+                .cells
+                .iter()
+                .find(|cell| cell.row == row && cell.column == column)
+        })
+        .expect("projected cell");
+    cell.cell["m"].as_str().unwrap().to_owned()
 }
 
 fn initialized_spreadsheet_store(root: &Path) -> NativeOfficeCollaborationStore {

@@ -1,4 +1,5 @@
 import { Extension } from '@tiptap/core';
+import { isChangeOrigin } from '@tiptap/extension-collaboration';
 import { isHistoryTransaction } from '@tiptap/pm/history';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { type EditorState, Plugin, type Transaction } from '@tiptap/pm/state';
@@ -201,8 +202,14 @@ function normalizeDocumentParagraphIdentities(
         trackedTypes,
       )
     : new Set<number>();
+  const collaborationUpdate = transactions.some(
+    (transaction) => transaction.docChanged && isChangeOrigin(transaction),
+  );
   const editedPositions =
-    oldState && rotateTextId() && !transactions.some(isHistoryTransaction)
+    oldState &&
+    rotateTextId() &&
+    !collaborationUpdate &&
+    !transactions.some(isHistoryTransaction)
       ? editedDocumentParagraphPositions(
           oldState,
           state,

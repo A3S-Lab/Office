@@ -7,6 +7,7 @@ use super::super::{
 };
 
 mod cell;
+mod cell_text;
 mod find;
 mod json;
 mod state;

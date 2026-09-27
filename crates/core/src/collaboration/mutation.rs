@@ -70,6 +70,7 @@ pub(super) fn validate_mutation_contract(
             NativeOfficeCollaborationArtifactKind::Markdown
         }
         NativeOfficeCollaborationMutation::DocumentReplaceText { .. }
+        | NativeOfficeCollaborationMutation::DocumentSplice { .. }
         | NativeOfficeCollaborationMutation::DocumentReplaceParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
@@ -87,13 +88,15 @@ pub(super) fn validate_mutation_contract(
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. }
-        | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. } => {
+        | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetSplice { .. } => {
             NativeOfficeCollaborationArtifactKind::Spreadsheet
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
         | NativeOfficeCollaborationMutation::PresentationMoveElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationSplice { .. }
         | NativeOfficeCollaborationMutation::PresentationReplaceText { .. } => {
             NativeOfficeCollaborationArtifactKind::Presentation
         }
@@ -232,6 +235,7 @@ pub(super) fn apply_mutation(
             )?;
         }
         NativeOfficeCollaborationMutation::DocumentReplaceText { .. }
+        | NativeOfficeCollaborationMutation::DocumentSplice { .. }
         | NativeOfficeCollaborationMutation::DocumentReplaceParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
@@ -249,13 +253,15 @@ pub(super) fn apply_mutation(
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. }
-        | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. } => {
+        | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetSplice { .. } => {
             apply_spreadsheet_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
         | NativeOfficeCollaborationMutation::PresentationMoveElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationSplice { .. }
         | NativeOfficeCollaborationMutation::PresentationReplaceText { .. } => {
             apply_presentation_mutation(doc, manifest, mutation)?;
         }
@@ -275,6 +281,142 @@ pub(super) fn apply_mutation(
     Ok(doc
         .transact()
         .encode_state_as_update_v1(before_state_vector))
+}
+
+/// Caret at the end of an applied splice. Insert-only and no-op splices still
+/// return this position. Other mutations have no caret.
+pub(super) fn frame_caret(
+    mutation: &NativeOfficeCollaborationMutation,
+) -> UseResult<Option<super::NativeOfficeCollaborationFrameCaret>> {
+    match mutation {
+        NativeOfficeCollaborationMutation::MarkdownSplice {
+            index_utf16,
+            insert,
+            ..
+        } => {
+            let next = splice_caret_index(*index_utf16, insert)?;
+            Ok(Some(super::NativeOfficeCollaborationFrameCaret::Markdown {
+                index_utf16: next,
+            }))
+        }
+        NativeOfficeCollaborationMutation::DocumentSplice {
+            paragraph_id,
+            text_id,
+            index_utf16,
+            insert,
+            ..
+        } => {
+            let next = splice_caret_index(*index_utf16, insert)?;
+            Ok(Some(super::NativeOfficeCollaborationFrameCaret::Document {
+                paragraph_id: paragraph_id.clone(),
+                text_id: text_id.clone(),
+                index_utf16: next,
+            }))
+        }
+        NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+            sheet_id,
+            row,
+            column,
+            ..
+        } => Ok(Some(
+            super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                sheet_id: sheet_id.clone(),
+                row: *row,
+                column: *column,
+                index_utf16: None,
+            },
+        )),
+        NativeOfficeCollaborationMutation::SpreadsheetBatchCells { sheet_id, changes } => {
+            let Some(last) = changes.last() else {
+                return Ok(None);
+            };
+            Ok(Some(
+                super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                    sheet_id: sheet_id.clone(),
+                    row: last.row,
+                    column: last.column,
+                    index_utf16: None,
+                },
+            ))
+        }
+        NativeOfficeCollaborationMutation::SpreadsheetSplice {
+            sheet_id,
+            row,
+            column,
+            index_utf16,
+            insert,
+            ..
+        } => {
+            let next = splice_caret_index(*index_utf16, insert)?;
+            Ok(Some(
+                super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                    sheet_id: sheet_id.clone(),
+                    row: *row,
+                    column: *column,
+                    index_utf16: Some(next),
+                },
+            ))
+        }
+        NativeOfficeCollaborationMutation::PresentationSplice {
+            container_kind,
+            container_id,
+            element_id,
+            index_utf16,
+            insert,
+            ..
+        } => {
+            let next = splice_caret_index(*index_utf16, insert)?;
+            Ok(Some(
+                super::NativeOfficeCollaborationFrameCaret::Presentation {
+                    container_kind: *container_kind,
+                    container_id: container_id.clone(),
+                    element_id: element_id.clone(),
+                    index_utf16: Some(next),
+                },
+            ))
+        }
+        NativeOfficeCollaborationMutation::PresentationReplaceText {
+            container_kind: Some(container_kind),
+            container_id: Some(container_id),
+            element_id: Some(element_id),
+            ..
+        }
+        | NativeOfficeCollaborationMutation::PresentationUpdateElement {
+            container_kind,
+            container_id,
+            element_id,
+            ..
+        } => Ok(Some(
+            super::NativeOfficeCollaborationFrameCaret::Presentation {
+                container_kind: *container_kind,
+                container_id: container_id.clone(),
+                element_id: element_id.clone(),
+                index_utf16: None,
+            },
+        )),
+        NativeOfficeCollaborationMutation::PdfSetFormValue { field_id, .. } => {
+            Ok(Some(super::NativeOfficeCollaborationFrameCaret::PdfField {
+                field_id: field_id.clone(),
+            }))
+        }
+        NativeOfficeCollaborationMutation::PdfCreateAnnotation { annotation_id, .. }
+        | NativeOfficeCollaborationMutation::PdfUpdateAnnotation { annotation_id, .. } => Ok(Some(
+            super::NativeOfficeCollaborationFrameCaret::PdfAnnotation {
+                annotation_id: annotation_id.clone(),
+            },
+        )),
+        _ => Ok(None),
+    }
+}
+
+fn splice_caret_index(index_utf16: u32, insert: &str) -> UseResult<u32> {
+    let inserted = utf16_len(insert)?;
+    index_utf16.checked_add(inserted).ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.mutation_too_large",
+            "The splice caret exceeds the supported UTF-16 offset range.",
+        )
+    })
 }
 
 pub(super) fn utf16_len(value: &str) -> UseResult<u32> {
@@ -307,6 +449,7 @@ pub(super) fn is_utf16_boundary(value: &str, offset: u32) -> bool {
 mod tests {
     use super::*;
     use crate::collaboration::document::new_replica_document;
+    use crate::NativeOfficeCollaborationSpreadsheetCellChange;
     use yrs::{GetString, Text};
 
     #[test]
@@ -327,5 +470,95 @@ mod tests {
         text.insert(&mut doc.transact_mut(), 0, "A😀B");
         text.remove_range(&mut doc.transact_mut(), 1, 2);
         assert_eq!(text.get_string(&doc.transact()), "AB");
+    }
+
+    #[test]
+    fn frame_caret_names_the_written_target_without_a_text_offset() {
+        let cell = frame_caret(&NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+            sheet_id: "sheet".to_owned(),
+            row: 2,
+            column: 3,
+            expected_cell: None,
+            next_cell: serde_json::json!({ "value": "中" }),
+        })
+        .unwrap()
+        .unwrap();
+        let cell_json = serde_json::to_value(&cell).unwrap();
+        assert_eq!(cell_json["kind"], "spreadsheet");
+        assert_eq!(cell_json["row"], 2);
+        assert!(cell_json.get("indexUtf16").is_none());
+
+        let batch = frame_caret(&NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+            sheet_id: "sheet".to_owned(),
+            changes: vec![
+                NativeOfficeCollaborationSpreadsheetCellChange {
+                    row: 0,
+                    column: 0,
+                    expected_cell: None,
+                    next_cell: Some(serde_json::json!("a")),
+                },
+                NativeOfficeCollaborationSpreadsheetCellChange {
+                    row: 4,
+                    column: 1,
+                    expected_cell: None,
+                    next_cell: Some(serde_json::json!("b")),
+                },
+            ],
+        })
+        .unwrap()
+        .unwrap();
+        assert_eq!(
+            batch,
+            super::super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                sheet_id: "sheet".to_owned(),
+                row: 4,
+                column: 1,
+                index_utf16: None,
+            }
+        );
+
+        let form = frame_caret(&NativeOfficeCollaborationMutation::PdfSetFormValue {
+            field_id: "name".to_owned(),
+            expected_value: String::new(),
+            value: "中".to_owned(),
+            search: Some("中".to_owned()),
+            index_utf16: Some(0),
+        })
+        .unwrap()
+        .unwrap();
+        let form_json = serde_json::to_value(&form).unwrap();
+        assert_eq!(form_json["kind"], "pdf-field");
+        assert_eq!(form_json["fieldId"], "name");
+        assert!(form_json.get("indexUtf16").is_none());
+
+        let note = frame_caret(&NativeOfficeCollaborationMutation::PdfUpdateAnnotation {
+            annotation_id: "note-1".to_owned(),
+            expected_annotation: serde_json::json!({}),
+            next_annotation: serde_json::json!({ "contents": "中" }),
+            search: Some("a".to_owned()),
+            index_utf16: Some(4),
+        })
+        .unwrap()
+        .unwrap();
+        let note_json = serde_json::to_value(&note).unwrap();
+        assert_eq!(note_json["kind"], "pdf-annotation");
+        assert_eq!(note_json["annotationId"], "note-1");
+        assert!(note_json.get("indexUtf16").is_none());
+        assert!(note_json.get("pageIndex").is_none());
+
+        let unanchored = frame_caret(
+            &NativeOfficeCollaborationMutation::PresentationReplaceText {
+                search: "old".to_owned(),
+                replacement: "new".to_owned(),
+                expected_matches: 1,
+                occurrence: None,
+                container_kind: None,
+                container_id: None,
+                element_id: None,
+                index_utf16: Some(2),
+            },
+        )
+        .unwrap();
+        assert_eq!(unanchored, None);
     }
 }

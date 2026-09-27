@@ -8,11 +8,13 @@ import {
   type FocusEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import { documentFrameCaretPosition } from '../../../collaboration/office-collaboration-frame-caret';
 import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
   createWorkOfficeDocumentCollaborationBinding,
@@ -886,6 +888,16 @@ function DocumentEditorSurface({
     onBeforeDraft: () => setTaskPane(null),
   });
   const [collaborationVersion, setCollaborationVersion] = useState(0);
+  const [frameCaretHead, setFrameCaretHead] = useState<number | null>(null);
+  const [frameCaretRevision, setFrameCaretRevision] = useState(0);
+  const pendingFrameCaretRef = useRef<
+    | {
+        paragraphId: string;
+        textId: string;
+        indexUtf16: number;
+      }
+    | null
+  >(null);
   const handledCollaborationVersionRef = useRef(0);
   const pendingCollaborationContentRef = useRef<
     WorkDocumentContent | undefined
@@ -893,6 +905,14 @@ function DocumentEditorSurface({
   useEffect(() => {
     if (!collaborationBinding) return;
     const unsubscribeChange = collaborationBinding.subscribe((change) => {
+      if (change.caret?.kind === 'document') {
+        pendingFrameCaretRef.current = {
+          indexUtf16: change.caret.indexUtf16,
+          paragraphId: change.caret.paragraphId,
+          textId: change.caret.textId,
+        };
+        setFrameCaretRevision((value) => value + 1);
+      }
       pendingCollaborationContentRef.current = change.content;
       contentRef.current = change.content;
       trackChangesRef.current =
@@ -1291,6 +1311,14 @@ function DocumentEditorSurface({
     layoutFonts,
     loadedLayoutFontIds,
   });
+  useLayoutEffect(() => {
+    const caret = pendingFrameCaretRef.current;
+    if (!caret || !editor || editor.isDestroyed) return;
+    if (viewMode === 'page' && !pagination.pageCount) return;
+    const head = documentFrameCaretPosition(editor.state.doc, caret);
+    pendingFrameCaretRef.current = null;
+    setFrameCaretHead(head);
+  }, [editor, frameCaretRevision, pagination.pageCount, viewMode]);
   const resolveFieldContext = useMemo(
     () =>
       createMailMergeFieldContextResolver(
@@ -2021,7 +2049,11 @@ function DocumentEditorSurface({
                     <OfficeTiptapPresenceLayer
                       containerRef={editableSurfaceRef}
                       editor={editor}
+                      frameCaretHead={frameCaretHead}
                       kind="document"
+                      layoutSettled={
+                        viewMode !== 'page' || Boolean(pagination.pageCount)
+                      }
                     />
                     {!preview && (canEditDocument || canCommentDocument) && (
                       <DocumentSelectionToolbar

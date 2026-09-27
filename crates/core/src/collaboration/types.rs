@@ -324,6 +324,52 @@ impl Default for NativeOfficeCollaborationEventsRequest {
     }
 }
 
+/// Caret carried by the same collaboration frame as the document update.
+/// It is not a follow-up presence message and it is not replica content.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase"
+)]
+pub enum NativeOfficeCollaborationFrameCaret {
+    Markdown {
+        index_utf16: u32,
+    },
+    /// End of a `document-splice` inside the same paragraph and Word text node.
+    Document {
+        paragraph_id: String,
+        text_id: String,
+        index_utf16: u32,
+    },
+    /// Cell written by a spreadsheet frame. `indexUtf16` is present only for
+    /// `spreadsheet-splice` inside that cell's plain text.
+    Spreadsheet {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
+    },
+    /// Scene element touched by a presentation edit. `indexUtf16` is present
+    /// only for a splice inside that element's text fragment.
+    Presentation {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element_id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        index_utf16: Option<u32>,
+    },
+    /// PDF form field written by `pdf-set-form-value`. No text offset.
+    PdfField {
+        field_id: String,
+    },
+    /// PDF annotation written by a create or update. No text offset.
+    PdfAnnotation {
+        annotation_id: String,
+    },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeOfficeCollaborationApplyResult {
@@ -335,6 +381,9 @@ pub struct NativeOfficeCollaborationApplyResult {
     pub state_vector: Vec<u8>,
     pub state_vector_sha256: String,
     pub checkpointed: bool,
+    /// End position of this frame. Absent when the mutation is not a caret edit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caret: Option<NativeOfficeCollaborationFrameCaret>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -404,6 +453,9 @@ pub struct NativeOfficeCollaborationUpdateEvent {
     pub after_state_vector_sha256: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub origin: Option<NativeOfficeCollaborationOrigin>,
+    /// Caret from the same frame as `update`. Absent for mutations that are not caret edits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caret: Option<NativeOfficeCollaborationFrameCaret>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

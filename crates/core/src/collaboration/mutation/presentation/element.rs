@@ -63,6 +63,22 @@ pub(super) fn validate_element_mutation(
             validate_element_input(expected_element, "expected scene element")?;
             Ok(())
         }
+        NativeOfficeCollaborationMutation::PresentationSplice {
+            container_id,
+            element_id,
+            index_utf16,
+            delete_utf16,
+            expected_slice,
+            insert,
+            ..
+        } => super::text_fragment::validate_presentation_splice(
+            container_id,
+            element_id,
+            *index_utf16,
+            *delete_utf16,
+            expected_slice,
+            insert,
+        ),
         NativeOfficeCollaborationMutation::PresentationReplaceText {
             search,
             expected_matches,
@@ -131,6 +147,25 @@ pub(super) fn apply_element_mutation(
             *container_kind,
             container_id,
             expected_element,
+        ),
+        NativeOfficeCollaborationMutation::PresentationSplice {
+            container_kind,
+            container_id,
+            element_id,
+            index_utf16,
+            delete_utf16,
+            expected_slice,
+            insert,
+        } => super::text_fragment::splice_presentation_text(
+            doc,
+            manifest,
+            *container_kind,
+            container_id,
+            element_id,
+            *index_utf16,
+            *delete_utf16,
+            expected_slice,
+            insert,
         ),
         NativeOfficeCollaborationMutation::PresentationReplaceText {
             search,
@@ -309,6 +344,15 @@ fn update_element(
                 record_map.remove(&mut transaction, key.as_str());
             }
             PresentationElementPatch::Set(key, value) => {
+                if key == "text" {
+                    if let yrs::Any::String(next) = &value {
+                        super::text_fragment::sync_text_fragment_to_string(
+                            &record_map,
+                            &mut transaction,
+                            next,
+                        );
+                    }
+                }
                 record_map.insert(&mut transaction, key, value);
             }
         }

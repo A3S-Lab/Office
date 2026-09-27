@@ -44,6 +44,9 @@ Keep `markdown-splice` for a known UTF-16 range. `expectedSlice` must equal the
 text in `[indexUtf16, indexUtf16 + deleteUtf16)`, or be empty when `deleteUtf16`
 is 0. A drifted slice returns `office.collaboration.mutation_match_conflict` and
 writes nothing, so a stale whole-source splice cannot overwrite a peer edit.
+The splice result carries `caret.indexUtf16` just after the inserted text; do
+not send a follow-up location message. A stale `ifStateVectorBase64` fails
+closed so a concurrent insert before that caret is re-read.
 Use `markdown-replace` only
 as a compare-and-swap: `expectedMarkdown` must equal the source just read from
 the replica. A drifted base returns `office.collaboration.mutation_match_conflict`

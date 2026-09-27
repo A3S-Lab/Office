@@ -7,6 +7,10 @@ import {
   type WorkOfficeCollaborationOrigin,
   type WorkOfficeCollaborationSession,
 } from './office-collaboration';
+import {
+  parseWorkOfficeCollaborationFrameCaret,
+  type WorkOfficeCollaborationFrameCaret,
+} from './office-collaboration-frame-caret';
 
 export const WORK_OFFICE_COLLABORATION_DEFAULT_MAX_TRANSPORT_PAYLOAD_BYTES =
   64 * 1_024 * 1_024;
@@ -33,6 +37,11 @@ export interface WorkOfficeCollaborationTransportMessage {
   readonly payload: Uint8Array;
   /** Present only for incremental updates whose Yjs transaction had a typed origin. */
   readonly origin?: WorkOfficeCollaborationOrigin;
+  /**
+   * Caret from the same frame as `payload`. Absent for sync handshakes and
+   * for updates that are not caret edits. Not a follow-up location message.
+   */
+  readonly caret?: WorkOfficeCollaborationFrameCaret;
 }
 
 /**
@@ -56,6 +65,10 @@ export interface WorkOfficeCollaborationTransportBindingOptions {
 export interface WorkOfficeCollaborationTransportBinding {
   /** Send a fresh state vector. Call this after every transport reconnect. */
   synchronize(): void;
+  /** Observe carets that arrived on the same update frame. */
+  subscribeFrameCaret(
+    listener: (caret: WorkOfficeCollaborationFrameCaret) => void,
+  ): () => void;
   destroy(): void;
 }
 
@@ -78,6 +91,9 @@ class WorkOfficeCollaborationTransportBindingImpl
   readonly #transport: WorkOfficeCollaborationTransport;
   readonly #maxPayloadBytes: number;
   readonly #remoteOrigins = new WeakSet<object>();
+  readonly #frameCaretListeners = new Set<
+    (caret: WorkOfficeCollaborationFrameCaret) => void
+  >();
   #unsubscribe: (() => void) | undefined;
   #destroyed = false;
 
@@ -120,6 +136,14 @@ class WorkOfficeCollaborationTransportBindingImpl
     this.publish('sync-step-1', Y.encodeStateVector(this.#session.document));
   }
 
+  subscribeFrameCaret(
+    listener: (caret: WorkOfficeCollaborationFrameCaret) => void,
+  ): () => void {
+    this.ensureActive();
+    this.#frameCaretListeners.add(listener);
+    return () => this.#frameCaretListeners.delete(listener);
+  }
+
   destroy(): void {
     if (this.#destroyed) return;
     this.#destroyed = true;
@@ -152,9 +176,17 @@ class WorkOfficeCollaborationTransportBindingImpl
         return;
       }
       const remoteOrigin = message.origin ?? remoteSystemOrigin();
-      this.#remoteOrigins.add(remoteOrigin);
-      Y.applyUpdate(this.#session.document, message.payload, remoteOrigin);
+      const framedOrigin = message.caret
+        ? Object.freeze({ ...remoteOrigin, caret: message.caret })
+        : remoteOrigin;
+      this.#remoteOrigins.add(framedOrigin);
+      Y.applyUpdate(this.#session.document, message.payload, framedOrigin);
       this.#session.metadata();
+      if (message.caret) {
+        for (const listener of this.#frameCaretListeners) {
+          listener(message.caret);
+        }
+      }
     } catch (error) {
       if (error instanceof WorkOfficeCollaborationError) throw error;
       throw invalidTransportMessage(
@@ -242,6 +274,15 @@ function validatedTransportMessage(
       'Only incremental Office collaboration update messages may carry a transaction origin.',
     );
   }
+  if (value.type !== 'update' && value.caret !== undefined) {
+    throw invalidTransportMessage(
+      'Only incremental Office collaboration update messages may carry a frame caret.',
+    );
+  }
+  const caret =
+    value.caret === undefined
+      ? undefined
+      : parseWorkOfficeCollaborationFrameCaret(value.caret);
   return Object.freeze({
     protocol: WORK_OFFICE_COLLABORATION_PROTOCOL,
     version: WORK_OFFICE_COLLABORATION_VERSION,
@@ -252,6 +293,7 @@ function validatedTransportMessage(
     type: value.type,
     payload: value.payload.slice(),
     origin,
+    ...(caret ? { caret } : {}),
   });
 }
 

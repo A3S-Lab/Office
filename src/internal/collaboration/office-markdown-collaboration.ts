@@ -11,6 +11,7 @@ import {
   type WorkOfficeCollaborationSession,
   WorkOfficeCollaborationError,
 } from './office-collaboration';
+import { frameCaretFromOrigin } from './office-collaboration-frame-caret';
 
 const MARKDOWN_SOURCE_ROOT = 'markdown.source';
 
@@ -18,6 +19,7 @@ export interface WorkOfficeMarkdownCollaborationChange {
   content: WorkMarkdownContent;
   local: boolean;
   origin: unknown;
+  caret?: import('./office-collaboration-frame-caret').WorkOfficeCollaborationFrameCaret;
 }
 
 export interface WorkOfficeMarkdownCollaborationBindingOptions {
@@ -216,10 +218,12 @@ class WorkOfficeMarkdownCollaborationBindingImpl
   }
 
   readonly #onSourceChange = (event: Y.YTextEvent): void => {
+    const caret = frameCaretFromOrigin(event.transaction.origin);
     const change = {
       content: { type: 'markdown', markdown: this.#source.toString() },
       local: event.transaction.origin === this.origin,
       origin: event.transaction.origin,
+      ...(caret ? { caret } : {}),
     } satisfies WorkOfficeMarkdownCollaborationChange;
     for (const listener of this.#listeners) listener(change);
   };

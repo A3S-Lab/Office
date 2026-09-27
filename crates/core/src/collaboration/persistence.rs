@@ -14,9 +14,10 @@ use super::document::{
 };
 use super::{
     collaboration_error, sha256_hex, validate_client_id, NativeOfficeCollaborationActorKind,
-    NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationManifest,
-    NativeOfficeCollaborationMode, NativeOfficeCollaborationOperationKind,
-    NativeOfficeCollaborationOrigin, MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
+    NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationFrameCaret,
+    NativeOfficeCollaborationManifest, NativeOfficeCollaborationMode,
+    NativeOfficeCollaborationOperationKind, NativeOfficeCollaborationOrigin,
+    MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
     MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES, NATIVE_OFFICE_COLLABORATION_PROTOCOL,
     NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION, NATIVE_OFFICE_COLLABORATION_STORE_FORMAT,
     NATIVE_OFFICE_COLLABORATION_STORE_SCHEMA_VERSION,
@@ -70,6 +71,9 @@ pub(super) struct OperationRecord {
     pub origin: Option<NativeOfficeCollaborationOrigin>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub host_authorization: Option<HostAuthorizationRecord>,
+    /// Caret for this frame. Not written into the Y.Doc.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caret: Option<NativeOfficeCollaborationFrameCaret>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

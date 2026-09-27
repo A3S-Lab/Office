@@ -12,6 +12,7 @@ mod find;
 mod json;
 mod order;
 mod state;
+mod text_fragment;
 
 pub(in crate::collaboration) use find::find_presentation_text;
 

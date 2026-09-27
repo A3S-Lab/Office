@@ -367,6 +367,17 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         sheet_id: String,
         changes: Vec<OfficeCollaborationSpreadsheetCellChange>,
     },
+    /// Splice one cell's plain text. Formula cells, cached numbers, and styles
+    /// stay on `spreadsheet-set-cell`.
+    SpreadsheetSplice {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        index_utf16: u32,
+        delete_utf16: u32,
+        expected_slice: String,
+        insert: String,
+    },
     /// Create one scene element in a slide, master, or layout with a stable ID.
     PresentationCreateElement {
         container_kind: OfficeCollaborationPresentationContainerKind,
@@ -697,6 +708,23 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                     changes: changes.into_iter().map(Into::into).collect(),
                 }
             }
+            OfficeCollaborationMutation::SpreadsheetSplice {
+                sheet_id,
+                row,
+                column,
+                index_utf16,
+                delete_utf16,
+                expected_slice,
+                insert,
+            } => Self::SpreadsheetSplice {
+                sheet_id,
+                row,
+                column,
+                index_utf16,
+                delete_utf16,
+                expected_slice,
+                insert,
+            },
             OfficeCollaborationMutation::PresentationCreateElement {
                 container_kind,
                 container_id,
