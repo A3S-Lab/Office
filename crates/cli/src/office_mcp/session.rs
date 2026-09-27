@@ -40,6 +40,19 @@ impl NativeOfficeSession {
 
 type SharedSession = Arc<Mutex<NativeOfficeSession>>;
 
+fn same_office_path(open_path: &Path, requested: &Path) -> bool {
+    if open_path == requested {
+        return true;
+    }
+    match (
+        std::fs::canonicalize(open_path),
+        std::fs::canonicalize(requested),
+    ) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => false,
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub(super) struct NativeOfficeSessions {
     entries: Arc<RwLock<HashMap<UseSessionId, SharedSession>>>,
@@ -61,6 +74,26 @@ impl NativeOfficeSessions {
         path: impl AsRef<Path>,
         read_only: bool,
     ) -> UseResult<(UseSessionId, SharedSession)> {
+        let session_id = UseSessionId::parse(session.clone())?;
+        let requested = path.as_ref();
+        let existing = self.entries.read().await.get(&session_id).map(Arc::clone);
+        if let Some(entry) = existing {
+            let state = entry.lock().await;
+            state.ensure_open(&session_id)?;
+            let same_file = same_office_path(state.editor.package().path(), requested);
+            if same_file && state.read_only == read_only {
+                drop(state);
+                return Ok((session_id, entry));
+            }
+            return Err(UseError::new(
+                "use.office.session_exists",
+                format!(
+                    "Native Office session '{}' is already open.",
+                    session_id.as_str()
+                ),
+            )
+            .with_detail("path", state.editor.package().path().display().to_string()));
+        }
         self.open(session, path, read_only, false).await
     }
 
@@ -188,5 +221,39 @@ mod tests {
         let error = sessions.close("report", false).await.unwrap_err();
         assert_eq!(error.code, "use.office.unsaved_changes");
         sessions.close("report", true).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn open_existing_reuses_the_same_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("letter.docx");
+        let other = temp.path().join("other.docx");
+        let sessions = NativeOfficeSessions::default();
+        sessions.create("letter".to_string(), &path).await.unwrap();
+
+        let (id, _) = sessions
+            .open_existing("letter".to_string(), &path, false)
+            .await
+            .unwrap();
+        assert_eq!(id.as_str(), "letter");
+
+        let read_only = sessions
+            .open_existing("letter".to_string(), &path, true)
+            .await
+            .unwrap_err();
+        assert_eq!(read_only.code, "use.office.session_exists");
+
+        sessions.create("other".to_string(), &other).await.unwrap();
+        let different_file = sessions
+            .open_existing("letter".to_string(), &other, false)
+            .await
+            .unwrap_err();
+        assert_eq!(different_file.code, "use.office.session_exists");
+
+        let duplicate_create = sessions
+            .create("letter".to_string(), &path)
+            .await
+            .unwrap_err();
+        assert_eq!(duplicate_create.code, "use.office.session_exists");
     }
 }

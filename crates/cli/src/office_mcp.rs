@@ -311,11 +311,11 @@ impl NativeOfficeMcpServer {
 
     #[tool(
         name = "office_open",
-        description = "Open a local OOXML document in a bounded native in-memory session",
+        description = "Open a local OOXML document in a bounded native in-memory session. Reuses the session when that id is already open on the same file with the same read-only flag.",
         annotations(
             read_only_hint = false,
             destructive_hint = false,
-            idempotent_hint = false,
+            idempotent_hint = true,
             open_world_hint = false
         )
     )]
