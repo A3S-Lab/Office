@@ -77,21 +77,88 @@ is not a side channel that can arrive early, late, or alone.
 The replica stream is the clock. These are the pieces that are still not that
 clock:
 
-- A spreadsheet cell write still names the cell. Plain-text typing uses
-  `spreadsheet-splice` and returns `indexUtf16` on that same cell. The canvas
-  highlight stays the cell; it does not reveal glyphs one by one. Formula
-  cells, cached numbers, and styles stay on `spreadsheet-set-cell`.
-- A host save writes one addressed value back into the package. DOCX
-  paragraph text, an inline spreadsheet cell, one presentation shape run,
-  and an uncompressed PDF field or FreeText literal are the snapshot.
-  Shared strings, formulas, numeric cells, and compressed PDF values fail
-  closed. Other parts stay byte-identical. While that replica is live,
-  `office_open` does not open a second session.
-- Two browsers and one native client share the document frame. The native
-  agent inserts CJK one grapheme at a time. Each browser paints that frame's
-  caret after pagination, on the wrapped line, at a zoom other than 100%.
-  A drifted slice writes nothing. A human insert before the caret shifts
-  the next splice.
+- Spreadsheet row and column insertion rewrites cell formulas, named-range
+  references, print-area references, merged-range anchors, chart reference
+  strings, and table ranges in the same transaction, and moves the cells
+  with them. A three-dimensional reference, a pivot table, or a corrupt
+  address fails the frame and writes nothing. Chart pixel boxes stay put.
+  Sorting a rectangle permutes its rows in one frame. Formula text moves
+  with the cell, and references outside the rectangle stay as written. A
+  stale observed cell, or a merge, table, or pivot that meets the rectangle,
+  writes nothing. Native table create, update, and delete write the same
+  `tables` record, `tableOrder`, and creation claim the browser reads. A stale
+  observed record, an overlapping range, or a repeated name writes nothing.
+  Deleting the record leaves the claim, so that ID cannot name a different
+  table. A worksheet cell stays put. Renaming the table or a column, or
+  changing its range, header, or totals row, rewrites structured references
+  in that same transaction. A string literal and an external-workbook
+  reference stay as written. A geometry change, or a table-local reference
+  whose owning cell cannot be proven, writes nothing. Deleting a table that
+  a structured reference still names writes nothing and leaves the hash
+  unchanged. Deleting an unreferenced table with a built-in style writes
+  that style onto cells that already exist in the same transaction: header
+  and stripe fills, text color, bold, and a thin border around the table
+  range. Empty positions stay empty. Cells outside the range, formula text,
+  and the creation claim stay put. A range larger than 100,000 cells writes
+  nothing.
+  A plain-text splice already paints its `indexUtf16` caret inside the cell.
+  Formula cells, numeric cells, and styles stay field writes and do not
+  grow a glyph caret. Two offline edits of different cells, or of different
+  fields of the same cell, converge to one document hash in every delivery
+  order. Delivering one of those updates again leaves the hash unchanged.
+  Exporting that merged replica and reading the worksheet back yields the
+  same number, formula, and cached value. A cell neither edit touched stays
+  as it was. Calculated values stay cached until browser and native
+  recalculation are deterministic and the source formula is the only
+  canonical formula state.
+- Presentation slide order, grouping, and background are conflict-local frames.
+  Moving a slide rewrites only `slide-order`; a predecessor that is not the
+  observed one writes nothing, and shape text stays put. Grouping writes
+  `groupIds` on every listed member in one transaction; one member whose
+  path does not match writes nothing, and unrelated shapes stay put.
+  A slide, master, or layout background is one field in that frame; a stale
+  background writes nothing. The browser content replace checks the live
+  replica before it writes those frames: a stale slide order, group path, or
+  background leaves that frame unwritten, and a slide background frame also
+  leaves `useLayoutBackground` unwritten. A text splice already paints its `indexUtf16`
+  caret inside the shape. A browser element-order replace checks the live
+  replica: a permutation of the same elements writes nothing when that order
+  already drifted, and writes when the live order is still the observed one.
+  Shape text stays put. A slide thumbnail or a measured layout box stays on
+  the client. A replace that only carries `thumbnail`, `thumbnailUrl`,
+  `measuredLayout`, `measuredBox`, or `lineBoxes` writes nothing and leaves
+  the state vector unchanged. When that replace also changes shape text, the
+  text and the authored geometry are written and those derived fields are
+  absent from the replica. Two offline edits of a shape's text and fill,
+  together with another shape's fill, converge to one document hash in every
+  delivery order. Delivering one of those updates again leaves the hash
+  unchanged. Exporting that merged replica and reading each shape back yields
+  the same text. A shape neither edit changed stays as it was.
+- A host save of a spreadsheet walks the live replica and writes every
+  populated cell into the package in one export: formula text with its cached
+  value, a plain number, inline text, and a shared string owned by exactly
+  one cell. A cell whose replica value does not match the package cell, or a
+  shared string used by more than one cell, fails that export and returns no
+  package. A document export walks the live replica and writes every
+  paragraph into `word/document.xml` by `paraId`. A paragraph with no
+  `paraId`, a package that has no such paragraph, or a paragraph that is not
+  a single text run fails that export and returns no package. A presentation
+  export walks the live replica and writes every shape text into its slide
+  by element id. A container that has text and no slide part, a missing
+  shape, or a shape that is not a single text run fails that export and
+  returns no package. A PDF export walks the live replica and writes every
+  form field and every FreeText annotation literal into the uncompressed PDF.
+  A field or FreeText annotation missing from the file, a value that cannot
+  be represented as a literal, or bytes that are not UTF-8 fails that export
+  and returns no bytes.
+  Compressed PDF values fail closed. Parts the export does not rewrite stay
+  byte-identical. While that replica is live, `office_open` does not open a
+  second session.
+- Two browsers and one native client share one document frame. The native
+  agent inserts CJK one grapheme at a time, and that frame's caret is the
+  end of the grapheme. Each browser paints it after pagination, on the
+  wrapped line, at a zoom other than 100%. A drifted slice writes nothing.
+  A human insert before the caret shifts the next splice.
 
 `document-replace-text` still rotates `textId`. It is a finished
 substitution. Typing uses `document-splice` and does not rotate `textId`.
@@ -202,31 +269,28 @@ successful splice.
 
 ### 4. Spreadsheet tells the truth
 
-Until the in-cell editor owns a text caret, agent presence on a spreadsheet
-is the cell from `spreadsheet-set-cell` / `spreadsheet-batch-cells`. One cell
-write is one transaction. Do not reveal the new display string glyph by glyph
-on the canvas.
+A field write from `spreadsheet-set-cell` or `spreadsheet-batch-cells` is the
+cell. One cell write is one transaction. A plain-text splice paints the
+returned index inside that cell. Do not reveal the new display string glyph
+by glyph on the canvas.
 
-The in-cell caret is the next spreadsheet collaboration feature, and it is
-the same frame as phase 2 inside one cell's rich text: splice, expected
-slice, returned index inside that result. Formula text, cached values, and
-styles stay field-addressed leaves. Calculated values stay derived.
+The plain-text in-cell caret is that splice index inside the cell box. Formula
+text, cached values, and styles stay field-addressed leaves. Calculated values
+stay derived.
 
 Exit: a remote cell highlight lands on the cell the agent just wrote, and
-does not blink on an unchanged presence update. No glyph animation is
-claimed. The in-cell splice is a separate exit, copied from phase 2, and is
-not started by faking glyphs first.
+does not blink on an unchanged presence update. A plain-text splice paints
+its returned `indexUtf16` on the insertion edge inside that cell. Formula
+text, cached values, and styles stay field-addressed and do not paint a
+glyph caret.
 
 ### 5. Presentation text becomes a fragment
 
-Phase 3 of `COLLABORATION_ROADMAP.md` already says scene text must bind to
-collaborative XML fragments instead of scalar run replacement. That binding
-is now on the critical path, because a text-box caret cannot exist before it.
-
-After the fragment exists, a text box uses `document-splice` rules
-(phase 2) with `containerKind`, `containerId`, and `elementId` as the address
-prefix. Until then, an element text update is atomic and presence is the
-element frame.
+Scene text already splices a collaborative fragment and the slide paints that
+index inside the shape. Slide order, grouping, and background are separate
+frames: the order array, every member's `groupIds`, or one container
+`background` field. A stale predecessor, group path, or background writes
+nothing.
 
 Exit: two clients type in one text box. Carets are element-local positions.
 An unrelated shape edit does not move them. Scalar run replacement is no
@@ -266,6 +330,44 @@ Then:
    typing.
 4. Phase 6 and 7.
 5. Remaining Traditional Office rows in `ROADMAP.md`.
+
+## Still open
+
+Each clock below is one replica. A frame lands completely or writes nothing.
+Office does not open a network provider. The host owns rooms, auth, and
+transport.
+
+1. Spreadsheet calculated values. A comment and an insertion suggestion
+   created offline converge to one document hash in every delivery order.
+   Delivering one of those updates again leaves the hash unchanged. The
+   comment body and the insertion both remain, and the text outside the
+   comment stays. Creating a different body for a comment ID that already
+   exists writes nothing. Accepting one offline insertion and rejecting
+   another converges in every delivery order: the accepted characters stay,
+   the rejected characters do not, and the text outside both revisions stays.
+   Delivering one of those decisions again leaves the hash unchanged. A later
+   opposite decision for a suggestion that already has a decision writes
+   nothing. Accepting one offline deletion and rejecting another converges
+   in every delivery order: the accepted characters stay gone, the rejected
+   deletion stays, and the text outside both revisions stays. Accepting the
+   deletion half of a replacement and rejecting its insertion half converges
+   in every delivery order: the deleted characters stay gone, the rejected
+   insertion does not remain, and the text outside that replacement stays.
+   Delivering one of those decisions again leaves the hash unchanged.
+   Cached spreadsheet values stay in the replica until browser and
+   native recalculation are deterministic and the source formula is the only
+   canonical formula state.
+2. PDF signature appearance. The host authenticates the asset port. Office
+   does not open that port. Asset hashes stay aligned with the audit record.
+3. Approved PDF redaction and page operations. A non-retryable host workflow
+   applies one approved decision, then saving and reopening the merged PDF
+   shows that result. Applying the same decision again writes nothing.
+4. PDF signatures and annotation types other than form values and FreeText.
+   Offline updates converge in every delivery order. A repeated update leaves
+   the document hash unchanged.
+5. One Boot process is not a splittable room. Sticky routing or shared
+   fan-out plus a writer lock stays with the host. Office does not open
+   Redis or NATS.
 
 Structural Document work that the caret needs still happens: the splice must
 be mapped through lists, tables, and pagination. Full table, list, and

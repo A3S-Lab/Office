@@ -55,7 +55,7 @@ import {
   inspectXlsxPivotTables,
 } from './work-xlsx-pivots';
 import { xlsxWorksheetRequiresSheetJsCellStyles } from './work-xlsx-style-gate';
-import { xlsxWorksheetCellEntries } from './work-xlsx-worksheet';
+import { xlsxDenseRows, xlsxWorksheetCellEntries } from './work-xlsx-worksheet';
 import { applyImportedXlsxRichText } from './work-xlsx-rich-text';
 
 const MAX_INLINE_DATA_VALIDATION_CELLS = 10_000;
@@ -586,8 +586,9 @@ async function xlsxPackageRequiresSheetJsCellStyles(
 }
 
 function releaseImportedWorksheetCells(worksheet: WorkSheet): void {
-  if (Array.isArray(worksheet)) {
-    worksheet.length = 0;
+  const denseRows = xlsxDenseRows(worksheet);
+  if (denseRows) {
+    denseRows.length = 0;
     return;
   }
   for (const address in worksheet) {

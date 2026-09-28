@@ -1,4 +1,6 @@
 import { type CSSProperties, type FormEvent, useId, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { Button, Dialog } from '../../../design-system/primitives';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import { documentScriptFontSegments } from '../work-document-script-fonts';
@@ -39,117 +41,328 @@ import {
   type DocumentOpenTypeNumberSpacingMode,
   type DocumentOpenTypeStylisticSetsMode,
 } from './document-font-dialog-opentype-model';
+import { useOfficeMessages } from './office-messages-context';
 
-const characterSpacingModes: ReadonlyArray<{
+function characterSpacingModes(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentCharacterSpacingMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'normal', label: '标准' },
-  { value: 'expanded', label: '加宽' },
-  { value: 'condensed', label: '紧缩' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'normal',
+      label: officeMessage(messages, 'document.font.mode.normal'),
+    },
+    {
+      value: 'expanded',
+      label: officeMessage(messages, 'document.font.spacingMode.expanded'),
+    },
+    {
+      value: 'condensed',
+      label: officeMessage(messages, 'document.font.spacingMode.condensed'),
+    },
+  ];
+}
 
-const characterPositionModes: ReadonlyArray<{
+function characterPositionModes(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentCharacterPositionMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'normal', label: '标准' },
-  { value: 'raised', label: '提升' },
-  { value: 'lowered', label: '降低' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'normal',
+      label: officeMessage(messages, 'document.font.mode.normal'),
+    },
+    {
+      value: 'raised',
+      label: officeMessage(messages, 'document.font.positionMode.raised'),
+    },
+    {
+      value: 'lowered',
+      label: officeMessage(messages, 'document.font.positionMode.lowered'),
+    },
+  ];
+}
 
-const emphasisMarkModes: ReadonlyArray<{
+function emphasisMarkModes(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentEmphasisMarkMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'inherit', label: '跟随样式' },
-  { value: 'none', label: '无' },
-  { value: 'dot', label: '上方圆点' },
-  { value: 'comma', label: '上方逗号' },
-  { value: 'circle', label: '上方圆圈' },
-  { value: 'underDot', label: '下方圆点' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    {
+      value: 'none',
+      label: officeMessage(messages, 'document.font.mode.none'),
+    },
+    {
+      value: 'dot',
+      label: officeMessage(messages, 'document.font.emphasis.dot'),
+    },
+    {
+      value: 'comma',
+      label: officeMessage(messages, 'document.font.emphasis.comma'),
+    },
+    {
+      value: 'circle',
+      label: officeMessage(messages, 'document.font.emphasis.circle'),
+    },
+    {
+      value: 'underDot',
+      label: officeMessage(messages, 'document.font.emphasis.underDot'),
+    },
+  ];
+}
 
-const openTypeLigatureModes: ReadonlyArray<{
+function openTypeLigatureModes(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentOpenTypeLigaturesMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'inherit', label: '跟随样式' },
-  { value: 'none', label: '无' },
-  { value: 'standard', label: '标准' },
-  { value: 'contextual', label: '上下文' },
-  { value: 'historical', label: '历史' },
-  { value: 'discretional', label: '任意' },
-  { value: 'standardContextual', label: '标准和上下文' },
-  { value: 'standardHistorical', label: '标准和历史' },
-  { value: 'contextualHistorical', label: '上下文和历史' },
-  { value: 'standardDiscretional', label: '标准和任意' },
-  { value: 'contextualDiscretional', label: '上下文和任意' },
-  { value: 'historicalDiscretional', label: '历史和任意' },
-  { value: 'standardContextualHistorical', label: '标准、上下文和历史' },
-  { value: 'standardContextualDiscretional', label: '标准、上下文和任意' },
-  { value: 'standardHistoricalDiscretional', label: '标准、历史和任意' },
-  { value: 'contextualHistoricalDiscretional', label: '上下文、历史和任意' },
-  { value: 'all', label: '全部' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    {
+      value: 'none',
+      label: officeMessage(messages, 'document.font.mode.none'),
+    },
+    {
+      value: 'standard',
+      label: officeMessage(messages, 'document.font.mode.normal'),
+    },
+    {
+      value: 'contextual',
+      label: officeMessage(messages, 'document.font.ligatures.contextual'),
+    },
+    {
+      value: 'historical',
+      label: officeMessage(messages, 'document.font.ligatures.historical'),
+    },
+    {
+      value: 'discretional',
+      label: officeMessage(messages, 'document.font.ligatures.discretional'),
+    },
+    {
+      value: 'standardContextual',
+      label: officeMessage(messages, 'document.font.ligatures.standardContextual'),
+    },
+    {
+      value: 'standardHistorical',
+      label: officeMessage(messages, 'document.font.ligatures.standardHistorical'),
+    },
+    {
+      value: 'contextualHistorical',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.contextualHistorical',
+      ),
+    },
+    {
+      value: 'standardDiscretional',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.standardDiscretional',
+      ),
+    },
+    {
+      value: 'contextualDiscretional',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.contextualDiscretional',
+      ),
+    },
+    {
+      value: 'historicalDiscretional',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.historicalDiscretional',
+      ),
+    },
+    {
+      value: 'standardContextualHistorical',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.standardContextualHistorical',
+      ),
+    },
+    {
+      value: 'standardContextualDiscretional',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.standardContextualDiscretional',
+      ),
+    },
+    {
+      value: 'standardHistoricalDiscretional',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.standardHistoricalDiscretional',
+      ),
+    },
+    {
+      value: 'contextualHistoricalDiscretional',
+      label: officeMessage(
+        messages,
+        'document.font.ligatures.contextualHistoricalDiscretional',
+      ),
+    },
+    {
+      value: 'all',
+      label: officeMessage(messages, 'document.font.ligatures.all'),
+    },
+  ];
+}
 
-const openTypeNumberFormModes: ReadonlyArray<{
+function openTypeNumberFormModes(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentOpenTypeNumberFormMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'inherit', label: '跟随样式' },
-  { value: 'default', label: '默认' },
-  { value: 'lining', label: '等高数字' },
-  { value: 'oldStyle', label: '旧式数字' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    {
+      value: 'default',
+      label: officeMessage(messages, 'document.font.mode.default'),
+    },
+    {
+      value: 'lining',
+      label: officeMessage(messages, 'document.font.numberForm.lining'),
+    },
+    {
+      value: 'oldStyle',
+      label: officeMessage(messages, 'document.font.numberForm.oldStyle'),
+    },
+  ];
+}
 
-const openTypeNumberSpacingModes: ReadonlyArray<{
+function openTypeNumberSpacingModes(
+  messages: OfficeMessageCatalog,
+): ReadonlyArray<{
   value: DocumentOpenTypeNumberSpacingMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'inherit', label: '跟随样式' },
-  { value: 'default', label: '默认' },
-  { value: 'proportional', label: '比例宽度' },
-  { value: 'tabular', label: '等宽' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    {
+      value: 'default',
+      label: officeMessage(messages, 'document.font.mode.default'),
+    },
+    {
+      value: 'proportional',
+      label: officeMessage(messages, 'document.font.numberSpacing.proportional'),
+    },
+    {
+      value: 'tabular',
+      label: officeMessage(messages, 'document.font.numberSpacing.tabular'),
+    },
+  ];
+}
 
-const openTypeStylisticSetModes: ReadonlyArray<{
+function openTypeStylisticSetModes(
+  messages: OfficeMessageCatalog,
+): ReadonlyArray<{
   value: DocumentOpenTypeStylisticSetsMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'multiple', label: '多个样式集（保持不变）', disabled: true },
-  { value: 'inherit', label: '跟随样式' },
-  { value: 'none', label: '无' },
-  ...Array.from({ length: 20 }, (_, index) => ({
-    value: `set-${index + 1}` as const,
-    label: `样式集 ${index + 1}`,
-  })),
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'multiple',
+      label: officeMessage(messages, 'document.font.stylisticSets.multiple'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    {
+      value: 'none',
+      label: officeMessage(messages, 'document.font.mode.none'),
+    },
+    ...Array.from({ length: 20 }, (_, index) => ({
+      value: `set-${index + 1}` as const,
+      label: officeMessage(messages, 'document.font.openType.stylisticSetN', {
+        n: String(index + 1),
+      }),
+    })),
+  ];
+}
 
-const openTypeContextualAlternatesModes: ReadonlyArray<{
+function openTypeContextualAlternatesModes(
+  messages: OfficeMessageCatalog,
+): ReadonlyArray<{
   value: DocumentOpenTypeContextualAlternatesMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'inherit', label: '跟随样式' },
-  { value: 'enabled', label: '启用' },
-  { value: 'disabled', label: '禁用' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    {
+      value: 'enabled',
+      label: officeMessage(messages, 'document.font.mode.enabled'),
+    },
+    {
+      value: 'disabled',
+      label: officeMessage(messages, 'document.font.mode.disabled'),
+    },
+  ];
+}
 
 export function DocumentFontDialog({
   source,
@@ -164,6 +377,15 @@ export function DocumentFontDialog({
   onApply: (patch: DocumentFontDialogPatch) => boolean;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
+  const spacingModes = characterSpacingModes(messages);
+  const positionModes = characterPositionModes(messages);
+  const emphasisModes = emphasisMarkModes(messages);
+  const ligatureModes = openTypeLigatureModes(messages);
+  const numberFormModes = openTypeNumberFormModes(messages);
+  const numberSpacingModes = openTypeNumberSpacingModes(messages);
+  const stylisticSetModes = openTypeStylisticSetModes(messages);
+  const contextualAlternateModes = openTypeContextualAlternatesModes(messages);
   const [draft, setDraft] = useState(() =>
     createDocumentFontDialogDraft(source),
   );
@@ -199,7 +421,7 @@ export function DocumentFontDialog({
     setOpenTypeContextualAlternatesTouched,
   ] = useState(false);
   const formId = useId();
-  const error = documentFontDialogDraftError(draft);
+  const error = documentFontDialogDraftError(draft, messages);
   const patch = documentFontDialogPatch(source, draft, {
     characterPosition: characterPositionTouched,
     characterScale: characterScaleTouched,
@@ -278,8 +500,8 @@ export function DocumentFontDialog({
 
   return (
     <Dialog
-      title="字体高级设置"
-      description={fontDialogDescription(source)}
+      title={officeMessage(messages, 'document.font.dialog.title')}
+      description={fontDialogDescription(messages, source)}
       className="work-document-font-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
@@ -293,7 +515,7 @@ export function DocumentFontDialog({
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'document.font.dialog.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -301,21 +523,21 @@ export function DocumentFontDialog({
             form={formId}
             disabled={!hasChanges || Boolean(error)}
           >
-            应用
+            {officeMessage(messages, 'document.font.dialog.apply')}
           </Button>
         </>
       }
     >
       <form id={formId} onSubmit={submit}>
         <fieldset className="work-document-font-dialog-script-fonts">
-          <legend>按文字系统设置字体</legend>
+          <legend>{officeMessage(messages, 'document.font.script.legend')}</legend>
           <div className="work-document-font-dialog-field">
-            <span>拉丁文字</span>
+            <span>{officeMessage(messages, 'document.font.script.latin')}</span>
             <OfficeSelect
-              ariaLabel="拉丁文字字体"
+              ariaLabel={officeMessage(messages, 'document.font.script.latinAria')}
               initialFocus
               value={draft.latinFont}
-              options={scriptFontOptions(draft.latinFont, layoutFonts)}
+              options={scriptFontOptions(messages, draft.latinFont, layoutFonts)}
               onValueChange={(latinFont) => {
                 setDraft((current) => ({ ...current, latinFont }));
                 setLatinFontTouched(true);
@@ -323,11 +545,11 @@ export function DocumentFontDialog({
             />
           </div>
           <div className="work-document-font-dialog-field">
-            <span>东亚文字</span>
+            <span>{officeMessage(messages, 'document.font.script.eastAsia')}</span>
             <OfficeSelect
-              ariaLabel="东亚文字字体"
+              ariaLabel={officeMessage(messages, 'document.font.script.eastAsiaAria')}
               value={draft.eastAsiaFont}
-              options={scriptFontOptions(draft.eastAsiaFont, layoutFonts)}
+              options={scriptFontOptions(messages, draft.eastAsiaFont, layoutFonts)}
               onValueChange={(eastAsiaFont) => {
                 setDraft((current) => ({ ...current, eastAsiaFont }));
                 setEastAsiaFontTouched(true);
@@ -335,11 +557,11 @@ export function DocumentFontDialog({
             />
           </div>
           <div className="work-document-font-dialog-field">
-            <span>复杂文字</span>
+            <span>{officeMessage(messages, 'document.font.script.complex')}</span>
             <OfficeSelect
-              ariaLabel="复杂文字字体"
+              ariaLabel={officeMessage(messages, 'document.font.script.complexAria')}
               value={draft.complexScriptFont}
-              options={scriptFontOptions(draft.complexScriptFont, layoutFonts)}
+              options={scriptFontOptions(messages, draft.complexScriptFont, layoutFonts)}
               onValueChange={(complexScriptFont) => {
                 setDraft((current) => ({ ...current, complexScriptFont }));
                 setComplexScriptFontTouched(true);
@@ -348,33 +570,35 @@ export function DocumentFontDialog({
           </div>
           {source.latinFont.mixed && !latinFontTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含不同的拉丁文字字体。选择字体后才会统一修改。
+              {officeMessage(messages, 'document.font.script.mixedLatin')}
             </p>
           )}
           {source.eastAsiaFont.mixed && !eastAsiaFontTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含不同的东亚文字字体。选择字体后才会统一修改。
+              {officeMessage(messages, 'document.font.script.mixedEastAsia')}
             </p>
           )}
           {source.complexScriptFont.mixed && !complexScriptFontTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含不同的复杂文字字体。选择字体后才会统一修改。
+              {officeMessage(messages, 'document.font.script.mixedComplex')}
             </p>
           )}
         </fieldset>
         <fieldset className="work-document-font-dialog-spacing">
-          <legend>字符缩放、间距、字距调整、位置与文字效果</legend>
+          <legend>{officeMessage(messages, 'document.font.spacing.legend')}</legend>
           <div className="work-document-font-dialog-field">
-            <span>缩放</span>
+            <span>{officeMessage(messages, 'document.font.spacing.scale')}</span>
             <span className="work-document-font-dialog-measure">
               <OfficeNumberField
-                ariaLabel="字符缩放比例（%）"
+                ariaLabel={officeMessage(messages, 'document.font.spacing.scaleAria')}
                 value={draft.characterScalePercent}
                 min={1}
                 max={600}
                 step={1}
                 placeholder={
-                  draft.characterScaleMode === 'mixed' ? '混合' : undefined
+                  draft.characterScaleMode === 'mixed'
+                    ? officeMessage(messages, 'document.font.spacing.mixedPlaceholder')
+                    : undefined
                 }
                 validationInvalid={Boolean(error)}
                 onValueChange={(characterScalePercent) => {
@@ -390,11 +614,11 @@ export function DocumentFontDialog({
             </span>
           </div>
           <div className="work-document-font-dialog-field">
-            <span>间距</span>
+            <span>{officeMessage(messages, 'document.font.spacing.spacing')}</span>
             <OfficeSelect
-              ariaLabel="字符间距"
+              ariaLabel={officeMessage(messages, 'document.font.spacing.spacingAria')}
               value={draft.characterSpacingMode}
-              options={characterSpacingModes}
+              options={spacingModes}
               onValueChange={(characterSpacingMode) => {
                 setDraft((current) => ({
                   ...current,
@@ -405,10 +629,10 @@ export function DocumentFontDialog({
             />
           </div>
           <div className="work-document-font-dialog-field">
-            <span>间距值</span>
+            <span>{officeMessage(messages, 'document.font.spacing.spacingValue')}</span>
             <span className="work-document-font-dialog-measure">
               <OfficeNumberField
-                ariaLabel="间距值（磅）"
+                ariaLabel={officeMessage(messages, 'document.font.spacing.spacingValueAria')}
                 value={draft.characterSpacingPoints}
                 min={0.05}
                 max={1584}
@@ -426,12 +650,12 @@ export function DocumentFontDialog({
                   setCharacterSpacingTouched(true);
                 }}
               />
-              <span aria-hidden="true">磅</span>
+              <span aria-hidden="true">{officeMessage(messages, 'document.font.unit.points')}</span>
             </span>
           </div>
           <div className="work-document-font-dialog-field">
             <OfficeCheckbox
-              ariaLabel="为字号达到以下值的字体调整字距"
+              ariaLabel={officeMessage(messages, 'document.font.kerning.label')}
               checked={draft.kerningEnabled}
               indeterminate={source.kerningThreshold.mixed && !kerningTouched}
               onCheckedChange={(kerningEnabled) => {
@@ -439,11 +663,11 @@ export function DocumentFontDialog({
                 setKerningTouched(true);
               }}
             >
-              为字号达到以下值的字体调整字距
+              {officeMessage(messages, 'document.font.kerning.label')}
             </OfficeCheckbox>
             <span className="work-document-font-dialog-measure">
               <OfficeNumberField
-                ariaLabel="字距调整阈值（磅）"
+                ariaLabel={officeMessage(messages, 'document.font.kerning.thresholdAria')}
                 value={draft.kerningThresholdPoints}
                 min={0}
                 max={DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS / 2}
@@ -459,15 +683,15 @@ export function DocumentFontDialog({
                   setKerningTouched(true);
                 }}
               />
-              <span aria-hidden="true">磅</span>
+              <span aria-hidden="true">{officeMessage(messages, 'document.font.unit.points')}</span>
             </span>
           </div>
           <div className="work-document-font-dialog-field">
-            <span>位置</span>
+            <span>{officeMessage(messages, 'document.font.position')}</span>
             <OfficeSelect
-              ariaLabel="字符位置"
+              ariaLabel={officeMessage(messages, 'document.font.positionAria')}
               value={draft.characterPositionMode}
-              options={characterPositionModes}
+              options={positionModes}
               onValueChange={(characterPositionMode) => {
                 setDraft((current) => ({
                   ...current,
@@ -478,10 +702,10 @@ export function DocumentFontDialog({
             />
           </div>
           <div className="work-document-font-dialog-field">
-            <span>位置值</span>
+            <span>{officeMessage(messages, 'document.font.positionValue')}</span>
             <span className="work-document-font-dialog-measure">
               <OfficeNumberField
-                ariaLabel="位置值（磅）"
+                ariaLabel={officeMessage(messages, 'document.font.positionValueAria')}
                 value={draft.characterPositionPoints}
                 min={0.5}
                 max={1584}
@@ -499,15 +723,15 @@ export function DocumentFontDialog({
                   setCharacterPositionTouched(true);
                 }}
               />
-              <span aria-hidden="true">磅</span>
+              <span aria-hidden="true">{officeMessage(messages, 'document.font.unit.points')}</span>
             </span>
           </div>
           <div className="work-document-font-dialog-field">
-            <span>着重号</span>
+            <span>{officeMessage(messages, 'document.font.emphasis')}</span>
             <OfficeSelect
-              ariaLabel="着重号"
+              ariaLabel={officeMessage(messages, 'document.font.emphasisAria')}
               value={draft.emphasisMark}
-              options={emphasisMarkModes}
+              options={emphasisModes}
               onValueChange={(emphasisMark) => {
                 setDraft((current) => ({ ...current, emphasisMark }));
                 setEmphasisTouched(true);
@@ -516,7 +740,7 @@ export function DocumentFontDialog({
           </div>
           <div className="work-document-font-dialog-field work-document-font-dialog-hidden-text">
             <OfficeCheckbox
-              ariaLabel="隐藏文字"
+              ariaLabel={officeMessage(messages, 'document.font.hiddenText')}
               checked={draft.hiddenText}
               indeterminate={source.hiddenText.mixed && !hiddenTextTouched}
               onCheckedChange={(hiddenText) => {
@@ -524,15 +748,15 @@ export function DocumentFontDialog({
                 setHiddenTextTouched(true);
               }}
             >
-              隐藏文字
+              {officeMessage(messages, 'document.font.hiddenText')}
             </OfficeCheckbox>
           </div>
           <fieldset
             className="work-document-font-dialog-legacy-effects"
-            aria-label="文字效果"
+            aria-label={officeMessage(messages, 'document.font.effects.groupAria')}
           >
             <OfficeCheckbox
-              ariaLabel="空心"
+              ariaLabel={officeMessage(messages, 'document.font.effects.outline')}
               checked={draft.legacyTextOutline}
               indeterminate={
                 source.legacyTextOutline.mixed && !legacyTextOutlineTouched
@@ -555,10 +779,10 @@ export function DocumentFontDialog({
                 }
               }}
             >
-              空心
+              {officeMessage(messages, 'document.font.effects.outline')}
             </OfficeCheckbox>
             <OfficeCheckbox
-              ariaLabel="阴影"
+              ariaLabel={officeMessage(messages, 'document.font.effects.shadow')}
               checked={draft.legacyTextShadow}
               indeterminate={
                 source.legacyTextShadow.mixed && !legacyTextShadowTouched
@@ -581,10 +805,10 @@ export function DocumentFontDialog({
                 }
               }}
             >
-              阴影
+              {officeMessage(messages, 'document.font.effects.shadow')}
             </OfficeCheckbox>
             <OfficeCheckbox
-              ariaLabel="阳文"
+              ariaLabel={officeMessage(messages, 'document.font.effects.emboss')}
               checked={draft.legacyTextEmboss}
               indeterminate={
                 source.legacyTextEmboss.mixed && !legacyTextEmbossTouched
@@ -609,10 +833,10 @@ export function DocumentFontDialog({
                 }
               }}
             >
-              阳文
+              {officeMessage(messages, 'document.font.effects.emboss')}
             </OfficeCheckbox>
             <OfficeCheckbox
-              ariaLabel="阴文"
+              ariaLabel={officeMessage(messages, 'document.font.effects.imprint')}
               checked={draft.legacyTextImprint}
               indeterminate={
                 source.legacyTextImprint.mixed && !legacyTextImprintTouched
@@ -637,7 +861,7 @@ export function DocumentFontDialog({
                 }
               }}
             >
-              阴文
+              {officeMessage(messages, 'document.font.effects.imprint')}
             </OfficeCheckbox>
           </fieldset>
           <DocumentFontDialogRunBorderSection
@@ -659,13 +883,13 @@ export function DocumentFontDialog({
             onTouched={() => setRunShadingTouched(true)}
           />
           <fieldset className="work-document-font-dialog-opentype">
-            <legend>OpenType 排版</legend>
+            <legend>{officeMessage(messages, 'document.font.openType.legend')}</legend>
             <div className="work-document-font-dialog-field">
-              <span>连字</span>
+              <span>{officeMessage(messages, 'document.font.openType.ligatures')}</span>
               <OfficeSelect
-                ariaLabel="OpenType 连字"
+                ariaLabel={officeMessage(messages, 'document.font.openType.ligaturesAria')}
                 value={draft.openTypeLigatures}
-                options={openTypeLigatureModes}
+                options={ligatureModes}
                 onValueChange={(openTypeLigatures) => {
                   setDraft((current) => ({
                     ...current,
@@ -676,11 +900,11 @@ export function DocumentFontDialog({
               />
             </div>
             <div className="work-document-font-dialog-field">
-              <span>数字字形</span>
+              <span>{officeMessage(messages, 'document.font.openType.numberForm')}</span>
               <OfficeSelect
-                ariaLabel="OpenType 数字字形"
+                ariaLabel={officeMessage(messages, 'document.font.openType.numberFormAria')}
                 value={draft.openTypeNumberForm}
-                options={openTypeNumberFormModes}
+                options={numberFormModes}
                 onValueChange={(openTypeNumberForm) => {
                   setDraft((current) => ({
                     ...current,
@@ -691,11 +915,11 @@ export function DocumentFontDialog({
               />
             </div>
             <div className="work-document-font-dialog-field">
-              <span>数字间距</span>
+              <span>{officeMessage(messages, 'document.font.openType.numberSpacing')}</span>
               <OfficeSelect
-                ariaLabel="OpenType 数字间距"
+                ariaLabel={officeMessage(messages, 'document.font.openType.numberSpacingAria')}
                 value={draft.openTypeNumberSpacing}
-                options={openTypeNumberSpacingModes}
+                options={numberSpacingModes}
                 onValueChange={(openTypeNumberSpacing) => {
                   setDraft((current) => ({
                     ...current,
@@ -706,11 +930,11 @@ export function DocumentFontDialog({
               />
             </div>
             <div className="work-document-font-dialog-field">
-              <span>样式集</span>
+              <span>{officeMessage(messages, 'document.font.openType.stylisticSets')}</span>
               <OfficeSelect
-                ariaLabel="OpenType 样式集"
+                ariaLabel={officeMessage(messages, 'document.font.openType.stylisticSetsAria')}
                 value={draft.openTypeStylisticSets}
-                options={openTypeStylisticSetModes}
+                options={stylisticSetModes}
                 onValueChange={(openTypeStylisticSets) => {
                   setDraft((current) => ({
                     ...current,
@@ -721,11 +945,11 @@ export function DocumentFontDialog({
               />
             </div>
             <div className="work-document-font-dialog-field">
-              <span>上下文替代</span>
+              <span>{officeMessage(messages, 'document.font.openType.contextualAlternates')}</span>
               <OfficeSelect
-                ariaLabel="OpenType 上下文替代"
+                ariaLabel={officeMessage(messages, 'document.font.openType.contextualAlternatesAria')}
                 value={draft.openTypeContextualAlternates}
-                options={openTypeContextualAlternatesModes}
+                options={contextualAlternateModes}
                 onValueChange={(openTypeContextualAlternates) => {
                   setDraft((current) => ({
                     ...current,
@@ -744,39 +968,38 @@ export function DocumentFontDialog({
               (source.openTypeContextualAlternates.mixed &&
                 !openTypeContextualAlternatesTouched)) && (
               <p className="work-document-font-dialog-mixed" role="status">
-                当前选区包含不同的 OpenType
-                排版设置。仅修改所选项目，其他原生设置保持不变。
+                {officeMessage(messages, 'document.font.openType.mixed')}
               </p>
             )}
           </fieldset>
           {source.characterScale.mixed && !characterScaleTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。
+              {officeMessage(messages, 'document.font.mixed.scale')}
             </p>
           )}
           {source.characterSpacing.mixed && !characterSpacingTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含多种字符间距。选择一种间距后才会统一修改。
+              {officeMessage(messages, 'document.font.mixed.spacing')}
             </p>
           )}
           {source.characterPosition.mixed && !characterPositionTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含多种字符位置。选择一种位置后才会统一修改。
+              {officeMessage(messages, 'document.font.mixed.position')}
             </p>
           )}
           {source.kerningThreshold.mixed && !kerningTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含不同的字距调整设置。勾选或取消后才会统一修改。
+              {officeMessage(messages, 'document.font.mixed.kerning')}
             </p>
           )}
           {source.emphasisMark.mixed && !emphasisTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含不同的着重号。选择一种设置后才会统一修改。
+              {officeMessage(messages, 'document.font.mixed.emphasis')}
             </p>
           )}
           {source.hiddenText.mixed && !hiddenTextTouched && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区同时包含隐藏和可见文字。勾选或取消后才会统一修改。
+              {officeMessage(messages, 'document.font.mixed.hiddenText')}
             </p>
           )}
           {((source.legacyTextOutline.mixed && !legacyTextOutlineTouched) ||
@@ -784,7 +1007,7 @@ export function DocumentFontDialog({
             (source.legacyTextEmboss.mixed && !legacyTextEmbossTouched) ||
             (source.legacyTextImprint.mixed && !legacyTextImprintTouched)) && (
             <p className="work-document-font-dialog-mixed" role="status">
-              当前选区包含不同的空心、阴影、阳文或阴文设置。勾选或取消对应选项后才会统一修改。
+              {officeMessage(messages, 'document.font.mixed.legacyEffects')}
             </p>
           )}
           {(characterScaleTouched ||
@@ -812,9 +1035,9 @@ export function DocumentFontDialog({
         </fieldset>
         <section
           className="work-document-font-dialog-preview"
-          aria-label="字符高级格式预览"
+          aria-label={officeMessage(messages, 'document.font.preview.aria')}
         >
-          <span>预览</span>
+<span>{officeMessage(messages, 'document.font.preview.label')}</span>
           <output
             style={{
               fontFamily: source.fontFamily ?? undefined,
@@ -950,17 +1173,27 @@ function previewDocumentEmphasis(
 }
 
 function scriptFontOptions(
+  messages: OfficeMessageCatalog,
   value: string,
   layoutFonts: readonly WorkDocumentLayoutFont[],
 ): readonly OfficeSelectOption[] {
   const catalogValue =
     value === 'mixed' || value === 'inherit' ? 'default' : value;
   return [
-    { value: 'mixed', label: '混合（保持不变）', disabled: true },
-    { value: 'inherit', label: '跟随样式' },
-    ...documentFontFamilyOptionsForValue(catalogValue, layoutFonts).filter(
-      (option) => option.value !== 'default',
-    ),
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    ...documentFontFamilyOptionsForValue(
+      catalogValue,
+      layoutFonts,
+      messages,
+    ).filter((option) => option.value !== 'default'),
   ];
 }
 
@@ -973,8 +1206,13 @@ function previewScriptFontFamily(
     : value;
 }
 
-function fontDialogDescription(source: DocumentFontDialogSource): string {
+function fontDialogDescription(
+  messages: OfficeMessageCatalog,
+  source: DocumentFontDialogSource,
+): string {
   return source.selectedCharacters
-    ? `分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版（${source.selectedCharacters} 个字符）。`
-    : '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版。';
+    ? officeMessage(messages, 'document.font.dialog.description.selection', {
+        count: String(source.selectedCharacters),
+      })
+    : officeMessage(messages, 'document.font.dialog.description.caret');
 }

@@ -609,7 +609,7 @@ test('previews every font option with the font it applies', async () => {
   await waitFor(() =>
     expect(screen.getByRole('option', { name: '默认字体' })).toHaveFocus(),
   );
-  for (const option of documentFontFamilyOptions) {
+  for (const option of documentFontFamilyOptions()) {
     if (!('previewStyle' in option)) continue;
     const menuOption = screen.getByRole('option', { name: option.label });
     expect(

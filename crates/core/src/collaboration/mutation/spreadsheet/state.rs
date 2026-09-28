@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use a3s_use_core::UseResult;
 use serde_json::Value as JsonValue;
-use yrs::{Any, Array, ArrayRef, GetString, Map, MapRef, Out, Transact};
+use yrs::{Any, Array, ArrayRef, GetString, Map, MapRef, Out, TextPrelim, Transact};
 
 use super::json::{
     any_to_json, decode_flat_json_key, reconstruct_cell, validate_shared_cell_json,
@@ -311,6 +311,159 @@ pub(super) fn write_cell_changes(
         state
             .row_lengths_ref
             .insert_range(&mut transaction, 0, lengths.into_iter().map(f64::from));
+    }
+    Ok(())
+}
+
+pub(super) struct SpreadsheetTextMove {
+    pub(super) texts: MapRef,
+    pub(super) from: String,
+    pub(super) to: Option<String>,
+    pub(super) content: String,
+}
+
+pub(super) struct SpreadsheetReferenceWrite {
+    pub(super) map: MapRef,
+    pub(super) key: String,
+    pub(super) value: Any,
+}
+
+pub(super) struct SpreadsheetKeyRemoval {
+    pub(super) map: MapRef,
+    pub(super) key: String,
+}
+
+pub(super) struct SpreadsheetArrayRemoval {
+    pub(super) array: ArrayRef,
+    pub(super) index: u32,
+}
+
+pub(super) struct SheetStructureCommit {
+    pub(super) state: SpreadsheetSheetState,
+    pub(super) changes: Vec<SpreadsheetCellWrite>,
+    pub(super) next_row_lengths: Option<Vec<u32>>,
+}
+
+/// Apply cell moves, formula-field patches, dense dimensions, relocated cell
+/// text, and rewritten reference fields in one transaction.
+///
+/// Key and array removals run before reference inserts so a renamed merge or
+/// a deleted table cannot erase the value that replaced it.
+pub(super) fn commit_sheet_structure(
+    doc: &yrs::Doc,
+    sheets: Vec<SheetStructureCommit>,
+    text_moves: Vec<SpreadsheetTextMove>,
+    references: Vec<SpreadsheetReferenceWrite>,
+    removals: Vec<SpreadsheetKeyRemoval>,
+    mut array_removals: Vec<SpreadsheetArrayRemoval>,
+) -> UseResult<()> {
+    let encoded = sheets
+        .iter()
+        .map(|sheet| {
+            let changes = sheet
+                .changes
+                .iter()
+                .map(|change| {
+                    let patches = change
+                        .patches
+                        .iter()
+                        .map(|patch| match patch {
+                            FlatJsonPatch::Remove(flat_key) => {
+                                encode_cell_field_key(change.row, change.column, flat_key)
+                                    .map(EncodedFieldPatch::Remove)
+                            }
+                            FlatJsonPatch::Set(flat_key, value) => {
+                                encode_cell_field_key(change.row, change.column, flat_key)
+                                    .map(|key| EncodedFieldPatch::Set(key, value.clone()))
+                            }
+                        })
+                        .collect::<UseResult<Vec<_>>>()?;
+                    Ok((
+                        patches,
+                        encode_coordinate(change.row, change.column),
+                        change.presence,
+                    ))
+                })
+                .collect::<UseResult<Vec<_>>>()?;
+            Ok((sheet, changes))
+        })
+        .collect::<UseResult<Vec<_>>>()?;
+
+    let mut transaction = doc.transact_mut();
+    for (sheet, changes) in encoded {
+        for (patches, coordinate, presence) in changes {
+            for patch in patches {
+                match patch {
+                    EncodedFieldPatch::Remove(key) => {
+                        sheet.state.fields.remove(&mut transaction, key.as_str());
+                    }
+                    EncodedFieldPatch::Set(key, value) => {
+                        sheet.state.fields.insert(&mut transaction, key, value);
+                    }
+                }
+            }
+            match presence {
+                SpreadsheetCellPresenceChange::Keep => {}
+                SpreadsheetCellPresenceChange::Insert => {
+                    sheet
+                        .state
+                        .presence
+                        .insert(&mut transaction, coordinate, true);
+                }
+                SpreadsheetCellPresenceChange::Remove => {
+                    sheet
+                        .state
+                        .presence
+                        .remove(&mut transaction, coordinate.as_str());
+                }
+            }
+        }
+        if let Some(lengths) = sheet
+            .next_row_lengths
+            .as_ref()
+            .filter(|lengths| *lengths != &sheet.state.row_lengths)
+        {
+            let current_len = sheet.state.row_lengths_ref.len(&transaction);
+            if current_len > 0 {
+                sheet
+                    .state
+                    .row_lengths_ref
+                    .remove_range(&mut transaction, 0, current_len);
+            }
+            sheet.state.row_lengths_ref.insert_range(
+                &mut transaction,
+                0,
+                lengths.iter().copied().map(f64::from),
+            );
+        }
+    }
+    for text_move in &text_moves {
+        text_move
+            .texts
+            .remove(&mut transaction, text_move.from.as_str());
+    }
+    for text_move in text_moves {
+        if let Some(to) = text_move.to {
+            text_move.texts.insert(
+                &mut transaction,
+                to.as_str(),
+                TextPrelim::new(text_move.content),
+            );
+        }
+    }
+    for removal in removals {
+        removal.map.remove(&mut transaction, removal.key.as_str());
+    }
+    array_removals.sort_by_key(|removal| std::cmp::Reverse(removal.index));
+    for removal in array_removals {
+        removal
+            .array
+            .remove_range(&mut transaction, removal.index, 1);
+    }
+    for reference in references {
+        reference
+            .map
+            .insert(&mut transaction, reference.key, reference.value);
     }
     Ok(())
 }

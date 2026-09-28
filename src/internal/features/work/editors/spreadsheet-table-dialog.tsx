@@ -1,7 +1,9 @@
 import { Table2 } from 'lucide-react';
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { OfficeCheckbox } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import type {
   SpreadsheetTableDialogSource,
   SpreadsheetTableDialogValue,
@@ -20,6 +22,7 @@ export function SpreadsheetTableDialog({
   onClose: () => void;
   onValidate: (value: SpreadsheetTableDialogValue) => string | null;
 }) {
+  const messages = useOfficeMessages();
   const [value, setValue] = useState(source.value);
   const [touched, setTouched] = useState(false);
   const formId = useId();
@@ -44,7 +47,7 @@ export function SpreadsheetTableDialog({
 
   return (
     <Dialog
-      title="创建表格"
+      title={officeMessage(messages, 'spreadsheet.tableDialog.title')}
       description={source.sheetName}
       className="work-spreadsheet-table-dialog"
       restoreFocusTarget={restoreFocusTarget}
@@ -59,7 +62,7 @@ export function SpreadsheetTableDialog({
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.tableDialog.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -67,7 +70,7 @@ export function SpreadsheetTableDialog({
             form={formId}
             disabled={Boolean(validationError)}
           >
-            确定
+            {officeMessage(messages, 'spreadsheet.tableDialog.confirm')}
           </Button>
         </>
       }
@@ -79,14 +82,19 @@ export function SpreadsheetTableDialog({
           </span>
           <div>
             <strong>{source.name}</strong>
-            <small>将连续数据区域转换为原生工作表表格</small>
+            <small>
+              {officeMessage(messages, 'spreadsheet.tableDialog.hint')}
+            </small>
           </div>
         </div>
         <Field
-          label="表格区域"
+          label={officeMessage(messages, 'spreadsheet.tableDialog.range')}
           required
           error={visibleError ?? undefined}
-          description="输入一个连续区域，例如 A1:C20。"
+          description={officeMessage(
+            messages,
+            'spreadsheet.tableDialog.rangeDesc',
+          )}
         >
           <input
             type="text"
@@ -106,22 +114,28 @@ export function SpreadsheetTableDialog({
           />
         </Field>
         <OfficeCheckbox
-          ariaLabel="表包含标题"
+          ariaLabel={officeMessage(
+            messages,
+            'spreadsheet.tableDialog.headerRow',
+          )}
           checked={value.headerRow}
           onCheckedChange={(headerRow) =>
             setValue((current) => ({ ...current, headerRow }))
           }
         >
-          表包含标题
+          {officeMessage(messages, 'spreadsheet.tableDialog.headerRow')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="启用汇总行"
+          ariaLabel={officeMessage(
+            messages,
+            'spreadsheet.tableDialog.totalsRow',
+          )}
           checked={value.totalsRow === true}
           onCheckedChange={(totalsRow) =>
             setValue((current) => ({ ...current, totalsRow }))
           }
         >
-          启用汇总行
+          {officeMessage(messages, 'spreadsheet.tableDialog.totalsRow')}
         </OfficeCheckbox>
       </form>
     </Dialog>

@@ -7,6 +7,8 @@ import {
   AlignRight,
 } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type {
   DocumentTableAlignment,
   DocumentTableCellMarginSide,
@@ -26,77 +28,7 @@ import {
   OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
-
-const tabs = [
-  { value: 'table', label: '表格' },
-  { value: 'row', label: '行' },
-  { value: 'column', label: '列' },
-  { value: 'cell', label: '单元格' },
-] as const satisfies readonly {
-  value: DocumentTablePropertiesTab;
-  label: string;
-}[];
-
-const widthOptions = [
-  { value: 'auto', label: '自动' },
-  { value: 'percent', label: '百分比' },
-  { value: 'pixels', label: '厘米' },
-] as const satisfies readonly {
-  value: DocumentTablePreferredWidthType;
-  label: string;
-}[];
-
-const columnWidthOptions = [
-  { value: 'pixels', label: '厘米' },
-  { value: 'percent', label: '百分比' },
-] as const satisfies readonly {
-  value: DocumentTableColumnWidthType;
-  label: string;
-}[];
-
-const alignmentOptions = [
-  { value: 'left', label: '左对齐', icon: AlignLeft },
-  { value: 'center', label: '居中', icon: AlignCenter },
-  { value: 'right', label: '右对齐', icon: AlignRight },
-] as const satisfies readonly {
-  value: DocumentTableAlignment;
-  label: string;
-  icon: typeof AlignLeft;
-}[];
-
-const rowHeightRuleOptions = [
-  { value: 'atLeast', label: '最小值' },
-  { value: 'exact', label: '固定值' },
-] as const;
-
-const verticalAlignmentOptions = [
-  {
-    value: 'top',
-    label: '顶端',
-    icon: AlignVerticalJustifyStart,
-  },
-  {
-    value: 'middle',
-    label: '居中',
-    icon: AlignVerticalJustifyCenter,
-  },
-  {
-    value: 'bottom',
-    label: '底端',
-    icon: AlignVerticalJustifyEnd,
-  },
-] as const;
-
-const marginFields = [
-  { side: 'top', label: '上', ariaLabel: '当前单元格上边距（厘米）' },
-  { side: 'bottom', label: '下', ariaLabel: '当前单元格下边距（厘米）' },
-  { side: 'left', label: '左', ariaLabel: '当前单元格左边距（厘米）' },
-  { side: 'right', label: '右', ariaLabel: '当前单元格右边距（厘米）' },
-] as const satisfies readonly {
-  side: DocumentTableCellMarginSide;
-  label: string;
-  ariaLabel: string;
-}[];
+import { useOfficeMessages } from './office-messages-context';
 
 interface SectionProps {
   draft: DocumentTablePropertiesDraft;
@@ -114,13 +46,14 @@ export function DocumentTablePropertiesTabs({
   idBase: string;
   onTabChange: (tab: DocumentTablePropertiesTab) => void;
 }) {
+  const messages = useOfficeMessages();
   return (
     <div
       className="work-document-table-properties-tabs"
       role="tablist"
-      aria-label="表格属性分类"
+      aria-label={officeMessage(messages, 'document.table.properties.tabsAria')}
     >
-      {tabs.map((tab) => (
+      {tablePropertiesTabs(messages).map((tab) => (
         <button
           key={tab.value}
           type="button"
@@ -163,12 +96,16 @@ export function DocumentTablePropertiesPanel({
 }
 
 function TableSection({ draft, setDraft, errors, source }: SectionProps) {
+  const messages = useOfficeMessages();
+  const cm = officeMessage(messages, 'document.table.properties.unit.cm');
   return (
     <>
       <fieldset className="work-document-table-properties-section">
-        <legend>首选宽度</legend>
+        <legend>
+          {officeMessage(messages, 'document.table.properties.preferredWidth')}
+        </legend>
         <div className="work-document-table-properties-choice-grid width">
-          {widthOptions.map((option) => (
+          {widthOptions(messages).map((option) => (
             <label key={option.value}>
               <input
                 type="radio"
@@ -194,14 +131,18 @@ function TableSection({ draft, setDraft, errors, source }: SectionProps) {
         </div>
         {draft.table.widthType !== 'auto' && (
           <NumberRow
-            label="宽度"
-            ariaLabel={
+            label={officeMessage(
+              messages,
+              'document.table.properties.widthLabel',
+            )}
+            ariaLabel={officeMessage(
+              messages,
               draft.table.widthType === 'percent'
-                ? '表格宽度（百分比）'
-                : '表格宽度（厘米）'
-            }
+                ? 'document.table.properties.tableWidthPercentAria'
+                : 'document.table.properties.tableWidthCmAria',
+            )}
             value={draft.table.width}
-            unit={draft.table.widthType === 'percent' ? '%' : '厘米'}
+            unit={draft.table.widthType === 'percent' ? '%' : cm}
             min={draft.table.widthType === 'percent' ? 1 : 0.5}
             max={draft.table.widthType === 'percent' ? 100 : 30}
             step={draft.table.widthType === 'percent' ? 1 : 0.1}
@@ -218,9 +159,11 @@ function TableSection({ draft, setDraft, errors, source }: SectionProps) {
       </fieldset>
 
       <fieldset className="work-document-table-properties-section">
-        <legend>位置</legend>
+        <legend>
+          {officeMessage(messages, 'document.table.properties.position')}
+        </legend>
         <div className="work-document-table-properties-choice-grid alignment">
-          {alignmentOptions.map((option) => {
+          {alignmentOptions(messages).map((option) => {
             const Icon = option.icon;
             return (
               <label key={option.value}>
@@ -248,10 +191,13 @@ function TableSection({ draft, setDraft, errors, source }: SectionProps) {
           })}
         </div>
         <NumberRow
-          label="左缩进"
-          ariaLabel="表格左缩进（厘米）"
+          label={officeMessage(messages, 'document.table.properties.indent')}
+          ariaLabel={officeMessage(
+            messages,
+            'document.table.properties.indentAria',
+          )}
           value={draft.table.indent}
-          unit="厘米"
+          unit={cm}
           min={0}
           max={30}
           step={0.1}
@@ -271,12 +217,19 @@ function TableSection({ draft, setDraft, errors, source }: SectionProps) {
 }
 
 function RowSection({ draft, setDraft, errors, source }: SectionProps) {
+  const messages = useOfficeMessages();
+  const cm = officeMessage(messages, 'document.table.properties.unit.cm');
   return (
     <>
       <fieldset className="work-document-table-properties-section">
-        <legend>当前行尺寸</legend>
+        <legend>
+          {officeMessage(messages, 'document.table.properties.rowSize')}
+        </legend>
         <OfficeCheckbox
-          ariaLabel="指定行高"
+          ariaLabel={officeMessage(
+            messages,
+            'document.table.properties.specifyRowHeightAria',
+          )}
           checked={draft.row.heightEnabled}
           onCheckedChange={(heightEnabled) =>
             setDraft((current) => ({
@@ -285,13 +238,19 @@ function RowSection({ draft, setDraft, errors, source }: SectionProps) {
             }))
           }
         >
-          指定行高
+          {officeMessage(
+            messages,
+            'document.table.properties.specifyRowHeight',
+          )}
         </OfficeCheckbox>
         <NumberRow
-          label="行高"
-          ariaLabel="当前行高（厘米）"
+          label={officeMessage(messages, 'document.table.properties.rowHeight')}
+          ariaLabel={officeMessage(
+            messages,
+            'document.table.properties.rowHeightAria',
+          )}
           value={draft.row.height}
-          unit="厘米"
+          unit={cm}
           min={0.5}
           max={30}
           step={0.1}
@@ -305,11 +264,19 @@ function RowSection({ draft, setDraft, errors, source }: SectionProps) {
           }
         />
         <div className="work-document-table-properties-select-row">
-          <span>行高规则</span>
+          <span>
+            {officeMessage(
+              messages,
+              'document.table.properties.rowHeightRule',
+            )}
+          </span>
           <OfficeSelect
-            ariaLabel="行高规则"
+            ariaLabel={officeMessage(
+              messages,
+              'document.table.properties.rowHeightRuleAria',
+            )}
             value={draft.row.heightRule}
-            options={rowHeightRuleOptions}
+            options={rowHeightRuleOptions(messages)}
             disabled={!draft.row.heightEnabled}
             onValueChange={(heightRule) =>
               setDraft((current) => ({
@@ -323,10 +290,15 @@ function RowSection({ draft, setDraft, errors, source }: SectionProps) {
       </fieldset>
 
       <fieldset className="work-document-table-properties-section">
-        <legend>分页</legend>
+        <legend>
+          {officeMessage(messages, 'document.table.properties.pagination')}
+        </legend>
         <div className="work-document-table-properties-checkboxes">
           <OfficeCheckbox
-            ariaLabel="允许跨页断行"
+            ariaLabel={officeMessage(
+              messages,
+              'document.table.properties.allowSplitAria',
+            )}
             checked={!draft.row.cantSplit}
             onCheckedChange={(allowSplit) =>
               setDraft((current) => ({
@@ -335,10 +307,13 @@ function RowSection({ draft, setDraft, errors, source }: SectionProps) {
               }))
             }
           >
-            允许跨页断行
+            {officeMessage(messages, 'document.table.properties.allowSplit')}
           </OfficeCheckbox>
           <OfficeCheckbox
-            ariaLabel="在各页顶端重复标题行"
+            ariaLabel={officeMessage(
+              messages,
+              'document.table.properties.repeatHeaderAria',
+            )}
             checked={draft.row.repeatHeader}
             disabled={!source.canRepeatHeader}
             onCheckedChange={(repeatHeader) =>
@@ -348,7 +323,7 @@ function RowSection({ draft, setDraft, errors, source }: SectionProps) {
               }))
             }
           >
-            在各页顶端重复标题行
+            {officeMessage(messages, 'document.table.properties.repeatHeader')}
           </OfficeCheckbox>
         </div>
       </fieldset>
@@ -357,11 +332,15 @@ function RowSection({ draft, setDraft, errors, source }: SectionProps) {
 }
 
 function ColumnSection({ draft, setDraft, errors, source }: SectionProps) {
+  const messages = useOfficeMessages();
+  const cm = officeMessage(messages, 'document.table.properties.unit.cm');
   return (
     <fieldset className="work-document-table-properties-section">
-      <legend>当前列尺寸</legend>
+      <legend>
+        {officeMessage(messages, 'document.table.properties.columnSize')}
+      </legend>
       <div className="work-document-table-properties-choice-grid width">
-        {columnWidthOptions.map((option) => (
+        {columnWidthOptions(messages).map((option) => (
           <label key={option.value}>
             <input
               type="radio"
@@ -379,14 +358,18 @@ function ColumnSection({ draft, setDraft, errors, source }: SectionProps) {
         ))}
       </div>
       <NumberRow
-        label="列宽"
-        ariaLabel={
+        label={officeMessage(
+          messages,
+          'document.table.properties.columnWidth',
+        )}
+        ariaLabel={officeMessage(
+          messages,
           draft.column.widthType === 'percent'
-            ? '当前列宽（百分比）'
-            : '当前列宽（厘米）'
-        }
+            ? 'document.table.properties.columnWidthPercentAria'
+            : 'document.table.properties.columnWidthCmAria',
+        )}
         value={draft.column.width}
-        unit={draft.column.widthType === 'percent' ? '%' : '厘米'}
+        unit={draft.column.widthType === 'percent' ? '%' : cm}
         min={draft.column.widthType === 'percent' ? 1 : 0.5}
         max={draft.column.widthType === 'percent' ? 100 : 30}
         step={draft.column.widthType === 'percent' ? 1 : 0.1}
@@ -404,12 +387,16 @@ function ColumnSection({ draft, setDraft, errors, source }: SectionProps) {
 }
 
 function CellSection({ draft, setDraft, errors }: SectionProps) {
+  const messages = useOfficeMessages();
+  const cm = officeMessage(messages, 'document.table.properties.unit.cm');
   return (
     <>
       <fieldset className="work-document-table-properties-section">
-        <legend>垂直对齐</legend>
+        <legend>
+          {officeMessage(messages, 'document.table.properties.verticalAlign')}
+        </legend>
         <div className="work-document-table-properties-choice-grid alignment">
-          {verticalAlignmentOptions.map((option) => {
+          {verticalAlignmentOptions(messages).map((option) => {
             const Icon = option.icon;
             return (
               <label key={option.value}>
@@ -439,9 +426,14 @@ function CellSection({ draft, setDraft, errors }: SectionProps) {
       </fieldset>
 
       <fieldset className="work-document-table-properties-section">
-        <legend>单元格边距</legend>
+        <legend>
+          {officeMessage(messages, 'document.table.properties.cellMargins')}
+        </legend>
         <OfficeCheckbox
-          ariaLabel="使用表格默认边距"
+          ariaLabel={officeMessage(
+            messages,
+            'document.table.properties.useTableMarginsAria',
+          )}
           checked={draft.cell.useTableMargins}
           onCheckedChange={(useTableMargins) =>
             setDraft((current) => ({
@@ -450,10 +442,13 @@ function CellSection({ draft, setDraft, errors }: SectionProps) {
             }))
           }
         >
-          使用表格默认边距
+          {officeMessage(
+            messages,
+            'document.table.properties.useTableMargins',
+          )}
         </OfficeCheckbox>
         <div className="work-document-table-properties-margin-grid">
-          {marginFields.map(({ side, label, ariaLabel }) => (
+          {marginFields(messages).map(({ side, label, ariaLabel }) => (
             <div key={side} className="work-document-table-properties-margin">
               <span>{label}</span>
               <OfficeNumberField
@@ -474,7 +469,7 @@ function CellSection({ draft, setDraft, errors }: SectionProps) {
                   }))
                 }
               />
-              <small>厘米</small>
+              <small>{cm}</small>
               {errors.cellMargins[side] && (
                 <p role="alert">{errors.cellMargins[side]}</p>
               )}
@@ -484,6 +479,157 @@ function CellSection({ draft, setDraft, errors }: SectionProps) {
       </fieldset>
     </>
   );
+}
+
+function tablePropertiesTabs(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'table' as const,
+      label: officeMessage(messages, 'document.table.properties.tab.table'),
+    },
+    {
+      value: 'row' as const,
+      label: officeMessage(messages, 'document.table.properties.tab.row'),
+    },
+    {
+      value: 'column' as const,
+      label: officeMessage(messages, 'document.table.properties.tab.column'),
+    },
+    {
+      value: 'cell' as const,
+      label: officeMessage(messages, 'document.table.properties.tab.cell'),
+    },
+  ];
+}
+
+function widthOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'auto' as const satisfies DocumentTablePreferredWidthType,
+      label: officeMessage(messages, 'document.table.properties.width.auto'),
+    },
+    {
+      value: 'percent' as const,
+      label: officeMessage(messages, 'document.table.properties.width.percent'),
+    },
+    {
+      value: 'pixels' as const,
+      label: officeMessage(messages, 'document.table.properties.width.cm'),
+    },
+  ];
+}
+
+function columnWidthOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'pixels' as const satisfies DocumentTableColumnWidthType,
+      label: officeMessage(messages, 'document.table.properties.width.cm'),
+    },
+    {
+      value: 'percent' as const,
+      label: officeMessage(messages, 'document.table.properties.width.percent'),
+    },
+  ];
+}
+
+function alignmentOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'left' as const satisfies DocumentTableAlignment,
+      label: officeMessage(messages, 'document.table.properties.align.left'),
+      icon: AlignLeft,
+    },
+    {
+      value: 'center' as const,
+      label: officeMessage(messages, 'document.table.properties.align.center'),
+      icon: AlignCenter,
+    },
+    {
+      value: 'right' as const,
+      label: officeMessage(messages, 'document.table.properties.align.right'),
+      icon: AlignRight,
+    },
+  ];
+}
+
+function rowHeightRuleOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'atLeast',
+      label: officeMessage(
+        messages,
+        'document.table.properties.rowHeight.atLeast',
+      ),
+    },
+    {
+      value: 'exact',
+      label: officeMessage(
+        messages,
+        'document.table.properties.rowHeight.exact',
+      ),
+    },
+  ] as const;
+}
+
+function verticalAlignmentOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'top' as const,
+      label: officeMessage(messages, 'document.table.properties.align.top'),
+      icon: AlignVerticalJustifyStart,
+    },
+    {
+      value: 'middle' as const,
+      label: officeMessage(messages, 'document.table.properties.align.middle'),
+      icon: AlignVerticalJustifyCenter,
+    },
+    {
+      value: 'bottom' as const,
+      label: officeMessage(messages, 'document.table.properties.align.bottom'),
+      icon: AlignVerticalJustifyEnd,
+    },
+  ];
+}
+
+function marginFields(messages: OfficeMessageCatalog): Array<{
+  side: DocumentTableCellMarginSide;
+  label: string;
+  ariaLabel: string;
+}> {
+  return [
+    {
+      side: 'top',
+      label: officeMessage(messages, 'document.table.properties.margin.top'),
+      ariaLabel: officeMessage(
+        messages,
+        'document.table.properties.margin.topAria',
+      ),
+    },
+    {
+      side: 'bottom',
+      label: officeMessage(messages, 'document.table.properties.margin.bottom'),
+      ariaLabel: officeMessage(
+        messages,
+        'document.table.properties.margin.bottomAria',
+      ),
+    },
+    {
+      side: 'left',
+      label: officeMessage(messages, 'document.table.properties.margin.left'),
+      ariaLabel: officeMessage(
+        messages,
+        'document.table.properties.margin.leftAria',
+      ),
+    },
+    {
+      side: 'right',
+      label: officeMessage(messages, 'document.table.properties.margin.right'),
+      ariaLabel: officeMessage(
+        messages,
+        'document.table.properties.margin.rightAria',
+      ),
+    },
+  ];
 }
 
 function NumberRow({

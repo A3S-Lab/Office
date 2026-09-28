@@ -1,6 +1,9 @@
 import JSZip from 'jszip';
 import { decodeXmlBytes } from './work-ooxml-xml';
 
+const RELATIONSHIPS_NS =
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
 export interface OoxmlRelationship {
   id: string;
   target: string;
@@ -77,14 +80,54 @@ export class OoxmlPackage {
   }
 }
 
+/**
+ * Parse Office Open XML with the environment DOMParser.
+ *
+ * Spec-compliant browsers keep both `id` and `r:id` on the same element.
+ * happy-dom drops the prefixed attribute when an unprefixed attribute of the
+ * same local name appears earlier on the start tag (real PPTX: `id="256"
+ * r:id="rId2"`). Neutralize that collision before parse so slide relationship
+ * ids survive in tests and incomplete DOM hosts without switching to a second
+ * XML stack that lacks Element.remove / children.
+ */
 export function parseXml(source: string, label = 'Office XML'): Document {
-  const document = new DOMParser().parseFromString(source, 'application/xml');
+  const document = new DOMParser().parseFromString(
+    neutralizePrefixedAttributeCollisions(source),
+    'application/xml',
+  );
   const error = descendants(document, 'parsererror')[0];
   if (error)
     throw new Error(
       `${label} is not valid XML: ${error.textContent?.trim() || 'parse error'}`,
     );
   return document;
+}
+
+/**
+ * Move `prefix:local` attributes ahead of a bare `local` sibling on the same
+ * start tag so incomplete DOM parsers retain both. Infoset-equivalent for
+ * consumers that read by name / namespace.
+ */
+export function neutralizePrefixedAttributeCollisions(source: string): string {
+  return source.replace(
+    /<([A-Za-z_][\w:.-]*)(\s[^>]*?)?(\/?)>/g,
+    (full, name: string, attrText: string | undefined, close: string) => {
+      if (!attrText) return full;
+      if (!/\sr:id="/.test(attrText) || !/(?:^|\s)id="/.test(attrText)) {
+        return full;
+      }
+      const relationshipIds: string[] = [];
+      const withoutRelationshipIds = attrText.replace(
+        /\s+r:id="[^"]*"/g,
+        (match) => {
+          relationshipIds.push(match);
+          return '';
+        },
+      );
+      if (!relationshipIds.length) return full;
+      return `<${name}${relationshipIds.join('')}${withoutRelationshipIds}${close}>`;
+    },
+  );
 }
 
 const xmlElementPatterns = new Map<string, RegExp>();
@@ -115,13 +158,20 @@ export function xmlContainsAnyElement(
 }
 
 export function attribute(element: Element, name: string): string | null {
+  if (name === 'r:id') {
+    const namespaced =
+      typeof element.getAttributeNS === 'function'
+        ? element.getAttributeNS(RELATIONSHIPS_NS, 'id')
+        : null;
+    if (namespaced) return namespaced;
+  }
   const direct = element.getAttribute(name);
   if (direct !== null) return direct;
   const localName = name.includes(':')
     ? name.slice(name.indexOf(':') + 1)
     : name;
   return (
-    Array.from(element.attributes).find((item) => {
+    listAttributes(element).find((item) => {
       const itemLocalName = item.localName.includes(':')
         ? item.localName.slice(item.localName.indexOf(':') + 1)
         : item.localName;
@@ -147,7 +197,7 @@ export function xmlNamespacePrefix(
     if (current.namespaceURI === namespace && current.prefix) {
       return current.prefix;
     }
-    const declaration = Array.from(current.attributes).find(
+    const declaration = listAttributes(current).find(
       (item) =>
         item.value === namespace &&
         (item.name === 'xmlns' || item.name.startsWith('xmlns:')),
@@ -155,7 +205,7 @@ export function xmlNamespacePrefix(
     if (declaration?.name.startsWith('xmlns:')) {
       return declaration.name.slice('xmlns:'.length);
     }
-    current = current.parentElement;
+    current = parentElement(current);
   }
   return null;
 }
@@ -164,7 +214,7 @@ export function directChildren(
   parent: ParentNode,
   localName?: string,
 ): Element[] {
-  return Array.from(parent.children).filter(
+  return elementChildren(parent).filter(
     (element) => !localName || element.localName === localName,
   );
 }
@@ -177,9 +227,59 @@ export function directChild(
 }
 
 export function descendants(parent: ParentNode, localName: string): Element[] {
-  return Array.from(parent.querySelectorAll('*')).filter(
+  return allElements(parent).filter(
     (element) => element.localName === localName,
   );
+}
+
+function listAttributes(element: Element): Attr[] {
+  const attrs = element.attributes;
+  if (!attrs) return [];
+  if (typeof (attrs as Iterable<Attr>)[Symbol.iterator] === 'function') {
+    return Array.from(attrs as Iterable<Attr>);
+  }
+  const listed: Attr[] = [];
+  for (let index = 0; index < attrs.length; index += 1) {
+    const item = attrs.item(index);
+    if (item) listed.push(item);
+  }
+  return listed;
+}
+
+function elementChildren(parent: ParentNode): Element[] {
+  const children = (parent as ParentNode & { children?: HTMLCollection })
+    .children;
+  if (children) return Array.from(children);
+  return Array.from(parent.childNodes).filter(
+    (node): node is Element => node.nodeType === 1,
+  );
+}
+
+function allElements(parent: ParentNode): Element[] {
+  if (typeof parent.querySelectorAll === 'function') {
+    return Array.from(parent.querySelectorAll('*'));
+  }
+  const tagged = parent as ParentNode & {
+    getElementsByTagName?: (name: string) => HTMLCollectionOf<Element>;
+  };
+  if (typeof tagged.getElementsByTagName === 'function') {
+    return Array.from(tagged.getElementsByTagName('*'));
+  }
+  const collected: Element[] = [];
+  const visit = (node: Node) => {
+    if (node.nodeType === 1) {
+      collected.push(node as Element);
+      for (const child of Array.from(node.childNodes)) visit(child);
+    }
+  };
+  for (const child of Array.from(parent.childNodes)) visit(child);
+  return collected;
+}
+
+function parentElement(element: Element): Element | null {
+  if (element.parentElement) return element.parentElement;
+  const parent = element.parentNode;
+  return parent && parent.nodeType === 1 ? (parent as Element) : null;
 }
 
 export function firstDescendant(

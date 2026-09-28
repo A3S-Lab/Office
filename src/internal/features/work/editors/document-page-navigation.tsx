@@ -20,6 +20,8 @@ import {
   DocumentPageThumbnail,
   type WorkDocumentPageThumbnailSource,
 } from './document-page-thumbnail';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 const DOCUMENT_PAGE_WINDOW_THRESHOLD = 48;
 const DOCUMENT_PAGE_WINDOW_OVERSCAN = 4;
@@ -51,6 +53,7 @@ export function DocumentPageNavigation({
   thumbnailSource?: WorkDocumentPageThumbnailSource;
   onSelectPage: (page: DocumentNavigationPage) => void | Promise<void>;
 }) {
+  const messages = useOfficeMessages();
   const viewportRef = useRef<HTMLElement>(null);
   const pageRefs = useRef(new Map<number, HTMLButtonElement>());
   const pagesRef = useRef(pages);
@@ -213,7 +216,7 @@ export function DocumentPageNavigation({
     <nav
       ref={viewportRef}
       className="work-document-task-pane-body work-document-page-navigation"
-      aria-label="文档页面"
+      aria-label={officeMessage(messages, 'document.pageNav.aria')}
       data-document-page-count={pages.length}
       data-document-page-mounted-count={mountedIndices.length}
       data-document-page-window-end={range.end}
@@ -274,7 +277,9 @@ export function DocumentPageNavigation({
                   type="button"
                   className={current ? 'active' : undefined}
                   aria-current={current ? 'page' : undefined}
-                  aria-label={`第 ${page.physicalPage} 页`}
+                  aria-label={officeMessage(messages, 'document.pageNav.pageAria', {
+                    n: String(page.physicalPage),
+                  })}
                   data-document-page-thumbnail={page.physicalPage}
                   tabIndex={page.physicalPage === rovingPage ? 0 : -1}
                   onFocus={() => setRovingPage(page.physicalPage)}
@@ -294,9 +299,15 @@ export function DocumentPageNavigation({
                     source={thumbnailSource}
                   />
                   <span className="work-document-page-thumbnail-label">
-                    第 {page.physicalPage} 页
+                    {officeMessage(messages, 'document.pageNav.pageLabel', {
+                      n: String(page.physicalPage),
+                    })}
                     {page.pageNumber !== page.physicalPage && (
-                      <small>页码 {page.pageNumber}</small>
+                      <small>
+                        {officeMessage(messages, 'document.pageNav.pageNumber', {
+                          n: String(page.pageNumber),
+                        })}
+                      </small>
                     )}
                   </span>
                 </button>
@@ -305,7 +316,9 @@ export function DocumentPageNavigation({
           })}
         </ol>
       ) : (
-        <div className="work-document-outline-empty">正在生成页面预览…</div>
+        <div className="work-document-outline-empty">
+          {officeMessage(messages, 'document.pageNav.loading')}
+        </div>
       )}
     </nav>
   );

@@ -1,5 +1,6 @@
 import { Calculator, RefreshCw, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, CollectionState } from '../../../design-system/primitives';
 import { spreadsheetFormulaAnalysis } from '../work-spreadsheet-formula-analysis';
 import { effectiveSpreadsheetCalculationSettings } from '../work-spreadsheet-formulas';
@@ -12,6 +13,7 @@ import {
   OfficeCheckbox,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { useOfficeDraft } from './use-office-draft';
 
 interface SpreadsheetFormulaPanelProps {
@@ -29,6 +31,7 @@ export function SpreadsheetFormulaPanel({
   onChange,
   onRecalculate,
 }: SpreadsheetFormulaPanelProps) {
+  const messages = useOfficeMessages();
   const {
     cancelDraft,
     dirty,
@@ -68,7 +71,7 @@ export function SpreadsheetFormulaPanel({
       calculation: saved,
     });
     replaceDraft(saved);
-    setStatus('计算设置已保存。');
+    setStatus(officeMessage(messages, 'spreadsheet.formula.status.saved'));
   };
   const cancel = () => {
     cancelDraft();
@@ -79,9 +82,9 @@ export function SpreadsheetFormulaPanel({
     setStatus(
       started
         ? scope === 'workbook'
-          ? '已重新计算工作簿。'
-          : '已重新计算当前选区。'
-        : '表格尚未准备好，请稍后重试。',
+          ? officeMessage(messages, 'spreadsheet.formula.status.recalcWorkbook')
+          : officeMessage(messages, 'spreadsheet.formula.status.recalcSelection')
+        : officeMessage(messages, 'spreadsheet.formula.status.notReady'),
     );
   };
 
@@ -96,19 +99,19 @@ export function SpreadsheetFormulaPanel({
         cancel();
       }}
     >
-      <legend className="sr-only">计算设置</legend>
-      <aside aria-label="公式统计">
-        <FormulaStat label="公式单元格" value={summary.formulaCells} />
+      <legend className="sr-only">{officeMessage(messages, 'spreadsheet.formula.legend')}</legend>
+      <aside aria-label={officeMessage(messages, 'spreadsheet.formula.statsAria')}>
+        <FormulaStat label={officeMessage(messages, 'spreadsheet.formula.stat.formulaCells')} value={summary.formulaCells} />
         <FormulaStat
-          label="缓存错误"
+          label={officeMessage(messages, 'spreadsheet.formula.stat.cachedErrors')}
           value={summary.cachedErrorCells}
           tone={summary.cachedErrorCells ? 'error' : undefined}
         />
-        <FormulaStat label="传统数组" value={summary.arrayRanges} />
-        <FormulaStat label="动态数组" value={summary.dynamicArrayRanges} />
-        <FormulaStat label="模拟运算表" value={summary.dataTableRanges} />
+        <FormulaStat label={officeMessage(messages, 'spreadsheet.formula.stat.arrayRanges')} value={summary.arrayRanges} />
+        <FormulaStat label={officeMessage(messages, 'spreadsheet.formula.stat.dynamicArrays')} value={summary.dynamicArrayRanges} />
+        <FormulaStat label={officeMessage(messages, 'spreadsheet.formula.stat.dataTables')} value={summary.dataTableRanges} />
         <FormulaStat
-          label="兼容性问题"
+          label={officeMessage(messages, 'spreadsheet.formula.stat.compat')}
           value={diagnostics.filter((item) => item.severity !== 'info').length}
           tone={
             diagnostics.some((item) => item.severity === 'error')
@@ -125,17 +128,17 @@ export function SpreadsheetFormulaPanel({
       >
         <div className="work-spreadsheet-calculation-fields">
           <div className="work-office-field">
-            <span>计算模式</span>
+            <span>{officeMessage(messages, 'spreadsheet.formula.calcMode')}</span>
             <OfficeSelect
-              ariaLabel="计算模式"
+              ariaLabel={officeMessage(messages, 'spreadsheet.formula.calcMode')}
               value={settings.mode}
               options={[
-                { value: 'automatic', label: '自动' },
+                { value: 'automatic', label: officeMessage(messages, 'spreadsheet.formula.mode.automatic') },
                 {
                   value: 'automatic-except-data-tables',
-                  label: '自动（模拟运算表除外）',
+                  label: officeMessage(messages, 'spreadsheet.formula.mode.automaticExceptTables'),
                 },
-                { value: 'manual', label: '手动' },
+                { value: 'manual', label: officeMessage(messages, 'spreadsheet.formula.mode.manual') },
               ]}
               onValueChange={(mode) =>
                 update(
@@ -146,9 +149,9 @@ export function SpreadsheetFormulaPanel({
             />
           </div>
           <div className="work-office-field">
-            <span>最大迭代次数</span>
+            <span>{officeMessage(messages, 'spreadsheet.formula.maxIterations')}</span>
             <CommittedOfficeNumberField
-              ariaLabel="最大迭代次数"
+              ariaLabel={officeMessage(messages, 'spreadsheet.formula.maxIterations')}
               min={1}
               max={10_000}
               step={1}
@@ -161,9 +164,9 @@ export function SpreadsheetFormulaPanel({
             />
           </div>
           <div className="work-office-field">
-            <span>最大更改值</span>
+            <span>{officeMessage(messages, 'spreadsheet.formula.maxChange')}</span>
             <CommittedOfficeNumberField
-              ariaLabel="最大更改值"
+              ariaLabel={officeMessage(messages, 'spreadsheet.formula.maxChange')}
               min={0.000000000001}
               step={0.000001}
               disabled={!settings.iterativeCalculation}
@@ -174,41 +177,41 @@ export function SpreadsheetFormulaPanel({
           </div>
           <OfficeCheckbox
             className="toggle"
-            ariaLabel="打开工作簿时完整重算"
+            ariaLabel={officeMessage(messages, 'spreadsheet.formula.fullCalcOnLoad')}
             checked={settings.fullCalculationOnLoad}
             onCheckedChange={(checked) =>
               update('fullCalculationOnLoad', checked)
             }
           >
-            打开工作簿时完整重算
+            {officeMessage(messages, 'spreadsheet.formula.fullCalcOnLoad')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="toggle"
-            ariaLabel="强制完整计算"
+            ariaLabel={officeMessage(messages, 'spreadsheet.formula.forceFullCalc')}
             checked={settings.forceFullCalculation}
             onCheckedChange={(checked) =>
               update('forceFullCalculation', checked)
             }
           >
-            强制完整计算
+            {officeMessage(messages, 'spreadsheet.formula.forceFullCalc')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="toggle"
-            ariaLabel="使用迭代计算"
+            ariaLabel={officeMessage(messages, 'spreadsheet.formula.iterate')}
             checked={settings.iterativeCalculation}
             onCheckedChange={(checked) =>
               update('iterativeCalculation', checked)
             }
           >
-            使用迭代计算
+            {officeMessage(messages, 'spreadsheet.formula.iterate')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="toggle"
-            ariaLabel="使用完整精度"
+            ariaLabel={officeMessage(messages, 'spreadsheet.formula.fullPrecision')}
             checked={settings.fullPrecision}
             onCheckedChange={(checked) => update('fullPrecision', checked)}
           >
-            使用完整精度
+            {officeMessage(messages, 'spreadsheet.formula.fullPrecision')}
           </OfficeCheckbox>
           <div className="actions">
             {status && <span className="status">{status}</span>}
@@ -218,7 +221,7 @@ export function SpreadsheetFormulaPanel({
               onClick={() => recalculate('selection')}
             >
               <RefreshCw size={12} />
-              重新计算当前选区
+              {officeMessage(messages, 'spreadsheet.formula.recalcSelection')}
             </Button>
             <Button
               tone="secondary"
@@ -226,25 +229,29 @@ export function SpreadsheetFormulaPanel({
               onClick={() => recalculate('workbook')}
             >
               <Calculator size={12} />
-              重新计算工作簿
+              {officeMessage(messages, 'spreadsheet.formula.recalcWorkbook')}
             </Button>
             <Button tone="secondary" disabled={!dirty} onClick={cancel}>
-              取消更改
+              {officeMessage(messages, 'spreadsheet.formula.cancel')}
             </Button>
             <Button type="submit" tone="primary" disabled={!dirty}>
               <Save size={12} />
-              保存计算设置
+              {officeMessage(messages, 'spreadsheet.formula.save')}
             </Button>
           </div>
         </div>
         <section
           className="work-spreadsheet-formula-diagnostics"
-          aria-label="公式兼容性诊断"
+          aria-label={officeMessage(messages, 'spreadsheet.formula.diagnosticsAria')}
         >
           <header>
-            <strong>公式兼容性诊断</strong>
+            <strong>{officeMessage(messages, 'spreadsheet.formula.diagnosticsTitle')}</strong>
             <span>
-              {diagnostics.length ? `${diagnostics.length} 项` : '未发现问题'}
+              {diagnostics.length
+                ? officeMessage(messages, 'spreadsheet.formula.diagnosticsCount', {
+                    n: String(diagnostics.length),
+                  })
+                : officeMessage(messages, 'spreadsheet.formula.diagnosticsNone')}
             </span>
           </header>
           <div>
@@ -256,7 +263,9 @@ export function SpreadsheetFormulaPanel({
                   <small>
                     {diagnostic.locations.slice(0, 4).join('、')}
                     {diagnostic.locations.length > 4
-                      ? ` 等 ${diagnostic.locations.length} 处`
+                      ? officeMessage(messages, 'spreadsheet.formula.diagnosticsMore', {
+                          n: String(diagnostic.locations.length),
+                        })
                       : ''}
                   </small>
                 )}
@@ -267,7 +276,7 @@ export function SpreadsheetFormulaPanel({
                 className="work-office-collection-empty"
                 role="status"
               >
-                未发现公式兼容性问题。
+                {officeMessage(messages, 'spreadsheet.formula.diagnosticsEmpty')}
               </CollectionState>
             )}
           </div>

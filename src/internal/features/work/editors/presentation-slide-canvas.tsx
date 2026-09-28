@@ -1,4 +1,8 @@
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import {
   presentationSlideView,
   presentationSlideViewFromDesign,
   type WorkPresentationDesignContent,
@@ -126,7 +130,7 @@ export function SlideElementPreview({
       ) : element.type === 'chart' && element.chart ? (
         <SlideChart
           chart={element.chart}
-          label={element.altText ?? element.chart.title ?? '图表'}
+          label={element.altText ?? element.chart.title ?? officeMessage(resolveOfficeMessages(), 'presentation.canvas.chartFallback')}
         />
       ) : hasRichText ||
         element.text ||
@@ -152,7 +156,7 @@ export function EditableSlideTable({
   return (
     <table
       className="work-slide-table editable"
-      aria-label={element.altText ?? '幻灯片表格'}
+      aria-label={element.altText ?? officeMessage(resolveOfficeMessages(), 'presentation.canvas.tableFallback')}
       data-slide-editor
     >
       <tbody>
@@ -163,7 +167,14 @@ export function EditableSlideTable({
               return (
                 <Cell key={columnIndex}>
                   <OfficeTextArea
-                    aria-label={`第 ${rowIndex + 1} 行第 ${columnIndex + 1} 列`}
+                    aria-label={officeMessage(
+                      resolveOfficeMessages(),
+                      'presentation.canvas.cellAria',
+                      {
+                        row: String(rowIndex + 1),
+                        column: String(columnIndex + 1),
+                      },
+                    )}
                     value={cell}
                     onChange={(event) => {
                       const rows = table.rows.map((current) => [...current]);
@@ -398,7 +409,7 @@ export function SlideTablePreview({ element }: { element: WorkSlideElement }) {
   return (
     <table
       className="work-slide-table"
-      aria-label={element.altText ?? '幻灯片表格'}
+      aria-label={element.altText ?? officeMessage(resolveOfficeMessages(), 'presentation.canvas.tableFallback')}
     >
       <tbody>
         {table.rows.map((row, rowIndex) => (

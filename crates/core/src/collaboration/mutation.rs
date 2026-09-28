@@ -78,6 +78,12 @@ pub(super) fn validate_mutation_contract(
         | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. }
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertTableRow { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteTableRow { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertListItem { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteListItem { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertSection { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteSection { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
@@ -89,13 +95,24 @@ pub(super) fn validate_mutation_contract(
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. }
-        | NativeOfficeCollaborationMutation::SpreadsheetSplice { .. } => {
+        | NativeOfficeCollaborationMutation::SpreadsheetSplice { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetInsertRows { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteRows { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetInsertColumns { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteColumns { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetSortRows { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetCreateTable { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetUpdateTable { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteTable { .. } => {
             NativeOfficeCollaborationArtifactKind::Spreadsheet
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
         | NativeOfficeCollaborationMutation::PresentationMoveElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationMoveSlide { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetGroup { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetBackground { .. }
         | NativeOfficeCollaborationMutation::PresentationSplice { .. }
         | NativeOfficeCollaborationMutation::PresentationReplaceText { .. } => {
             NativeOfficeCollaborationArtifactKind::Presentation
@@ -243,6 +260,12 @@ pub(super) fn apply_mutation(
         | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. }
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertTableRow { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteTableRow { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertListItem { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteListItem { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertSection { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteSection { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
@@ -254,13 +277,24 @@ pub(super) fn apply_mutation(
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. }
-        | NativeOfficeCollaborationMutation::SpreadsheetSplice { .. } => {
+        | NativeOfficeCollaborationMutation::SpreadsheetSplice { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetInsertRows { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteRows { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetInsertColumns { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteColumns { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetSortRows { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetCreateTable { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetUpdateTable { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteTable { .. } => {
             apply_spreadsheet_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
         | NativeOfficeCollaborationMutation::PresentationMoveElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationMoveSlide { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetGroup { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetBackground { .. }
         | NativeOfficeCollaborationMutation::PresentationSplice { .. }
         | NativeOfficeCollaborationMutation::PresentationReplaceText { .. } => {
             apply_presentation_mutation(doc, manifest, mutation)?;
@@ -354,6 +388,50 @@ pub(super) fn frame_caret(
                     row: *row,
                     column: *column,
                     index_utf16: Some(next),
+                },
+            ))
+        }
+        NativeOfficeCollaborationMutation::SpreadsheetInsertRows { sheet_id, at, .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteRows { sheet_id, at, .. } => Ok(
+            Some(super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                sheet_id: sheet_id.clone(),
+                row: *at,
+                column: 0,
+                index_utf16: None,
+            }),
+        ),
+        NativeOfficeCollaborationMutation::SpreadsheetInsertColumns { sheet_id, at, .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteColumns { sheet_id, at, .. } => Ok(
+            Some(super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                sheet_id: sheet_id.clone(),
+                row: 0,
+                column: *at,
+                index_utf16: None,
+            }),
+        ),
+        NativeOfficeCollaborationMutation::SpreadsheetSortRows {
+            sheet_id,
+            row,
+            column,
+            ..
+        } => Ok(Some(
+            super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                sheet_id: sheet_id.clone(),
+                row: *row,
+                column: *column,
+                index_utf16: None,
+            },
+        )),
+        NativeOfficeCollaborationMutation::SpreadsheetCreateTable { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetUpdateTable { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteTable { .. } => {
+            let (sheet_id, row, column) = spreadsheet::table_origin(mutation)?;
+            Ok(Some(
+                super::NativeOfficeCollaborationFrameCaret::Spreadsheet {
+                    sheet_id,
+                    row,
+                    column,
+                    index_utf16: None,
                 },
             ))
         }

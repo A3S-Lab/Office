@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import { resolveOfficeMessages } from '../../../i18n/office-locale';
 import { normalizeSheetProtectionAuthority } from '../work-spreadsheet-protection';
 import type {
   WorkSpreadsheetContent,
@@ -141,9 +142,9 @@ export function spreadsheetPasteSpecialModeAvailable(
   snapshot: SpreadsheetClipboardSnapshot,
   content: SpreadsheetPasteContent,
 ): boolean {
-  const option = spreadsheetPasteContentOptions.find(
-    (candidate) => candidate.value === content,
-  );
+  const option = spreadsheetPasteContentOptions(
+    resolveOfficeMessages(),
+  ).find((candidate) => candidate.value === content);
   return Boolean(option && (!option.richOnly || snapshot.kind === 'rich'));
 }
 

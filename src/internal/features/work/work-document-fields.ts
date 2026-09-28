@@ -113,6 +113,9 @@ export type WorkDocumentClockFieldFormat =
   | 'HH:mm:ss'
   | 'h:mm AM/PM';
 
+/** Default Chinese calendar date switch used by Word/WPS field codes. */
+export const DOCUMENT_FIELD_DATE_FORMAT_ZH = 'yyyy年M月d日' as const satisfies WorkDocumentClockFieldFormat;
+
 export type WorkDocumentFieldFormat =
   | { kind: 'none' }
   | {

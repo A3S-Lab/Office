@@ -34,6 +34,7 @@ import {
   type SpreadsheetSortCustomListStore,
 } from './spreadsheet-sort-custom-list-store';
 import { SpreadsheetSortRangeDialog } from './spreadsheet-sort-range-dialog';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 type SpreadsheetSortSurface =
   | {
@@ -69,6 +70,7 @@ export function useSpreadsheetSort({
   preview: boolean;
   customListStore?: SpreadsheetSortCustomListStore;
 }) {
+  const messages = resolveOfficeMessages();
   const [surface, setSurface] = useState<SpreadsheetSortSurface | null>(null);
   const [customLists, setCustomLists] = useState<
     readonly SpreadsheetSortCustomList[]
@@ -109,7 +111,7 @@ export function useSpreadsheetSort({
         } catch {
           source = 'session';
           showToast(
-            '无法写入本地自定义序列；本次更改仅在当前会话中保留。',
+            officeMessage(messages, 'spreadsheet.sort.persistListsFailed'),
             'error',
           );
         }
@@ -202,7 +204,7 @@ export function useSpreadsheetSort({
       authorizedRequestRef.current = { request, selectedRange };
       try {
         const handled = commandsRef.current?.applyCustomSort(request) ?? false;
-        if (!handled) showToast('无法应用当前排序设置。', 'error');
+        if (!handled) showToast(officeMessage(messages, 'spreadsheet.sort.applyFailed'), 'error');
         return handled;
       } finally {
         authorizedRequestRef.current = null;
@@ -360,7 +362,7 @@ export function useSpreadsheetSort({
       }
       const source = sourceForCandidate(surface.request, candidate);
       if (!source) {
-        showToast('无法读取当前排序区域。', 'error');
+        showToast(officeMessage(messages, 'spreadsheet.sort.readRangeFailed'), 'error');
         return false;
       }
       setSurface({

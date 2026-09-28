@@ -40,9 +40,12 @@ use persistence::{
 pub use presence::NativeOfficeCollaborationPresenceSession;
 use projection::project_collaboration_document;
 pub use snapshot::{
-    import_document_snapshot, live_replica_blocks_office_session, write_document_snapshot,
-    write_pdf_snapshot, write_presentation_snapshot, write_spreadsheet_snapshot,
-    DocumentSnapshotImport,
+    export_document_replica, export_pdf_replica, export_presentation_replica,
+    export_spreadsheet_replica, import_document_snapshot, live_replica_blocks_office_session,
+    reopen_exported_shape_text, reopen_exported_worksheet_cell, write_document_snapshot,
+    write_pdf_snapshot, write_presentation_snapshot, write_spreadsheet_formula_snapshot,
+    write_spreadsheet_number_snapshot, write_spreadsheet_shared_string_snapshot,
+    write_spreadsheet_snapshot, DocumentSnapshotImport, ReopenedWorksheetCell,
 };
 pub use transport::NativeOfficeCollaborationTransportSession;
 pub use types::*;

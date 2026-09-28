@@ -1,6 +1,7 @@
 import type { Sheet } from '@fortune-sheet/core';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   Button,
   CollectionState,
@@ -10,6 +11,7 @@ import {
 import {
   defaultSpreadsheetConditionalIconThresholds,
   SPREADSHEET_CONDITIONAL_ICON_SETS,
+  spreadsheetConditionalIconSetLabel,
   type SpreadsheetConditionalIconSetName,
 } from '../work-spreadsheet-conditional-icons';
 import { defaultSpreadsheetColorScaleThresholds } from '../work-spreadsheet-conditional-values';
@@ -23,6 +25,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { SpreadsheetConditionalComparisonFields } from './spreadsheet-conditional-comparison-fields';
 import {
   buildConditionalRule,
@@ -58,6 +61,7 @@ export function SpreadsheetConditionalFormatPanel({
   content,
   onChange,
 }: SpreadsheetConditionalFormatPanelProps) {
+  const messages = useOfficeMessages();
   const sheets = content.sheets.filter(
     (sheet): sheet is Sheet & { id: string } => Boolean(sheet.id),
   );
@@ -110,7 +114,7 @@ export function SpreadsheetConditionalFormatPanel({
 
   const startNew = () => {
     if (dirty) {
-      setError('当前规则有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.cf.error.unsaved'));
       return;
     }
     const next = newConditionalRuleDraft(activeSheetId);
@@ -129,7 +133,7 @@ export function SpreadsheetConditionalFormatPanel({
       return;
     }
     if (dirty) {
-      setError('当前规则有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.cf.error.unsaved'));
       return;
     }
     const next = conditionalRuleDraftForRule(location.sheetId, rule);
@@ -187,7 +191,7 @@ export function SpreadsheetConditionalFormatPanel({
       return withConditionalRules(sheet, rules);
     });
     if (savedIndex < 0) {
-      setError('请选择有效的目标工作表。');
+      setError(officeMessage(messages, 'spreadsheet.cf.error.invalidSheet'));
       return;
     }
     onChange({ ...content, sheets: nextSheets });
@@ -245,7 +249,7 @@ export function SpreadsheetConditionalFormatPanel({
       <StateView
         className="work-office-panel-empty work-spreadsheet-conditional-empty"
         size="compact"
-        title="当前工作簿没有可编辑的工作表"
+        title={officeMessage(messages, 'spreadsheet.cf.emptySheets.title')}
       />
     );
   }
@@ -260,11 +264,11 @@ export function SpreadsheetConditionalFormatPanel({
         cancelDraft();
       }}
     >
-      <legend className="sr-only">条件格式编辑</legend>
-      <aside aria-label="条件格式规则">
+      <legend className="sr-only">{officeMessage(messages, 'spreadsheet.cf.legend')}</legend>
+      <aside aria-label={officeMessage(messages, 'spreadsheet.cf.rulesAria')}>
         <Button className="create" tone="secondary" onClick={startNew}>
           <Plus size={13} />
-          新建规则
+          {officeMessage(messages, 'spreadsheet.cf.newRule')}
         </Button>
         <div className="work-spreadsheet-conditional-list">
           {entries.map(({ sheet, rule, index }) => {
@@ -288,7 +292,7 @@ export function SpreadsheetConditionalFormatPanel({
               className="work-office-collection-empty"
               role="status"
             >
-              还没有条件格式规则。
+              {officeMessage(messages, 'spreadsheet.cf.emptyRules')}
             </CollectionState>
           )}
         </div>
@@ -300,9 +304,9 @@ export function SpreadsheetConditionalFormatPanel({
         }}
       >
         <div className="work-office-field">
-          <span>工作表</span>
+          <span>{officeMessage(messages, 'spreadsheet.cf.sheet')}</span>
           <OfficeSelect
-            ariaLabel="条件格式工作表"
+            ariaLabel={officeMessage(messages, 'spreadsheet.cf.sheetAria')}
             value={draft.sheetId}
             options={sheets.map((sheet) => ({
               value: sheet.id,
@@ -312,19 +316,19 @@ export function SpreadsheetConditionalFormatPanel({
           />
         </div>
         <div className="work-office-field">
-          <span>规则类型</span>
+          <span>{officeMessage(messages, 'spreadsheet.cf.ruleType')}</span>
           <OfficeSelect
-            ariaLabel="条件格式规则类型"
+            ariaLabel={officeMessage(messages, 'spreadsheet.cf.ruleTypeAria')}
             value={draft.type}
             disabled={draft.type === 'toolbarRule'}
             options={[
-              { value: 'cellComparison', label: '单元格比较' },
-              { value: 'colorGradation', label: '色阶' },
-              { value: 'dataBar', label: '数据条' },
-              { value: 'icons', label: '图标集' },
-              { value: 'formula', label: '自定义公式' },
+              { value: 'cellComparison', label: officeMessage(messages, 'spreadsheet.cf.type.cellComparison') },
+              { value: 'colorGradation', label: officeMessage(messages, 'spreadsheet.cf.type.colorGradation') },
+              { value: 'dataBar', label: officeMessage(messages, 'spreadsheet.cf.type.dataBar') },
+              { value: 'icons', label: officeMessage(messages, 'spreadsheet.cf.type.icons') },
+              { value: 'formula', label: officeMessage(messages, 'spreadsheet.cf.type.formula') },
               ...(draft.type === 'toolbarRule'
-                ? [{ value: 'toolbarRule' as const, label: '工具栏规则' }]
+                ? [{ value: 'toolbarRule' as const, label: officeMessage(messages, 'spreadsheet.cf.type.toolbarRule') }]
                 : []),
             ]}
             onValueChange={(type) =>
@@ -333,9 +337,9 @@ export function SpreadsheetConditionalFormatPanel({
           />
         </div>
         <div className="work-office-field reference">
-          <span>应用范围</span>
+          <span>{officeMessage(messages, 'spreadsheet.cf.range')}</span>
           <OfficeTextField
-            aria-label="条件格式范围"
+            aria-label={officeMessage(messages, 'spreadsheet.cf.rangeAria')}
             value={draft.reference}
             placeholder="A2:A20"
             onChange={(event) =>
@@ -345,17 +349,17 @@ export function SpreadsheetConditionalFormatPanel({
         </div>
         <OfficeCheckbox
           className="toggle"
-          ariaLabel="匹配后停止后续规则"
+          ariaLabel={officeMessage(messages, 'spreadsheet.cf.stopIfTrue')}
           checked={draft.stopIfTrue}
           onCheckedChange={(stopIfTrue) => setDraft({ ...draft, stopIfTrue })}
         >
-          匹配后停止后续规则
+          {officeMessage(messages, 'spreadsheet.cf.stopIfTrue')}
         </OfficeCheckbox>
         {draft.type === 'toolbarRule' ? (
           <div className="work-office-field reference">
-            <span>规则摘要</span>
+            <span>{officeMessage(messages, 'spreadsheet.cf.summary')}</span>
             <OfficeTextField
-              aria-label="条件格式规则摘要"
+              aria-label={officeMessage(messages, 'spreadsheet.cf.summaryAria')}
               readOnly
               value={conditionalToolbarRuleSummary(draft.preservedRule)}
             />
@@ -368,9 +372,9 @@ export function SpreadsheetConditionalFormatPanel({
         ) : draft.type === 'formula' ? (
           <>
             <div className="work-office-field reference">
-              <span>公式</span>
+              <span>{officeMessage(messages, 'spreadsheet.cf.formula')}</span>
               <OfficeTextField
-                aria-label="条件格式公式"
+                aria-label={officeMessage(messages, 'spreadsheet.cf.formulaAria')}
                 value={draft.formula}
                 maxLength={MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH + 1}
                 placeholder="=A2>0"
@@ -379,28 +383,27 @@ export function SpreadsheetConditionalFormatPanel({
                 }
               />
               <small>
-                以应用范围左上角为相对锚点；只读取本地缓存值。{' '}
+                {officeMessage(messages, 'spreadsheet.cf.formula.anchorNote')}{' '}
                 {Array.from(draft.formula.replace(/^=/, '')).length}/
                 {MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH}
               </small>
             </div>
             <p className="work-office-field-hint">
-              支持常用 Excel
-              函数、相对/绝对引用和有限区域；无法本地求值时保持原样。
+              {officeMessage(messages, 'spreadsheet.cf.formula.supportNote')}
             </p>
             <OfficeCheckbox
               className="toggle"
-              ariaLabel="公式规则使用文字颜色"
+              ariaLabel={officeMessage(messages, 'spreadsheet.cf.formula.useTextColorAria')}
               checked={draft.formulaUseTextColor}
               onCheckedChange={(formulaUseTextColor) =>
                 setDraft({ ...draft, formulaUseTextColor })
               }
             >
-              使用文字颜色
+              {officeMessage(messages, 'spreadsheet.cf.formula.useTextColor')}
             </OfficeCheckbox>
             {draft.formulaUseTextColor && (
               <ColorField
-                label="文字颜色"
+                label={officeMessage(messages, 'spreadsheet.cf.formula.textColor')}
                 value={draft.formulaTextColor}
                 onChange={(formulaTextColor) =>
                   setDraft({ ...draft, formulaTextColor })
@@ -409,17 +412,17 @@ export function SpreadsheetConditionalFormatPanel({
             )}
             <OfficeCheckbox
               className="toggle"
-              ariaLabel="公式规则使用填充颜色"
+              ariaLabel={officeMessage(messages, 'spreadsheet.cf.formula.useFillColorAria')}
               checked={draft.formulaUseCellColor}
               onCheckedChange={(formulaUseCellColor) =>
                 setDraft({ ...draft, formulaUseCellColor })
               }
             >
-              使用填充颜色
+              {officeMessage(messages, 'spreadsheet.cf.formula.useFillColor')}
             </OfficeCheckbox>
             {draft.formulaUseCellColor && (
               <ColorField
-                label="填充颜色"
+                label={officeMessage(messages, 'spreadsheet.cf.formula.fillColor')}
                 value={draft.formulaCellColor}
                 onChange={(formulaCellColor) =>
                   setDraft({ ...draft, formulaCellColor })
@@ -430,13 +433,13 @@ export function SpreadsheetConditionalFormatPanel({
         ) : draft.type === 'colorGradation' ? (
           <>
             <div className="work-office-field">
-              <span>色阶级数</span>
+              <span>{officeMessage(messages, 'spreadsheet.cf.scale.steps')}</span>
               <OfficeSelect
-                ariaLabel="色阶级数"
+                ariaLabel={officeMessage(messages, 'spreadsheet.cf.scale.stepsAria')}
                 value={draft.scaleSize}
                 options={[
-                  { value: '2', label: '双色阶' },
-                  { value: '3', label: '三色阶' },
+                  { value: '2', label: officeMessage(messages, 'spreadsheet.cf.scale.two') },
+                  { value: '3', label: officeMessage(messages, 'spreadsheet.cf.scale.three') },
                 ]}
                 onValueChange={(scaleSize) =>
                   setDraft({
@@ -450,13 +453,13 @@ export function SpreadsheetConditionalFormatPanel({
               />
             </div>
             <ColorField
-              label="最小值颜色"
+              label={officeMessage(messages, 'spreadsheet.cf.scale.minColor')}
               value={draft.minimumColor}
               onChange={(minimumColor) => setDraft({ ...draft, minimumColor })}
             />
             {draft.scaleSize === '3' && (
               <ColorField
-                label="中间值颜色"
+                label={officeMessage(messages, 'spreadsheet.cf.scale.midColor')}
                 value={draft.midpointColor}
                 onChange={(midpointColor) =>
                   setDraft({ ...draft, midpointColor })
@@ -464,12 +467,12 @@ export function SpreadsheetConditionalFormatPanel({
               />
             )}
             <ColorField
-              label="最大值颜色"
+              label={officeMessage(messages, 'spreadsheet.cf.scale.maxColor')}
               value={draft.maximumColor}
               onChange={(maximumColor) => setDraft({ ...draft, maximumColor })}
             />
             <SpreadsheetConditionalThresholdFields
-              label="色阶"
+              label={officeMessage(messages, 'spreadsheet.cf.scale.label')}
               thresholds={draft.scaleThresholds}
               onChange={(index, patch) =>
                 updateThreshold('scaleThresholds', index, patch)
@@ -479,26 +482,26 @@ export function SpreadsheetConditionalFormatPanel({
         ) : draft.type === 'dataBar' ? (
           <>
             <ColorField
-              label="数据条颜色"
+              label={officeMessage(messages, 'spreadsheet.cf.bar.color')}
               value={draft.barColor}
               onChange={(barColor) => setDraft({ ...draft, barColor })}
             />
             <OfficeCheckbox
               className="toggle"
-              ariaLabel="显示数据条数值"
+              ariaLabel={officeMessage(messages, 'spreadsheet.cf.bar.showValue')}
               checked={draft.barShowValue}
               onCheckedChange={(barShowValue) =>
                 setDraft({ ...draft, barShowValue })
               }
             >
-              显示数据条数值
+              {officeMessage(messages, 'spreadsheet.cf.bar.showValue')}
             </OfficeCheckbox>
             <div className="work-office-field">
-              <span>最短长度（%）</span>
+              <span>{officeMessage(messages, 'spreadsheet.cf.bar.minLen')}</span>
               <OfficeNumberField
                 min={0}
                 max={100}
-                ariaLabel="数据条最短长度"
+                ariaLabel={officeMessage(messages, 'spreadsheet.cf.bar.minLenAria')}
                 value={draft.barMinLength}
                 onValueChange={(barMinLength) =>
                   setDraft({ ...draft, barMinLength })
@@ -506,11 +509,11 @@ export function SpreadsheetConditionalFormatPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>最长长度（%）</span>
+              <span>{officeMessage(messages, 'spreadsheet.cf.bar.maxLen')}</span>
               <OfficeNumberField
                 min={0}
                 max={100}
-                ariaLabel="数据条最长长度"
+                ariaLabel={officeMessage(messages, 'spreadsheet.cf.bar.maxLenAria')}
                 value={draft.barMaxLength}
                 onValueChange={(barMaxLength) =>
                   setDraft({ ...draft, barMaxLength })
@@ -518,7 +521,7 @@ export function SpreadsheetConditionalFormatPanel({
               />
             </div>
             <SpreadsheetConditionalThresholdFields
-              label="数据条"
+              label={officeMessage(messages, 'spreadsheet.cf.type.dataBar')}
               thresholds={draft.barThresholds}
               onChange={(index, patch) =>
                 updateThreshold('barThresholds', index, patch)
@@ -528,13 +531,15 @@ export function SpreadsheetConditionalFormatPanel({
         ) : (
           <>
             <div className="work-office-field">
-              <span>图标集</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.cf.type.icons')}
+              </span>
               <OfficeSelect
-                ariaLabel="图标集"
+                ariaLabel={officeMessage(messages, 'spreadsheet.cf.type.icons')}
                 value={draft.iconSet}
                 options={SPREADSHEET_CONDITIONAL_ICON_SETS.map((iconSet) => ({
                   value: iconSet.name,
-                  label: iconSet.label,
+                  label: spreadsheetConditionalIconSetLabel(iconSet.name),
                 }))}
                 onValueChange={(iconSet) =>
                   setIconSet(iconSet as SpreadsheetConditionalIconSetName)
@@ -543,26 +548,26 @@ export function SpreadsheetConditionalFormatPanel({
             </div>
             <OfficeCheckbox
               className="toggle"
-              ariaLabel="反转图标顺序"
+              ariaLabel={officeMessage(messages, 'spreadsheet.cf.icon.reverse')}
               checked={draft.iconReverse}
               onCheckedChange={(iconReverse) =>
                 setDraft({ ...draft, iconReverse })
               }
             >
-              反转图标顺序
+              {officeMessage(messages, 'spreadsheet.cf.icon.reverse')}
             </OfficeCheckbox>
             <OfficeCheckbox
               className="toggle"
-              ariaLabel="显示单元格值"
+              ariaLabel={officeMessage(messages, 'spreadsheet.cf.icon.showValue')}
               checked={draft.iconShowValue}
               onCheckedChange={(iconShowValue) =>
                 setDraft({ ...draft, iconShowValue })
               }
             >
-              显示单元格值
+              {officeMessage(messages, 'spreadsheet.cf.icon.showValue')}
             </OfficeCheckbox>
             <SpreadsheetConditionalThresholdFields
-              label="图标"
+              label={officeMessage(messages, 'spreadsheet.cf.icon.set')}
               thresholds={draft.iconThresholds}
               startIndex={1}
               showEquality
@@ -573,7 +578,7 @@ export function SpreadsheetConditionalFormatPanel({
           </>
         )}
         {draft.type === 'toolbarRule' && (
-          <p>此规则的条件和样式请在工具栏中修改。</p>
+          <p>{officeMessage(messages, 'spreadsheet.cf.toolbar.readonly')}</p>
         )}
         <div className="actions">
           {error && (
@@ -588,36 +593,36 @@ export function SpreadsheetConditionalFormatPanel({
           <Button
             tone="secondary"
             disabled={dirty || !selection || selection.index <= 0}
-            aria-label="提高优先级"
+            aria-label={officeMessage(messages, 'spreadsheet.cf.moveUp')}
             onClick={() => moveRule(-1)}
           >
             <ArrowUp size={13} />
-            提高优先级
+            {officeMessage(messages, 'spreadsheet.cf.moveUp')}
           </Button>
           <Button
             tone="secondary"
             disabled={
               dirty || !selection || selection.index >= selectedRuleCount - 1
             }
-            aria-label="降低优先级"
+            aria-label={officeMessage(messages, 'spreadsheet.cf.moveDown')}
             onClick={() => moveRule(1)}
           >
             <ArrowDown size={13} />
-            降低优先级
+            {officeMessage(messages, 'spreadsheet.cf.moveDown')}
           </Button>
           <Button tone="danger" disabled={!selection} onClick={deleteRule}>
             <Trash2 size={13} />
-            删除规则
+            {officeMessage(messages, 'spreadsheet.cf.delete')}
           </Button>
           <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
-            取消更改
+            {officeMessage(messages, 'spreadsheet.cf.cancel')}
           </Button>
           <Button
             type="submit"
             tone="primary"
             disabled={Boolean(selection) && !dirty}
           >
-            保存规则
+            {officeMessage(messages, 'spreadsheet.cf.save')}
           </Button>
         </div>
       </form>

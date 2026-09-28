@@ -66,6 +66,15 @@ import {
   useOfficeDialog,
 } from './office-controls';
 import { readOfficeFileAsDataUrl } from './office-file-data';
+import { useOfficeMessages } from './office-messages-context';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type {
+  OfficeMessageCatalog,
+  OfficeMessageKey,
+} from '../../../i18n/office-messages';
 
 export type DocumentPageChromeAlignment =
   | 'center'
@@ -121,6 +130,9 @@ export function DocumentPageChromeRichTextEditor({
   onExit,
   showToolbar = true,
 }: DocumentPageChromeRichTextEditorProps) {
+  const messages = useOfficeMessages();
+  const chromeLabel = (key: OfficeMessageKey) =>
+    officeMessage(messages, key, { label });
   const imageInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
   const onEditorChangeRef = useRef(onEditorChange);
@@ -133,8 +145,13 @@ export function DocumentPageChromeRichTextEditor({
   onEditorChangeRef.current = onEditorChange;
   onExitRef.current = onExit;
   const extensions = useMemo(
-    () => createDocumentPageChromeEditorExtensions(`输入${label}`),
-    [label],
+    () =>
+      createDocumentPageChromeEditorExtensions(
+        officeMessage(messages, 'document.pageChrome.editor.placeholder', {
+          label,
+        }),
+      ),
+    [label, messages],
   );
   const editor = useEditor({
     extensions,
@@ -193,13 +210,25 @@ export function DocumentPageChromeRichTextEditor({
       return;
     }
     const href = await officeDialog.prompt({
-      title: '添加链接',
-      fieldLabel: '链接地址',
+      title: officeMessage(
+        messages,
+        'document.pageChrome.editor.linkDialog.title',
+      ),
+      fieldLabel: officeMessage(
+        messages,
+        'document.pageChrome.editor.linkDialog.field',
+      ),
       initialValue: 'https://',
       placeholder: 'https://',
       inputMode: 'url',
-      confirmLabel: '添加链接',
-      required: '请输入链接地址。',
+      confirmLabel: officeMessage(
+        messages,
+        'document.pageChrome.editor.linkDialog.confirm',
+      ),
+      required: officeMessage(
+        messages,
+        'document.pageChrome.editor.linkDialog.required',
+      ),
       validate: (value) =>
         normalizeDocumentPageChromeHref(value)
           ? null
@@ -215,7 +244,7 @@ export function DocumentPageChromeRichTextEditor({
   };
   const insertImage = async (file: File | undefined) => {
     if (!file || !editor) return;
-    const image = await loadDocumentPageChromeImage(file);
+    const image = await loadDocumentPageChromeImage(file, messages);
     if (!image.ok) {
       await officeDialog.notice({
         title: image.title,
@@ -246,15 +275,15 @@ export function DocumentPageChromeRichTextEditor({
             <div
               className="work-document-page-chrome-toolbar"
               role="toolbar"
-              aria-label={`${label}格式`}
+              aria-label={chromeLabel('document.pageChrome.editor.formatAria')}
               onKeyDown={moveOfficeToolbarFocus}
             >
               <fieldset
                 className="work-document-page-chrome-toolbar-row"
-                aria-label={`${label}文字格式`}
+                aria-label={chromeLabel('document.pageChrome.editor.textFormatAria')}
               >
                 <PageChromeButton
-                  label={`${label}撤销`}
+                  label={chromeLabel('document.pageChrome.editor.undo')}
                   disabled={!state?.canUndo}
                   onClick={() => {
                     // Keep chrome focus on the undo trigger.
@@ -265,7 +294,7 @@ export function DocumentPageChromeRichTextEditor({
                   <Undo2 size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}重做`}
+                  label={chromeLabel('document.pageChrome.editor.redo')}
                   disabled={!state?.canRedo}
                   onClick={() => {
                     // Keep chrome focus on the redo trigger.
@@ -276,7 +305,7 @@ export function DocumentPageChromeRichTextEditor({
                   <Redo2 size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}加粗`}
+                  label={chromeLabel('document.pageChrome.editor.bold')}
                   active={state?.bold}
                   onClick={() => {
                     // Keep chrome focus on the bold trigger.
@@ -287,7 +316,7 @@ export function DocumentPageChromeRichTextEditor({
                   <Bold size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}斜体`}
+                  label={chromeLabel('document.pageChrome.editor.italic')}
                   active={state?.italic}
                   onClick={() => {
                     // Keep chrome focus on the italic trigger.
@@ -298,7 +327,7 @@ export function DocumentPageChromeRichTextEditor({
                   <Italic size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}下划线`}
+                  label={chromeLabel('document.pageChrome.editor.underline')}
                   active={state?.underline}
                   onClick={() => {
                     // Keep chrome focus on the underline trigger.
@@ -309,7 +338,7 @@ export function DocumentPageChromeRichTextEditor({
                   <UnderlineIcon size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}删除线`}
+                  label={chromeLabel('document.pageChrome.editor.strike')}
                   active={state?.strike}
                   onClick={() => {
                     // Keep chrome focus on the strike trigger.
@@ -320,7 +349,7 @@ export function DocumentPageChromeRichTextEditor({
                   <Strikethrough size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}下标`}
+                  label={chromeLabel('document.pageChrome.editor.subscript')}
                   active={state?.subscript}
                   onClick={() => {
                     // Keep chrome focus on the subscript trigger.
@@ -331,7 +360,7 @@ export function DocumentPageChromeRichTextEditor({
                   <SubscriptIcon size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}上标`}
+                  label={chromeLabel('document.pageChrome.editor.superscript')}
                   active={state?.superscript}
                   onClick={() => {
                     // Keep chrome focus on the superscript trigger.
@@ -344,10 +373,10 @@ export function DocumentPageChromeRichTextEditor({
               </fieldset>
               <fieldset
                 className="work-document-page-chrome-toolbar-row"
-                aria-label={`${label}对齐与插入`}
+                aria-label={chromeLabel('document.pageChrome.editor.alignInsertAria')}
               >
                 <PageChromeButton
-                  label={`${label}左对齐`}
+                  label={chromeLabel('document.pageChrome.editor.alignLeft')}
                   active={state?.alignment === 'left'}
                   onClick={() => {
                     // Keep chrome focus on the alignment trigger.
@@ -358,7 +387,7 @@ export function DocumentPageChromeRichTextEditor({
                   <AlignLeft size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}居中`}
+                  label={chromeLabel('document.pageChrome.editor.alignCenter')}
                   active={state?.alignment === 'center'}
                   onClick={() => {
                     // Keep chrome focus on the alignment trigger.
@@ -369,7 +398,7 @@ export function DocumentPageChromeRichTextEditor({
                   <AlignCenter size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}右对齐`}
+                  label={chromeLabel('document.pageChrome.editor.alignRight')}
                   active={state?.alignment === 'right'}
                   onClick={() => {
                     // Keep chrome focus on the alignment trigger.
@@ -380,7 +409,7 @@ export function DocumentPageChromeRichTextEditor({
                   <AlignRight size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={`${label}两端对齐`}
+                  label={chromeLabel('document.pageChrome.editor.alignJustify')}
                   active={state?.alignment === 'justify'}
                   onClick={() => {
                     // Keep chrome focus on the alignment trigger.
@@ -391,7 +420,7 @@ export function DocumentPageChromeRichTextEditor({
                   <AlignJustify size={14} />
                 </PageChromeButton>
                 <PageChromeButton
-                  label={state?.link ? `${label}移除链接` : `${label}添加链接`}
+                  label={chromeLabel(state?.link ? 'document.pageChrome.editor.removeLink' : 'document.pageChrome.editor.addLink')}
                   active={Boolean(state?.link)}
                   onClick={() => void editLink()}
                 >
@@ -400,7 +429,7 @@ export function DocumentPageChromeRichTextEditor({
                 <OfficeColorPicker
                   compact
                   className="work-document-page-chrome-color"
-                  ariaLabel={`${label}文字颜色`}
+                  ariaLabel={chromeLabel('document.pageChrome.editor.textColor')}
                   value={pageChromePickerColor(state?.color)}
                   onValueChange={(color) => {
                     // Keep chrome focus on the color trigger via Popover restore.
@@ -409,7 +438,7 @@ export function DocumentPageChromeRichTextEditor({
                   }}
                 />
                 <PageChromeButton
-                  label={`${label}插入图片`}
+                  label={chromeLabel('document.pageChrome.editor.insertImage')}
                   onClick={() => imageInputRef.current?.click()}
                 >
                   <ImageIcon size={14} />
@@ -419,7 +448,7 @@ export function DocumentPageChromeRichTextEditor({
             <OfficeFileInput
               ref={imageInputRef}
               accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
-              aria-label={`${label}图片文件`}
+              aria-label={chromeLabel('document.pageChrome.editor.imageFileAria')}
               onFileSelect={insertImage}
             />
           </>
@@ -430,7 +459,7 @@ export function DocumentPageChromeRichTextEditor({
           <div
             className="work-document-page-chrome-content"
             role="status"
-            aria-label={`${label}正在准备`}
+            aria-label={chromeLabel('document.pageChrome.editor.preparingAria')}
           />
         )}
       </section>
@@ -440,7 +469,7 @@ export function DocumentPageChromeRichTextEditor({
 }
 
 export function createDocumentPageChromeEditorExtensions(
-  placeholder = '输入页眉或页脚',
+  placeholder = resolveOfficeMessages()['document.pageChrome.editor.placeholderDefault'],
 ): Extensions {
   return [
     StarterKit.configure({
@@ -532,6 +561,7 @@ export type DocumentPageChromeImageLoadResult =
 
 export async function loadDocumentPageChromeImage(
   file: File,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): Promise<DocumentPageChromeImageLoadResult> {
   if (
     file.size > MAX_PAGE_CHROME_IMAGE_BYTES ||
@@ -539,8 +569,14 @@ export async function loadDocumentPageChromeImage(
   ) {
     return {
       ok: false,
-      title: '无法插入图片',
-      description: '请选择不超过 4 MB 的 PNG、JPEG、GIF、WebP 或 BMP 图片。',
+      title: officeMessage(
+        messages,
+        'document.pageChrome.editor.imageTooLarge.title',
+      ),
+      description: officeMessage(
+        messages,
+        'document.pageChrome.editor.imageTooLarge.description',
+      ),
     };
   }
   try {
@@ -552,8 +588,14 @@ export async function loadDocumentPageChromeImage(
   } catch {
     return {
       ok: false,
-      title: '图片读取失败',
-      description: '请重新选择本机图片文件。',
+      title: officeMessage(
+        messages,
+        'document.pageChrome.editor.imageReadFailed.title',
+      ),
+      description: officeMessage(
+        messages,
+        'document.pageChrome.editor.imageReadFailed.description',
+      ),
     };
   }
 }

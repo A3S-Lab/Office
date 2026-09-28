@@ -153,6 +153,232 @@ fn native_document_comments_are_browser_readable_durable_and_projected() {
 }
 
 #[test]
+fn reordered_comment_and_suggestion_updates_converge() {
+    let temp = tempfile::tempdir().unwrap();
+    let comment = offline_review_update(
+        &temp,
+        NativeOfficeCollaborationMode::Comment,
+        "agent-alpha",
+        940_301,
+        "offline-comment",
+        NativeOfficeCollaborationMutation::DocumentCommentCreate {
+            comment_id: "comment-offline-hello".to_owned(),
+            paragraph_id: "00000001".to_owned(),
+            expected_text_id: "00000002".to_owned(),
+            start_utf16: 0,
+            end_utf16: 5,
+            expected_text: "Hello".to_owned(),
+            author: "Ada".to_owned(),
+            created_at: "2026-08-17T00:00:00.000Z".to_owned(),
+            text: "Keep the greeting.".to_owned(),
+        },
+    );
+    let suggestion = offline_review_update(
+        &temp,
+        NativeOfficeCollaborationMode::Suggest,
+        "agent-suggester",
+        940_302,
+        "offline-suggestion",
+        NativeOfficeCollaborationMutation::DocumentSuggestionCreate {
+            paragraph_id: "00000001".to_owned(),
+            expected_text_id: "00000002".to_owned(),
+            start_utf16: 14,
+            end_utf16: 14,
+            expected_text: String::new(),
+            replacement: "!".to_owned(),
+            insertion_id: Some("suggestion-offline-bang".to_owned()),
+            deletion_id: None,
+            author: "A3S Agent".to_owned(),
+            created_at: "2026-08-17T10:00:00.000Z".to_owned(),
+        },
+    );
+
+    let mut hashes = Vec::new();
+    for (index, order) in [[0_usize, 1], [1, 0]].into_iter().enumerate() {
+        let updates = [comment.clone(), suggestion.clone()];
+        let store = deliver_review_updates(
+            &temp.path().join(format!("review-order-{index}")),
+            940_400 + index as u64,
+            &[updates[order[0]].clone(), updates[order[1]].clone()],
+        );
+        let projection = store.project().unwrap();
+        let NativeOfficeCollaborationProjectedContent::Document {
+            paragraphs,
+            comments,
+            suggestions,
+            ..
+        } = projection.content
+        else {
+            panic!("expected Document projection");
+        };
+        assert_eq!(paragraphs[0].text, "Hello 😀 world!");
+        assert_eq!(comments.len(), 1);
+        assert_eq!(comments[0].id, "comment-offline-hello");
+        assert_eq!(comments[0].text, "Keep the greeting.");
+        assert_eq!(comments[0].anchors[0].text, "Hello");
+        assert!(suggestions.iter().any(|suggestion| {
+            suggestion.id == "suggestion-offline-bang" && suggestion.text == "!"
+        }));
+        hashes.push(store.inspect().unwrap().document_state_sha256);
+    }
+    assert_eq!(hashes[0], hashes[1]);
+
+    let replayed = deliver_review_updates(
+        &temp.path().join("review-repeated"),
+        940_420,
+        &[comment.clone(), comment.clone(), suggestion.clone()],
+    );
+    assert_eq!(replayed.inspect().unwrap().document_state_sha256, hashes[0]);
+
+    let conflict_root = temp.path().join("review-conflict");
+    let conflict = review_store(
+        &conflict_root,
+        NativeOfficeCollaborationMode::Comment,
+        "agent-alpha",
+        940_430,
+    );
+    conflict
+        .mutate(review_mutation_request(
+            "comment-conflict-original",
+            NativeOfficeCollaborationMode::Comment,
+            "agent-alpha",
+            NativeOfficeCollaborationMutation::DocumentCommentCreate {
+                comment_id: "comment-offline-hello".to_owned(),
+                paragraph_id: "00000001".to_owned(),
+                expected_text_id: "00000002".to_owned(),
+                start_utf16: 0,
+                end_utf16: 5,
+                expected_text: "Hello".to_owned(),
+                author: "Ada".to_owned(),
+                created_at: "2026-08-17T00:00:00.000Z".to_owned(),
+                text: "Keep the greeting.".to_owned(),
+            },
+        ))
+        .unwrap();
+    let before_conflict = conflict.inspect().unwrap();
+    let rejected = conflict
+        .mutate(review_mutation_request(
+            "comment-conflict-rewrite",
+            NativeOfficeCollaborationMode::Comment,
+            "agent-alpha",
+            NativeOfficeCollaborationMutation::DocumentCommentCreate {
+                comment_id: "comment-offline-hello".to_owned(),
+                paragraph_id: "00000001".to_owned(),
+                expected_text_id: "00000002".to_owned(),
+                start_utf16: 0,
+                end_utf16: 5,
+                expected_text: "Hello".to_owned(),
+                author: "Ada".to_owned(),
+                created_at: "2026-08-17T00:00:00.000Z".to_owned(),
+                text: "Replace the greeting.".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(
+        rejected.code,
+        "office.collaboration.mutation_identity_conflict"
+    );
+    assert_eq!(
+        conflict.inspect().unwrap().document_state_sha256,
+        before_conflict.document_state_sha256
+    );
+}
+
+fn offline_review_update(
+    temp: &tempfile::TempDir,
+    mode: NativeOfficeCollaborationMode,
+    actor_id: &str,
+    client_id: u64,
+    operation_id: &str,
+    mutation: NativeOfficeCollaborationMutation,
+) -> Vec<u8> {
+    let store = review_store(&temp.path().join(operation_id), mode, actor_id, client_id);
+    let base = store.synchronize(None).unwrap().state_vector;
+    store
+        .mutate(review_mutation_request(
+            operation_id,
+            mode,
+            actor_id,
+            mutation,
+        ))
+        .unwrap();
+    store.synchronize(Some(&base)).unwrap().update
+}
+
+fn deliver_review_updates(
+    root: &std::path::Path,
+    client_id: u64,
+    updates: &[Vec<u8>],
+) -> NativeOfficeCollaborationStore {
+    let store = review_store(
+        root,
+        NativeOfficeCollaborationMode::Edit,
+        "agent-alpha",
+        client_id,
+    );
+    for (index, update) in updates.iter().enumerate() {
+        store
+            .apply(document_apply_request(
+                &format!("deliver-review-{client_id}-{index}"),
+                update.clone(),
+            ))
+            .unwrap();
+    }
+    store
+}
+
+fn review_store(
+    root: &std::path::Path,
+    mode: NativeOfficeCollaborationMode,
+    actor_id: &str,
+    client_id: u64,
+) -> NativeOfficeCollaborationStore {
+    let store = NativeOfficeCollaborationStore::create(NativeOfficeCollaborationCreateRequest {
+        store: root.to_path_buf(),
+        artifact_id: "fixture-document".to_owned(),
+        kind: NativeOfficeCollaborationArtifactKind::Document,
+        actor_id: actor_id.to_owned(),
+        actor_kind: NativeOfficeCollaborationActorKind::Agent,
+        mode,
+        operation_id: format!("create-review-{client_id}"),
+        namespace: None,
+        client_id: Some(client_id),
+        initial_update: None,
+    })
+    .unwrap();
+    store
+        .apply(NativeOfficeCollaborationApplyRequest {
+            operation_id: format!("bootstrap-review-{client_id}"),
+            actor_id: actor_id.to_owned(),
+            mode,
+            expected_artifact_id: "fixture-document".to_owned(),
+            expected_kind: NativeOfficeCollaborationArtifactKind::Document,
+            update: STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap(),
+            if_state_vector: None,
+            origin: None,
+        })
+        .unwrap();
+    store
+}
+
+fn review_mutation_request(
+    operation_id: &str,
+    mode: NativeOfficeCollaborationMode,
+    actor_id: &str,
+    mutation: NativeOfficeCollaborationMutation,
+) -> NativeOfficeCollaborationMutationRequest {
+    NativeOfficeCollaborationMutationRequest {
+        operation_id: operation_id.to_owned(),
+        actor_id: actor_id.to_owned(),
+        mode,
+        expected_artifact_id: "fixture-document".to_owned(),
+        expected_kind: NativeOfficeCollaborationArtifactKind::Document,
+        mutation,
+        if_state_vector: None,
+    }
+}
+
+#[test]
 fn document_comment_mutations_fail_closed_on_conflicts_and_modes() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("document-comment-conflicts");

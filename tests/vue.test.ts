@@ -27,6 +27,25 @@ import {
 import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
 import { spreadsheetCollaborationFixture } from './fixtures/spreadsheet-collaboration';
 
+test('exposes locale and observability through the Vue adapters', () => {
+  for (const Editor of [
+    DocumentEditor,
+    MarkdownEditor,
+    SpreadsheetEditor,
+    PresentationEditor,
+    PdfViewer,
+  ]) {
+    const definition = Editor as unknown as {
+      emits: Record<string, (...arguments_: never[]) => boolean>;
+      props: Record<string, unknown>;
+    };
+    expect(definition.props).toHaveProperty('locale');
+    expect(definition.props).toHaveProperty('messages');
+    expect(definition.emits).toHaveProperty('error');
+    expect(definition.emits).toHaveProperty('diagnostic');
+  }
+});
+
 test('exposes PDF evidence and page events through the Vue adapter', () => {
   const definition = PdfViewer as unknown as {
     emits: Record<string, (...arguments_: never[]) => boolean>;

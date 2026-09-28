@@ -1,5 +1,7 @@
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { normalizeDocumentLanguageTag } from '../work-document-proofing';
 import type {
   DocumentProofingDialogPatch,
@@ -10,17 +12,10 @@ import {
   OfficeTextField,
   type OfficeSelectOption,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 type ProofingStateDraft = 'check' | 'inherit' | 'mixed' | 'skip';
 type ProofingLanguageDraftKey = 'bidi' | 'eastAsia' | 'latin';
-
-const proofingStateOptions: readonly OfficeSelectOption<ProofingStateDraft>[] =
-  [
-    { value: 'mixed', label: '混合（保持不变）', disabled: true },
-    { value: 'inherit', label: '跟随样式' },
-    { value: 'check', label: '检查拼写和语法' },
-    { value: 'skip', label: '不检查拼写或语法' },
-  ];
 
 const proofingLanguageSuggestions = [
   'en-US',
@@ -48,6 +43,7 @@ export function DocumentProofingDialog({
   onApply: (patch: DocumentProofingDialogPatch) => boolean;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [draft, setDraft] = useState(() => ({
     latin: source.latin.value ?? '',
     eastAsia: source.eastAsia.value ?? '',
@@ -59,7 +55,7 @@ export function DocumentProofingDialog({
   >({ latin: false, eastAsia: false, bidi: false, noProof: false });
   const formId = useId();
   const datalistId = useId();
-  const error = proofingDialogError(draft, touched);
+  const error = proofingDialogError(messages, draft, touched);
   const patch = proofingDialogPatch(source, draft, touched);
   const hasChanges = Object.keys(patch).length > 0;
 
@@ -81,11 +77,15 @@ export function DocumentProofingDialog({
 
   return (
     <Dialog
-      title="设置校对语言"
+      title={officeMessage(messages, 'document.proofing.title')}
       description={
         source.selectedCharacters
-          ? `为选中的 ${source.selectedCharacters} 个字符分别设置拉丁、东亚和双向文字校对语言。`
-          : '设置当前位置后续输入文字的校对语言。'
+          ? officeMessage(
+              messages,
+              'document.proofing.description.selection',
+              { count: String(source.selectedCharacters) },
+            )
+          : officeMessage(messages, 'document.proofing.description.caret')
       }
       className="work-document-proofing-dialog"
       restoreFocusTarget={restoreFocusTarget}
@@ -100,7 +100,7 @@ export function DocumentProofingDialog({
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'document.proofing.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -108,16 +108,18 @@ export function DocumentProofingDialog({
             form={formId}
             disabled={!hasChanges || Boolean(error)}
           >
-            应用
+            {officeMessage(messages, 'document.proofing.apply')}
           </Button>
         </>
       }
     >
       <form id={formId} onSubmit={submit}>
         <fieldset>
-          <legend>按文字系统设置语言</legend>
+          <legend>
+            {officeMessage(messages, 'document.proofing.legend')}
+          </legend>
           <ProofingLanguageField
-            label="拉丁文字"
+            label={officeMessage(messages, 'document.proofing.latin')}
             languageKey="latin"
             value={draft.latin}
             mixed={source.latin.mixed && !touched.latin}
@@ -130,7 +132,7 @@ export function DocumentProofingDialog({
             }}
           />
           <ProofingLanguageField
-            label="东亚文字"
+            label={officeMessage(messages, 'document.proofing.eastAsia')}
             languageKey="eastAsia"
             value={draft.eastAsia}
             mixed={source.eastAsia.mixed && !touched.eastAsia}
@@ -142,7 +144,7 @@ export function DocumentProofingDialog({
             }}
           />
           <ProofingLanguageField
-            label="双向文字"
+            label={officeMessage(messages, 'document.proofing.complex')}
             languageKey="bidi"
             value={draft.bidi}
             mixed={source.bidi.mixed && !touched.bidi}
@@ -165,25 +167,32 @@ export function DocumentProofingDialog({
             className="work-document-proofing-dialog-state-label"
             aria-hidden="true"
           >
-            校对行为
+            {officeMessage(messages, 'document.proofing.behavior')}
           </span>
           <OfficeSelect
-            ariaLabel="校对行为"
+            ariaLabel={officeMessage(
+              messages,
+              'document.proofing.behaviorAria',
+            )}
             value={draft.noProof}
-            options={proofingStateOptions}
+            options={proofingStateOptions(messages)}
             onValueChange={(noProof) => {
               setDraft((current) => ({ ...current, noProof }));
               setTouched((current) => ({ ...current, noProof: true }));
             }}
           />
           {source.noProof.mixed && !touched.noProof && (
-            <p role="status">当前选区包含不同的校对行为，保持不变。</p>
+            <p role="status">
+              {officeMessage(
+                messages,
+                'document.proofing.behavior.mixedStatus',
+              )}
+            </p>
           )}
         </div>
 
         <p className="work-document-proofing-dialog-help">
-          使用 BCP 47 语言标记，例如 <code>en-US</code>、<code>zh-CN</code> 或{' '}
-          <code>ar-SA</code>。留空或选择“跟随样式”会移除直接格式。
+          {officeMessage(messages, 'document.proofing.help')}
         </p>
         {error && (
           <p className="work-document-proofing-dialog-error" role="alert">
@@ -214,37 +223,73 @@ function ProofingLanguageField({
   error: boolean;
   onChange: (value: string) => void;
 }) {
+  const messages = useOfficeMessages();
   return (
     <div className="work-document-proofing-dialog-language">
       <label htmlFor={`work-document-proofing-${languageKey}`}>{label}</label>
       <div>
         <OfficeTextField
           id={`work-document-proofing-${languageKey}`}
-          aria-label={`${label}校对语言`}
+          aria-label={officeMessage(messages, 'document.proofing.langAria', {
+            label,
+          })}
           aria-invalid={error || undefined}
           data-autofocus={initialFocus ? 'true' : undefined}
           list={list}
           value={value}
-          placeholder={mixed ? '混合（保持不变）' : '跟随样式'}
+          placeholder={officeMessage(
+            messages,
+            mixed
+              ? 'document.proofing.behavior.mixed'
+              : 'document.proofing.behavior.inherit',
+          )}
           spellCheck={false}
           onChange={(event) => onChange(event.currentTarget.value)}
         />
         <Button
           tone="quiet"
           type="button"
-          aria-label={`${label}跟随样式`}
+          aria-label={officeMessage(
+            messages,
+            'document.proofing.inheritAria',
+            { label },
+          )}
           onClick={() => onChange('')}
         >
-          跟随样式
+          {officeMessage(messages, 'document.proofing.inherit')}
         </Button>
       </div>
       {mixed && (
         <p role="status">
-          当前选区包含不同的{label}校对语言，输入后才会统一修改。
+          {officeMessage(messages, 'document.proofing.mixedHint', { label })}
         </p>
       )}
     </div>
   );
+}
+
+function proofingStateOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption<ProofingStateDraft>[] {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.proofing.behavior.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.proofing.behavior.inherit'),
+    },
+    {
+      value: 'check',
+      label: officeMessage(messages, 'document.proofing.behavior.check'),
+    },
+    {
+      value: 'skip',
+      label: officeMessage(messages, 'document.proofing.behavior.skip'),
+    },
+  ];
 }
 
 function proofingStateDraft(
@@ -283,12 +328,13 @@ function proofingDialogPatch(
 }
 
 function proofingDialogError(
+  messages: OfficeMessageCatalog,
   draft: Record<ProofingLanguageDraftKey, string>,
   touched: Record<ProofingLanguageDraftKey | 'noProof', boolean>,
 ): string | null {
   for (const key of ['latin', 'eastAsia', 'bidi'] as const) {
     if (touched[key] && !validLanguageDraft(draft[key])) {
-      return '请输入有效的 BCP 47 语言标记；不能包含空格、下划线或控制字符。';
+      return officeMessage(messages, 'document.proofing.error.bcp47');
     }
   }
   return null;

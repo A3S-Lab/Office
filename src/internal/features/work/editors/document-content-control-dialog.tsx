@@ -1,4 +1,6 @@
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type {
   WorkDocumentContentControlAppearance,
   WorkDocumentContentControlListItem,
@@ -19,6 +21,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentContentControlDialogProps {
   editing: boolean;
@@ -29,40 +32,27 @@ export interface DocumentContentControlDialogProps {
   onSubmit: () => void;
 }
 
-const typeOptions = [
-  { value: 'text', label: '纯文本' },
-  { value: 'richText', label: '富文本' },
-  { value: 'checkbox', label: '复选框' },
-  { value: 'dropDownList', label: '下拉列表' },
-  { value: 'comboBox', label: '组合框' },
-  { value: 'date', label: '日期' },
-] as const satisfies readonly {
-  value: WorkDocumentContentControlType;
-  label: string;
-}[];
+const TYPE_KEYS = [
+  'text',
+  'richText',
+  'checkbox',
+  'dropDownList',
+  'comboBox',
+  'date',
+] as const satisfies readonly WorkDocumentContentControlType[];
 
-const lockOptions = [
-  { value: 'unlocked', label: '可编辑' },
-  { value: 'contentLocked', label: '锁定内容' },
-  { value: 'sdtLocked', label: '锁定控件' },
-  { value: 'sdtContentLocked', label: '锁定控件和内容' },
-] as const satisfies readonly {
-  value: WorkDocumentContentControlLock;
-  label: string;
-}[];
+const LOCK_KEYS = [
+  'unlocked',
+  'contentLocked',
+  'sdtLocked',
+  'sdtContentLocked',
+] as const satisfies readonly WorkDocumentContentControlLock[];
 
-const appearanceOptions = [
-  { value: 'boundingBox', label: '边框' },
-  { value: 'tags', label: '标签' },
-  { value: 'hidden', label: '隐藏边框' },
-] as const satisfies readonly {
-  value: WorkDocumentContentControlAppearance;
-  label: string;
-}[];
-
-const dateFormatOptions = DOCUMENT_CONTENT_CONTROL_DATE_FORMATS.map(
-  (value) => ({ value, label: value }),
-);
+const APPEARANCE_KEYS = [
+  'boundingBox',
+  'tags',
+  'hidden',
+] as const satisfies readonly WorkDocumentContentControlAppearance[];
 
 export function DocumentContentControlDialog({
   editing,
@@ -72,6 +62,7 @@ export function DocumentContentControlDialog({
   onChange,
   onSubmit,
 }: DocumentContentControlDialogProps) {
+  const messages = useOfficeMessages();
   const update = (patch: Partial<WorkDocumentContentControlProperties>) =>
     onChange({ ...properties, ...patch });
   const aliasId = 'document-content-control-alias';
@@ -86,6 +77,9 @@ export function DocumentContentControlDialog({
   const canSubmit =
     (!isList || properties.options.length > 0) &&
     (!isDate || Boolean(properties.fullDate));
+  const dateFormatOptions = DOCUMENT_CONTENT_CONTROL_DATE_FORMATS.map(
+    (value) => ({ value, label: value }),
+  );
   const dateFormatSelectOptions = dateFormatOptions.some(
     (item) => item.value === properties.dateFormat,
   )
@@ -94,35 +88,60 @@ export function DocumentContentControlDialog({
         { value: properties.dateFormat, label: properties.dateFormat },
         ...dateFormatOptions,
       ];
+  const defaultOption = officeMessage(
+    messages,
+    'document.contentControl.defaultOption',
+  );
 
   return (
     <Dialog
-      title={editing ? '编辑内容控件' : '插入内容控件'}
-      description="支持内联纯文本、富文本、有界复选框、下拉列表、组合框和日期；绑定与重复区域不会被伪装成普通文本。"
+      title={officeMessage(
+        messages,
+        editing
+          ? 'document.contentControl.title.edit'
+          : 'document.contentControl.title.insert',
+      )}
+      description={officeMessage(
+        messages,
+        'document.contentControl.description',
+      )}
       className="work-document-content-control-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onCancel}
       footer={
         <>
           <Button tone="quiet" onClick={onCancel}>
-            取消
+            {officeMessage(messages, 'document.contentControl.cancel')}
           </Button>
           <Button tone="primary" disabled={!canSubmit} onClick={onSubmit}>
-            {editing ? '应用' : '插入控件'}
+            {officeMessage(
+              messages,
+              editing
+                ? 'document.contentControl.submit.apply'
+                : 'document.contentControl.submit.insert',
+            )}
           </Button>
         </>
       }
     >
       <div className="work-document-content-control-dialog-fields">
         <label htmlFor={aliasId}>
-          <span>显示名称</span>
+          <span>
+            {officeMessage(messages, 'document.contentControl.alias')}
+          </span>
           <OfficeTextField
             id={aliasId}
             data-autofocus
-            aria-label="内容控件显示名称"
+            aria-label={officeMessage(
+              messages,
+              'document.contentControl.aliasAria',
+            )}
             value={properties.alias}
             maxLength={255}
-            placeholder="例如：客户名称"
+            placeholder={officeMessage(
+              messages,
+              'document.contentControl.aliasPlaceholder',
+            )}
             onChange={(event) => update({ alias: event.target.value })}
             onKeyDown={(event) => {
               if (event.key !== 'Enter' || event.nativeEvent.isComposing)
@@ -133,24 +152,35 @@ export function DocumentContentControlDialog({
           />
         </label>
         <label htmlFor={tagId}>
-          <span>程序标签</span>
+          <span>{officeMessage(messages, 'document.contentControl.tag')}</span>
           <OfficeTextField
             id={tagId}
-            aria-label="内容控件程序标签"
+            aria-label={officeMessage(
+              messages,
+              'document.contentControl.tagAria',
+            )}
             value={properties.tag}
             maxLength={255}
-            placeholder="可选，供文档自动化识别"
+            placeholder={officeMessage(
+              messages,
+              'document.contentControl.tagPlaceholder',
+            )}
             onChange={(event) => update({ tag: event.target.value })}
           />
         </label>
       </div>
       <div className="work-document-content-control-dialog-selects">
         <div className="work-document-content-control-dialog-field">
-          <span>控件类型</span>
+          <span>
+            {officeMessage(messages, 'document.contentControl.type')}
+          </span>
           <OfficeSelect<WorkDocumentContentControlType>
-            ariaLabel="内容控件类型"
+            ariaLabel={officeMessage(
+              messages,
+              'document.contentControl.typeAria',
+            )}
             value={properties.type}
-            options={typeOptions}
+            options={typeOptions(messages)}
             onValueChange={(type) =>
               update({
                 type,
@@ -164,7 +194,7 @@ export function DocumentContentControlDialog({
                 options: isListStyleContentControl(type)
                   ? properties.options.length
                     ? properties.options
-                    : [{ displayText: '选项1', value: '选项1' }]
+                    : [{ displayText: defaultOption, value: defaultOption }]
                   : [],
                 selectedValue: isListStyleContentControl(type)
                   ? type === 'comboBox'
@@ -173,10 +203,10 @@ export function DocumentContentControlDialog({
                         (item) => item.value === properties.selectedValue,
                       )
                       ? properties.selectedValue
-                      : properties.options[0]?.value || '选项1'
+                      : properties.options[0]?.value || defaultOption
                     : properties.selectedValue ||
                       properties.options[0]?.value ||
-                      '选项1'
+                      defaultOption
                   : '',
                 fullDate:
                   type === 'date'
@@ -199,20 +229,30 @@ export function DocumentContentControlDialog({
           />
         </div>
         <div className="work-document-content-control-dialog-field">
-          <span>锁定方式</span>
+          <span>
+            {officeMessage(messages, 'document.contentControl.lock')}
+          </span>
           <OfficeSelect<WorkDocumentContentControlLock>
-            ariaLabel="内容控件锁定方式"
+            ariaLabel={officeMessage(
+              messages,
+              'document.contentControl.lockAria',
+            )}
             value={properties.lock}
-            options={lockOptions}
+            options={lockOptions(messages)}
             onValueChange={(lock) => update({ lock })}
           />
         </div>
         <div className="work-document-content-control-dialog-field">
-          <span>外观</span>
+          <span>
+            {officeMessage(messages, 'document.contentControl.appearance')}
+          </span>
           <OfficeSelect<WorkDocumentContentControlAppearance>
-            ariaLabel="内容控件外观"
+            ariaLabel={officeMessage(
+              messages,
+              'document.contentControl.appearanceAria',
+            )}
             value={properties.appearance}
-            options={appearanceOptions}
+            options={appearanceOptions(messages)}
             onValueChange={(appearance) => update({ appearance })}
           />
         </div>
@@ -220,14 +260,24 @@ export function DocumentContentControlDialog({
       {isList ? (
         <div className="work-document-content-control-dialog-fields">
           <label htmlFor={optionsId}>
-            <span>列表选项（每行一项）</span>
+            <span>
+              {officeMessage(messages, 'document.contentControl.options')}
+            </span>
             <textarea
               id={optionsId}
-              aria-label={isComboBox ? '组合框选项' : '下拉列表选项'}
+              aria-label={officeMessage(
+                messages,
+                isComboBox
+                  ? 'document.contentControl.optionsAria.comboBox'
+                  : 'document.contentControl.optionsAria.dropDown',
+              )}
               className="work-document-content-control-options"
               rows={4}
               value={optionsText}
-              placeholder={'选项1\n选项2\n显示文字|值'}
+              placeholder={officeMessage(
+                messages,
+                'document.contentControl.optionsPlaceholder',
+              )}
               onChange={(event) => {
                 const options = linesToListItems(event.target.value);
                 update({
@@ -242,9 +292,21 @@ export function DocumentContentControlDialog({
             />
           </label>
           <div className="work-document-content-control-dialog-field">
-            <span>{isComboBox ? '建议选项' : '当前选项'}</span>
+            <span>
+              {officeMessage(
+                messages,
+                isComboBox
+                  ? 'document.contentControl.selected.comboBox'
+                  : 'document.contentControl.selected.dropDown',
+              )}
+            </span>
             <OfficeSelect<string>
-              ariaLabel={isComboBox ? '组合框建议选项' : '下拉列表当前选项'}
+              ariaLabel={officeMessage(
+                messages,
+                isComboBox
+                  ? 'document.contentControl.selectedAria.comboBox'
+                  : 'document.contentControl.selectedAria.dropDown',
+              )}
               value={
                 properties.selectedValue || properties.options[0]?.value || ''
               }
@@ -261,11 +323,16 @@ export function DocumentContentControlDialog({
       {isDate ? (
         <div className="work-document-content-control-dialog-fields">
           <label htmlFor={dateId}>
-            <span>日期</span>
+            <span>
+              {officeMessage(messages, 'document.contentControl.date')}
+            </span>
             <input
               id={dateId}
               type="date"
-              aria-label="内容控件日期"
+              aria-label={officeMessage(
+                messages,
+                'document.contentControl.dateAria',
+              )}
               className="work-document-content-control-date"
               value={contentControlDateInputValue(properties.fullDate)}
               onChange={(event) =>
@@ -276,9 +343,14 @@ export function DocumentContentControlDialog({
             />
           </label>
           <div className="work-document-content-control-dialog-field">
-            <span>显示格式</span>
+            <span>
+              {officeMessage(messages, 'document.contentControl.dateFormat')}
+            </span>
             <OfficeSelect<string>
-              ariaLabel="日期显示格式"
+              ariaLabel={officeMessage(
+                messages,
+                'document.contentControl.dateFormatAria',
+              )}
               value={properties.dateFormat}
               options={dateFormatSelectOptions}
               onValueChange={(dateFormat) => update({ dateFormat })}
@@ -289,26 +361,37 @@ export function DocumentContentControlDialog({
       <div className="work-document-content-control-dialog-options">
         {isCheckbox ? (
           <OfficeCheckbox
-            ariaLabel="复选框已勾选"
+            ariaLabel={officeMessage(
+              messages,
+              'document.contentControl.checkedAria',
+            )}
             checked={properties.checked}
             onCheckedChange={(checked) => update({ checked })}
           >
-            默认勾选
+            {officeMessage(messages, 'document.contentControl.checked')}
           </OfficeCheckbox>
         ) : isList || isDate ? null : (
           <OfficeCheckbox
-            ariaLabel="允许多行文字"
+            ariaLabel={officeMessage(
+              messages,
+              'document.contentControl.multiLineAria',
+            )}
             checked={properties.multiLine}
             onCheckedChange={(multiLine) => update({ multiLine })}
           >
-            允许多行文字
+            {officeMessage(messages, 'document.contentControl.multiLine')}
           </OfficeCheckbox>
         )}
         <label className="work-document-content-control-color">
-          <span>控件颜色</span>
+          <span>
+            {officeMessage(messages, 'document.contentControl.color')}
+          </span>
           <input
             type="color"
-            aria-label="内容控件颜色"
+            aria-label={officeMessage(
+              messages,
+              'document.contentControl.colorAria',
+            )}
             value={properties.color ?? '#2f6fed'}
             onChange={(event) => update({ color: event.target.value })}
           />
@@ -317,12 +400,36 @@ export function DocumentContentControlDialog({
             className="work-document-content-control-color-reset"
             onClick={() => update({ color: null })}
           >
-            使用主题色
+            {officeMessage(messages, 'document.contentControl.colorTheme')}
           </button>
         </label>
       </div>
     </Dialog>
   );
+}
+
+function typeOptions(messages: OfficeMessageCatalog) {
+  return TYPE_KEYS.map((value) => ({
+    value,
+    label: officeMessage(messages, `document.contentControl.type.${value}`),
+  }));
+}
+
+function lockOptions(messages: OfficeMessageCatalog) {
+  return LOCK_KEYS.map((value) => ({
+    value,
+    label: officeMessage(messages, `document.contentControl.lock.${value}`),
+  }));
+}
+
+function appearanceOptions(messages: OfficeMessageCatalog) {
+  return APPEARANCE_KEYS.map((value) => ({
+    value,
+    label: officeMessage(
+      messages,
+      `document.contentControl.appearance.${value}`,
+    ),
+  }));
 }
 
 function listItemsToLines(

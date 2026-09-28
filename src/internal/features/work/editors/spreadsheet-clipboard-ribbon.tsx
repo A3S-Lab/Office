@@ -10,7 +10,12 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
@@ -32,8 +37,9 @@ export function SpreadsheetClipboardRibbonGroup({
   commands: SpreadsheetEditorCommands;
   formatPainterMode: SpreadsheetFormatPainterMode | null;
 }) {
+  const messages = useOfficeMessages();
   return (
-    <WorkOfficeRibbonGroup label="剪贴板" priority="high">
+    <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.ribbon.clipboard')} priority="high">
       <SpreadsheetPasteMenu can={can} commands={commands} />
       <WorkOfficeRibbonButton
         label={spreadsheetCommandCatalog.cut.label}
@@ -57,7 +63,7 @@ export function SpreadsheetClipboardRibbonGroup({
         label={spreadsheetCommandCatalog.formatPainter.label}
         title={spreadsheetFormatPainterTitle(formatPainterMode)}
         active={formatPainterMode !== null}
-        badge={formatPainterMode === 'locked' ? '连续' : undefined}
+        badge={formatPainterMode === 'locked' ? officeMessage(messages, 'spreadsheet.ribbon.formatPainterLocked') : undefined}
         disabled={
           formatPainterMode === null
             ? !can.activateFormatPainter('once')
@@ -86,6 +92,7 @@ function SpreadsheetPasteMenu({
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
 }) {
+  const messages = useOfficeMessages();
   const items: readonly {
     content: SpreadsheetPasteContent;
     id: string;
@@ -95,25 +102,25 @@ function SpreadsheetPasteMenu({
     {
       content: 'all',
       id: `${spreadsheetCommandCatalog.paste.id}.all`,
-      label: '全部',
+      label: officeMessage(messages, 'spreadsheet.ribbon.pasteAll'),
       icon: <ClipboardPaste size={16} />,
     },
     {
       content: 'values',
       id: `${spreadsheetCommandCatalog.paste.id}.values`,
-      label: '值',
+      label: officeMessage(messages, 'spreadsheet.ribbon.pasteValues'),
       icon: <Hash size={16} />,
     },
     {
       content: 'formulas',
       id: `${spreadsheetCommandCatalog.paste.id}.formulas`,
-      label: '公式',
+      label: officeMessage(messages, 'spreadsheet.ribbon.pasteFormulas'),
       icon: <Sigma size={16} />,
     },
     {
       content: 'formats',
       id: `${spreadsheetCommandCatalog.paste.id}.formats`,
-      label: '格式',
+      label: officeMessage(messages, 'spreadsheet.ribbon.pasteFormats'),
       icon: <Paintbrush size={16} />,
     },
   ];
@@ -124,8 +131,8 @@ function SpreadsheetPasteMenu({
 
   return (
     <Popover
-      label="更多粘贴方式"
-      panelLabel="粘贴选项"
+      label={officeMessage(messages, 'spreadsheet.ribbon.morePaste')}
+      panelLabel={officeMessage(messages, 'spreadsheet.ribbon.pastePanel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-split-root"
@@ -150,7 +157,7 @@ function SpreadsheetPasteMenu({
           <button
             {...triggerProps}
             className={`work-spreadsheet-ribbon-split-disclosure${open ? ' active' : ''}`}
-            title="更多粘贴方式"
+            title={officeMessage(messages, 'spreadsheet.ribbon.morePaste')}
           >
             <ChevronDown size={13} aria-hidden="true" />
           </button>
@@ -206,11 +213,12 @@ function SpreadsheetPasteMenu({
 function spreadsheetFormatPainterTitle(
   mode: SpreadsheetFormatPainterMode | null,
 ): string {
+  const messages = resolveOfficeMessages();
   if (mode === 'locked') {
-    return '格式刷已锁定（再次点击或按 Escape 退出）';
+    return officeMessage(messages, 'spreadsheet.ribbon.formatPainterLockedHint');
   }
   if (mode === 'once') {
-    return '格式刷已开启（选择目标区域，按 Escape 退出）';
+    return officeMessage(messages, 'spreadsheet.ribbon.formatPainterOnHint');
   }
-  return '格式刷（单击应用一次，双击锁定连续应用）';
+  return officeMessage(messages, 'spreadsheet.ribbon.formatPainterHint');
 }

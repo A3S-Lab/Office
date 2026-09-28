@@ -138,6 +138,7 @@
 }
 
 .work-spreadsheet-format-cells-font-preview {
+  position: relative;
   min-height: 72px;
   grid-column: 1 / -1;
   display: grid;
@@ -148,6 +149,46 @@
   border-radius: 9px;
   background: var(--a3s-panel-soft);
   text-align: center;
+}
+
+.work-spreadsheet-format-cells-font-preview[data-underline-style='single'],
+.work-spreadsheet-format-cells-font-preview[data-underline-style='double'] {
+  text-decoration-line: underline;
+  text-underline-offset: 0.12em;
+}
+
+.work-spreadsheet-format-cells-font-preview[data-underline-style='double'] {
+  text-decoration-style: double;
+}
+
+.work-spreadsheet-format-cells-font-preview[data-strike='true'] {
+  text-decoration-line: line-through;
+}
+
+.work-spreadsheet-format-cells-font-preview[data-underline-style='single'][data-strike='true'],
+.work-spreadsheet-format-cells-font-preview[data-underline-style='double'][data-strike='true'] {
+  text-decoration-line: underline line-through;
+}
+
+.work-spreadsheet-format-cells-font-preview[data-underline-style='singleAccounting']::after,
+.work-spreadsheet-format-cells-font-preview[data-underline-style='doubleAccounting']::before,
+.work-spreadsheet-format-cells-font-preview[data-underline-style='doubleAccounting']::after {
+  position: absolute;
+  right: 8px;
+  left: 8px;
+  height: 1px;
+  background: currentColor;
+  content: '';
+  pointer-events: none;
+}
+
+.work-spreadsheet-format-cells-font-preview[data-underline-style='singleAccounting']::after,
+.work-spreadsheet-format-cells-font-preview[data-underline-style='doubleAccounting']::after {
+  bottom: 8px;
+}
+
+.work-spreadsheet-format-cells-font-preview[data-underline-style='doubleAccounting']::before {
+  bottom: 11px;
 }
 
 .work-spreadsheet-format-cells-border {
@@ -252,13 +293,153 @@
 
 .work-spreadsheet-format-cells-border-preview > span {
   position: absolute;
-  inset: 10px;
+  background: var(--cell-border-color);
   pointer-events: none;
+}
+
+.work-spreadsheet-format-cells-border-preview > .top,
+.work-spreadsheet-format-cells-border-preview > .bottom,
+.work-spreadsheet-format-cells-border-preview > .diagonal-down,
+.work-spreadsheet-format-cells-border-preview > .diagonal-up {
+  right: 10px;
+  left: 10px;
+  height: 1px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .top {
+  top: 10px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .bottom {
+  bottom: 10px;
 }
 
 .work-spreadsheet-format-cells-border-preview > .diagonal-down,
 .work-spreadsheet-format-cells-border-preview > .diagonal-up {
-  inset: 50% 5%;
+  top: 50%;
+  right: 5%;
+  left: 5%;
+}
+
+.work-spreadsheet-format-cells-border-preview > .left,
+.work-spreadsheet-format-cells-border-preview > .right {
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .left {
+  left: 10px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .right {
+  right: 10px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .top[data-border-style^='medium'],
+.work-spreadsheet-format-cells-border-preview > .bottom[data-border-style^='medium'],
+.work-spreadsheet-format-cells-border-preview > .diagonal-down[data-border-style^='medium'],
+.work-spreadsheet-format-cells-border-preview > .diagonal-up[data-border-style^='medium'] {
+  height: 2px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .left[data-border-style^='medium'],
+.work-spreadsheet-format-cells-border-preview > .right[data-border-style^='medium'] {
+  width: 2px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .top[data-border-style='thick'],
+.work-spreadsheet-format-cells-border-preview > .bottom[data-border-style='thick'],
+.work-spreadsheet-format-cells-border-preview > .diagonal-down[data-border-style='thick'],
+.work-spreadsheet-format-cells-border-preview > .diagonal-up[data-border-style='thick'] {
+  height: 3px;
+}
+
+.work-spreadsheet-format-cells-border-preview > .left[data-border-style='thick'],
+.work-spreadsheet-format-cells-border-preview > .right[data-border-style='thick'] {
+  width: 3px;
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.top, .bottom, .diagonal-down, .diagonal-up)[data-border-style='dotted'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--cell-border-color) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.left, .right)[data-border-style='dotted'] {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--cell-border-color) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.top, .bottom, .diagonal-down, .diagonal-up)[data-border-style='dashed'],
+.work-spreadsheet-format-cells-border-preview > :is(.top, .bottom, .diagonal-down, .diagonal-up)[data-border-style='medium-dashed'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--cell-border-color) 0 8px,
+    transparent 8px 12px
+  );
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.left, .right)[data-border-style='dashed'],
+.work-spreadsheet-format-cells-border-preview > :is(.left, .right)[data-border-style='medium-dashed'] {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--cell-border-color) 0 8px,
+    transparent 8px 12px
+  );
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.top, .bottom, .diagonal-down, .diagonal-up)[data-border-style='dash-dot'],
+.work-spreadsheet-format-cells-border-preview > :is(.top, .bottom, .diagonal-down, .diagonal-up)[data-border-style='medium-dash-dot'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--cell-border-color) 0 8px,
+    transparent 8px 11px,
+    var(--cell-border-color) 11px 14px,
+    transparent 14px 17px
+  );
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.left, .right)[data-border-style='dash-dot'],
+.work-spreadsheet-format-cells-border-preview > :is(.left, .right)[data-border-style='medium-dash-dot'] {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--cell-border-color) 0 8px,
+    transparent 8px 11px,
+    var(--cell-border-color) 11px 14px,
+    transparent 14px 17px
+  );
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.top, .bottom, .diagonal-down, .diagonal-up)[data-border-style='dash-dot-dot'],
+.work-spreadsheet-format-cells-border-preview > :is(.top, .bottom, .diagonal-down, .diagonal-up)[data-border-style='medium-dash-dot-dot'] {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--cell-border-color) 0 8px,
+    transparent 8px 11px,
+    var(--cell-border-color) 11px 13px,
+    transparent 13px 16px,
+    var(--cell-border-color) 16px 18px,
+    transparent 18px 21px
+  );
+}
+
+.work-spreadsheet-format-cells-border-preview > :is(.left, .right)[data-border-style='dash-dot-dot'],
+.work-spreadsheet-format-cells-border-preview > :is(.left, .right)[data-border-style='medium-dash-dot-dot'] {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--cell-border-color) 0 8px,
+    transparent 8px 11px,
+    var(--cell-border-color) 11px 13px,
+    transparent 13px 16px,
+    var(--cell-border-color) 16px 18px,
+    transparent 18px 21px
+  );
 }
 
 .work-spreadsheet-format-cells-border-preview > .diagonal-down {

@@ -1,4 +1,6 @@
 import { LocateFixed, UsersRound } from 'lucide-react';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import { useMemo } from 'react';
 import type {
   WorkOfficeCollaborationParticipant,
@@ -16,6 +18,7 @@ export function WorkOfficeCollaborationParticipants({
 }: {
   variant?: 'status' | 'toolbar';
 }) {
+  const messages = useOfficeMessages();
   const snapshot = useOfficePresenceSnapshot();
   const navigateToParticipant = useOfficeCollaborationParticipantNavigation();
   const participants = useMemo(
@@ -26,14 +29,14 @@ export function WorkOfficeCollaborationParticipants({
   if (!participants.length) return null;
 
   const count = participants.length;
-  const summary = count === 1 ? '仅你在线' : `${count} 位协作者`;
+  const summary = count === 1 ? officeMessage(messages, 'office.collab.youOnly') : officeMessage(messages, 'office.collab.count', { count: String(count) });
   const visibleParticipants = participants.slice(0, 3);
   const overflow = Math.max(0, count - visibleParticipants.length);
 
   return (
     <Popover
-      label={`查看协作者，${summary}`}
-      panelLabel="协作者"
+      label={officeMessage(messages, 'office.collab.viewAria', { summary })}
+      panelLabel={officeMessage(messages, 'office.collab.panel')}
       panelRole="dialog"
       className="work-office-collaboration"
       panelClassName="work-office-collaboration-popover"
@@ -48,7 +51,7 @@ export function WorkOfficeCollaborationParticipants({
           className="work-office-collaboration-trigger"
           data-collaboration-count={count}
           data-variant={variant}
-          title={`协作者：${summary}`}
+          title={officeMessage(messages, 'office.collab.title', { summary })}
         >
           <span className="work-office-collaboration-stack" aria-hidden="true">
             {visibleParticipants.map((participant) => (
@@ -68,7 +71,7 @@ export function WorkOfficeCollaborationParticipants({
             {variant === 'status' ? summary : count}
           </span>
           <span className="sr-only" aria-live="polite">
-            {open ? '协作者列表已打开' : `${summary}在线`}
+            {open ? officeMessage(messages, 'office.collab.listOpen') : officeMessage(messages, 'office.collab.onlineSummary', { summary })}
           </span>
         </button>
       )}
@@ -80,8 +83,8 @@ export function WorkOfficeCollaborationParticipants({
               <UsersRound size={16} aria-hidden="true" />
             </span>
             <span>
-              <strong>协作者</strong>
-              <small>{count} 个在线会话</small>
+              <strong>{officeMessage(messages, 'office.collab.heading')}</strong>
+              <small>{officeMessage(messages, 'office.collab.sessions', { count: String(count) })}</small>
             </span>
           </header>
           <ul className="work-office-collaboration-list">
@@ -97,12 +100,12 @@ export function WorkOfficeCollaborationParticipants({
                   <span className="work-office-collaboration-person">
                     <span className="work-office-collaboration-name">
                       <strong>{participant.actor.name}</strong>
-                      {participant.local && <small>你</small>}
+                      {participant.local && <small>{officeMessage(messages, 'office.collab.you')}</small>}
                       {participant.actor.kind === 'agent' && (
                         <small>Agent</small>
                       )}
                       {participant.actor.kind === 'system' && (
-                        <small>系统</small>
+                        <small>{officeMessage(messages, 'office.collab.system')}</small>
                       )}
                     </span>
                     <span className="work-office-collaboration-detail">
@@ -131,7 +134,7 @@ export function WorkOfficeCollaborationParticipants({
                     <button
                       type="button"
                       className="work-office-collaboration-participant"
-                      aria-label={`跳转到 ${participant.actor.name} 的位置，${locationLabel}`}
+                      aria-label={officeMessage(messages, 'office.collab.jumpAria', { name: participant.actor.name, location: locationLabel })}
                       onClick={() => {
                         close();
                         requestAnimationFrame(() =>
@@ -179,33 +182,33 @@ function presenceActivityLabel(
   activity: WorkOfficeCollaborationPresenceActivity,
 ): string {
   return activity === 'active'
-    ? '正在使用'
+    ? officeMessage(resolveOfficeMessages(), 'office.collab.using')
     : activity === 'idle'
-      ? '空闲'
-      : '离开';
+      ? officeMessage(resolveOfficeMessages(), 'office.collab.idle')
+      : officeMessage(resolveOfficeMessages(), 'office.collab.away');
 }
 
 function presenceModeLabel(
   mode: WorkOfficeCollaborationParticipant['mode'],
 ): string {
-  if (mode === 'edit') return '可编辑';
-  if (mode === 'suggest') return '建议';
-  if (mode === 'comment') return '评论';
-  return '只读';
+  if (mode === 'edit') return officeMessage(resolveOfficeMessages(), 'office.collab.mode.edit');
+  if (mode === 'suggest') return officeMessage(resolveOfficeMessages(), 'office.collab.mode.suggest');
+  if (mode === 'comment') return officeMessage(resolveOfficeMessages(), 'office.collab.mode.comment');
+  return officeMessage(resolveOfficeMessages(), 'office.collab.mode.read');
 }
 
 function presenceLocationLabel(
   participant: WorkOfficeCollaborationParticipant,
 ): string {
   const location = participant.location;
-  if (!location) return '未共享位置';
+  if (!location) return officeMessage(resolveOfficeMessages(), 'office.collab.location.none');
   switch (location.kind) {
     case 'document':
     case 'markdown': {
       const selected = Math.abs(location.head - location.anchor);
       return selected > 0
-        ? `已选择 ${selected} 个位置`
-        : `位置 ${location.head + 1}`;
+        ? officeMessage(resolveOfficeMessages(), 'office.collab.location.selected', { count: String(selected) })
+        : officeMessage(resolveOfficeMessages(), 'office.collab.location.index', { index: String(location.head + 1) });
     }
     case 'spreadsheet': {
       const active = location.activeCell ?? {
@@ -216,9 +219,9 @@ function presenceLocationLabel(
     }
     case 'presentation':
       return location.elementIds.length > 0
-        ? `幻灯片中的 ${location.elementIds.length} 个对象`
-        : '当前幻灯片';
+        ? officeMessage(resolveOfficeMessages(), 'office.collab.location.slideObjects', { count: String(location.elementIds.length) })
+        : officeMessage(resolveOfficeMessages(), 'office.collab.location.slide');
     case 'pdf':
-      return `第 ${location.pageIndex + 1} 页`;
+      return officeMessage(resolveOfficeMessages(), 'office.collab.location.page', { page: String(location.pageIndex + 1) });
   }
 }

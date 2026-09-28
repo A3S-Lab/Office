@@ -13,6 +13,8 @@ import {
   Dialog,
 } from '../../../design-system/primitives';
 import { OfficeTextArea, OfficeTextField } from './office-text-field';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 interface OfficePromptRequest {
   id: number;
@@ -92,6 +94,7 @@ export function useOfficeDialog(): {
   confirm: (options: OfficeConfirmOptions) => Promise<boolean>;
   dialog: ReactNode;
 } {
+  const messages = useOfficeMessages();
   const [request, setRequest] = useState<OfficeDialogRequest | null>(null);
   const sequence = useRef(0);
   const promptResolver = useRef<((value: string | null) => void) | null>(null);
@@ -166,10 +169,10 @@ export function useOfficeDialog(): {
           placeholder: options.placeholder,
           multiline: options.multiline,
           inputMode: options.inputMode,
-          confirmLabel: options.confirmLabel ?? '确定',
+          confirmLabel: options.confirmLabel ?? officeMessage(resolveOfficeMessages(), 'office.dialog.ok'),
           requiredMessage:
             options.required === true
-              ? '请填写此项。'
+              ? officeMessage(resolveOfficeMessages(), 'office.dialog.required')
               : typeof options.required === 'string'
                 ? options.required
                 : undefined,
@@ -196,7 +199,7 @@ export function useOfficeDialog(): {
           kind: 'notice',
           title: options.title,
           description: options.description,
-          confirmLabel: options.confirmLabel ?? '知道了',
+          confirmLabel: options.confirmLabel ?? officeMessage(resolveOfficeMessages(), 'office.dialog.gotIt'),
           restoreFocusTarget: options.restoreFocusTarget,
         });
       }),
@@ -217,8 +220,8 @@ export function useOfficeDialog(): {
           kind: 'confirm',
           title: options.title,
           description: options.description,
-          confirmLabel: options.confirmLabel ?? '继续',
-          cancelLabel: options.cancelLabel ?? '取消',
+          confirmLabel: options.confirmLabel ?? officeMessage(resolveOfficeMessages(), 'office.dialog.continue'),
+          cancelLabel: options.cancelLabel ?? officeMessage(resolveOfficeMessages(), 'office.dialog.cancel'),
           confirmTone: options.confirmTone ?? 'primary',
           restoreFocusTarget: options.restoreFocusTarget,
         });
@@ -271,7 +274,7 @@ export function useOfficeDialog(): {
         request.kind === 'prompt' ? (
           <>
             <Button tone="quiet" onClick={() => closePrompt(null)}>
-              取消
+              {officeMessage(messages, 'office.dialog.cancel')}
             </Button>
             <Button
               tone="primary"

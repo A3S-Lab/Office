@@ -76,7 +76,9 @@ export function measureParagraphLineFragments(
     (text ?? node.textContent).length < 2 ||
     element.querySelector(
       [
-        'img',
+        // ProseMirror renders `img.ProseMirror-separator` between adjacent
+        // hard breaks; it is not document content.
+        'img:not(.ProseMirror-separator)',
         'table',
         '[data-document-note]',
         [

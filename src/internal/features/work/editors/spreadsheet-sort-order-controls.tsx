@@ -1,3 +1,8 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import { OfficeSelect, type OfficeSelectOption } from './office-controls';
 import type {
   SpreadsheetSortKey,
@@ -20,7 +25,6 @@ import {
 
 const CREATE_CUSTOM_LIST_ORDER = 'create-custom-list';
 const ORPHAN_CUSTOM_LIST_ORDER = 'orphan-custom-list';
-const ORPHAN_CUSTOM_LIST_LABEL = '自定义序列';
 const CUSTOM_LIST_ORDER_PREFIX = 'custom-list:';
 
 export function SpreadsheetSortOrderControls({
@@ -40,6 +44,7 @@ export function SpreadsheetSortOrderControls({
   onBeginCustomListEdit: (entries?: readonly string[]) => void;
   onChange: (key: SpreadsheetSortKey) => void;
 }) {
+  const messages = useOfficeMessages();
   const sortOn = sortKey.sortOn ?? 'values';
   const appearanceTarget = spreadsheetSortKeyAppearanceTarget(sortKey);
   const appearancePosition = sortKey.position === 'last' ? 'last' : 'first';
@@ -49,22 +54,25 @@ export function SpreadsheetSortOrderControls({
       : spreadsheetSortAppearanceTargets(appearanceField, sortOn);
 
   const sortOnOptions: readonly OfficeSelectOption<string>[] = [
-    { value: 'values', label: '值' },
+    {
+      value: 'values',
+      label: officeMessage(messages, 'spreadsheet.sort.order.values'),
+    },
     {
       value: 'cell-color',
-      label: '单元格颜色',
+      label: officeMessage(messages, 'spreadsheet.sort.order.cellColor'),
       disabled: !spreadsheetSortAppearanceTargets(appearanceField, 'cell-color')
         .length,
     },
     {
       value: 'font-color',
-      label: '字体颜色',
+      label: officeMessage(messages, 'spreadsheet.sort.order.fontColor'),
       disabled: !spreadsheetSortAppearanceTargets(appearanceField, 'font-color')
         .length,
     },
     {
       value: 'icon',
-      label: '条件格式图标',
+      label: officeMessage(messages, 'spreadsheet.sort.order.icon'),
       disabled: !spreadsheetSortAppearanceTargets(appearanceField, 'icon')
         .length,
     },
@@ -93,9 +101,11 @@ export function SpreadsheetSortOrderControls({
       data-appearance={sortOn === 'values' ? undefined : 'true'}
     >
       <div className="work-office-field">
-        <span>排序依据</span>
+        <span>{officeMessage(messages, 'spreadsheet.sort.order.by')}</span>
         <OfficeSelect
-          ariaLabel={`排序条件 ${level} 排序依据`}
+          ariaLabel={officeMessage(messages, 'spreadsheet.sort.order.byAria', {
+            level: String(level),
+          })}
           value={sortOn}
           options={sortOnOptions}
           onValueChange={(next) => {
@@ -128,9 +138,13 @@ export function SpreadsheetSortOrderControls({
       ) : (
         <>
           <div className="work-office-field">
-            <span>次序</span>
+            <span>{officeMessage(messages, 'spreadsheet.sort.order.target')}</span>
             <OfficeSelect
-              ariaLabel={`排序条件 ${level} 目标外观`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.sort.order.targetAria',
+                { level: String(level) },
+              )}
               value={
                 appearanceTarget
                   ? spreadsheetSortAppearanceTargetValue(appearanceTarget)
@@ -152,9 +166,15 @@ export function SpreadsheetSortOrderControls({
             />
           </div>
           <div className="work-office-field work-spreadsheet-sort-position-field">
-            <span>位置</span>
+            <span>
+              {officeMessage(messages, 'spreadsheet.sort.order.position')}
+            </span>
             <OfficeSelect<'first' | 'last'>
-              ariaLabel={`排序条件 ${level} 位置`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.sort.order.positionAria',
+                { level: String(level) },
+              )}
               value={appearancePosition}
               options={positionOptions}
               disabled={!appearanceTarget}
@@ -193,8 +213,13 @@ export function SpreadsheetSortOrderControls({
                 />
               )}
               <span>
-                {spreadsheetSortAppearanceTargetLabel(appearanceTarget)}，
-                {spreadsheetSortPositionLabel(orientation, appearancePosition)}
+                {officeMessage(messages, 'spreadsheet.sort.appearance.preview', {
+                  target: spreadsheetSortAppearanceTargetLabel(appearanceTarget),
+                  position: spreadsheetSortPositionLabel(
+                    orientation,
+                    appearancePosition,
+                  ),
+                })}
               </span>
             </div>
           ) : null}
@@ -217,16 +242,23 @@ function SpreadsheetSortValueOrder({
   onBeginCustomListEdit: (entries?: readonly string[]) => void;
   onChange: (key: SpreadsheetSortKey) => void;
 }) {
+  const messages = useOfficeMessages();
   const orderOptions: OfficeSelectOption<string>[] = [
-    { value: 'ascending', label: '升序（A 到 Z）' },
-    { value: 'descending', label: '降序（Z 到 A）' },
+    {
+      value: 'ascending',
+      label: officeMessage(messages, 'spreadsheet.sort.order.asc'),
+    },
+    {
+      value: 'descending',
+      label: officeMessage(messages, 'spreadsheet.sort.order.desc'),
+    },
   ];
   customLists.forEach((customList, customListIndex) => {
     if (customList.source === 'built-in') {
       orderOptions.push({
         value: `${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`,
         label: customList.label,
-        group: '内置序列',
+        group: officeMessage(messages, 'spreadsheet.sort.order.group.builtin'),
       });
     }
   });
@@ -235,7 +267,7 @@ function SpreadsheetSortValueOrder({
       orderOptions.push({
         value: `${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`,
         label: customList.label,
-        group: '已保存的序列',
+        group: officeMessage(messages, 'spreadsheet.sort.order.group.saved'),
       });
     }
   });
@@ -244,7 +276,7 @@ function SpreadsheetSortValueOrder({
       orderOptions.push({
         value: `${CUSTOM_LIST_ORDER_PREFIX}${customListIndex}`,
         label: customList.label,
-        group: '本次会话的序列',
+        group: officeMessage(messages, 'spreadsheet.sort.order.group.session'),
       });
     }
   });
@@ -252,19 +284,23 @@ function SpreadsheetSortValueOrder({
   if (orderValue === ORPHAN_CUSTOM_LIST_ORDER) {
     orderOptions.push({
       value: ORPHAN_CUSTOM_LIST_ORDER,
-      label: ORPHAN_CUSTOM_LIST_LABEL,
+      label: officeMessage(messages, 'spreadsheet.sort.order.customList'),
     });
   }
   orderOptions.push({
     value: CREATE_CUSTOM_LIST_ORDER,
-    label: '新建自定义序列…',
+    label: officeMessage(messages, 'spreadsheet.sort.order.newList'),
   });
 
   return (
     <div className="work-office-field">
-      <span>次序</span>
+      <span>{officeMessage(messages, 'spreadsheet.sort.order.target')}</span>
       <OfficeSelect
-        ariaLabel={`排序条件 ${level} 次序`}
+        ariaLabel={officeMessage(
+          messages,
+          'spreadsheet.sort.order.directionAria',
+          { level: String(level) },
+        )}
         value={orderValue}
         options={orderOptions}
         onValueChange={(order) => {
@@ -381,10 +417,15 @@ function spreadsheetSortPositionLabel(
   orientation: SpreadsheetSortOrientation,
   position: 'first' | 'last',
 ): string {
+  const catalog = resolveOfficeMessages();
   if (orientation === 'left-to-right') {
-    return position === 'first' ? '置于左侧' : '置于右侧';
+    return position === 'first'
+      ? officeMessage(catalog, 'spreadsheet.sort.order.onLeft')
+      : officeMessage(catalog, 'spreadsheet.sort.order.onRight');
   }
-  return position === 'first' ? '置于顶端' : '置于底端';
+  return position === 'first'
+    ? officeMessage(catalog, 'spreadsheet.sort.order.onTop')
+    : officeMessage(catalog, 'spreadsheet.sort.order.onBottom');
 }
 
 function isSpreadsheetSortAppearanceKind(

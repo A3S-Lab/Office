@@ -187,8 +187,11 @@ pub(super) fn apply_decide_mutation(
     let paragraph_rotations = paragraph_text_id_rotations(&paragraphs, &transaction)?;
     let table_rows = ancestor_table_rows(&paragraphs)?;
     let row_rotations = table_row_text_id_rotations(&table_rows, &transaction)?;
-    let rewrites = attribute_rewrites(&live_segments, &targeted, &transaction);
     let deletions = deletion_groups(&live_segments, &targeted, *decision);
+    let decided_identities = pending
+        .iter()
+        .map(|(expected, _)| (expected.id.clone(), expected.kind))
+        .collect::<Vec<_>>();
     let records_root = decision_state.records_root.clone();
     let order_root = decision_state.order_root.clone();
     let claims_root = decision_state.claims_root.clone();
@@ -203,34 +206,46 @@ pub(super) fn apply_decide_mutation(
     drop(transaction);
 
     let mut transaction = doc.transact_mut();
-    // Clearing an interior attribute written by another Yjs client can panic
-    // in Yrs. Clear the key across the whole text and then restore every
-    // non-target span that used that key before applying descending deletes.
-    for rewrite in &rewrites {
-        if rewrite.length_utf16 > 0 {
-            rewrite.text.format(
-                &mut transaction,
-                0,
-                rewrite.length_utf16,
-                Attrs::from([(rewrite.attribute.clone().into(), Any::Null)]),
-            );
-        }
-    }
-    for rewrite in &rewrites {
-        for retained in &rewrite.retained {
-            rewrite.text.format(
-                &mut transaction,
-                retained.start_utf16,
-                retained.end_utf16 - retained.start_utf16,
-                Attrs::from([(rewrite.attribute.clone().into(), retained.value.clone())]),
-            );
-        }
-    }
+    // Delete owned characters before clearing marks. A `documentChange`
+    // marker applies to every following character until the next marker, so
+    // clearing it first can leave this decision's identity on the text that
+    // follows a concurrently deleted neighbor.
     for group in deletions {
         for (start, end) in group.ranges.into_iter().rev() {
             group
                 .text
                 .remove_range(&mut transaction, start, end - start);
+        }
+    }
+    for _ in 0..8 {
+        let leaked = match collect_live_suggestion_segments(&transaction, &fragment) {
+            Ok(segments) => segments,
+            Err(error) => {
+                drop(transaction);
+                return Err(error);
+            }
+        };
+        let mut cleared = false;
+        for segment in leaked {
+            if segment.end_utf16 <= segment.start_utf16 {
+                continue;
+            }
+            if !decided_identities
+                .iter()
+                .any(|(id, kind)| segment.identity.id == *id && segment.identity.kind == *kind)
+            {
+                continue;
+            }
+            segment.text.format(
+                &mut transaction,
+                segment.start_utf16,
+                segment.end_utf16 - segment.start_utf16,
+                Attrs::from([("documentChange".into(), Any::Null)]),
+            );
+            cleared = true;
+        }
+        if !cleared {
+            break;
         }
     }
     for (paragraph, next_text_id) in paragraph_rotations {
@@ -294,57 +309,6 @@ fn decision_record(
         decided_by: decided_by.to_owned(),
         decided_at: decided_at.to_owned(),
     }
-}
-
-struct AttributeRewrite {
-    text: XmlTextRef,
-    attribute: String,
-    length_utf16: u32,
-    retained: Vec<RetainedAttribute>,
-}
-
-struct RetainedAttribute {
-    start_utf16: u32,
-    end_utf16: u32,
-    value: Any,
-}
-
-fn attribute_rewrites<T: yrs::ReadTxn>(
-    segments: &[LiveSuggestionSegment],
-    targeted: &impl Fn(&LiveSuggestionSegment) -> bool,
-    transaction: &T,
-) -> Vec<AttributeRewrite> {
-    let mut rewrites = Vec::<AttributeRewrite>::new();
-    for segment in segments.iter().filter(|segment| targeted(segment)) {
-        for (attribute, _) in &segment.attributes {
-            if !rewrites
-                .iter()
-                .any(|rewrite| rewrite.text == segment.text && rewrite.attribute == *attribute)
-            {
-                rewrites.push(AttributeRewrite {
-                    text: segment.text.clone(),
-                    attribute: attribute.clone(),
-                    length_utf16: segment.text.len(transaction),
-                    retained: Vec::new(),
-                });
-            }
-        }
-    }
-    for segment in segments.iter().filter(|segment| !targeted(segment)) {
-        for (attribute, value) in &segment.attributes {
-            if let Some(rewrite) = rewrites
-                .iter_mut()
-                .find(|rewrite| rewrite.text == segment.text && rewrite.attribute == *attribute)
-            {
-                rewrite.retained.push(RetainedAttribute {
-                    start_utf16: segment.start_utf16,
-                    end_utf16: segment.end_utf16,
-                    value: value.clone(),
-                });
-            }
-        }
-    }
-    rewrites
 }
 
 struct DeletionGroup {

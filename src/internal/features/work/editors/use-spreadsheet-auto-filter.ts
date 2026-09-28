@@ -42,6 +42,7 @@ import {
   spreadsheetAutoFilterRankAction,
   spreadsheetAutoFilterTrigger,
 } from './spreadsheet-auto-filter-menu';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 export interface UseSpreadsheetAutoFilterOptions {
   canvasRef: RefObject<HTMLElement | null>;
@@ -91,6 +92,7 @@ export function useSpreadsheetAutoFilter({
   sheetId,
   workbook = null,
 }: UseSpreadsheetAutoFilterOptions): SpreadsheetAutoFilterController {
+  const messages = resolveOfficeMessages();
   const contentRef = useRef(content);
   const editableRef = useRef(editable);
   const onChangeRef = useRef(onChange);
@@ -426,7 +428,7 @@ export function useSpreadsheetAutoFilter({
         applyingConditionRef.current = false;
       }
       if (!handled) {
-        showToast('筛选区域已发生变化，请重新打开筛选菜单。', 'error');
+        showToast(officeMessage(messages, 'spreadsheet.autoFilter.rangeChanged'), 'error');
       }
       return handled;
     },
@@ -448,7 +450,7 @@ export function useSpreadsheetAutoFilter({
     } finally {
       applyingConditionRef.current = false;
     }
-    if (!handled) showToast('无法清除此列筛选。', 'error');
+    if (!handled) showToast(officeMessage(messages, 'spreadsheet.autoFilter.clearFailed'), 'error');
     return handled;
   }, [commandsRef]);
 
@@ -484,7 +486,7 @@ export function useSpreadsheetAutoFilter({
       : null,
     reserveAltKey,
     selectionForChange,
-    status: active ? '自动筛选已开启；在表头按 Alt+向下箭头打开筛选菜单。' : '',
+    status: active ? officeMessage(messages, 'spreadsheet.autoFilter.statusActive') : '',
   };
 }
 

@@ -1,3 +1,4 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   normalizePresentationChartDataLabelPosition,
   presentationChartDataLabelPositionLabel,
@@ -13,6 +14,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export function PresentationChartDataLabelEditor({
   chartType,
@@ -23,73 +25,74 @@ export function PresentationChartDataLabelEditor({
   value?: WorkSlideChartDataLabels;
   onChange: (value: WorkSlideChartDataLabels | undefined) => void;
 }) {
+  const messages = useOfficeMessages();
   const change = (patch: Partial<WorkSlideChartDataLabels>) =>
     onChange({ ...value, ...patch });
   return (
     <section
       className="work-presentation-chart-data-labels"
-      aria-label="演示图表数据标签"
+      aria-label={officeMessage(messages, 'presentation.chart.dataLabel.settingsAria')}
     >
       <OfficeCheckbox
         className="check enable-data-labels"
-        ariaLabel="显示演示图表数据标签"
+        ariaLabel={officeMessage(messages, 'presentation.chart.dataLabel.showAria')}
         checked={value !== undefined}
         onCheckedChange={(checked) =>
           onChange(checked ? { showValue: true } : undefined)
         }
       >
-        数据标签
+        {officeMessage(messages, 'presentation.chart.dataLabel.show')}
       </OfficeCheckbox>
       {value && (
         <div>
           <OfficeCheckbox
             className="check"
-            ariaLabel="演示图表数据标签显示数值"
+            ariaLabel={officeMessage(messages, 'presentation.chart.dataLabel.showValueAria')}
             checked={value.showValue === true}
             onCheckedChange={(showValue) => change({ showValue })}
           >
-            数值
+            {officeMessage(messages, 'presentation.chart.dataLabel.showValue')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="check"
-            ariaLabel="演示图表数据标签显示分类名称"
+            ariaLabel={officeMessage(messages, 'presentation.chart.dataLabel.showCategoryAria')}
             checked={value.showCategoryName === true}
             onCheckedChange={(showCategoryName) => change({ showCategoryName })}
           >
-            分类
+            {officeMessage(messages, 'presentation.chart.dataLabel.showCategory')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="check"
-            ariaLabel="演示图表数据标签显示系列名称"
+            ariaLabel={officeMessage(messages, 'presentation.chart.dataLabel.showSeriesAria')}
             checked={value.showSeriesName === true}
             onCheckedChange={(showSeriesName) => change({ showSeriesName })}
           >
-            系列
+            {officeMessage(messages, 'presentation.chart.dataLabel.showSeries')}
           </OfficeCheckbox>
           {(chartType === 'pie' || chartType === 'doughnut') && (
             <OfficeCheckbox
               className="check"
-              ariaLabel="演示图表数据标签显示百分比"
+              ariaLabel={officeMessage(messages, 'presentation.chart.dataLabel.showPercentAria')}
               checked={value.showPercentage === true}
               onCheckedChange={(showPercentage) => change({ showPercentage })}
             >
-              百分比
+              {officeMessage(messages, 'presentation.chart.dataLabel.showPercent')}
             </OfficeCheckbox>
           )}
           {chartType === 'bubble' && (
             <OfficeCheckbox
               className="check"
-              ariaLabel="演示图表数据标签显示气泡大小"
+              ariaLabel={officeMessage(messages, 'presentation.chart.dataLabel.showBubbleAria')}
               checked={value.showBubbleSize === true}
               onCheckedChange={(showBubbleSize) => change({ showBubbleSize })}
             >
-              气泡大小
+              {officeMessage(messages, 'presentation.chart.dataLabel.showBubble')}
             </OfficeCheckbox>
           )}
           <div className="work-office-field">
-            <span>位置</span>
+            <span>{officeMessage(messages, 'presentation.chart.dataLabel.position')}</span>
             <OfficeSelect
-              ariaLabel="演示图表数据标签位置"
+              ariaLabel={officeMessage(messages, 'presentation.chart.dataLabel.positionAria')}
               value={normalizePresentationChartDataLabelPosition(
                 value.position,
                 chartType,
@@ -97,7 +100,7 @@ export function PresentationChartDataLabelEditor({
               options={presentationChartDataLabelPositions(chartType).map(
                 (position) => ({
                   value: position,
-                  label: presentationChartDataLabelPositionLabel(position),
+                  label: presentationChartDataLabelPositionLabel(position, messages),
                 }),
               )}
               onValueChange={(position) =>
@@ -108,9 +111,9 @@ export function PresentationChartDataLabelEditor({
             />
           </div>
           <div className="work-office-field">
-            <span>分隔符</span>
+            <span>{officeMessage(messages, 'presentation.chart.dataLabel.separator')}</span>
             <OfficeTextField
-              aria-label="演示图表数据标签分隔符"
+              aria-label={officeMessage(messages, 'presentation.chart.dataLabel.separatorAria')}
               value={value.separator ?? ', '}
               maxLength={64}
               onChange={(event) => change({ separator: event.target.value })}

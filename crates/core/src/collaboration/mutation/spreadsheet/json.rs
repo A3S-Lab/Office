@@ -431,7 +431,7 @@ pub(super) fn encode_flat_json_key(kind: FlatJsonEntryKind, path: &[String]) -> 
     })
 }
 
-fn json_to_any(value: &JsonValue, depth: usize) -> UseResult<Any> {
+pub(super) fn json_to_any(value: &JsonValue, depth: usize) -> UseResult<Any> {
     if depth > MAX_JSON_DEPTH {
         return Err(invalid_spreadsheet_mutation(
             "A Spreadsheet cell mutation exceeds the JSON nesting limit.",

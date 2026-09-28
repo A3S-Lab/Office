@@ -1,4 +1,5 @@
 import type { Editor, Extensions } from '@tiptap/core';
+import { officeMessage } from '../../../i18n/office-locale';
 import { useEditor } from '@tiptap/react';
 import {
   type CSSProperties,
@@ -35,6 +36,7 @@ import {
 } from '../work-markdown-selection-menu';
 import type { WorkMarkdownContent } from '../work-types';
 import { ControlledEditorComposition } from './controlled-editor-composition';
+import { useOfficeMessages } from './office-messages-context';
 import {
   type MarkdownEditingSurface,
   restoreMarkdownEditingSurfaceFocus,
@@ -97,6 +99,7 @@ export function MarkdownEditor({
   getSelectionMenuItems,
   onChange,
 }: MarkdownEditorProps) {
+  const messages = useOfficeMessages();
   const collaborationRef = useRef(collaboration);
   if (collaborationRef.current !== collaboration) {
     throw new Error(
@@ -184,7 +187,7 @@ export function MarkdownEditor({
   const editorProps = useMemo(
     () => ({
       attributes: {
-        'aria-label': 'Markdown 编辑区',
+        'aria-label': officeMessage(messages, 'markdown.editor.areaAria'),
         'aria-multiline': 'true',
         role: 'textbox',
         spellcheck: 'true',
@@ -227,7 +230,7 @@ export function MarkdownEditor({
         return false;
       },
     }),
-    [collaborative, composition, readOnly],
+    [collaborative, composition, messages, readOnly],
   );
   const publishVisualMarkdown = useCallback(
     (current: Editor) => {
@@ -373,14 +376,6 @@ export function MarkdownEditor({
       )) {
         checkbox.disabled = visualEditorReadOnly;
         checkbox.setAttribute('aria-disabled', String(visualEditorReadOnly));
-        checkbox.setAttribute(
-          'aria-label',
-          markdownTaskCheckboxLabel({
-            attrs: { checked: checkbox.checked },
-            textContent:
-              checkbox.closest('li[data-type="taskItem"]')?.textContent ?? '',
-          }),
-        );
       }
     };
     const scheduleTaskCheckboxState = () => {
@@ -395,20 +390,18 @@ export function MarkdownEditor({
       editor.setEditable(!visualEditorReadOnly, false);
       editor.view.dom.setAttribute(
         'aria-label',
-        visualEditorReadOnly ? 'Markdown 预览' : 'Markdown 编辑区',
-      );
-      editor.view.dom.setAttribute(
-        'aria-readonly',
-        String(visualEditorReadOnly),
+        visualEditorReadOnly ? officeMessage(messages, 'markdown.editor.previewAria') : officeMessage(messages, 'markdown.editor.areaAria'),
       );
       editor.view.dom.setAttribute(
         'role',
         visualEditorReadOnly ? 'document' : 'textbox',
       );
       if (visualEditorReadOnly) {
+        editor.view.dom.removeAttribute('aria-readonly');
         editor.view.dom.removeAttribute('aria-multiline');
         editor.view.dom.tabIndex = 0;
       } else {
+        editor.view.dom.setAttribute('aria-readonly', 'false');
         editor.view.dom.setAttribute('aria-multiline', 'true');
         editor.view.dom.removeAttribute('tabindex');
       }
@@ -425,7 +418,7 @@ export function MarkdownEditor({
       editor.off('update', applyTaskCheckboxState);
       editor.off('transaction', scheduleTaskCheckboxState);
     };
-  }, [editor, readOnly, viewMode]);
+  }, [editor, messages, readOnly, viewMode]);
 
   useEffect(() => {
     if (collaborative) return;
@@ -815,7 +808,7 @@ export function MarkdownEditor({
   });
 
   if (!editor || !collaborationReady) {
-    return <WorkEditorLoadingState title="正在准备 Markdown 编辑器" />;
+    return <WorkEditorLoadingState title={officeMessage(messages, 'markdown.editor.loading')} />;
   }
 
   if (readOnly) {
@@ -826,9 +819,9 @@ export function MarkdownEditor({
         style={editorStyle}
       >
         <WorkOfficePreviewBar
-          ariaLabel="Markdown 预览工具"
-          label="只读预览"
-          detail={`${metrics.lineCount} 行`}
+          ariaLabel={officeMessage(messages, 'markdown.editor.previewToolsAria')}
+          label={officeMessage(messages, 'markdown.editor.previewLabel')}
+          detail={officeMessage(messages, 'markdown.editor.previewDetail', { count: String(metrics.lineCount) })}
           fileActions={fileActions}
           className="work-markdown-ribbon"
         />

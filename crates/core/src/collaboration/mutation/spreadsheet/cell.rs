@@ -324,7 +324,7 @@ fn apply_cell_changes(
     Ok(())
 }
 
-fn validate_sheet_id(value: &str) -> UseResult<()> {
+pub(super) fn validate_sheet_id(value: &str) -> UseResult<()> {
     let length = value.encode_utf16().count();
     let trimmed = value
         .chars()

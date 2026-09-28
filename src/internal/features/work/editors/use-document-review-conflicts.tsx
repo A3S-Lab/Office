@@ -13,6 +13,8 @@ import {
 import { normalizeDocumentHtml } from '../work-document-section';
 import type { WorkDocumentContent } from '../work-types';
 import { applyExternalDocumentContent } from './document-external-content';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 interface MutableValue<T> {
   current: T;
@@ -139,27 +141,29 @@ export function DocumentReviewConflictNotice({
   conflicts: readonly WorkDocumentReviewConflict[];
   onDismiss: () => void;
 }) {
+  const messages = useOfficeMessages();
   if (!conflicts.length) return null;
   return (
     <InlineNotice
       className="work-document-review-conflict"
       icon={<TriangleAlert />}
       role="alert"
-      title="审阅内容与外部更新冲突"
+      title={officeMessage(messages, 'document.review.conflictTitle')}
       tone="warning"
       actions={
         <Button
-          aria-label="关闭审阅冲突提示"
+          aria-label={officeMessage(messages, 'document.review.conflictCloseAria')}
           size="compact"
           tone="quiet"
           onClick={onDismiss}
         >
-          关闭
+          {officeMessage(messages, 'document.review.conflictClose')}
         </Button>
       }
     >
-      外部版本已应用，其中 {conflicts.length}{' '}
-      个批注或修订范围发生变化。请检查后再继续审阅。
+      {officeMessage(messages, 'document.review.conflictBody', {
+        count: String(conflicts.length),
+      })}
     </InlineNotice>
   );
 }

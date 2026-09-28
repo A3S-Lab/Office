@@ -15,6 +15,9 @@ import {
   normalizeDocumentTabStops,
   normalizedTabPosition,
 } from '../work-document-tab-stops';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentRulerTabStopsProps {
   marginLeft: number;
@@ -33,6 +36,7 @@ export function DocumentRulerTabStops({
   textWidth,
   onChange,
 }: DocumentRulerTabStopsProps) {
+  const messages = useOfficeMessages();
   const normalized = constrainRulerTabStops(tabStops, textWidth);
   const positionFromClientX = (clientX: number): number | null => {
     const ruler = rulerRef.current;
@@ -102,8 +106,8 @@ export function DocumentRulerTabStops({
       <button
         type="button"
         className="work-document-ruler-tab-track"
-        aria-label="在标尺上添加制表位"
-        title="单击添加制表位"
+        aria-label={officeMessage(messages, 'document.ruler.tab.addAria')}
+        title={officeMessage(messages, 'document.ruler.tab.addTitle')}
         style={
           {
             '--work-document-ruler-tab-track-left': `${marginLeft}px`,
@@ -148,6 +152,7 @@ function DocumentRulerTabStopHandle({
   onChange: (tabStop: DocumentTabStop) => void;
   onRemove: () => void;
 }) {
+  const messages = useOfficeMessages();
   const activePointer = useRef<number | null>(null);
   const updateFromPointer = (clientX: number): void => {
     const position = positionFromClientX(clientX);
@@ -208,8 +213,14 @@ function DocumentRulerTabStopHandle({
             direction * (event.shiftKey ? 1 : DOCUMENT_TAB_RULER_STEP_PX);
     onChange({ ...tabStop, position });
   };
-  const label = `${tabAlignmentLabel(tabStop.alignment)}制表位 ${index + 1}`;
-  const valueText = `${formatCentimeters(tabStop.position)} 厘米，${documentTabLeaderLabel(tabStop.leader)}`;
+  const label = officeMessage(messages, 'document.ruler.tab.stopLabel', {
+    alignment: tabAlignmentLabel(tabStop.alignment, messages),
+    n: String(index + 1),
+  });
+  const valueText = officeMessage(messages, 'document.ruler.tab.valueText', {
+    position: formatCentimeters(tabStop.position),
+    leader: documentTabLeaderLabel(tabStop.leader, messages),
+  });
 
   return (
     <button
@@ -223,7 +234,10 @@ function DocumentRulerTabStopHandle({
       aria-valuemin={1}
       aria-valuenow={Math.round(tabStop.position)}
       aria-valuetext={valueText}
-      title={`${label}：${valueText}；按 Enter 切换对齐，按 Delete 删除`}
+      title={officeMessage(messages, 'document.ruler.tab.title', {
+        label,
+        value: valueText,
+      })}
       style={
         {
           '--work-document-ruler-tab-position': `${marginLeft + tabStop.position}px`,
@@ -267,11 +281,20 @@ function replaceTabStop(
   );
 }
 
-function tabAlignmentLabel(alignment: DocumentTabAlignment): string {
-  if (alignment === 'center') return '居中';
-  if (alignment === 'right') return '右对齐';
-  if (alignment === 'decimal') return '小数点对齐';
-  return '左对齐';
+function tabAlignmentLabel(
+  alignment: DocumentTabAlignment,
+  messages: OfficeMessageCatalog,
+): string {
+  if (alignment === 'center') {
+    return officeMessage(messages, 'document.ruler.tab.align.center');
+  }
+  if (alignment === 'right') {
+    return officeMessage(messages, 'document.ruler.tab.align.right');
+  }
+  if (alignment === 'decimal') {
+    return officeMessage(messages, 'document.ruler.tab.align.decimal');
+  }
+  return officeMessage(messages, 'document.ruler.tab.align.left');
 }
 
 function formatCentimeters(value: number): string {

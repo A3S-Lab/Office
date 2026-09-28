@@ -20,7 +20,7 @@ export function SegmentedControl<T extends string>({
   className = '',
 }: {
   ariaLabel: string;
-  value: T;
+  value: T | null;
   items: readonly SegmentedControlItem<T>[];
   onChange: (value: T) => void;
   size?: 'standard' | 'compact';

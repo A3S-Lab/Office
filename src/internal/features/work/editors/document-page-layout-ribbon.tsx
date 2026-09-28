@@ -1,5 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { Columns3, FilePlus2, Palette, Settings2 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { normalizeDocumentColumns } from '../work-document-columns';
 import {
   updateDocumentPageOrientation,
@@ -10,10 +12,15 @@ import type {
   WorkDocumentSectionLayout,
 } from '../work-types';
 import { getDocumentCommandDefinition } from './document-command-catalog';
+import {
+  documentCommandLabel,
+  documentCommandTitleWithShortcut,
+} from './document-command-i18n';
 import type { DocumentLayoutPanelTab } from './document-layout-panel';
 import { DocumentPaginationPopover } from './document-pagination-popover';
 import { DocumentParagraphSpacingPopover } from './document-paragraph-spacing-popover';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -27,18 +34,6 @@ type DocumentMarginPreset =
   | 'wide';
 type DocumentColumnCount = '1' | '2' | '3' | '4' | '5' | '6';
 type DocumentColumnPreset = DocumentColumnCount | 'more';
-
-const documentColumnCountOptions = [
-  { value: '1', label: '一栏' },
-  { value: '2', label: '两栏' },
-  { value: '3', label: '三栏' },
-  { value: '4', label: '四栏' },
-  { value: '5', label: '五栏' },
-  { value: '6', label: '六栏' },
-] as const satisfies readonly {
-  value: DocumentColumnCount;
-  label: string;
-}[];
 
 const documentMarginPresets = {
   normal: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 },
@@ -71,6 +66,7 @@ export function DocumentPageLayoutRibbon({
   onPageColorChange: (color: string) => void;
   onInsertSection: () => void;
 }) {
+  const messages = useOfficeMessages();
   const pageBreakCommand = getDocumentCommandDefinition('insertPageBreak');
   const marginPreset = documentMarginPreset(layout.margins);
   const columnPreset = documentColumnClosedValue(layout.columns.count);
@@ -79,27 +75,21 @@ export function DocumentPageLayoutRibbon({
 
   return (
     <>
-      <WorkOfficeRibbonGroup label="页面设置" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.pageLayout.group.setup')}
+        priority="high"
+      >
         <div className="work-office-field work-document-page-setup-choice">
-          <span>页边距</span>
+          <span>
+            {officeMessage(messages, 'document.pageLayout.margins')}
+          </span>
           <OfficeSelect
-            ariaLabel="页边距"
+            ariaLabel={officeMessage(
+              messages,
+              'document.pageLayout.marginsAria',
+            )}
             value={marginPreset}
-            options={[
-              { value: 'normal', label: '普通', meta: '四边 25.4 mm' },
-              { value: 'narrow', label: '窄', meta: '四边 12.7 mm' },
-              {
-                value: 'moderate',
-                label: '适中',
-                meta: '上下 25.4 · 左右 19.1 mm',
-              },
-              {
-                value: 'wide',
-                label: '宽',
-                meta: '上下 25.4 · 左右 50.8 mm',
-              },
-              { value: 'custom', label: '自定义页边距', meta: '页面设置' },
-            ]}
+            options={marginPresetOptions(messages)}
             onValueChange={(preset) => {
               if (preset === 'custom') {
                 onOpenLayout('page');
@@ -110,13 +100,30 @@ export function DocumentPageLayoutRibbon({
           />
         </div>
         <div className="work-office-field work-document-page-setup-choice">
-          <span>方向</span>
+          <span>
+            {officeMessage(messages, 'document.layout.paper.orientation')}
+          </span>
           <OfficeSelect
-            ariaLabel="页面方向"
+            ariaLabel={officeMessage(
+              messages,
+              'document.layout.paper.orientationAria',
+            )}
             value={layout.orientation}
             options={[
-              { value: 'portrait', label: '纵向' },
-              { value: 'landscape', label: '横向' },
+              {
+                value: 'portrait',
+                label: officeMessage(
+                  messages,
+                  'document.layout.paper.portrait',
+                ),
+              },
+              {
+                value: 'landscape',
+                label: officeMessage(
+                  messages,
+                  'document.layout.paper.landscape',
+                ),
+              },
             ]}
             onValueChange={(orientation) =>
               onLayoutChange(updateDocumentPageOrientation(layout, orientation))
@@ -124,9 +131,14 @@ export function DocumentPageLayoutRibbon({
           />
         </div>
         <div className="work-office-field work-document-page-setup-choice">
-          <span>纸张</span>
+          <span>
+            {officeMessage(messages, 'document.layout.paper.heading')}
+          </span>
           <OfficeSelect
-            ariaLabel="纸张大小"
+            ariaLabel={officeMessage(
+              messages,
+              'document.layout.paper.sizeAria',
+            )}
             value={layout.pageSize}
             options={[
               { value: 'a3', label: 'A3' },
@@ -135,7 +147,10 @@ export function DocumentPageLayoutRibbon({
               { value: 'letter', label: 'Letter' },
               { value: 'legal', label: 'Legal' },
               { value: 'tabloid', label: 'Tabloid' },
-              { value: 'custom', label: '自定义' },
+              {
+                value: 'custom',
+                label: officeMessage(messages, 'document.layout.paper.custom'),
+              },
             ]}
             onValueChange={(pageSize) => {
               if (pageSize === 'custom') {
@@ -147,13 +162,24 @@ export function DocumentPageLayoutRibbon({
           />
         </div>
         <div className="work-office-field work-document-page-setup-choice">
-          <span>分栏</span>
+          <span>
+            {officeMessage(messages, 'document.pageLayout.columns')}
+          </span>
           <OfficeSelect<DocumentColumnPreset>
-            ariaLabel="分栏"
+            ariaLabel={officeMessage(
+              messages,
+              'document.pageLayout.columnsAria',
+            )}
             value={columnPreset}
             options={[
-              ...documentColumnCountOptions,
-              { value: 'more', label: '更多分栏' },
+              ...documentColumnCountOptions(messages),
+              {
+                value: 'more',
+                label: officeMessage(
+                  messages,
+                  'document.pageLayout.columns.more',
+                ),
+              },
             ]}
             onValueChange={(preset) => {
               if (preset === 'more') {
@@ -171,15 +197,15 @@ export function DocumentPageLayoutRibbon({
           />
         </div>
         <WorkOfficeRibbonButton
-          label="页面设置"
+          label={officeMessage(messages, 'document.pageLayout.setup')}
           active={layoutOpen}
           onClick={onToggleLayout}
         >
           <Settings2 size={19} />
         </WorkOfficeRibbonButton>
         <WorkOfficeRibbonButton
-          label={pageBreakCommand.label}
-          title={`${pageBreakCommand.label}（${pageBreakCommand.shortcut?.label}）`}
+          label={documentCommandLabel('insertPageBreak', messages)}
+          title={documentCommandTitleWithShortcut('insertPageBreak', messages)}
           aria-keyshortcuts={pageBreakCommand.shortcut?.aria}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
@@ -190,19 +216,34 @@ export function DocumentPageLayoutRibbon({
         >
           <FilePlus2 size={19} />
         </WorkOfficeRibbonButton>
-        <WorkOfficeRibbonButton label="插入分节符" onClick={onInsertSection}>
+        <WorkOfficeRibbonButton
+          label={officeMessage(messages, 'document.pageLayout.insertSection')}
+          onClick={onInsertSection}
+        >
           <Columns3 size={19} />
         </WorkOfficeRibbonButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="段落" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.pageLayout.group.paragraph')}
+        priority="high"
+      >
         <DocumentParagraphSpacingPopover editor={editor} />
         <DocumentPaginationPopover editor={editor} />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="页面背景" priority="low">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.pageLayout.group.background')}
+        priority="low"
+      >
         <OfficeColorPicker
-          ariaLabel="页面颜色"
+          ariaLabel={officeMessage(
+            messages,
+            'document.pageLayout.pageColorAria',
+          )}
           className="work-document-page-color-picker"
-          triggerLabel="页面颜色"
+          triggerLabel={officeMessage(
+            messages,
+            'document.pageLayout.pageColorTrigger',
+          )}
           triggerIcon={<Palette size={18} />}
           value={pageColor}
           onValueChange={onPageColorChange}
@@ -212,11 +253,67 @@ export function DocumentPageLayoutRibbon({
   );
 }
 
+function documentColumnCountOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: '1' as const,
+      label: officeMessage(messages, 'document.pageLayout.columns.count1'),
+    },
+    {
+      value: '2' as const,
+      label: officeMessage(messages, 'document.pageLayout.columns.count2'),
+    },
+    {
+      value: '3' as const,
+      label: officeMessage(messages, 'document.pageLayout.columns.count3'),
+    },
+    {
+      value: '4' as const,
+      label: officeMessage(messages, 'document.pageLayout.columns.count4'),
+    },
+    {
+      value: '5' as const,
+      label: officeMessage(messages, 'document.pageLayout.columns.count5'),
+    },
+    {
+      value: '6' as const,
+      label: officeMessage(messages, 'document.pageLayout.columns.count6'),
+    },
+  ];
+}
+
+function marginPresetOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'normal' as const,
+      label: officeMessage(messages, 'document.pageLayout.margin.normal'),
+      meta: officeMessage(messages, 'document.pageLayout.margin.normalMeta'),
+    },
+    {
+      value: 'narrow' as const,
+      label: officeMessage(messages, 'document.pageLayout.margin.narrow'),
+      meta: officeMessage(messages, 'document.pageLayout.margin.narrowMeta'),
+    },
+    {
+      value: 'moderate' as const,
+      label: officeMessage(messages, 'document.pageLayout.margin.moderate'),
+      meta: officeMessage(messages, 'document.pageLayout.margin.moderateMeta'),
+    },
+    {
+      value: 'wide' as const,
+      label: officeMessage(messages, 'document.pageLayout.margin.wide'),
+      meta: officeMessage(messages, 'document.pageLayout.margin.wideMeta'),
+    },
+    {
+      value: 'custom' as const,
+      label: officeMessage(messages, 'document.pageLayout.margin.custom'),
+      meta: officeMessage(messages, 'document.pageLayout.margin.customMeta'),
+    },
+  ];
+}
+
 function documentColumnClosedValue(count: number): DocumentColumnCount {
-  const clamped = Math.min(
-    Number(documentColumnCountOptions.at(-1)?.value ?? 6),
-    Math.max(1, Math.round(count) || 1),
-  );
+  const clamped = Math.min(6, Math.max(1, Math.round(count) || 1));
   return String(clamped) as DocumentColumnCount;
 }
 

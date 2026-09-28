@@ -33,13 +33,13 @@ test('uses one accessible worksheet bar for creation, activation, and menus', as
   expect(
     screen.getByRole('navigation', { name: '工作表' }),
   ).toBeInTheDocument();
-  expect(screen.getByRole('tab', { name: '执行看板' })).toHaveAttribute(
-    'aria-selected',
+  expect(screen.getByRole('button', { name: '执行看板' })).toHaveAttribute(
+    'aria-current',
     'true',
   );
 
   fireEvent.click(screen.getByRole('button', { name: '新建工作表' }));
-  fireEvent.click(screen.getByRole('tab', { name: '风险台账' }));
+  fireEvent.click(screen.getByRole('button', { name: '风险台账' }));
   expect(calls).toEqual(['create', 'activate:sheet-2']);
 
   const options = screen.getByRole('button', { name: '执行看板选项' });
@@ -125,7 +125,7 @@ test('supports inline worksheet rename and compact color controls', () => {
     />,
   );
 
-  fireEvent.doubleClick(screen.getByRole('tab', { name: '执行看板' }));
+  fireEvent.doubleClick(screen.getByRole('button', { name: '执行看板' }));
   const input = screen.getByRole('textbox', { name: '重命名执行看板' });
   fireEvent.change(input, { target: { value: '季度看板' } });
   fireEvent.keyDown(input, { key: 'Enter' });
@@ -160,7 +160,7 @@ test('keeps an invalid worksheet rename open with concise feedback', async () =>
     />,
   );
 
-  fireEvent.doubleClick(screen.getByRole('tab', { name: '工作表 2' }));
+  fireEvent.doubleClick(screen.getByRole('button', { name: '工作表 2' }));
   const input = screen.getByRole('textbox', { name: '重命名工作表 2' });
   fireEvent.change(input, { target: { value: '执行看板' } });
   fireEvent.keyDown(input, { key: 'Enter' });
@@ -177,7 +177,7 @@ test('keeps an invalid worksheet rename open with concise feedback', async () =>
   fireEvent.keyDown(input, { key: 'Enter' });
 
   await waitFor(() =>
-    expect(screen.getByRole('tab', { name: '工作表 2' })).toHaveFocus(),
+    expect(screen.getByRole('button', { name: '工作表 2' })).toHaveFocus(),
   );
   expect(calls).toEqual(['rename:sheet-2:季度看板']);
 });
@@ -209,7 +209,7 @@ test('confirms worksheet deletion with a safe default and restores focus on canc
     />,
   );
 
-  const tab = screen.getByRole('tab', { name: '执行看板' });
+  const tab = screen.getByRole('button', { name: '执行看板' });
   const openDeleteDialog = () => {
     fireEvent.click(screen.getByRole('button', { name: '执行看板选项' }));
     fireEvent.click(screen.getByRole('menuitem', { name: '删除工作表' }));
@@ -251,14 +251,14 @@ test('cancels worksheet rename with Escape and restores tab keyboard focus', asy
     />,
   );
 
-  fireEvent.doubleClick(screen.getByRole('tab', { name: '执行看板' }));
+  fireEvent.doubleClick(screen.getByRole('button', { name: '执行看板' }));
   const input = screen.getByRole('textbox', { name: '重命名执行看板' });
   expect(input).toHaveAttribute('data-office-escape-consumer', 'true');
   fireEvent.change(input, { target: { value: '不应保存' } });
   fireEvent.keyDown(input, { key: 'Escape' });
 
   await waitFor(() =>
-    expect(screen.getByRole('tab', { name: '执行看板' })).toHaveFocus(),
+    expect(screen.getByRole('button', { name: '执行看板' })).toHaveFocus(),
   );
   expect(calls).toEqual([]);
   expect(screen.queryByRole('textbox', { name: '重命名执行看板' })).toBeNull();
@@ -287,22 +287,22 @@ test('navigates worksheet tabs with arrow, Home, and End keys', async () => {
     />,
   );
 
-  const first = screen.getByRole('tab', { name: '执行看板' });
+  const first = screen.getByRole('button', { name: '执行看板' });
   fireEvent.keyDown(first, { key: 'ArrowRight' });
   await waitFor(() => expect(calls).toEqual(['sheet-2']));
   await waitFor(() =>
-    expect(screen.getByRole('tab', { name: '风险台账' })).toHaveFocus(),
+    expect(screen.getByRole('button', { name: '风险台账' })).toHaveFocus(),
   );
 
-  fireEvent.keyDown(screen.getByRole('tab', { name: '风险台账' }), {
+  fireEvent.keyDown(screen.getByRole('button', { name: '风险台账' }), {
     key: 'End',
   });
   await waitFor(() => expect(calls).toEqual(['sheet-2', 'sheet-3']));
   await waitFor(() =>
-    expect(screen.getByRole('tab', { name: '资源计划' })).toHaveFocus(),
+    expect(screen.getByRole('button', { name: '资源计划' })).toHaveFocus(),
   );
 
-  fireEvent.keyDown(screen.getByRole('tab', { name: '资源计划' }), {
+  fireEvent.keyDown(screen.getByRole('button', { name: '资源计划' }), {
     key: 'Home',
   });
   await waitFor(() => expect(calls).toEqual(['sheet-2', 'sheet-3', 'sheet-1']));
@@ -365,7 +365,7 @@ test('opens the worksheet menu from the standard keyboard and context-menu gestu
     />,
   );
 
-  const tab = screen.getByRole('tab', { name: '执行看板' });
+  const tab = screen.getByRole('button', { name: '执行看板' });
   const options = screen.getByRole('button', { name: '执行看板选项' });
   expect(options).toHaveAttribute('aria-keyshortcuts', 'Shift+F10');
 
@@ -415,7 +415,7 @@ test('keeps read-only worksheet navigation free of disabled edit controls', () =
 
   expect(screen.queryByRole('button', { name: '新建工作表' })).toBeNull();
   expect(screen.getByRole('button', { name: '工作表列表' })).toBeEnabled();
-  expect(screen.getByRole('tab', { name: '执行看板' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '执行看板' })).toBeEnabled();
   expect(screen.queryByRole('button', { name: '执行看板选项' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: '工作表列表' }));
   expect(screen.queryByText('隐藏底稿')).toBeNull();
@@ -476,7 +476,7 @@ test('keeps the active worksheet visible when the tab viewport resizes', () => {
       />,
     );
 
-    const activeTab = screen.getByRole('tab', { name: '工作表 4' });
+    const activeTab = screen.getByRole('button', { name: '工作表 4' });
     const activeSheet = activeTab.closest('.work-spreadsheet-sheet-tab');
     if (!(activeSheet instanceof HTMLElement)) {
       throw new Error('Expected an active worksheet tab container.');

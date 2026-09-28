@@ -14,8 +14,8 @@ export const DEFAULT_SPREADSHEET_SORT_TEXT_OPTIONS: SpreadsheetSortTextOptions =
 const SPREADSHEET_SORT_COLLATION_PROBES: Readonly<
   Record<SpreadsheetSortTextMethod, readonly string[]>
 > = Object.freeze({
-  pinyin: Object.freeze(['阿', '丁', '王', '赵']),
-  stroke: Object.freeze(['丁', '王', '安', '阿', '赵']),
+  pinyin: Object.freeze(['\u963f', '\u4e01', '\u738b', '\u8d75']),
+  stroke: Object.freeze(['\u4e01', '\u738b', '\u5b89', '\u963f', '\u8d75']),
 });
 
 export function isSpreadsheetSortTextMethod(

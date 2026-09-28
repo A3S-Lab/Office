@@ -1,5 +1,10 @@
 import type { CSSProperties } from 'react';
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import {
   type DocumentRunShading,
   type DocumentRunShadingColor,
   type DocumentRunShadingPattern,
@@ -69,13 +74,14 @@ export function createDocumentFontDialogRunShadingDraft(
 
 export function documentFontDialogRunShadingDraftError(
   draft: DocumentFontDialogRunShadingDraft,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string | null {
   if (draft.runShadingMode !== 'value') return null;
   if (!validColor(draft.runShadingColor)) {
-    return '请选择有效的字符底纹前景色。';
+    return officeMessage(messages, 'document.font.error.shadingForeground');
   }
   if (!validColor(draft.runShadingFill)) {
-    return '请选择有效的字符底纹背景色。';
+    return officeMessage(messages, 'document.font.error.shadingBackground');
   }
   return null;
 }

@@ -38,7 +38,7 @@ suite "office-word-content-controls" {
         }
 
         press "select-control-value" {
-            key = "Control+a"
+            key = "Shift+Home"
         }
 
         click "open-insert-tab" {

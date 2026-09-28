@@ -8,6 +8,11 @@ import {
   useState,
 } from 'react';
 import { Button, CollectionState } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type {
+  OfficeMessageCatalog,
+  OfficeMessageKey,
+} from '../../../i18n/office-messages';
 import type { WorkDocumentChange } from '../work-document-changes';
 import type { WorkDocumentChangeDecision } from '../work-types';
 import {
@@ -17,6 +22,7 @@ import {
 } from './document-navigation-window';
 import { DocumentTaskPane } from './document-task-pane';
 import { useOfficeDialog } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 type DocumentChangeDecision = 'accept' | 'reject';
 
@@ -51,6 +57,7 @@ export function DocumentChangesPanel({
   onTrackChangesChange: (enabled: boolean) => void;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const officeDialog = useOfficeDialog();
   const decisionButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusRef = useRef<PendingDocumentChangeFocus | null>(null);
@@ -132,9 +139,19 @@ export function DocumentChangesPanel({
   };
   const acceptAll = async () => {
     const confirmed = await officeDialog.confirm({
-      title: '接受全部修订？',
-      description: `将确认当前 ${changes.length} 项修订。`,
-      confirmLabel: '全部接受',
+      title: officeMessage(
+        messages,
+        'document.changes.acceptAllConfirm.title',
+      ),
+      description: officeMessage(
+        messages,
+        'document.changes.acceptAllConfirm.description',
+        { count: String(changes.length) },
+      ),
+      confirmLabel: officeMessage(
+        messages,
+        'document.changes.acceptAllConfirm.confirm',
+      ),
     });
     if (confirmed && !editor.isDestroyed) {
       if (onDecideChanges) onDecideChanges(changes, 'accept');
@@ -146,9 +163,19 @@ export function DocumentChangesPanel({
   };
   const rejectAll = async () => {
     const confirmed = await officeDialog.confirm({
-      title: '拒绝全部修订？',
-      description: `将撤销当前 ${changes.length} 项修订。`,
-      confirmLabel: '全部拒绝',
+      title: officeMessage(
+        messages,
+        'document.changes.rejectAllConfirm.title',
+      ),
+      description: officeMessage(
+        messages,
+        'document.changes.rejectAllConfirm.description',
+        { count: String(changes.length) },
+      ),
+      confirmLabel: officeMessage(
+        messages,
+        'document.changes.rejectAllConfirm.confirm',
+      ),
       confirmTone: 'danger',
     });
     if (confirmed && !editor.isDestroyed) {
@@ -160,30 +187,35 @@ export function DocumentChangesPanel({
     }
   };
 
+  const description = changes.length
+    ? officeMessage(messages, 'document.changes.description.pending', {
+        pending: String(changes.length),
+        decided: String(decisions.length),
+      })
+    : decisions.length
+      ? officeMessage(messages, 'document.changes.description.decidedOnly', {
+          decided: String(decisions.length),
+        })
+      : officeMessage(messages, 'document.changes.description.empty');
+
   return (
     <>
       <DocumentTaskPane
         className="work-document-changes-panel"
-        title="修订审阅"
-        description={
-          changes.length
-            ? `${changes.length} 项待处理 · ${decisions.length} 项已决定`
-            : decisions.length
-              ? `没有待处理的修订 · ${decisions.length} 项已决定`
-              : '没有待处理的修订'
-        }
-        closeLabel="关闭修订审阅"
+        title={officeMessage(messages, 'document.changes.title')}
+        description={description}
+        closeLabel={officeMessage(messages, 'document.changes.close')}
         onClose={onClose}
       >
         {changes.length > 0 && !suggestionOnly && (
           <div className="work-document-changes-bulk-actions">
             <Button tone="quiet" onClick={() => void acceptAll()}>
               <CheckCheck size={13} />
-              全部接受
+              {officeMessage(messages, 'document.changes.acceptAll')}
             </Button>
             <Button tone="quiet" onClick={() => void rejectAll()}>
               <Undo2 size={13} />
-              全部拒绝
+              {officeMessage(messages, 'document.changes.rejectAll')}
             </Button>
           </div>
         )}
@@ -191,7 +223,7 @@ export function DocumentChangesPanel({
           <ol
             ref={changeWindow.viewportRef}
             className="work-document-change-list work-document-task-pane-body"
-            aria-label="待处理修订"
+            aria-label={officeMessage(messages, 'document.changes.listAria')}
             data-document-change-count={changes.length}
             data-document-change-mounted-count={changeWindow.mountedCount}
             data-document-change-window-end={changeWindow.range.end}
@@ -216,6 +248,7 @@ export function DocumentChangesPanel({
               const change = changes[entry.index];
               if (!change) return null;
               const changeKey = documentChangeWindowKey(change);
+              const indexLabel = String(entry.index + 1);
               return (
                 <li
                   aria-posinset={entry.index + 1}
@@ -232,7 +265,11 @@ export function DocumentChangesPanel({
                     type="button"
                     className="work-document-change-summary"
                     tabIndex={changeWindow.rovingIndex === entry.index ? 0 : -1}
-                    aria-label={`定位修订 ${entry.index + 1}`}
+                    aria-label={officeMessage(
+                      messages,
+                      'document.changes.locateAria',
+                      { n: indexLabel },
+                    )}
                     onKeyDown={(event) =>
                       handleSummaryKeyDown(event, entry.index)
                     }
@@ -253,8 +290,13 @@ export function DocumentChangesPanel({
                         .run()
                     }
                   >
-                    <span>{documentChangeKindLabel(change.kind)}</span>
-                    <strong>{change.text.trim() || '（空白字符）'}</strong>
+                    <span>
+                      {documentChangeKindLabel(messages, change.kind)}
+                    </span>
+                    <strong>
+                      {change.text.trim() ||
+                        officeMessage(messages, 'document.changes.blankText')}
+                    </strong>
                     <small>
                       {change.author}
                       {change.date ? ` · ${formatChangeDate(change.date)}` : ''}
@@ -273,13 +315,17 @@ export function DocumentChangesPanel({
                           else decisionButtonRefs.current.delete(key);
                         }}
                         tone="quiet"
-                        aria-label={`接受修订 ${entry.index + 1}`}
+                        aria-label={officeMessage(
+                          messages,
+                          'document.changes.acceptAria',
+                          { n: indexLabel },
+                        )}
                         onClick={() =>
                           decideChange(change, entry.index, 'accept')
                         }
                       >
                         <Check size={13} />
-                        接受
+                        {officeMessage(messages, 'document.changes.acceptShort')}
                       </Button>
                       <Button
                         ref={(element) => {
@@ -292,13 +338,17 @@ export function DocumentChangesPanel({
                           else decisionButtonRefs.current.delete(key);
                         }}
                         tone="quiet"
-                        aria-label={`拒绝修订 ${entry.index + 1}`}
+                        aria-label={officeMessage(
+                          messages,
+                          'document.changes.rejectAria',
+                          { n: indexLabel },
+                        )}
                         onClick={() =>
                           decideChange(change, entry.index, 'reject')
                         }
                       >
                         <XCircle size={13} />
-                        拒绝
+                        {officeMessage(messages, 'document.changes.rejectShort')}
                       </Button>
                     </div>
                   )}
@@ -318,18 +368,26 @@ export function DocumentChangesPanel({
                     tone={trackChanges ? 'quiet' : 'primary'}
                     onClick={() => onTrackChangesChange(!trackChanges)}
                   >
-                    {trackChanges ? '停止记录' : '开启修订'}
+                    {officeMessage(
+                      messages,
+                      trackChanges
+                        ? 'document.changes.track.stop'
+                        : 'document.changes.track.start',
+                    )}
                   </Button>
                 )
               }
               tone={trackChanges ? 'info' : 'neutral'}
               role="status"
             >
-              {suggestionOnly
-                ? '建议模式会自动记录带身份的新改动。'
-                : trackChanges
-                  ? '正在记录新的改动。'
-                  : '当前没有记录新的改动。'}
+              {officeMessage(
+                messages,
+                suggestionOnly
+                  ? 'document.changes.empty.suggestion'
+                  : trackChanges
+                    ? 'document.changes.empty.recording'
+                    : 'document.changes.empty.idle',
+              )}
             </CollectionState>
           </div>
         )}
@@ -347,15 +405,22 @@ function DocumentChangeDecisionHistory({
 }: {
   decisions: readonly WorkDocumentChangeDecision[];
 }) {
+  const messages = useOfficeMessages();
   const visible = decisions.slice(-20).reverse();
   return (
     <section
       className="work-document-change-decisions"
-      aria-label="修订决定记录"
+      aria-label={officeMessage(messages, 'document.changes.history.aria')}
     >
       <header>
-        <strong>决定记录</strong>
-        <span>{decisions.length} 项</span>
+        <strong>
+          {officeMessage(messages, 'document.changes.history.title')}
+        </strong>
+        <span>
+          {officeMessage(messages, 'document.changes.history.count', {
+            count: String(decisions.length),
+          })}
+        </span>
       </header>
       <ol>
         {visible.map((decision) => (
@@ -364,8 +429,18 @@ function DocumentChangeDecisionHistory({
             data-document-change-kind={decision.changeKind}
             key={decision.id}
           >
-            <span>{decision.decision === 'accept' ? '已接受' : '已拒绝'}</span>
-            <strong>{decision.text.trim() || '（空白字符）'}</strong>
+            <span>
+              {officeMessage(
+                messages,
+                decision.decision === 'accept'
+                  ? 'document.changes.history.accepted'
+                  : 'document.changes.history.rejected',
+              )}
+            </span>
+            <strong>
+              {decision.text.trim() ||
+                officeMessage(messages, 'document.changes.blankText')}
+            </strong>
             <small>
               {decision.suggestedBy} → {decision.decidedBy}
               {decision.decidedAt
@@ -386,18 +461,24 @@ function documentChangeDecisionKey(
   return `${changeKey}:${decision}`;
 }
 
-function documentChangeKindLabel(kind: WorkDocumentChange['kind']): string {
-  if (kind === 'insertion') return '插入';
-  if (kind === 'formatting') return '格式';
-  if (kind === 'paragraph-formatting') return '段落格式';
-  if (kind === 'table-formatting') return '表格格式';
-  if (kind === 'row-formatting') return '表格行格式';
-  if (kind === 'cell-formatting') return '表格单元格格式';
-  if (kind === 'section-formatting') return '节格式';
-  if (kind === 'paragraph-break') return '段落分隔';
-  if (kind === 'numbering') return '编号格式';
-  if (kind === 'move') return '移动';
-  return '删除';
+function documentChangeKindLabel(
+  messages: OfficeMessageCatalog,
+  kind: WorkDocumentChange['kind'],
+): string {
+  const keys: Record<WorkDocumentChange['kind'], OfficeMessageKey> = {
+    insertion: 'document.changes.kind.insertion',
+    deletion: 'document.changes.kind.deletion',
+    formatting: 'document.changes.kind.formatting',
+    'paragraph-formatting': 'document.changes.kind.paragraphFormatting',
+    'table-formatting': 'document.changes.kind.tableFormatting',
+    'row-formatting': 'document.changes.kind.rowFormatting',
+    'cell-formatting': 'document.changes.kind.cellFormatting',
+    'section-formatting': 'document.changes.kind.sectionFormatting',
+    'paragraph-break': 'document.changes.kind.paragraphBreak',
+    numbering: 'document.changes.kind.numbering',
+    move: 'document.changes.kind.move',
+  };
+  return officeMessage(messages, keys[kind]);
 }
 
 function documentChangeWindowKey(change: WorkDocumentChange): string {

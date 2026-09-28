@@ -1,4 +1,6 @@
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type {
   WorkDocumentIndexFormat,
   WorkDocumentIndexLeader,
@@ -9,6 +11,7 @@ import {
   OfficeSelect,
   type OfficeSelectOption,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentIndexDialogProps {
   editing: boolean;
@@ -27,64 +30,71 @@ export function DocumentIndexDialog({
   onOptionsChange,
   onSubmit,
 }: DocumentIndexDialogProps) {
+  const messages = useOfficeMessages();
   const update = (patch: Partial<WorkDocumentIndexOptions>) =>
     onOptionsChange({ ...options, ...patch });
 
   return (
     <Dialog
-      title={editing ? '自定义索引' : '插入索引'}
-      description="从已标记的索引项生成可更新索引，并保留原生 DOCX INDEX 域。"
+      title={officeMessage(
+        messages,
+        editing ? 'document.index.title.edit' : 'document.index.title.insert',
+      )}
+      description={officeMessage(messages, 'document.index.description')}
       className="work-document-index-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onCancel}
       footer={
         <>
           <Button tone="quiet" onClick={onCancel}>
-            取消
+            {officeMessage(messages, 'document.index.cancel')}
           </Button>
           <Button tone="primary" onClick={onSubmit}>
-            {editing ? '应用' : '插入索引'}
+            {officeMessage(
+              messages,
+              editing ? 'document.index.apply' : 'document.index.insert',
+            )}
           </Button>
         </>
       }
     >
       <div className="work-document-index-dialog-grid">
         <div className="work-document-index-dialog-field">
-          <span>栏数</span>
+          <span>{officeMessage(messages, 'document.index.columns')}</span>
           <OfficeSelect
             initialFocus
-            ariaLabel="索引栏数"
+            ariaLabel={officeMessage(messages, 'document.index.columnsAria')}
             value={String(options.columns)}
-            options={indexColumnOptions}
+            options={indexColumnOptions(messages)}
             onValueChange={(columns) => update({ columns: Number(columns) })}
           />
         </div>
         <div className="work-document-index-dialog-field">
-          <span>次索引项布局</span>
+          <span>{officeMessage(messages, 'document.index.layout')}</span>
           <OfficeSelect<WorkDocumentIndexFormat>
-            ariaLabel="索引布局"
+            ariaLabel={officeMessage(messages, 'document.index.layoutAria')}
             value={options.format}
-            options={indexFormatOptions}
+            options={indexFormatOptions(messages)}
             onValueChange={(format) => update({ format })}
           />
         </div>
       </div>
       <div className="work-document-index-dialog-options">
         <OfficeCheckbox
-          ariaLabel="页码右对齐"
+          ariaLabel={officeMessage(messages, 'document.index.rightAlignAria')}
           checked={options.rightAlignPageNumbers}
           onCheckedChange={(rightAlignPageNumbers) =>
             update({ rightAlignPageNumbers })
           }
         >
-          页码右对齐
+          {officeMessage(messages, 'document.index.rightAlign')}
         </OfficeCheckbox>
         <div className="work-document-index-dialog-field">
-          <span>前导符</span>
+          <span>{officeMessage(messages, 'document.index.leader')}</span>
           <OfficeSelect<WorkDocumentIndexLeader>
-            ariaLabel="索引前导符"
+            ariaLabel={officeMessage(messages, 'document.index.leaderAria')}
             value={options.leader}
-            options={indexLeaderOptions}
+            options={indexLeaderOptions(messages)}
             disabled={!options.rightAlignPageNumbers}
             onValueChange={(leader) => update({ leader })}
           />
@@ -92,14 +102,16 @@ export function DocumentIndexDialog({
       </div>
       <fieldset
         className="work-document-index-dialog-preview"
-        aria-label="索引预览"
+        aria-label={officeMessage(messages, 'document.index.previewAria')}
         data-index-format={options.format}
         data-index-leader={options.leader}
         data-index-right-align-page-numbers={String(
           options.rightAlignPageNumbers,
         )}
       >
-        <legend>索引</legend>
+        <legend>
+          {officeMessage(messages, 'document.index.preview.legend')}
+        </legend>
         <span>
           Architecture <i aria-hidden="true" /> 1, 3
         </span>
@@ -111,21 +123,63 @@ export function DocumentIndexDialog({
   );
 }
 
-const indexColumnOptions = [
-  { value: '1', label: '一栏' },
-  { value: '2', label: '两栏' },
-  { value: '3', label: '三栏' },
-  { value: '4', label: '四栏' },
-] as const satisfies readonly OfficeSelectOption[];
+function indexColumnOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption[] {
+  return [
+    {
+      value: '1',
+      label: officeMessage(messages, 'document.pageLayout.columns.count1'),
+    },
+    {
+      value: '2',
+      label: officeMessage(messages, 'document.pageLayout.columns.count2'),
+    },
+    {
+      value: '3',
+      label: officeMessage(messages, 'document.pageLayout.columns.count3'),
+    },
+    {
+      value: '4',
+      label: officeMessage(messages, 'document.pageLayout.columns.count4'),
+    },
+  ];
+}
 
-const indexFormatOptions = [
-  { value: 'indented', label: '缩进式' },
-  { value: 'run-in', label: '连续式' },
-] as const satisfies readonly OfficeSelectOption<WorkDocumentIndexFormat>[];
+function indexFormatOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption<WorkDocumentIndexFormat>[] {
+  return [
+    {
+      value: 'indented',
+      label: officeMessage(messages, 'document.index.layout.indented'),
+    },
+    {
+      value: 'run-in',
+      label: officeMessage(messages, 'document.index.layout.runIn'),
+    },
+  ];
+}
 
-const indexLeaderOptions = [
-  { value: 'dot', label: '点线（……）' },
-  { value: 'dash', label: '短横线（----）' },
-  { value: 'underline', label: '下划线（____）' },
-  { value: 'none', label: '无' },
-] as const satisfies readonly OfficeSelectOption<WorkDocumentIndexLeader>[];
+function indexLeaderOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption<WorkDocumentIndexLeader>[] {
+  return [
+    {
+      value: 'dot',
+      label: officeMessage(messages, 'document.toc.leader.dot'),
+    },
+    {
+      value: 'dash',
+      label: officeMessage(messages, 'document.toc.leader.dash'),
+    },
+    {
+      value: 'underline',
+      label: officeMessage(messages, 'document.toc.leader.underline'),
+    },
+    {
+      value: 'none',
+      label: officeMessage(messages, 'document.toc.leader.none'),
+    },
+  ];
+}

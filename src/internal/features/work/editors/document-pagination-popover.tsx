@@ -2,10 +2,13 @@ import type { Editor } from '@tiptap/core';
 import { Pilcrow } from 'lucide-react';
 import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { documentParagraphPagination } from '../work-document-paragraph-formatting';
 import { OfficeCheckbox } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
   const panelRef = useRef<HTMLElement>(null);
   const subscribe = useCallback(
     (notify: () => void) => {
@@ -45,8 +48,8 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
 
   return (
     <Popover
-      label="段落分页"
-      panelLabel="段落分页选项"
+      label={officeMessage(messages, 'document.pagination.label')}
+      panelLabel={officeMessage(messages, 'document.pagination.panelLabel')}
       panelRole="dialog"
       portal
       panelRef={panelRef}
@@ -57,51 +60,67 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
         <button
           {...triggerProps}
           className={`with-label${customized || open ? ' active' : ''}`}
-          title={customized ? '段落分页（已自定义）' : '段落分页'}
+          title={officeMessage(
+            messages,
+            customized
+              ? 'document.pagination.titleCustom'
+              : 'document.pagination.label',
+          )}
         >
           <Pilcrow size={19} />
-          <span>段落分页</span>
+          <span>{officeMessage(messages, 'document.pagination.label')}</span>
         </button>
       )}
     >
       <fieldset>
-        <legend>段落分页</legend>
+        <legend>
+          {officeMessage(messages, 'document.pagination.legend')}
+        </legend>
         <OfficeCheckbox
-          ariaLabel="段落不跨页"
+          ariaLabel={officeMessage(messages, 'document.pagination.keepLines')}
           checked={pagination.keepLines}
           onCheckedChange={(checked) => update('keepLines', checked)}
         >
-          段落不跨页
+          {officeMessage(messages, 'document.pagination.keepLines')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="与下一段同页"
+          ariaLabel={officeMessage(
+            messages,
+            'document.pagination.keepWithNext',
+          )}
           checked={pagination.keepWithNext}
           onCheckedChange={(checked) => update('keepWithNext', checked)}
         >
-          与下一段同页
+          {officeMessage(messages, 'document.pagination.keepWithNext')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="段前另起一页"
+          ariaLabel={officeMessage(
+            messages,
+            'document.pagination.pageBreakBefore',
+          )}
           checked={pagination.pageBreakBefore}
           onCheckedChange={(checked) => update('pageBreakBefore', checked)}
         >
-          段前另起一页
+          {officeMessage(messages, 'document.pagination.pageBreakBefore')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="避免页首、页尾单行"
+          ariaLabel={officeMessage(
+            messages,
+            'document.pagination.widowControl',
+          )}
           checked={pagination.widowControl}
           onCheckedChange={(checked) => update('widowControl', checked)}
         >
-          避免页首、页尾单行
+          {officeMessage(messages, 'document.pagination.widowControl')}
         </OfficeCheckbox>
         <button
           type="button"
           className="work-document-pagination-reset"
-          aria-label="恢复默认分页规则"
+          aria-label={officeMessage(messages, 'document.pagination.resetAria')}
           disabled={!customized}
           onClick={clear}
         >
-          恢复默认
+          {officeMessage(messages, 'document.pagination.reset')}
         </button>
       </fieldset>
     </Popover>

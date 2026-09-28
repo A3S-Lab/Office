@@ -12,12 +12,14 @@ import {
   useRef,
   useState,
 } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { slideTransitionDurationMilliseconds } from '../work-presentation-transition';
 import {
   initialWorkSlideAnimationCueIndex,
   workSlideAnimationCues,
 } from '../work-presentation-animation';
 import type { WorkPresentationContent } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import {
   createPresentationTimerController,
   PresentationPresenterView,
@@ -52,6 +54,7 @@ export function PresentationPlayer({
   initialIndex?: number;
   onExit?: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [playback, setPlayback] = useState<PlaybackState>({
     animationCueIndex: initialAnimationCueIndex(
       content.slides[
@@ -386,7 +389,7 @@ export function PresentationPlayer({
           <button
             type="button"
             className="work-presentation-player-advance"
-            aria-label="单击换到下一张幻灯片"
+            aria-label={officeMessage(messages, 'presentation.player.clickNextAria')}
             disabled={
               !hasPendingAnimation &&
               (transition?.advanceOnClick === false ||
@@ -418,9 +421,9 @@ export function PresentationPlayer({
       <footer>
         <button
           type="button"
-          aria-label="上一张"
+          aria-label={officeMessage(messages, 'presentation.player.prevAria')}
           aria-keyshortcuts="ArrowLeft ArrowUp PageUp Home"
-          title="上一张（← / ↑ / PageUp / Home）"
+          title={officeMessage(messages, 'presentation.player.prevTitle')}
           disabled={
             playback.index === 0 &&
             playback.animationCueIndex <= initialAnimationCueIndex(slide)
@@ -431,14 +434,14 @@ export function PresentationPlayer({
         </button>
         <span aria-live="polite">
           {gotoBuffer
-            ? `转到 ${gotoBuffer}`
+            ? officeMessage(messages, 'presentation.player.gotoBuffer', { buffer: gotoBuffer })
             : `${playback.index + 1} / ${content.slides.length}`}
         </span>
         <button
           type="button"
-          aria-label="下一张"
+          aria-label={officeMessage(messages, 'presentation.player.nextAria')}
           aria-keyshortcuts="ArrowRight ArrowDown PageDown Space End"
-          title="下一张（→ / ↓ / PageDown / Space / End）"
+          title={officeMessage(messages, 'presentation.player.nextTitle')}
           disabled={
             !hasPendingAnimation && playback.index === content.slides.length - 1
           }
@@ -449,7 +452,7 @@ export function PresentationPlayer({
         <button
           type="button"
           className={presenter ? 'active' : ''}
-          aria-label={presenter ? '退出演讲者视图' : '演讲者视图'}
+          aria-label={presenter ? officeMessage(messages, 'presentation.player.exitPresenter') : officeMessage(messages, 'presentation.player.presenter')}
           onClick={() => setPresenter((current) => !current)}
         >
           <Presentation size={16} />
@@ -457,7 +460,7 @@ export function PresentationPlayer({
         <button
           type="button"
           className="work-presentation-player-fullscreen"
-          aria-label="全屏放映"
+          aria-label={officeMessage(messages, 'presentation.player.fullscreen')}
           onClick={() => {
             if (playerRef.current) enterFullscreen(playerRef.current);
           }}
@@ -468,7 +471,7 @@ export function PresentationPlayer({
           <button
             type="button"
             className="work-presentation-player-exit"
-            aria-label="退出放映"
+            aria-label={officeMessage(messages, 'presentation.player.exit')}
             aria-keyshortcuts="Escape"
             onClick={() => {
               if (document.fullscreenElement && document.exitFullscreen) {

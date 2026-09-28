@@ -36,8 +36,12 @@ suite "office-word-change-case-shortcut" {
             target = css(".work-document-editable .ProseMirror")
         }
 
+        press "select-all-document-end" {
+            key = "End"
+        }
+
         press "select-all-document" {
-            key = "Control+a"
+            key = "Shift+Home"
         }
 
         type "replace-with-english-sample" {
@@ -45,8 +49,12 @@ suite "office-word-change-case-shortcut" {
             value = "hello world"
         }
 
+        press "select-sample-for-upper-end" {
+            key = "End"
+        }
+
         press "select-sample-for-upper" {
-            key = "Control+a"
+            key = "Shift+Home"
         }
 
         press "cycle-case-to-upper" {
@@ -57,8 +65,12 @@ suite "office-word-change-case-shortcut" {
             text = "HELLO WORLD"
         }
 
+        press "select-sample-for-title-end" {
+            key = "End"
+        }
+
         press "select-sample-for-title" {
-            key = "Control+a"
+            key = "Shift+Home"
         }
 
         press "cycle-case-to-title" {
@@ -69,8 +81,12 @@ suite "office-word-change-case-shortcut" {
             text = "Hello World"
         }
 
+        press "select-sample-for-lower-end" {
+            key = "End"
+        }
+
         press "select-sample-for-lower" {
-            key = "Control+a"
+            key = "Shift+Home"
         }
 
         press "cycle-case-to-lower" {

@@ -1,5 +1,6 @@
 import type { Selection } from '@fortune-sheet/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { showToast } from '../../../state/app-state';
 import type { WorkSpreadsheetContent } from '../work-types';
 import type {
@@ -15,6 +16,7 @@ import {
   spreadsheetDataValidationFailureMessage,
 } from './spreadsheet-data-validation';
 import { finiteSpreadsheetSelection } from './spreadsheet-editor-support';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface SpreadsheetDataValidationSelectionState {
   selections: Selection[];
@@ -36,6 +38,7 @@ export function useSpreadsheetDataValidation({
   getLiveSelections: () => Selection[] | undefined;
   preview: boolean;
 }) {
+  const messages = useOfficeMessages();
   const [source, setSource] =
     useState<SpreadsheetDataValidationDialogSource | null>(null);
   const invokerRef = useRef<HTMLElement | null>(null);
@@ -128,13 +131,17 @@ export function useSpreadsheetDataValidation({
             applyingRef.current = false;
           }
           if (!handled) {
+            const applyFailed = officeMessage(
+              messages,
+              'spreadsheet.dv.toast.applyFailed',
+            );
             showToast(
               spreadsheetDataValidationError(
                 contentRef.current,
                 source,
                 value,
-                '无法应用数据验证。',
-              ) ?? '无法应用数据验证。',
+                applyFailed,
+              ) ?? applyFailed,
               'error',
             );
           }
@@ -154,7 +161,12 @@ export function useSpreadsheetDataValidation({
           } finally {
             applyingRef.current = false;
           }
-          if (!handled) showToast('无法清除数据验证。', 'error');
+          if (!handled) {
+            showToast(
+              officeMessage(messages, 'spreadsheet.dv.toast.clearFailed'),
+              'error',
+            );
+          }
           return handled;
         }}
         onValidate={(value) =>

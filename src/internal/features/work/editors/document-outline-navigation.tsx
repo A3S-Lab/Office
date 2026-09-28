@@ -13,6 +13,8 @@ import {
   type DocumentNavigationListHandle,
   useDocumentNavigationWindow,
 } from './document-navigation-window';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 const DOCUMENT_OUTLINE_ITEM_HEIGHT = 31;
 const DOCUMENT_OUTLINE_LIST_PADDING_TOP = 6;
@@ -40,6 +42,7 @@ export const DocumentOutlineNavigation = forwardRef<
   },
   ref,
 ) {
+  const messages = useOfficeMessages();
   const keys = useMemo(() => items.map((item) => item.id), [items]);
   const pinnedKeys = useMemo(() => [activeItemId], [activeItemId]);
   const navigation = useDocumentNavigationWindow({
@@ -105,7 +108,7 @@ export const DocumentOutlineNavigation = forwardRef<
     <nav
       ref={navigation.viewportRef}
       className="work-document-task-pane-body work-document-outline"
-      aria-label="文档标题"
+      aria-label={officeMessage(messages, 'document.outline.aria')}
       data-document-navigation-collection="outline"
       data-document-navigation-item-count={items.length}
       data-document-navigation-mounted-count={navigation.mountedCount}
@@ -151,8 +154,21 @@ export const DocumentOutlineNavigation = forwardRef<
                     type="button"
                     tabIndex={-1}
                     className="work-document-outline-toggle"
-                    aria-label={`${collapsed ? '展开' : '折叠'} ${item.text}`}
-                    title={collapsed ? '展开下级标题' : '折叠下级标题'}
+                    aria-label={officeMessage(messages, 'document.outline.toggleAria', {
+                      action: officeMessage(
+                        messages,
+                        collapsed
+                          ? 'document.outline.expand'
+                          : 'document.outline.collapse',
+                      ),
+                      text: item.text,
+                    })}
+                    title={officeMessage(
+                      messages,
+                      collapsed
+                        ? 'document.outline.expandTitle'
+                        : 'document.outline.collapseTitle',
+                    )}
                     onClick={() => onToggleCollapsed(item.id)}
                   >
                     {collapsed ? (
@@ -188,7 +204,7 @@ export const DocumentOutlineNavigation = forwardRef<
         </ol>
       ) : (
         <div className="work-document-outline-empty">
-          应用标题样式后，可在这里快速跳转
+          {officeMessage(messages, 'document.outline.empty')}
         </div>
       )}
     </nav>

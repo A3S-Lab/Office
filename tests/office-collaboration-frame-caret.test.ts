@@ -13,6 +13,7 @@ import {
   documentFrameCaretPosition,
   markdownSourceCaret,
   paintFrameCaretAfterLayout,
+  paintTextCaretInBox,
   parseWorkOfficeCollaborationFrameCaret,
 } from '../src/internal/collaboration/office-collaboration-frame-caret';
 
@@ -29,6 +30,69 @@ const schema = new Schema({
     },
     text: { group: 'inline' },
   },
+});
+
+test('paints a text caret on the insertion edge inside its laid-out box', () => {
+  const measure = (slice: string) => slice.length * 10;
+  const box = { left: 20, top: 40, width: 80, height: 24 };
+  const paint = paintTextCaretInBox({
+    align: 'left',
+    box,
+    fontSize: 16,
+    indexUtf16: 1,
+    layoutSettled: true,
+    measure,
+    text: '中文',
+    verticalAlign: 'middle',
+  });
+  expect(paint).toEqual({
+    head: 1,
+    left: 30,
+    top: 44,
+    width: 2,
+    height: 16,
+  });
+  expect(
+    paintTextCaretInBox({
+      box,
+      fontSize: 16,
+      followUpIndex: 0,
+      indexUtf16: 1,
+      layoutSettled: true,
+      measure,
+      text: '中文',
+    }),
+  ).toMatchObject({ head: 1, left: 30 });
+  expect(
+    paintTextCaretInBox({
+      box,
+      fontSize: 16,
+      indexUtf16: 1,
+      layoutSettled: true,
+      measure,
+      text: '😀',
+    }),
+  ).toBeNull();
+  expect(
+    paintTextCaretInBox({
+      box,
+      fontSize: 16,
+      indexUtf16: 1,
+      layoutSettled: false,
+      measure,
+      text: '中文',
+    }),
+  ).toBeNull();
+  expect(
+    paintTextCaretInBox({
+      box,
+      fontSize: 16,
+      indexUtf16: 9,
+      layoutSettled: true,
+      measure,
+      text: '中文',
+    }),
+  ).toBeNull();
 });
 
 test('places a document caret inside the addressed paragraph without adding block newlines', () => {

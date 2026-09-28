@@ -28,7 +28,11 @@ import type {
 import type { OfficeTheme } from './office-surface';
 import {
   type DocumentLayoutFont,
+  type OfficeEditorDiagnostic,
+  type OfficeEditorHostError,
   type OfficeFileAction,
+  type OfficeLocale,
+  type OfficeMessagesOverride,
   type PdfEvidenceOverlay,
   type PdfEvidenceRegion,
   DocumentEditor as ReactDocumentEditor,
@@ -73,6 +77,42 @@ const fileActionsProp = {
   type: Array as PropType<readonly OfficeFileAction[]>,
 };
 
+const localeProp = {
+  default: undefined,
+  type: String as PropType<OfficeLocale | string>,
+};
+
+const messagesProp = {
+  default: undefined,
+  type: Object as PropType<OfficeMessagesOverride>,
+};
+
+const officeLocaleProps = {
+  locale: localeProp,
+  messages: messagesProp,
+} as const;
+
+const officeObservabilityEmits = {
+  diagnostic: (_diagnostic: OfficeEditorDiagnostic) => true,
+  error: (_error: OfficeEditorHostError) => true,
+} as const;
+
+function officeObservabilityBindings(
+  props: {
+    locale?: OfficeLocale | string;
+    messages?: OfficeMessagesOverride;
+  },
+  emit: (event: string, payload?: unknown) => void,
+) {
+  return {
+    locale: props.locale,
+    messages: props.messages,
+    onDiagnostic: (diagnostic: OfficeEditorDiagnostic) =>
+      emit('diagnostic', diagnostic),
+    onError: (error: OfficeEditorHostError) => emit('error', error),
+  };
+}
+
 export const DocumentEditor = defineComponent({
   name: 'A3SDocumentEditor',
   props: {
@@ -100,12 +140,14 @@ export const DocumentEditor = defineComponent({
     },
     saveStatus: String,
     theme: themeProp,
+    ...officeLocaleProps,
   },
   emits: {
     agentRequest: (_request: EditorAgentRequest) => true,
     change: (_content: DocumentContent) => true,
     reviewConflict: (_event: DocumentReviewConflictEvent) => true,
     'update:content': (_content: DocumentContent) => true,
+    ...officeObservabilityEmits,
   },
   setup(props, { emit }) {
     return createReactRenderer(() =>
@@ -128,6 +170,10 @@ export const DocumentEditor = defineComponent({
         preview: props.preview,
         saveStatus: props.saveStatus,
         theme: props.theme,
+        ...officeObservabilityBindings(
+          props,
+          emit as (event: string, payload?: unknown) => void,
+        ),
       }),
     );
   },
@@ -154,10 +200,12 @@ export const MarkdownEditor = defineComponent({
     },
     saveStatus: String,
     theme: themeProp,
+    ...officeLocaleProps,
   },
   emits: {
     change: (_content: MarkdownContent) => true,
     'update:content': (_content: MarkdownContent) => true,
+    ...officeObservabilityEmits,
   },
   setup(props, { emit }) {
     return createReactRenderer(() =>
@@ -175,6 +223,10 @@ export const MarkdownEditor = defineComponent({
         preview: props.preview,
         saveStatus: props.saveStatus,
         theme: props.theme,
+        ...officeObservabilityBindings(
+          props,
+          emit as (event: string, payload?: unknown) => void,
+        ),
       }),
     );
   },
@@ -198,11 +250,13 @@ export const SpreadsheetEditor = defineComponent({
     saveStatus: String,
     sortCustomListStore: Object as PropType<SpreadsheetSortCustomListStore>,
     theme: themeProp,
+    ...officeLocaleProps,
   },
   emits: {
     agentRequest: (_request: EditorAgentRequest) => true,
     change: (_content: SpreadsheetContent) => true,
     'update:content': (_content: SpreadsheetContent) => true,
+    ...officeObservabilityEmits,
   },
   setup(props, { emit }) {
     return createReactRenderer(() =>
@@ -221,6 +275,10 @@ export const SpreadsheetEditor = defineComponent({
         saveStatus: props.saveStatus,
         sortCustomListStore: props.sortCustomListStore,
         theme: props.theme,
+        ...officeObservabilityBindings(
+          props,
+          emit as (event: string, payload?: unknown) => void,
+        ),
       }),
     );
   },
@@ -243,12 +301,14 @@ export const PresentationEditor = defineComponent({
     },
     saveStatus: String,
     theme: themeProp,
+    ...officeLocaleProps,
   },
   emits: {
     agentRequest: (_request: EditorAgentRequest) => true,
     change: (_content: PresentationContent) => true,
     startSlideshow: () => true,
     'update:content': (_content: PresentationContent) => true,
+    ...officeObservabilityEmits,
   },
   setup(props, { emit }) {
     return createReactRenderer(() =>
@@ -267,6 +327,10 @@ export const PresentationEditor = defineComponent({
         preview: props.preview,
         saveStatus: props.saveStatus,
         theme: props.theme,
+        ...officeObservabilityBindings(
+          props,
+          emit as (event: string, payload?: unknown) => void,
+        ),
       }),
     );
   },
@@ -298,11 +362,13 @@ export const PdfViewer = defineComponent({
       default: undefined,
       type: Boolean as PropType<boolean | undefined>,
     },
+    ...officeLocaleProps,
   },
   emits: {
     collaborationChange: (_content: PdfCollaborationContent) => true,
     evidenceRegionSelect: (_region: PdfEvidenceRegion) => true,
     pageChange: (_pageNumber: number) => true,
+    ...officeObservabilityEmits,
   },
   setup(props, { emit }) {
     return createReactRenderer(() =>
@@ -325,6 +391,10 @@ export const PdfViewer = defineComponent({
         theme: props.theme,
         wasmUrl: props.wasmUrl,
         worker: props.worker,
+        ...officeObservabilityBindings(
+          props,
+          emit as (event: string, payload?: unknown) => void,
+        ),
       }),
     );
   },

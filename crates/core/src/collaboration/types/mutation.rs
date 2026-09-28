@@ -189,6 +189,18 @@ where
     Option::<JsonValue>::deserialize(deserializer)
 }
 
+/// One scene element's group path inside a single group frame.
+/// The path is ordered from the outermost group inward.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeOfficeCollaborationPresentationGroupMember {
+    pub element_id: String,
+    /// Observed path. Empty means `groupIds` is absent.
+    pub expected_group_ids: Vec<String>,
+    /// Path to write. Empty removes `groupIds`.
+    pub next_group_ids: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "type",
@@ -309,6 +321,70 @@ pub enum NativeOfficeCollaborationMutation {
         expected_text_id: String,
         expected_text: String,
     },
+    /// Insert one single-cell table row beside an observed row. The anchor
+    /// row's text identity must still match. Ancestor rows rotate in the same
+    /// transaction. A drifted identity writes nothing.
+    DocumentInsertTableRow {
+        anchor_row_id: String,
+        expected_row_text_id: String,
+        position: NativeOfficeCollaborationParagraphPosition,
+        row_id: String,
+        row_text_id: String,
+        paragraph_id: String,
+        text_id: String,
+        text: String,
+    },
+    /// Delete one table row that still has the observed identity and exactly
+    /// one plain paragraph. A drifted identity, the table's last row, or a row
+    /// that is not a single plain paragraph writes nothing.
+    DocumentDeleteTableRow {
+        row_id: String,
+        expected_row_text_id: String,
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+    },
+    /// Insert one list item beside the item whose first block is the observed
+    /// paragraph. A drifted text identity, or an anchor that is not that first
+    /// block, writes nothing. A list inside a table cell rotates ancestor row
+    /// identities in the same transaction.
+    DocumentInsertListItem {
+        anchor_paragraph_id: String,
+        expected_text_id: String,
+        position: NativeOfficeCollaborationParagraphPosition,
+        paragraph_id: String,
+        text_id: String,
+        text: String,
+    },
+    /// Delete one list item that still has the observed identity and exactly
+    /// one plain paragraph. The list's last item writes nothing.
+    DocumentDeleteListItem {
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+    },
+    /// Insert one section beside an observed top-level section. The new
+    /// section holds one plain paragraph. A missing section, or a drifted
+    /// paragraph identity inside it, writes nothing.
+    DocumentInsertSection {
+        anchor_section_id: String,
+        expected_paragraph_id: String,
+        expected_text_id: String,
+        position: NativeOfficeCollaborationParagraphPosition,
+        section_id: String,
+        paragraph_id: String,
+        text_id: String,
+        text: String,
+    },
+    /// Delete one section that still holds the observed plain paragraph.
+    /// The document's last section, or a section that is not one plain
+    /// paragraph, writes nothing.
+    DocumentDeleteSection {
+        section_id: String,
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+    },
     /// Append one attributable Document comment and its browser-compatible
     /// ProseMirror mark after matching a stable paragraph identity, exact
     /// UTF-16 selection, and selected text.
@@ -406,6 +482,71 @@ pub enum NativeOfficeCollaborationMutation {
         expected_slice: String,
         insert: String,
     },
+    /// Insert `count` rows at the 0-based index `at` and rewrite formula
+    /// references in the same transaction. Cells at and below `at` move down.
+    /// Cached formula values are not recalculated. A reference the rewriter
+    /// cannot shift fails the whole mutation and writes nothing.
+    SpreadsheetInsertRows {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Delete `count` rows starting at the 0-based index `at`. References that
+    /// pointed into the deleted rows become `#REF!` in the same transaction.
+    SpreadsheetDeleteRows {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Insert `count` columns at the 0-based index `at` and rewrite formula
+    /// references in the same transaction. Cells at and to the right of `at`
+    /// move right.
+    SpreadsheetInsertColumns {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Delete `count` columns starting at the 0-based index `at`. References
+    /// that pointed into the deleted columns become `#REF!` in the same
+    /// transaction.
+    SpreadsheetDeleteColumns {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Reorder rows inside one rectangle. `source_rows[destination]` is the
+    /// source row offset. Formula text moves with its cell. A stale observed
+    /// cell, or a merge, table, or pivot that meets the rectangle, writes
+    /// nothing.
+    SpreadsheetSortRows {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        row_count: u32,
+        column_count: u32,
+        source_rows: Vec<u32>,
+        expected_cells: Vec<Option<JsonValue>>,
+    },
+    /// Create one table record in the browser-convergent `tables` map.
+    /// The creation claim reserves the ID. A different record for that ID
+    /// writes nothing.
+    SpreadsheetCreateTable { sheet_id: String, table: JsonValue },
+    /// Replace one table record after its complete observed JSON matches.
+    /// A drifted record writes nothing. The creation claim stays as written.
+    SpreadsheetUpdateTable {
+        sheet_id: String,
+        table_id: String,
+        expected_table: JsonValue,
+        next_table: JsonValue,
+    },
+    /// Remove one table record and its order entry after the complete observed
+    /// JSON matches. The creation claim stays, so the ID cannot be reused for
+    /// a different record.
+    SpreadsheetDeleteTable {
+        sheet_id: String,
+        table_id: String,
+        expected_table: JsonValue,
+    },
     /// Create one scene element inside a slide, master, or layout. The full
     /// element is fingerprinted in the browser-compatible record-claims root,
     /// preventing different records from converging under one stable ID.
@@ -481,6 +622,31 @@ pub enum NativeOfficeCollaborationMutation {
         /// Optional UTF-16 start index from the find hit.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         index_utf16: Option<u32>,
+    },
+    /// Move one slide in `slide-order`. Shape records stay put. `None` means
+    /// the first position. A predecessor that is not the observed one writes
+    /// nothing.
+    PresentationMoveSlide {
+        slide_id: String,
+        expected_after_slide_id: Option<String>,
+        after_slide_id: Option<String>,
+    },
+    /// Replace every listed scene element's group path in one transaction.
+    /// Paths are outermost group first. An empty path means the field is
+    /// absent. One member whose observed path does not match writes nothing.
+    PresentationSetGroup {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        members: Vec<NativeOfficeCollaborationPresentationGroupMember>,
+    },
+    /// Replace the `background` field of one slide, master, or layout.
+    /// `None` means the field is absent. Element text stays put. A background
+    /// that is not the observed one writes nothing.
+    PresentationSetBackground {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        expected_background: Option<String>,
+        next_background: Option<String>,
     },
     /// Create one portable PDF annotation with a caller-owned stable ID.
     /// Native creation always records `source: "created"` and accepts only

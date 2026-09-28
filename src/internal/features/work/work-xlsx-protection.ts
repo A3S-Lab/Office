@@ -8,7 +8,7 @@ import {
   firstDescendant,
 } from './work-ooxml-package';
 import {
-  DEFAULT_PROTECTION_HINT,
+  defaultProtectionHint,
   editableRangeRequiresCredentials,
   normalizeSheetProtectionAuthority,
   type FortuneSheetEditableRange,
@@ -261,7 +261,7 @@ function authorityFromElement(
       : 1,
     editObjects: booleanAttribute(element, 'objects', false) ? 0 : 1,
     editScenarios: booleanAttribute(element, 'scenarios', false) ? 0 : 1,
-    defaultSheetHintText: DEFAULT_PROTECTION_HINT,
+    defaultSheetHintText: defaultProtectionHint(),
     xlsxAttributes: Object.keys(source).length ? source : undefined,
   };
 }

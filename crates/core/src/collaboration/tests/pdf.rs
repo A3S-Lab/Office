@@ -1181,3 +1181,74 @@ fn freetext_span_replace_keeps_the_rest_and_rejects_drift() {
         "xx Final tail"
     );
 }
+
+#[test]
+fn pdf_replica_export_writes_every_field_and_freetext_or_returns_no_bytes() {
+    let temp = tempfile::tempdir().unwrap();
+    let store =
+        NativeOfficeCollaborationStore::create(pdf_create_request(&temp.path().join("export-pdf")))
+            .unwrap();
+    store
+        .apply(pdf_apply_request(
+            "bootstrap-browser-pdf",
+            STANDARD.decode(YJS_PDF_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-export-seed-freetext",
+            NativeOfficeCollaborationMutation::PdfCreateAnnotation {
+                annotation_id: "annotation-freetext-1".to_owned(),
+                page_index: 0,
+                annotation: portable_freetext_annotation(
+                    "annotation-freetext-1",
+                    0,
+                    "Draft FreeText note",
+                ),
+            },
+        ))
+        .unwrap();
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-export-seed-highlight",
+            NativeOfficeCollaborationMutation::PdfCreateAnnotation {
+                annotation_id: "annotation-highlight-1".to_owned(),
+                page_index: 1,
+                annotation: portable_annotation(
+                    "annotation-highlight-1",
+                    "#ffd400",
+                    "Highlight stays out of the PDF export",
+                ),
+            },
+        ))
+        .unwrap();
+
+    let pdf = b"1 0 obj << /T (Applicant.Name) /V (Old) >> endobj 2 0 obj << /T (Applicant.Email) /V (ada@example.com) >> endobj 3 0 obj << /NM (annotation-freetext-1) /Contents (Old note) >> endobj trailer";
+    let saved = export_pdf_replica(&store, pdf).unwrap();
+    let text = String::from_utf8(saved).unwrap();
+    assert!(text.contains("/V (Ada)"));
+    assert!(text.contains("/V (ada@example.com)"));
+    assert!(text.contains("/Contents (Draft FreeText note)"));
+    assert!(text.ends_with("trailer"));
+    assert!(!text.contains("Highlight stays"));
+
+    assert!(export_pdf_replica(&store, b"compressed \xff").is_err());
+    let missing_annotation = b"1 0 obj << /T (Applicant.Name) /V (Old) >> endobj trailer";
+    assert!(export_pdf_replica(&store, missing_annotation).is_err());
+    let missing_field =
+        b"3 0 obj << /NM (annotation-freetext-1) /Contents (Old note) >> endobj trailer";
+    assert!(export_pdf_replica(&store, missing_field).is_err());
+
+    store
+        .mutate(pdf_mutation_request(
+            "pdf-export-unrepresentable-id",
+            NativeOfficeCollaborationMutation::PdfCreateAnnotation {
+                annotation_id: "note(1)".to_owned(),
+                page_index: 0,
+                annotation: portable_freetext_annotation("note(1)", 0, "Cannot encode"),
+            },
+        ))
+        .unwrap();
+    let unrepresentable = export_pdf_replica(&store, pdf).unwrap_err();
+    assert!(unrepresentable.message.contains("literal-string escapes"));
+}

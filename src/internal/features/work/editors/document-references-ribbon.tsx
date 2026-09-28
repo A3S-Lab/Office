@@ -13,17 +13,20 @@ import {
   Unlink2,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import type { WorkDocumentCaptionKind } from '../work-document-captions';
-import type { WorkDocumentNoteKind } from '../work-document-notes';
+import { documentFieldLockTargets } from '../work-document-field-node';
 import {
   documentHasIndex,
   selectedDocumentIndexDraft,
 } from '../work-document-index-nodes';
+import type { WorkDocumentNoteKind } from '../work-document-notes';
 import { documentHasTableOfContents } from '../work-document-table-of-contents-node';
-import { documentFieldLockTargets } from '../work-document-field-node';
 import { getDocumentCommandDefinition } from './document-command-catalog';
-import { selectedDocumentFieldIds } from './document-field-code-overrides';
+import { documentCommandLabel } from './document-command-i18n';
 import { documentHasRefreshableFields } from './document-editor-support';
+import { selectedDocumentFieldIds } from './document-field-code-overrides';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -66,6 +69,7 @@ export function DocumentReferencesRibbon({
   onLockFields,
   onUnlockFields,
 }: DocumentReferencesRibbonProps) {
+  const messages = useOfficeMessages();
   const hasTableOfContents = documentHasTableOfContents(editor);
   const hasIndex = documentHasIndex(editor);
   const canMarkIndexEntry = Boolean(selectedDocumentIndexDraft(editor));
@@ -81,145 +85,205 @@ export function DocumentReferencesRibbon({
 
   return (
     <>
-      <WorkOfficeRibbonGroup label="目录" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.references.group.toc')}
+        priority="high"
+      >
         <ReferencesButton
-          label="插入或自定义目录"
+          label={documentCommandLabel('tableOfContents', messages)}
           onClick={onOpenTableOfContents}
         >
           <ListTree size={19} />
         </ReferencesButton>
         <ReferencesButton
-          label="更新目录"
+          label={documentCommandLabel('refreshTableOfContents', messages)}
           disabled={!hasTableOfContents}
-          title={
+          title={officeMessage(
+            messages,
             hasTableOfContents
-              ? '根据当前标题和页码更新目录'
-              : '文档中没有可更新的目录'
-          }
+              ? 'document.references.refreshToc.enabled'
+              : 'document.references.refreshToc.disabled',
+          )}
           onClick={onRefreshTableOfContents}
         >
           <RefreshCw size={19} />
         </ReferencesButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="脚注" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.references.group.notes')}
+        priority="high"
+      >
         <ReferencesButton
-          label="插入脚注"
+          label={officeMessage(
+            messages,
+            'document.references.insertFootnote',
+          )}
           onClick={() => onInsertNote('footnote')}
         >
           <span className="work-ribbon-glyph">¹</span>
         </ReferencesButton>
         <ReferencesButton
-          label="插入尾注"
+          label={officeMessage(messages, 'document.references.insertEndnote')}
           onClick={() => onInsertNote('endnote')}
         >
           <span className="work-ribbon-glyph">ⅰ</span>
         </ReferencesButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="题注">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.references.group.captions')}
+      >
         <ReferencesButton
-          label="插入图片题注"
+          label={officeMessage(
+            messages,
+            'document.references.insertFigureCaption',
+          )}
           onClick={() => onInsertCaption('figure')}
         >
           <ImageIcon size={19} />
         </ReferencesButton>
         <ReferencesButton
-          label="插入表格题注"
+          label={officeMessage(
+            messages,
+            'document.references.insertTableCaption',
+          )}
           onClick={() => onInsertCaption('table')}
         >
           <Table2 size={19} />
         </ReferencesButton>
-        <ReferencesButton label="插入交叉引用" onClick={onInsertCrossReference}>
+        <ReferencesButton
+          label={officeMessage(
+            messages,
+            'document.references.insertCrossReference',
+          )}
+          onClick={onInsertCrossReference}
+        >
           <Link2 size={19} />
         </ReferencesButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="引文和书目" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.references.group.citations')}
+        priority="high"
+      >
         <ReferencesButton
-          label={`文献库${citationSourceCount ? `（${citationSourceCount}）` : ''}`}
+          label={
+            citationSourceCount
+              ? officeMessage(
+                  messages,
+                  'document.references.bibliographyWithCount',
+                  { count: String(citationSourceCount) },
+                )
+              : officeMessage(messages, 'document.references.bibliography')
+          }
+          visibleLabel={officeMessage(
+            messages,
+            'document.references.bibliography',
+          )}
           active={citationsOpen}
           onClick={onToggleCitations}
         >
           <BookOpen size={19} />
         </ReferencesButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="索引" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.references.group.index')}
+        priority="high"
+      >
         <ReferencesButton
-          label="标记索引项"
+          label={documentCommandLabel('markIndexEntry', messages)}
           disabled={!canMarkIndexEntry}
-          title={
+          title={officeMessage(
+            messages,
             canMarkIndexEntry
-              ? '把当前选中文字标记为索引项'
-              : '请先选择正文文字或已有索引项'
-          }
+              ? 'document.references.markIndex.enabled'
+              : 'document.references.markIndex.disabled',
+          )}
           onClick={onOpenIndexEntry}
         >
           <Tags size={19} />
         </ReferencesButton>
-        <ReferencesButton label="插入或自定义索引" onClick={onOpenIndex}>
+        <ReferencesButton
+          label={documentCommandLabel('index', messages)}
+          onClick={onOpenIndex}
+        >
           <ListOrdered size={19} />
         </ReferencesButton>
         <ReferencesButton
-          label="更新索引"
+          label={documentCommandLabel('refreshIndex', messages)}
           disabled={!hasIndex}
-          title={
-            hasIndex ? '根据当前索引项和页码更新索引' : '文档中没有可更新的索引'
-          }
+          title={officeMessage(
+            messages,
+            hasIndex
+              ? 'document.references.refreshIndex.enabled'
+              : 'document.references.refreshIndex.disabled',
+          )}
           onClick={onRefreshIndex}
         >
           <RefreshCw size={19} />
         </ReferencesButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="更新" priority="low">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.references.group.update')}
+        priority="low"
+      >
         <ReferencesButton
-          label="更新页码和日期"
+          label={documentCommandLabel('refreshFields', messages)}
           shortcut={refreshFieldsCommand.shortcut?.label}
           ariaKeyShortcuts={refreshFieldsCommand.shortcut?.aria}
           disabled={!hasRefreshableFields}
           title={
             hasRefreshableFields
-              ? `更新页码和日期（${refreshFieldsCommand.shortcut?.label}）`
-              : '文档中没有可更新的页码或日期'
+              ? officeMessage(messages, 'document.fields.refreshTitle', {
+                  shortcut: refreshFieldsCommand.shortcut?.label ?? '',
+                })
+              : officeMessage(messages, 'document.fields.refreshEmpty')
           }
           onClick={onRefreshFields}
         >
           <RefreshCw size={19} />
         </ReferencesButton>
         <ReferencesButton
-          label="取消域链接"
+          label={documentCommandLabel('unlinkFields', messages)}
           shortcut={unlinkFieldsCommand.shortcut?.label}
           ariaKeyShortcuts={unlinkFieldsCommand.shortcut?.aria}
           disabled={!canUnlinkFields}
           title={
             canUnlinkFields
-              ? `将所选域替换为结果文本（${unlinkFieldsCommand.shortcut?.label}）`
-              : '请先选择一个或多个域'
+              ? officeMessage(messages, 'document.fields.unlinkTitle', {
+                  shortcut: unlinkFieldsCommand.shortcut?.label ?? '',
+                })
+              : officeMessage(messages, 'document.fields.unlinkEmpty')
           }
           onClick={onUnlinkFields}
         >
           <Unlink2 size={19} />
         </ReferencesButton>
         <ReferencesButton
-          label="锁定域"
+          label={documentCommandLabel('lockFields', messages)}
           shortcut={lockFieldsCommand.shortcut?.label}
           ariaKeyShortcuts={lockFieldsCommand.shortcut?.aria}
           disabled={!canLockFields}
           title={
             canLockFields
-              ? `锁定所选域，阻止更新（${lockFieldsCommand.shortcut?.label}）`
-              : '请先选择未锁定的域'
+              ? officeMessage(messages, 'document.fields.lockTitle', {
+                  shortcut: lockFieldsCommand.shortcut?.label ?? '',
+                })
+              : officeMessage(messages, 'document.fields.lockEmpty')
           }
           onClick={onLockFields}
         >
           <Lock size={19} />
         </ReferencesButton>
         <ReferencesButton
-          label="解除域锁定"
+          label={documentCommandLabel('unlockFields', messages)}
           shortcut={unlockFieldsCommand.shortcut?.label}
           ariaKeyShortcuts={unlockFieldsCommand.shortcut?.aria}
           disabled={!canUnlockFields}
           title={
             canUnlockFields
-              ? `解除所选域锁定（${unlockFieldsCommand.shortcut?.label}）`
-              : '请先选择已锁定的域'
+              ? officeMessage(messages, 'document.fields.unlockTitle', {
+                  shortcut: unlockFieldsCommand.shortcut?.label ?? '',
+                })
+              : officeMessage(messages, 'document.fields.unlockEmpty')
           }
           onClick={onUnlockFields}
         >
@@ -232,6 +296,7 @@ export function DocumentReferencesRibbon({
 
 function ReferencesButton({
   label,
+  visibleLabel,
   title,
   shortcut,
   ariaKeyShortcuts,
@@ -241,6 +306,7 @@ function ReferencesButton({
   children,
 }: {
   label: string;
+  visibleLabel?: string;
   title?: string;
   shortcut?: string;
   ariaKeyShortcuts?: string;
@@ -249,11 +315,20 @@ function ReferencesButton({
   onClick: () => void;
   children: ReactNode;
 }) {
+  const messages = useOfficeMessages();
   return (
     <WorkOfficeRibbonButton
       label={label}
-      visibleLabel={label.replace(/（\d+）$/, '')}
-      title={title ?? (shortcut ? `${label}（${shortcut}）` : label)}
+      visibleLabel={visibleLabel ?? label}
+      title={
+        title ??
+        (shortcut
+          ? officeMessage(messages, 'document.ribbon.shortcutTitle', {
+              label,
+              shortcut,
+            })
+          : label)
+      }
       aria-keyshortcuts={ariaKeyShortcuts}
       active={active}
       displayLabel

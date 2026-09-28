@@ -2,6 +2,7 @@ import {
   documentFieldStatisticsFromHtml,
   resolveDocumentFieldsHtml,
 } from './work-document-fields';
+import { sanitizeDocumentHtml } from './work-document-html-sanitizer';
 import {
   collectDocumentNotes,
   documentNoteKey,
@@ -237,10 +238,9 @@ function createPage(
 
 function safeSectionPages(source: string): string[] {
   const document = new DOMParser().parseFromString(
-    removeDocumentNoteDefinitions(source),
+    sanitizeDocumentHtml(removeDocumentNoteDefinitions(source)),
     'text/html',
   );
-  sanitizeDocument(document);
   const pages: HTMLElement[] = [document.createElement('div')];
   for (const node of Array.from(document.body.childNodes)) {
     if (node instanceof Element && node.hasAttribute('data-page-break')) {
@@ -250,28 +250,6 @@ function safeSectionPages(source: string): string[] {
     pages.at(-1)?.append(node.cloneNode(true));
   }
   return pages.map((page) => page.innerHTML);
-}
-
-function sanitizeDocument(document: Document) {
-  for (const element of Array.from(
-    document.body.querySelectorAll('script, iframe, object, embed, link, meta'),
-  )) {
-    element.remove();
-  }
-  for (const element of Array.from(document.body.querySelectorAll('*'))) {
-    for (const attribute of Array.from(element.attributes)) {
-      if (attribute.name.toLowerCase().startsWith('on'))
-        element.removeAttribute(attribute.name);
-    }
-    if (
-      element instanceof HTMLAnchorElement &&
-      /^(?:javascript|vbscript|data):/i.test(
-        element.getAttribute('href')?.trim() ?? '',
-      )
-    ) {
-      element.removeAttribute('href');
-    }
-  }
 }
 
 function attachDocumentNotes(
@@ -305,7 +283,5 @@ function attachDocumentNotes(
 }
 
 function safeNoteHtml(source: string): string {
-  const document = new DOMParser().parseFromString(source, 'text/html');
-  sanitizeDocument(document);
-  return document.body.innerHTML;
+  return sanitizeDocumentHtml(source);
 }

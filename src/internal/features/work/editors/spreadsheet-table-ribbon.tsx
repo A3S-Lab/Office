@@ -1,6 +1,7 @@
 import { Calculator, Columns3, Rows3, TableProperties } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useEffect, useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { showToast } from '../../../state/app-state';
 import type {
   WorkSpreadsheetTable,
@@ -13,6 +14,7 @@ import {
 } from './office-controls';
 import { OfficeMenuGroup } from './office-menu-group';
 import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
@@ -38,9 +40,13 @@ export function SpreadsheetTableDesignRibbon({
   sheetId: string;
   table: WorkSpreadsheetTable;
 }) {
+  const messages = useOfficeMessages();
   return (
     <>
-      <WorkOfficeRibbonGroup label="属性" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'spreadsheet.table.ribbon.properties')}
+        priority="high"
+      >
         <SpreadsheetTableNameControl
           can={can}
           commands={commands}
@@ -48,12 +54,18 @@ export function SpreadsheetTableDesignRibbon({
           table={table}
         />
         <WorkOfficeRibbonButton
-          label="转换为区域"
+          label={officeMessage(
+            messages,
+            'spreadsheet.table.ribbon.convertToRange',
+          )}
           disabled={!can.convertTableToRange(sheetId, table.id)}
           onClick={() => {
             if (!commands.convertTableToRange(sheetId, table.id)) {
               showToast(
-                '无法转换为区域。请先移除引用此表格的结构化引用。',
+                officeMessage(
+                  messages,
+                  'spreadsheet.table.ribbon.convertToRangeError',
+                ),
                 'error',
               );
             }
@@ -62,7 +74,10 @@ export function SpreadsheetTableDesignRibbon({
           <TableProperties size={19} />
         </WorkOfficeRibbonButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="汇总行" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'spreadsheet.table.ribbon.totalsGroup')}
+        priority="high"
+      >
         <SpreadsheetTableTotalsMenu
           can={can}
           commands={commands}
@@ -70,16 +85,24 @@ export function SpreadsheetTableDesignRibbon({
           table={table}
         />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="表格样式" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'spreadsheet.table.ribbon.stylesGroup')}
+        priority="high"
+      >
         <SpreadsheetTableStyleGallery
           commands={commands}
           sheetId={sheetId}
           table={table}
         />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="表格样式选项">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'spreadsheet.table.ribbon.styleOptions')}
+      >
         <SpreadsheetTableOption
-          label="首列"
+          label={officeMessage(
+            messages,
+            'spreadsheet.table.ribbon.firstColumn',
+          )}
           active={table.showFirstColumn}
           icon={<Columns3 size={17} />}
           disabled={
@@ -94,7 +117,10 @@ export function SpreadsheetTableDesignRibbon({
           }
         />
         <SpreadsheetTableOption
-          label="末列"
+          label={officeMessage(
+            messages,
+            'spreadsheet.table.ribbon.lastColumn',
+          )}
           active={table.showLastColumn}
           icon={<Columns3 size={17} />}
           disabled={
@@ -109,7 +135,7 @@ export function SpreadsheetTableDesignRibbon({
           }
         />
         <SpreadsheetTableOption
-          label="行条纹"
+          label={officeMessage(messages, 'spreadsheet.table.ribbon.rowStripes')}
           active={table.showRowStripes}
           icon={<Rows3 size={17} />}
           disabled={
@@ -124,7 +150,10 @@ export function SpreadsheetTableDesignRibbon({
           }
         />
         <SpreadsheetTableOption
-          label="列条纹"
+          label={officeMessage(
+            messages,
+            'spreadsheet.table.ribbon.columnStripes',
+          )}
           active={table.showColumnStripes}
           icon={<Columns3 size={17} />}
           disabled={
@@ -143,14 +172,6 @@ export function SpreadsheetTableDesignRibbon({
   );
 }
 
-const totalsFunctionOptions = [
-  { value: 'none', label: '不汇总' },
-  ...SPREADSHEET_TABLE_TOTALS_FUNCTIONS.map((value) => ({
-    value,
-    label: spreadsheetTableTotalsFunctionLabel(value),
-  })),
-] as const;
-
 function SpreadsheetTableTotalsMenu({
   can,
   commands,
@@ -162,6 +183,18 @@ function SpreadsheetTableTotalsMenu({
   sheetId: string;
   table: WorkSpreadsheetTable;
 }) {
+  const messages = useOfficeMessages();
+  const totalsFunctionOptions = [
+    {
+      value: 'none',
+      label: officeMessage(messages, 'spreadsheet.table.totals.none'),
+    },
+    ...SPREADSHEET_TABLE_TOTALS_FUNCTIONS.map((value) => ({
+      value,
+      label: spreadsheetTableTotalsFunctionLabel(value),
+    })),
+  ] as const;
+
   const patchColumn = (
     offset: number,
     patch: {
@@ -177,7 +210,10 @@ function SpreadsheetTableTotalsMenu({
       !can.updateTable(sheetId, table.id, designPatch) ||
       !commands.updateTable(sheetId, table.id, designPatch)
     ) {
-      showToast('汇总行设置无效，请检查函数、标签或公式。', 'error');
+      showToast(
+        officeMessage(messages, 'spreadsheet.table.totals.invalid'),
+        'error',
+      );
     }
   };
 
@@ -188,9 +224,12 @@ function SpreadsheetTableTotalsMenu({
       !commands.updateTable(sheetId, table.id, patch)
     ) {
       showToast(
-        table.totalsRow
-          ? '无法关闭汇总行。'
-          : '汇总行目标区域已有内容，请先清空该行。',
+        officeMessage(
+          messages,
+          table.totalsRow
+            ? 'spreadsheet.table.totals.cannotDisable'
+            : 'spreadsheet.table.totals.targetOccupied',
+        ),
         'error',
       );
     }
@@ -198,8 +237,8 @@ function SpreadsheetTableTotalsMenu({
 
   return (
     <Popover
-      label="汇总行"
-      panelLabel="表格汇总行设置"
+      label={officeMessage(messages, 'spreadsheet.table.totals.label')}
+      panelLabel={officeMessage(messages, 'spreadsheet.table.totals.panel')}
       panelRole="dialog"
       portal
       focusFirstOnOpen
@@ -210,19 +249,27 @@ function SpreadsheetTableTotalsMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-table-totals-trigger${open || table.totalsRow ? ' active' : ''}`}
-          title={
-            table.totalsRow ? '设置表格汇总行（已启用）' : '设置表格汇总行'
-          }
+          title={officeMessage(
+            messages,
+            table.totalsRow
+              ? 'spreadsheet.table.totals.titleOn'
+              : 'spreadsheet.table.totals.titleOff',
+          )}
         >
           <Calculator size={19} />
-          <span>汇总行</span>
+          <span>
+            {officeMessage(messages, 'spreadsheet.table.totals.label')}
+          </span>
         </button>
       )}
     >
       {(close) => (
         <div className="work-spreadsheet-table-totals-content">
           <OfficeCheckbox
-            ariaLabel="启用汇总行"
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.table.totals.enableAria',
+            )}
             checked={table.totalsRow}
             disabled={
               !table.totalsRow &&
@@ -232,10 +279,10 @@ function SpreadsheetTableTotalsMenu({
               toggleTotalsRow();
             }}
           >
-            启用汇总行
+            {officeMessage(messages, 'spreadsheet.table.totals.enable')}
           </OfficeCheckbox>
           <p className="work-spreadsheet-table-totals-hint">
-            汇总行位于表格末尾，函数会随筛选结果更新。
+            {officeMessage(messages, 'spreadsheet.table.totals.hint')}
           </p>
           <div className="work-spreadsheet-table-totals-columns">
             {table.columns.map((column, offset) => {
@@ -253,9 +300,18 @@ function SpreadsheetTableTotalsMenu({
                 >
                   <strong>{column.name}</strong>
                   <div className="work-office-field">
-                    <span>函数</span>
+                    <span>
+                      {officeMessage(
+                        messages,
+                        'spreadsheet.table.totals.function',
+                      )}
+                    </span>
                     <OfficeSelect
-                      ariaLabel={`${column.name} 汇总函数`}
+                      ariaLabel={officeMessage(
+                        messages,
+                        'spreadsheet.table.totals.functionAria',
+                        { name: column.name },
+                      )}
                       disabled={!table.totalsRow}
                       value={selected}
                       options={totalsFunctionOptions}
@@ -287,9 +343,15 @@ function SpreadsheetTableTotalsMenu({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>标签</span>
+                    <span>
+                      {officeMessage(messages, 'spreadsheet.table.totals.tag')}
+                    </span>
                     <CommittedOfficeTextField
-                      aria-label={`${column.name} 汇总标签`}
+                      aria-label={officeMessage(
+                        messages,
+                        'spreadsheet.table.totals.tagAria',
+                        { name: column.name },
+                      )}
                       disabled={!table.totalsRow || !labelEnabled}
                       value={committedLabel}
                       formatValue={(value) => value}
@@ -303,9 +365,18 @@ function SpreadsheetTableTotalsMenu({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>自定义公式</span>
+                    <span>
+                      {officeMessage(
+                        messages,
+                        'spreadsheet.table.totals.formula',
+                      )}
+                    </span>
                     <CommittedOfficeTextField
-                      aria-label={`${column.name} 汇总公式`}
+                      aria-label={officeMessage(
+                        messages,
+                        'spreadsheet.table.totals.formulaAria',
+                        { name: column.name },
+                      )}
                       disabled={!table.totalsRow || !formulaEnabled}
                       placeholder="=SUM(Table[Column])"
                       value={committedFormula}
@@ -329,7 +400,7 @@ function SpreadsheetTableTotalsMenu({
             className="work-spreadsheet-table-totals-close"
             onClick={close}
           >
-            完成
+            {officeMessage(messages, 'spreadsheet.table.totals.done')}
           </button>
         </div>
       )}
@@ -352,6 +423,7 @@ function SpreadsheetTableNameControl({
   sheetId: string;
   table: WorkSpreadsheetTable;
 }) {
+  const messages = useOfficeMessages();
   const [name, setName] = useState(table.name);
   useEffect(() => setName(table.name), [table.id, table.name]);
 
@@ -367,7 +439,10 @@ function SpreadsheetTableNameControl({
       !commands.updateTable(sheetId, table.id, patch)
     ) {
       setName(table.name);
-      showToast('表格名称无效或已被使用。', 'error');
+      showToast(
+        officeMessage(messages, 'spreadsheet.table.nameInvalid'),
+        'error',
+      );
     }
   };
 
@@ -375,10 +450,10 @@ function SpreadsheetTableNameControl({
 
   return (
     <label className="work-spreadsheet-table-name">
-      <span>表格名称</span>
+      <span>{officeMessage(messages, 'spreadsheet.table.nameLabel')}</span>
       <input
         type="text"
-        aria-label="表格名称"
+        aria-label={officeMessage(messages, 'spreadsheet.table.nameLabel')}
         autoCapitalize="none"
         spellCheck={false}
         data-office-escape-consumer={dirty || undefined}
@@ -409,19 +484,29 @@ function SpreadsheetTableStyleGallery({
   sheetId: string;
   table: WorkSpreadsheetTable;
 }) {
+  const messages = useOfficeMessages();
   const choices = spreadsheetTableStyleChoices();
   const selected = choices.find((choice) =>
     spreadsheetTableUsesStyle(table.style, choice.style),
   );
   const families = [
-    { id: 'light' as const, label: '浅色' },
-    { id: 'medium' as const, label: '中等' },
-    { id: 'dark' as const, label: '深色' },
+    {
+      id: 'light' as const,
+      label: officeMessage(messages, 'spreadsheet.table.style.family.light'),
+    },
+    {
+      id: 'medium' as const,
+      label: officeMessage(messages, 'spreadsheet.table.style.family.medium'),
+    },
+    {
+      id: 'dark' as const,
+      label: officeMessage(messages, 'spreadsheet.table.style.family.dark'),
+    },
   ];
   return (
     <Popover
-      label="表格样式"
-      panelLabel="表格样式库"
+      label={officeMessage(messages, 'spreadsheet.table.style.label')}
+      panelLabel={officeMessage(messages, 'spreadsheet.table.style.panel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-table-style-root"
@@ -433,10 +518,16 @@ function SpreadsheetTableStyleGallery({
           {...triggerProps}
           type="button"
           className={`with-label work-spreadsheet-table-style-trigger${open ? ' active' : ''}`}
-          title={`表格样式（当前：${selected?.label ?? '无'}）`}
+          title={officeMessage(messages, 'spreadsheet.table.style.title', {
+            current:
+              selected?.label ??
+              officeMessage(messages, 'spreadsheet.table.style.none'),
+          })}
         >
           <SpreadsheetTableStylePreview choice={selected ?? choices[0]} />
-          <span>表格样式</span>
+          <span>
+            {officeMessage(messages, 'spreadsheet.table.style.label')}
+          </span>
         </button>
       )}
     >
@@ -464,7 +555,11 @@ function SpreadsheetTableStyleGallery({
                         type="button"
                         role="menuitemradio"
                         tabIndex={-1}
-                        aria-label={`应用表格样式：${choice.label}`}
+                        aria-label={officeMessage(
+                          messages,
+                          'spreadsheet.table.style.applyAria',
+                          { label: choice.label },
+                        )}
                         aria-checked={checked}
                         title={choice.label}
                         onClick={() => {

@@ -1,12 +1,18 @@
 import type { Editor } from '@tiptap/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import type { WorkOfficeCollaborationFrameCaret } from '../../../collaboration/office-collaboration-frame-caret';
 import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
   createWorkOfficePresentationCollaborationBinding,
   readWorkOfficePresentationCollaboration,
   type WorkOfficePresentationCollaborationBinding,
 } from '../../../collaboration/office-presentation-collaboration';
+import { PresentationFrameCaretProvider } from './presentation-collaboration-presence';
 import {
   WorkspaceContextMenu,
   type WorkspaceContextMenuEvent,
@@ -34,6 +40,7 @@ import type {
   WorkSlideElement,
 } from '../work-types';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import { useOfficeMessages } from './office-messages-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { OfficeFileInput } from './office-controls';
 import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
@@ -134,6 +141,10 @@ function CollaborativePresentationEditor(
     WorkOfficePresentationCollaborationBinding | undefined
   >(undefined);
   const [, refreshHistory] = useState(0);
+  const [frameCaret, setFrameCaret] = useState<Extract<
+    WorkOfficeCollaborationFrameCaret,
+    { kind: 'presentation' }
+  > | null>(null);
   const onChangeRef = useRef(props.onChange);
   onChangeRef.current = props.onChange;
   contentRef.current = sharedContent;
@@ -142,10 +153,13 @@ function CollaborativePresentationEditor(
     const binding =
       createWorkOfficePresentationCollaborationBinding(collaboration);
     bindingRef.current = binding;
-    const unsubscribeContent = binding.subscribe(({ content }) => {
-      contentRef.current = content;
-      setSharedContent(content);
-      onChangeRef.current(content);
+    const unsubscribeContent = binding.subscribe((change) => {
+      const caret =
+        change.caret?.kind === 'presentation' ? change.caret : null;
+      setFrameCaret(caret?.indexUtf16 === undefined ? null : caret);
+      contentRef.current = change.content;
+      setSharedContent(change.content);
+      onChangeRef.current(change.content);
     });
     const unsubscribeError = binding.subscribeError((error) => {
       queueMicrotask(() => {
@@ -180,13 +194,15 @@ function CollaborativePresentationEditor(
     undo: () => bindingRef.current?.undo() ?? false,
   };
   return (
-    <PresentationEditorSurface
-      {...props}
-      content={sharedContent}
-      collaborationHistory={history}
-      onChange={commit}
-      preview={props.preview || collaboration.mode !== 'edit'}
-    />
+    <PresentationFrameCaretProvider caret={frameCaret}>
+      <PresentationEditorSurface
+        {...props}
+        content={sharedContent}
+        collaborationHistory={history}
+        onChange={commit}
+        preview={props.preview || collaboration.mode !== 'edit'}
+      />
+    </PresentationFrameCaretProvider>
   );
 }
 
@@ -200,14 +216,17 @@ interface PresentationEditorSurfaceProps extends PresentationEditorProps {
 }
 
 function PresentationEditorSurface(props: PresentationEditorSurfaceProps) {
+  const messages = useOfficeMessages();
   const { content, fileActions, preview } = props;
   if (preview) {
     return (
       <section className="work-presentation-editor preview">
         <WorkOfficePreviewBar
-          ariaLabel="演示预览工具"
-          label="只读预览"
-          detail={`${content.slides.length} 张幻灯片`}
+          ariaLabel={officeMessage(messages, 'presentation.editor.previewAria')}
+          label={officeMessage(messages, 'presentation.editor.previewLabel')}
+          detail={officeMessage(messages, 'presentation.editor.previewDetail', {
+            count: String(content.slides.length),
+          })}
           fileActions={fileActions}
           className="work-presentation-ribbon"
         />
@@ -226,13 +245,16 @@ function PresentationEditingSurface({
   collaborationHistory,
   content,
   preview,
-  saveStatus = '已自动保存',
+  saveStatus,
   fileActions,
   kernelWasmUrl,
   onChange,
   onAgentRequest,
   onStartSlideshow,
 }: PresentationEditorSurfaceProps & { initialSlide: WorkSlide }) {
+  const messages = useOfficeMessages();
+  const resolvedSaveStatus =
+    saveStatus ?? officeMessage(messages, 'presentation.editor.saved');
   const contentRef = useRef(content);
   const presentationCommandsRef = useRef<PresentationEditorCommands | null>(
     null,
@@ -439,10 +461,16 @@ function PresentationEditingSurface({
       : [];
   const canvasName =
     designMode === 'layout'
-      ? `${selectedLayout?.name ?? '布局'}布局编辑画布`
+      ? officeMessage(messages, 'presentation.editor.layoutCanvas', {
+          name: selectedLayout?.name ?? officeMessage(messages, 'presentation.editor.layoutFallback'),
+        })
       : designMode === 'master'
-        ? `${selectedMaster?.name ?? '母版'}母版编辑画布`
-        : `${selectedSlide?.name ?? '幻灯片'}编辑画布`;
+        ? officeMessage(messages, 'presentation.editor.masterCanvas', {
+            name: selectedMaster?.name ?? officeMessage(messages, 'presentation.editor.masterFallback'),
+          })
+        : officeMessage(messages, 'presentation.editor.slideCanvas', {
+            name: selectedSlide?.name ?? officeMessage(messages, 'presentation.editor.slideFallback'),
+          });
   const activeTargetId =
     designMode === 'layout'
       ? selectedLayout?.id
@@ -590,7 +618,7 @@ function PresentationEditingSurface({
       const candidate = invoker ?? activeElement;
       const fallback =
         presentationRootRef.current?.querySelector<HTMLElement>(
-          '.work-presentation-ribbon button[aria-label^="查看批注"]',
+          `.work-presentation-ribbon button[aria-label^="${officeMessage(messages, 'presentation.action.viewComments')}"]`,
         ) ?? null;
       commentsInvokerRef.current =
         candidate?.isConnected &&
@@ -604,7 +632,7 @@ function PresentationEditingSurface({
       }
       setTaskPane('comments');
     },
-    [designMode, selection.clear],
+    [designMode, messages, selection.clear],
   );
   const toggleComments = useCallback(() => {
     if (commentsOpen) {
@@ -949,7 +977,7 @@ function PresentationEditingSurface({
       <OfficeFileInput
         ref={imageInputRef}
         accept="image/*"
-        aria-label="插入图片"
+        aria-label={officeMessage(messages, 'presentation.editor.insertImageAria')}
         onFileSelect={(file) => presentationToolbarCommands.addImage(file)}
       />
       <PresentationToolbar
@@ -1000,7 +1028,7 @@ function PresentationEditingSurface({
             }
             return (
               presentationRootRef.current?.querySelector<HTMLElement>(
-                '.work-presentation-ribbon button[aria-label^="查看批注"]',
+                `.work-presentation-ribbon button[aria-label^="${officeMessage(messages, 'presentation.action.viewComments')}"]`,
               ) ?? null
             );
           }}
@@ -1057,7 +1085,7 @@ function PresentationEditingSurface({
             onChange={(chart) =>
               presentationCommands.updateElement({
                 chart,
-                altText: chart.title || '演示图表',
+                altText: chart.title || officeMessage(messages, 'presentation.editor.chartAltFallback'),
               })
             }
             onDelete={presentationCommands.deleteSelection}
@@ -1075,13 +1103,13 @@ function PresentationEditingSurface({
         selectedSlide={selectedSlide}
         viewMode={viewMode}
         zoom={zoom}
-        saveStatus={saveStatus}
+        saveStatus={resolvedSaveStatus}
         onViewModeChange={presentationToolbarCommands.setViewMode}
         onZoomChange={setZoom}
       />
       {designMode === 'slide' && agentMenu && (
         <WorkspaceContextMenu
-          label={agentMenu.target === 'element' ? '演示对象操作' : '幻灯片操作'}
+          label={agentMenu.target === 'element' ? officeMessage(messages, 'presentation.editor.agentElement') : officeMessage(messages, 'presentation.editor.agentSlide')}
           x={agentMenu.x}
           y={agentMenu.y}
           items={[
@@ -1130,7 +1158,7 @@ function PresentationEditingSurface({
         <div
           className="work-presentation-slideshow-layer"
           role="dialog"
-          aria-label="幻灯片放映"
+          aria-label={officeMessage(messages, 'presentation.editor.slideshowAria')}
           aria-modal="true"
         >
           <PresentationPlayer
@@ -1164,8 +1192,14 @@ function restorePresentationSlideshowFocus(target: HTMLElement | null): void {
     if (canRestore) target.focus({ preventScroll: true });
 
     const nextActiveElement = document.activeElement;
+    const slideshowAria = officeMessage(
+      resolveOfficeMessages(),
+      'presentation.editor.slideshowAria',
+    );
     const slideshowOpen = Boolean(
-      document.querySelector('[role="dialog"][aria-label="幻灯片放映"]'),
+      document.querySelector(
+        `[role="dialog"][aria-label="${CSS.escape(slideshowAria)}"]`,
+      ),
     );
     if (
       slideshowOpen ||

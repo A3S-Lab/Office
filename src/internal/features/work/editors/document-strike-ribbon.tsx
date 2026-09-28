@@ -1,28 +1,44 @@
 import type { Editor } from '@tiptap/core';
 import { ChevronDown, Strikethrough } from 'lucide-react';
-import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   documentStrikeStyle,
   type WorkDocumentStrikeStyle,
 } from '../work-document-strike';
 import { getDocumentCommandDefinition } from './document-command-catalog';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 
-const strikeOptions = [
-  { value: 'none', label: '无删除线' },
-  { value: 'single', label: '单删除线', command: 'strike' as const },
-  { value: 'double', label: '双删除线', command: 'doubleStrike' as const },
+const strikeOptionDefs = [
+  { value: 'none', messageKey: 'document.strike.none' },
+  {
+    value: 'single',
+    messageKey: 'document.strike.single',
+    command: 'strike' as const,
+  },
+  {
+    value: 'double',
+    messageKey: 'document.strike.double',
+    command: 'doubleStrike' as const,
+  },
 ] as const satisfies readonly {
   value: WorkDocumentStrikeStyle;
-  label: string;
+  messageKey: keyof OfficeMessageCatalog;
   command?: 'strike' | 'doubleStrike';
 }[];
 
 export function DocumentStrikeRibbon({
   editor,
-  label = '删除线',
-  menuLabel = '删除线样式',
+  label,
+  menuLabel,
   className = '',
 }: {
   editor: Editor;
@@ -30,6 +46,17 @@ export function DocumentStrikeRibbon({
   menuLabel?: string;
   className?: string;
 }) {
+  const messages = useOfficeMessages();
+  const resolvedLabel = label ?? messages['document.strike.label'];
+  const resolvedMenuLabel = menuLabel ?? messages['document.strike.menu'];
+  const strikeOptions = useMemo(
+    () =>
+      strikeOptionDefs.map((option) => ({
+        ...option,
+        label: messages[option.messageKey],
+      })),
+    [messages],
+  );
   const subscribe = useCallback(
     (notify: () => void) => {
       if (editor.isDestroyed) return () => undefined;
@@ -55,8 +82,10 @@ export function DocumentStrikeRibbon({
       className={`work-document-strike-control${className ? ` ${className}` : ''}`}
     >
       <Popover
-        label={`更多${label}`}
-        panelLabel={menuLabel}
+        label={officeMessage(messages, 'document.strike.more', {
+          label: resolvedLabel,
+        })}
+        panelLabel={resolvedMenuLabel}
         panelRole="menu"
         portal
         placement="bottom-end"
@@ -69,9 +98,12 @@ export function DocumentStrikeRibbon({
             <button
               type="button"
               className={`work-document-strike-primary${active ? ' active' : ''}`}
-              aria-label={label}
+              aria-label={resolvedLabel}
               aria-pressed={active}
-              title={`${label}（${currentLabel}）`}
+              title={officeMessage(messages, 'document.strike.title', {
+                label: resolvedLabel,
+                current: currentLabel,
+              })}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 // Keep ribbon focus (e.g. disclosure) — chain().focus() steals
@@ -85,7 +117,9 @@ export function DocumentStrikeRibbon({
               {...triggerProps}
               type="button"
               className={`work-document-strike-disclosure${open ? ' active' : ''}`}
-              title={`更多${label}`}
+              title={officeMessage(messages, 'document.strike.more', {
+                label: resolvedLabel,
+              })}
               onMouseDown={(event) => event.preventDefault()}
             >
               <ChevronDown size={11} aria-hidden="true" />
@@ -117,6 +151,7 @@ export function DocumentStrikeRibbon({
               >
                 <DocumentStrikeGlyph style={option.value} />
                 <span>{option.label}</span>
+                {optionShortcut && <kbd>{optionShortcut.label}</kbd>}
               </button>
             );
           })

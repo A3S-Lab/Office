@@ -1,4 +1,6 @@
-import type { Dispatch, ReactNode, SetStateAction } from 'react';
+import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { Button } from '../../../design-system/primitives';
 import type {
   SpreadsheetCellBorderFormat,
@@ -25,7 +27,9 @@ import {
   spreadsheetNumberFormatCode,
   spreadsheetNumberFormatPreset,
   spreadsheetNumberFormatPresetLabels,
+  spreadsheetNumberFormatPreview,
 } from './spreadsheet-number-format';
+import { useOfficeMessages } from './office-messages-context';
 import {
   OfficeCheckbox,
   OfficeColorPicker,
@@ -67,45 +71,62 @@ const numberFormatOptions = [
     spreadsheetNumberFormatPresetLabels[value as SpreadsheetNumberFormatPreset],
 }));
 
-const horizontalOptions = [
-  { value: 'general', label: '常规' },
-  { value: 'left', label: '左对齐' },
-  { value: 'center', label: '居中' },
-  { value: 'right', label: '右对齐' },
-] as const;
+function horizontalOptions(messages: OfficeMessageCatalog) {
+  return [
+    { value: 'general' as const, label: officeMessage(messages, 'spreadsheet.formatCells.align.horizontal.general') },
+    { value: 'left' as const, label: officeMessage(messages, 'spreadsheet.formatCells.align.horizontal.left') },
+    { value: 'center' as const, label: officeMessage(messages, 'spreadsheet.formatCells.align.horizontal.center') },
+    { value: 'right' as const, label: officeMessage(messages, 'spreadsheet.formatCells.align.horizontal.right') },
+  ];
+}
 
-const verticalOptions = [
-  { value: 'top', label: '顶端对齐' },
-  { value: 'middle', label: '垂直居中' },
-  { value: 'bottom', label: '底端对齐' },
-] as const;
+function verticalOptions(messages: OfficeMessageCatalog) {
+  return [
+    { value: 'top' as const, label: officeMessage(messages, 'spreadsheet.formatCells.align.vertical.top') },
+    { value: 'middle' as const, label: officeMessage(messages, 'spreadsheet.formatCells.align.vertical.middle') },
+    { value: 'bottom' as const, label: officeMessage(messages, 'spreadsheet.formatCells.align.vertical.bottom') },
+  ];
+}
 
-const underlineOptions = [
-  { value: 'none', label: '无' },
-  { value: 'single', label: '单下划线' },
-  { value: 'double', label: '双下划线' },
-  { value: 'singleAccounting', label: '单会计用下划线' },
-  { value: 'doubleAccounting', label: '双会计用下划线' },
-] as const satisfies readonly OfficeSelectOption<SpreadsheetUnderlineStyle>[];
+function underlineOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption<SpreadsheetUnderlineStyle>[] {
+  return [
+    { value: 'none', label: officeMessage(messages, 'spreadsheet.formatCells.underline.none') },
+    { value: 'single', label: officeMessage(messages, 'spreadsheet.formatCells.underline.single') },
+    { value: 'double', label: officeMessage(messages, 'spreadsheet.formatCells.underline.double') },
+    { value: 'singleAccounting', label: officeMessage(messages, 'spreadsheet.formatCells.underline.singleAccounting') },
+    { value: 'doubleAccounting', label: officeMessage(messages, 'spreadsheet.formatCells.underline.doubleAccounting') },
+  ];
+}
 
-const borderStyleOptions = [
-  { value: 'thin', label: '细实线' },
-  { value: 'dotted', label: '点线' },
-  { value: 'dashed', label: '虚线' },
-  { value: 'dash-dot', label: '点划线' },
-  { value: 'medium', label: '中等实线' },
-  { value: 'medium-dashed', label: '中等虚线' },
-  { value: 'thick', label: '粗实线' },
-] as const satisfies readonly OfficeSelectOption<SpreadsheetCellBorderStyle>[];
+function borderStyleOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption<SpreadsheetCellBorderStyle>[] {
+  return [
+    { value: 'thin', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.thin') },
+    { value: 'dotted', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.dotted') },
+    { value: 'dashed', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.dashed') },
+    { value: 'dash-dot', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.dashDot') },
+    { value: 'dash-dot-dot', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.dashDotDot') },
+    { value: 'medium', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.medium') },
+    { value: 'medium-dashed', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.mediumDashed') },
+    { value: 'medium-dash-dot', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.mediumDashDot') },
+    { value: 'medium-dash-dot-dot', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.mediumDashDotDot') },
+    { value: 'thick', label: officeMessage(messages, 'spreadsheet.formatCells.border.style.thick') },
+  ];
+}
 
-const borderTargets = [
-  { target: 'top', label: '上框线' },
-  { target: 'bottom', label: '下框线' },
-  { target: 'left', label: '左框线' },
-  { target: 'right', label: '右框线' },
-  { target: 'diagonalDown', label: '斜下框线' },
-  { target: 'diagonalUp', label: '斜上框线' },
-] as const;
+function borderTargets(messages: OfficeMessageCatalog) {
+  return [
+    { target: 'top' as const, label: officeMessage(messages, 'spreadsheet.formatCells.border.target.top') },
+    { target: 'bottom' as const, label: officeMessage(messages, 'spreadsheet.formatCells.border.target.bottom') },
+    { target: 'left' as const, label: officeMessage(messages, 'spreadsheet.formatCells.border.target.left') },
+    { target: 'right' as const, label: officeMessage(messages, 'spreadsheet.formatCells.border.target.right') },
+    { target: 'diagonalDown' as const, label: officeMessage(messages, 'spreadsheet.formatCells.border.target.diagonalDown') },
+    { target: 'diagonalUp' as const, label: officeMessage(messages, 'spreadsheet.formatCells.border.target.diagonalUp') },
+  ];
+}
 
 export function SpreadsheetFormatCellsPanel(props: PanelProps) {
   return (
@@ -136,14 +157,15 @@ function NumberPanel({
   setDraft,
   touch,
 }: PanelProps) {
+  const messages = useOfficeMessages();
   const mixed = source.fields.numberFormat.mixed && !touched.numberFormat;
   const preset = spreadsheetNumberFormatPreset(draft.numberFormat);
-  const options = withMixedOption(numberFormatOptions, mixed);
+  const options = withMixedOption(numberFormatOptions, mixed, messages);
   return (
     <div className="work-spreadsheet-format-cells-number">
-      <Field label="分类">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.number.category')}>
         <OfficeSelect
-          ariaLabel="数字格式分类"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.number.categoryAria')}
           value={mixed ? MIXED_VALUE : preset}
           options={options}
           onValueChange={(value) => {
@@ -158,9 +180,9 @@ function NumberPanel({
           }}
         />
       </Field>
-      <Field label="格式代码">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.number.code')}>
         <OfficeTextField
-          aria-label="数字格式代码"
+          aria-label={officeMessage(messages, 'spreadsheet.formatCells.number.codeAria')}
           aria-invalid={Boolean(errors.numberFormat) || undefined}
           value={draft.numberFormat}
           onChange={(event) => {
@@ -175,9 +197,9 @@ function NumberPanel({
       </Field>
       {errors.numberFormat && <p role="alert">{errors.numberFormat}</p>}
       <div className="work-spreadsheet-format-cells-sample">
-        <span>示例</span>
-        <output aria-label="数字格式示例">
-          {String(source.activeCell?.m ?? source.activeCell?.v ?? '1234.56')}
+        <span>{officeMessage(messages, 'spreadsheet.formatCells.number.sample')}</span>
+        <output aria-label={officeMessage(messages, 'spreadsheet.formatCells.number.sampleAria')}>
+          {spreadsheetNumberFormatPreview(draft.numberFormat, source.activeCell)}
         </output>
         <small>{draft.numberFormat || '—'}</small>
       </div>
@@ -194,17 +216,19 @@ function AlignmentPanel({
   setDraft,
   touch,
 }: PanelProps) {
+  const messages = useOfficeMessages();
   const horizontalMixed =
     source.fields.horizontalAlignment.mixed && !touched.horizontalAlignment;
   const verticalMixed =
     source.fields.verticalAlignment.mixed && !touched.verticalAlignment;
+  const rotationMixed = source.fields.rotation.mixed && !touched.rotation;
   return (
     <div className="work-spreadsheet-format-cells-grid">
-      <Field label="水平对齐">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.align.horizontal')}>
         <OfficeSelect
-          ariaLabel="水平对齐"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.align.horizontal')}
           value={horizontalMixed ? MIXED_VALUE : draft.horizontalAlignment}
-          options={withMixedOption(horizontalOptions, horizontalMixed)}
+          options={withMixedOption(horizontalOptions(messages), horizontalMixed, messages)}
           onValueChange={(value) => {
             if (value === MIXED_VALUE) return;
             touch('horizontalAlignment');
@@ -212,11 +236,11 @@ function AlignmentPanel({
           }}
         />
       </Field>
-      <Field label="垂直对齐">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.align.vertical')}>
         <OfficeSelect
-          ariaLabel="垂直对齐"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.align.vertical')}
           value={verticalMixed ? MIXED_VALUE : draft.verticalAlignment}
-          options={withMixedOption(verticalOptions, verticalMixed)}
+          options={withMixedOption(verticalOptions(messages), verticalMixed, messages)}
           onValueChange={(value) => {
             if (value === MIXED_VALUE) return;
             touch('verticalAlignment');
@@ -225,9 +249,9 @@ function AlignmentPanel({
         />
       </Field>
       <fieldset className="work-spreadsheet-format-cells-options">
-        <legend>文字控制</legend>
+        <legend>{officeMessage(messages, 'spreadsheet.formatCells.align.textControl')}</legend>
         <OfficeCheckbox
-          ariaLabel="自动换行"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.align.wrap')}
           checked={draft.wrapText}
           indeterminate={source.fields.wrapText.mixed && !touched.wrapText}
           onCheckedChange={(checked) => {
@@ -235,15 +259,32 @@ function AlignmentPanel({
             setDraft((current) => ({ ...current, wrapText: checked }));
           }}
         >
-          自动换行
+          {officeMessage(messages, 'spreadsheet.formatCells.align.wrap')}
+        </OfficeCheckbox>
+        <OfficeCheckbox
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.align.stacked')}
+          checked={draft.stackedText}
+          indeterminate={source.fields.stackedText.mixed && !touched.textOrientation}
+          onCheckedChange={(checked) => {
+            touch('textOrientation');
+            setDraft((current) => ({ ...current, stackedText: checked }));
+          }}
+        >
+          {officeMessage(messages, 'spreadsheet.formatCells.align.stacked')}
         </OfficeCheckbox>
       </fieldset>
-      <Field label="文字旋转（度）">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.align.rotation')}>
         <OfficeNumberField
-          ariaLabel="文字旋转角度"
-          value={draft.rotation}
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.align.rotationAria')}
+          value={rotationMixed ? '' : draft.rotation}
           min={-90}
           max={90}
+          disabled={draft.stackedText}
+          placeholder={
+            rotationMixed
+              ? officeMessage(messages, 'spreadsheet.formatCells.mixed')
+              : undefined
+          }
           validationInvalid={Boolean(errors.rotation)}
           onValueChange={(value) => {
             const rotation = Number(value);
@@ -270,18 +311,21 @@ function FontPanel({
   setDraft,
   touch,
 }: PanelProps) {
+  const messages = useOfficeMessages();
   const familyMixed = source.fields.fontFamily.mixed && !touched.fontFamily;
   const sizeMixed = source.fields.fontSize.mixed && !touched.fontSize;
   const underlineMixed = source.fields.underline.mixed && !touched.underline;
+  const colorMixed = source.fields.fontColor.mixed && !touched.fontColor;
+  const strikeMixed = source.fields.strike.mixed && !touched.strike;
   const toggle = (field: 'bold' | 'italic' | 'strike', checked: boolean) => {
     touch(field);
     setDraft((current) => ({ ...current, [field]: checked }));
   };
   return (
     <div className="work-spreadsheet-format-cells-grid font">
-      <Field label="字体">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.font.family')}>
         <OfficeSelect
-          ariaLabel="单元格字体"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.font.familyAria')}
           ariaKeyShortcuts={
             spreadsheetCommandCatalog.formatCellsFont.shortcut.aria
           }
@@ -290,6 +334,7 @@ function FontPanel({
           options={withMixedOption(
             spreadsheetFontFamilyOptions(draft.fontFamily),
             familyMixed,
+            messages,
           )}
           onValueChange={(value) => {
             if (value === MIXED_VALUE) return;
@@ -298,9 +343,9 @@ function FontPanel({
           }}
         />
       </Field>
-      <Field label="字号">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.font.size')}>
         <OfficeSelect
-          ariaLabel="单元格字号"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.font.sizeAria')}
           ariaKeyShortcuts={
             spreadsheetCommandCatalog.formatCellsFontSize.shortcut.aria
           }
@@ -309,6 +354,7 @@ function FontPanel({
           options={withMixedOption(
             spreadsheetFontSizeOptions(draft.fontSize),
             sizeMixed,
+            messages,
           )}
           onValueChange={(value) => {
             if (value === MIXED_VALUE) return;
@@ -319,12 +365,12 @@ function FontPanel({
       </Field>
       {errors.fontSize && <p role="alert">{errors.fontSize}</p>}
       <fieldset className="work-spreadsheet-format-cells-options emphasis">
-        <legend>字形</legend>
+        <legend>{officeMessage(messages, 'spreadsheet.formatCells.font.style')}</legend>
         {(
           [
-            ['bold', '加粗'],
-            ['italic', '斜体'],
-            ['strike', '删除线'],
+            ['bold', officeMessage(messages, 'spreadsheet.formatCells.font.bold')],
+            ['italic', officeMessage(messages, 'spreadsheet.formatCells.font.italic')],
+            ['strike', officeMessage(messages, 'spreadsheet.formatCells.font.strike')],
           ] as const
         ).map(([field, label]) => (
           <OfficeCheckbox
@@ -338,11 +384,11 @@ function FontPanel({
           </OfficeCheckbox>
         ))}
       </fieldset>
-      <Field label="下划线">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.font.underline')}>
         <OfficeSelect
-          ariaLabel="下划线样式"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.font.underlineAria')}
           value={underlineMixed ? MIXED_VALUE : draft.underline}
-          options={withMixedOption(underlineOptions, underlineMixed)}
+          options={withMixedOption(underlineOptions(messages), underlineMixed, messages)}
           onValueChange={(value) => {
             if (value === MIXED_VALUE) return;
             touch('underline');
@@ -350,10 +396,15 @@ function FontPanel({
           }}
         />
       </Field>
-      <Field label="文字颜色">
+      <Field label={officeMessage(messages, 'spreadsheet.formatCells.font.color')}>
         <OfficeColorPicker
-          ariaLabel="单元格文字颜色"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.font.colorAria')}
           value={draft.fontColor}
+          triggerLabel={
+            colorMixed
+              ? officeMessage(messages, 'spreadsheet.formatCells.mixed')
+              : undefined
+          }
           onValueChange={(fontColor) => {
             touch('fontColor');
             setDraft((current) => ({ ...current, fontColor }));
@@ -362,6 +413,8 @@ function FontPanel({
       </Field>
       <div
         className="work-spreadsheet-format-cells-font-preview"
+        data-underline-style={underlineMixed ? undefined : draft.underline}
+        data-strike={strikeMixed || !draft.strike ? undefined : 'true'}
         style={{
           backgroundColor: spreadsheetFontPreviewBackground(draft.fontColor),
           color: draft.fontColor,
@@ -369,25 +422,9 @@ function FontPanel({
           fontSize: `${Math.max(10, draft.fontSize)}px`,
           fontStyle: draft.italic ? 'italic' : 'normal',
           fontWeight: draft.bold ? 700 : 400,
-          textDecorationLine: [
-            draft.underline !== 'none' && 'underline',
-            draft.strike && 'line-through',
-          ]
-            .filter(Boolean)
-            .join(' '),
-          textDecorationStyle:
-            draft.underline === 'double' ||
-            draft.underline === 'doubleAccounting'
-              ? 'double'
-              : 'solid',
-          textUnderlineOffset:
-            draft.underline === 'singleAccounting' ||
-            draft.underline === 'doubleAccounting'
-              ? '0.24em'
-              : '0.12em',
         }}
       >
-        A3S Office 字体预览
+        {officeMessage(messages, 'spreadsheet.formatCells.font.preview')}
       </div>
     </div>
   );
@@ -410,57 +447,44 @@ function spreadsheetFontPreviewBackground(color: string): string {
 }
 
 function BorderPanel({ source, draft, touched, setDraft, touch }: PanelProps) {
+  const messages = useOfficeMessages();
   const hasTarget = (target: SpreadsheetCellBorderFormat['target']) =>
     draft.borders.some((format) => format.target === target);
   const updateBorders = (borders: SpreadsheetCellBorderFormat[]) => {
     touch('borders');
     setDraft((current) => ({ ...current, borders }));
   };
-  const restyleBorders = (
+  const setBorderPen = (
     field: 'borderColor' | 'borderStyle',
     value: string,
   ) => {
-    setDraft((current) => {
-      const next = {
-        ...current,
-        [field]: value,
-      } as SpreadsheetFormatCellsDraft;
-      if (current.borders.length) {
-        touch('borders');
-        next.borders = current.borders.map((format) => ({
-          ...format,
-          color: field === 'borderColor' ? value : current.borderColor,
-          style:
-            field === 'borderStyle'
-              ? (value as SpreadsheetCellBorderStyle)
-              : current.borderStyle,
-        }));
-      }
-      return next;
-    });
+    setDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
   };
   return (
     <div className="work-spreadsheet-format-cells-border">
       <div className="work-spreadsheet-format-cells-border-tools">
-        <Field label="线条样式">
+        <Field label={officeMessage(messages, 'spreadsheet.formatCells.border.style')}>
           <OfficeSelect
-            ariaLabel="边框线条样式"
+            ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.border.styleAria')}
             value={draft.borderStyle}
-            options={borderStyleOptions}
-            onValueChange={(value) => restyleBorders('borderStyle', value)}
+            options={borderStyleOptions(messages)}
+            onValueChange={(value) => setBorderPen('borderStyle', value)}
           />
         </Field>
-        <Field label="线条颜色">
+        <Field label={officeMessage(messages, 'spreadsheet.formatCells.border.color')}>
           <OfficeColorPicker
-            ariaLabel="边框线条颜色"
+            ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.border.colorAria')}
             value={draft.borderColor}
-            onValueChange={(value) => restyleBorders('borderColor', value)}
+            onValueChange={(value) => setBorderPen('borderColor', value)}
           />
         </Field>
       </div>
       <div className="work-spreadsheet-format-cells-border-layout">
         <div className="work-spreadsheet-format-cells-border-actions">
-          {borderTargets.map(({ target, label }) => (
+          {borderTargets(messages).map(({ target, label }) => (
             <button
               key={target}
               type="button"
@@ -486,7 +510,7 @@ function BorderPanel({ source, draft, touched, setDraft, touch }: PanelProps) {
             </button>
           ))}
           <Button size="compact" tone="quiet" onClick={() => updateBorders([])}>
-            无边框
+            {officeMessage(messages, 'spreadsheet.formatCells.border.none')}
           </Button>
         </div>
         <BorderPreview draft={draft} />
@@ -497,35 +521,34 @@ function BorderPanel({ source, draft, touched, setDraft, touch }: PanelProps) {
 }
 
 function BorderPreview({ draft }: { draft: SpreadsheetFormatCellsDraft }) {
-  const line = (target: SpreadsheetCellBorderFormat['target']) => {
-    const format = draft.borders.find(
-      (candidate) => candidate.target === target,
+  const messages = useOfficeMessages();
+  const edge = (
+    target: SpreadsheetCellBorderFormat['target'],
+    className: string,
+  ) => {
+    const format = draft.borders.find((candidate) => candidate.target === target);
+    if (!format) return null;
+    return (
+      <span
+        className={className}
+        data-border-style={format.style}
+        style={{ '--cell-border-color': format.color } as CSSProperties}
+      />
     );
-    return format ? borderCss(format) : undefined;
   };
   return (
     <div
       className="work-spreadsheet-format-cells-border-preview"
       role="img"
-      aria-label="边框预览"
+      aria-label={officeMessage(messages, 'spreadsheet.formatCells.border.previewAria')}
     >
-      <span className="top" style={{ borderTop: line('top') }} />
-      <span className="bottom" style={{ borderBottom: line('bottom') }} />
-      <span className="left" style={{ borderLeft: line('left') }} />
-      <span className="right" style={{ borderRight: line('right') }} />
-      {line('diagonalDown') && (
-        <span
-          className="diagonal-down"
-          style={{ borderTop: line('diagonalDown') }}
-        />
-      )}
-      {line('diagonalUp') && (
-        <span
-          className="diagonal-up"
-          style={{ borderTop: line('diagonalUp') }}
-        />
-      )}
-      <strong>文本</strong>
+      {edge('top', 'top')}
+      {edge('bottom', 'bottom')}
+      {edge('left', 'left')}
+      {edge('right', 'right')}
+      {edge('diagonalDown', 'diagonal-down')}
+      {edge('diagonalUp', 'diagonal-up')}
+      <strong>{officeMessage(messages, 'spreadsheet.formatCells.border.previewText')}</strong>
     </div>
   );
 }
@@ -537,10 +560,11 @@ function ProtectionPanel({
   setDraft,
   touch,
 }: PanelProps) {
+  const messages = useOfficeMessages();
   return (
     <div className="work-spreadsheet-format-cells-protection">
       <OfficeCheckbox
-        ariaLabel="锁定单元格"
+        ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.protection.lock')}
         checked={draft.locked}
         indeterminate={source.fields.locked.mixed && !touched.locked}
         onCheckedChange={(locked) => {
@@ -548,10 +572,10 @@ function ProtectionPanel({
           setDraft((current) => ({ ...current, locked }));
         }}
       >
-        锁定单元格
+        {officeMessage(messages, 'spreadsheet.formatCells.protection.lock')}
       </OfficeCheckbox>
       <OfficeCheckbox
-        ariaLabel="隐藏公式"
+        ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.protection.hide')}
         checked={draft.hidden}
         indeterminate={source.fields.hidden.mixed && !touched.hidden}
         onCheckedChange={(hidden) => {
@@ -559,9 +583,9 @@ function ProtectionPanel({
           setDraft((current) => ({ ...current, hidden }));
         }}
       >
-        隐藏公式
+        {officeMessage(messages, 'spreadsheet.formatCells.protection.hide')}
       </OfficeCheckbox>
-      <p>保护属性会随“应用”一起保存；锁定和隐藏效果在工作表保护启用后生效。</p>
+      <p>{officeMessage(messages, 'spreadsheet.formatCells.protection.note')}</p>
     </div>
   );
 }
@@ -576,9 +600,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function MixedHint() {
+  const messages = useOfficeMessages();
   return (
     <p className="work-spreadsheet-format-cells-mixed">
-      选区包含多种设置；仅修改的项目会统一应用。
+      {officeMessage(messages, 'spreadsheet.formatCells.mixedHint')}
     </p>
   );
 }
@@ -586,20 +611,17 @@ function MixedHint() {
 function withMixedOption<T extends string>(
   options: readonly OfficeSelectOption<T>[],
   mixed: boolean,
+  messages: OfficeMessageCatalog,
 ): readonly OfficeSelectOption<T | typeof MIXED_VALUE>[] {
   return mixed
-    ? [{ value: MIXED_VALUE, label: '混合', disabled: true }, ...options]
+    ? [
+        {
+          value: MIXED_VALUE,
+          label: officeMessage(messages, 'spreadsheet.formatCells.mixed'),
+          disabled: true,
+        },
+        ...options,
+      ]
     : options;
 }
 
-function borderCss(format: SpreadsheetCellBorderFormat): string {
-  const width =
-    format.style === 'thick' ? 3 : format.style.startsWith('medium') ? 2 : 1;
-  const style =
-    format.style === 'dotted'
-      ? 'dotted'
-      : format.style.includes('dash')
-        ? 'dashed'
-        : 'solid';
-  return `${width}px ${style} ${format.color}`;
-}

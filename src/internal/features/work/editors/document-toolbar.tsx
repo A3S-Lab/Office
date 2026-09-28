@@ -45,6 +45,7 @@ import {
   useState,
 } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   activeDocumentBookmark,
   DOCUMENT_BOOKMARK_DUPLICATE_MESSAGE,
@@ -75,6 +76,10 @@ import {
   documentTextBoxRibbonTab,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
+import {
+  documentCommandLabel,
+  localizeDocumentRibbonTab,
+} from './document-command-i18n';
 import { DocumentConnectorRibbon } from './document-connector-ribbon';
 import { synchronizeDocumentEditorSelectionFromDom } from './document-dom-selection';
 import { documentHasRefreshableFields } from './document-editor-support';
@@ -118,6 +123,7 @@ import {
 } from './document-zoom';
 import { useOfficeDialog } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,
@@ -309,6 +315,7 @@ export function DocumentToolbar({
   onOpenWordCount,
   onOpenFindReplace,
 }: DocumentToolbarProps) {
+  const messages = useOfficeMessages();
   const [activeTab, setActiveTab] = useState<DocumentRibbonTabId>(
     reviewOnly ? 'review' : 'home',
   );
@@ -364,19 +371,21 @@ export function DocumentToolbar({
       source: documentProofingDialogSource(target),
     });
   }, []);
-  const ribbonTabs = reviewOnly
-    ? documentRibbonTabs.filter(({ id }) => id === 'review' || id === 'view')
-    : pageChromeEditor
-      ? [...documentRibbonTabs, documentPageChromeRibbonTab]
-      : connectorSelected
-        ? [...documentRibbonTabs, documentConnectorRibbonTab]
-        : textBoxSelected
-          ? [...documentRibbonTabs, documentTextBoxRibbonTab]
-          : imageSelected
-            ? [...documentRibbonTabs, documentPictureRibbonTab]
-            : tableSelected
-              ? [...documentRibbonTabs, ...documentTableRibbonTabs]
-              : documentRibbonTabs;
+  const ribbonTabs = (
+    reviewOnly
+      ? documentRibbonTabs.filter(({ id }) => id === 'review' || id === 'view')
+      : pageChromeEditor
+        ? [...documentRibbonTabs, documentPageChromeRibbonTab]
+        : connectorSelected
+          ? [...documentRibbonTabs, documentConnectorRibbonTab]
+          : textBoxSelected
+            ? [...documentRibbonTabs, documentTextBoxRibbonTab]
+            : imageSelected
+              ? [...documentRibbonTabs, documentPictureRibbonTab]
+              : tableSelected
+                ? [...documentRibbonTabs, ...documentTableRibbonTabs]
+                : documentRibbonTabs
+  ).map((tab) => localizeDocumentRibbonTab(tab, messages));
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
       // Keep ribbon focus on remove-link. chain().focus() schedules into the
@@ -400,14 +409,14 @@ export function DocumentToolbar({
       }
     }
     const href = await prompt({
-      title: '添加链接',
-      description: '输入网页、邮箱地址，或使用 #书签名称 跳转到文档内位置。',
-      fieldLabel: '链接地址',
+      title: officeMessage(messages, 'document.link.add'),
+      description: officeMessage(messages, 'document.link.prompt.description'),
+      fieldLabel: officeMessage(messages, 'document.link.prompt.field'),
       initialValue: editor.getAttributes('link').href ?? 'https://',
       placeholder: 'https://',
       inputMode: 'url',
-      confirmLabel: '添加链接',
-      required: '请输入链接地址。',
+      confirmLabel: officeMessage(messages, 'document.link.add'),
+      required: officeMessage(messages, 'document.link.prompt.required'),
       validate: (value) =>
         normalizeDocumentHref(value) ? null : DOCUMENT_LINK_VALIDATION_MESSAGE,
       restoreFocusTarget: () => editor.view.dom,
@@ -425,7 +434,7 @@ export function DocumentToolbar({
       })
       .setLink({ href: normalized })
       .run();
-  }, [editor, prompt]);
+  }, [editor, messages, prompt]);
   const toggleBookmark = useCallback(async () => {
     if (activeBookmark) {
       // Keep ribbon focus on delete-bookmark. chain().focus() schedules into
@@ -434,13 +443,19 @@ export function DocumentToolbar({
       return;
     }
     const name = await prompt({
-      title: '添加书签',
-      description: '为当前光标位置或选中内容创建文档内链接目标。',
-      fieldLabel: '书签名称',
+      title: officeMessage(messages, 'document.bookmark.add'),
+      description: officeMessage(
+        messages,
+        'document.bookmark.prompt.description',
+      ),
+      fieldLabel: officeMessage(messages, 'document.bookmark.prompt.field'),
       initialValue: '',
-      placeholder: '例如 Architecture_2',
-      confirmLabel: '添加书签',
-      required: '请输入书签名称。',
+      placeholder: officeMessage(
+        messages,
+        'document.bookmark.prompt.placeholder',
+      ),
+      confirmLabel: officeMessage(messages, 'document.bookmark.add'),
+      required: officeMessage(messages, 'document.bookmark.prompt.required'),
       validate: (value) =>
         validateDocumentBookmarkName(value) ??
         (documentBookmarkNameExists(editor, value)
@@ -450,7 +465,7 @@ export function DocumentToolbar({
     });
     if (name === null || editor.isDestroyed) return;
     editor.chain().focus().insertDocumentBookmark(name.trim()).run();
-  }, [activeBookmark, editor, prompt]);
+  }, [activeBookmark, editor, messages, prompt]);
   useEffect(() => {
     setActiveTab((current) => {
       if (reviewOnly) return current === 'view' ? 'view' : 'review';
@@ -694,7 +709,7 @@ export function DocumentToolbar({
   return (
     <>
       <WorkOfficeRibbon
-        ariaLabel="文字功能区"
+        ariaLabel={officeMessage(messages, 'document.toolbar.aria')}
         tabs={ribbonTabs}
         defaultTab={reviewOnly ? 'review' : 'home'}
         activeTab={activeTab}
@@ -717,7 +732,7 @@ export function DocumentToolbar({
             : [
                 {
                   id: undoCommand.id,
-                  label: undoCommand.label,
+                  label: documentCommandLabel('undo', messages),
                   icon: <Undo2 size={15} />,
                   shortcut: undoCommand.shortcut?.label,
                   ariaKeyShortcuts: undoCommand.shortcut?.aria,
@@ -738,7 +753,7 @@ export function DocumentToolbar({
                 },
                 {
                   id: redoCommand.id,
-                  label: redoCommand.label,
+                  label: documentCommandLabel('redo', messages),
                   icon: <Redo2 size={15} />,
                   shortcut: redoCommand.shortcut?.label,
                   ariaKeyShortcuts: redoCommand.shortcut?.aria,
@@ -776,9 +791,9 @@ export function DocumentToolbar({
           ),
           insert: reviewOnly ? null : (
             <>
-              <RibbonGroup label="页面" priority="high">
+              <RibbonGroup label={officeMessage(messages, 'document.group.page')} priority="high">
                 <ToolbarButton
-                  label="插入分页符"
+                  label={documentCommandLabel('insertPageBreak', messages)}
                   shortcut="Cmd/Ctrl+Enter"
                   ariaKeyShortcuts="Control+Enter Meta+Enter"
                   displayLabel
@@ -792,21 +807,23 @@ export function DocumentToolbar({
                   <FilePlus2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="表格" priority="high">
+              <RibbonGroup label={officeMessage(messages, 'document.group.table')} priority="high">
                 <DocumentTableInsertPopover editor={editor} />
               </RibbonGroup>
-              <RibbonGroup label="插图">
+              <RibbonGroup label={officeMessage(messages, 'document.group.illustrations')}>
                 <ToolbarButton
-                  label="插入图片"
+                  label={officeMessage(messages, 'document.insert.picture')}
                   displayLabel
                   onClick={onRequestImage}
                 >
                   <ImageIcon size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="链接" priority="low">
+              <RibbonGroup label={officeMessage(messages, 'document.group.links')} priority="low">
                 <ToolbarButton
-                  label={editor.isActive('link') ? '取消链接' : '添加链接'}
+                  label={editor.isActive('link')
+                    ? officeMessage(messages, 'document.link.remove')
+                    : officeMessage(messages, 'document.link.add')}
                   shortcut="Cmd/Ctrl+K"
                   ariaKeyShortcuts="Control+K Meta+K"
                   displayLabel
@@ -817,7 +834,9 @@ export function DocumentToolbar({
                   <Link2 size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label={activeBookmark ? '删除书签' : '添加书签'}
+                  label={activeBookmark
+                    ? officeMessage(messages, 'document.bookmark.remove')
+                    : officeMessage(messages, 'document.bookmark.add')}
                   displayLabel
                   active={Boolean(activeBookmark)}
                   onMouseDown={(event) => event.preventDefault()}
@@ -826,23 +845,23 @@ export function DocumentToolbar({
                   <BookmarkIcon size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="页眉和页脚">
+              <RibbonGroup label={officeMessage(messages, 'document.group.headerFooter')}>
                 <ToolbarButton
-                  label="页眉"
+                  label={officeMessage(messages, 'document.pageChrome.header')}
                   displayLabel
                   onClick={() => onPageChromeEditingPartChange('header')}
                 >
                   <PanelTopOpen size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="页脚"
+                  label={officeMessage(messages, 'document.pageChrome.footer')}
                   displayLabel
                   onClick={() => onPageChromeEditingPartChange('footer')}
                 >
                   <PanelBottomOpen size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="页码"
+                  label={officeMessage(messages, 'document.pageChrome.pageNumber')}
                   displayLabel
                   active={showPageNumbers}
                   onClick={onTogglePageNumbers}
@@ -850,23 +869,23 @@ export function DocumentToolbar({
                   <Hash size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="文本" priority="low">
+              <RibbonGroup label={officeMessage(messages, 'document.group.text')} priority="low">
                 <ToolbarButton
-                  label="插入文本框"
+                  label={documentCommandLabel('insertTextBox', messages)}
                   displayLabel
                   onClick={() => onInsertTextBox?.()}
                 >
                   <TextCursorInput size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="插入连接符"
+                  label={documentCommandLabel('insertConnector', messages)}
                   displayLabel
                   onClick={() => onInsertConnector?.()}
                 >
                   <ArrowUpRight size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="插入内容控件"
+                  label={documentCommandLabel('insertContentControl', messages)}
                   displayLabel
                   onClick={() => onInsertContentControl?.()}
                 >
@@ -874,8 +893,8 @@ export function DocumentToolbar({
                 </ToolbarButton>
                 <DocumentFieldInsertMenu onInsertField={onInsertField} />
                 <ToolbarButton
-                  label="字段设置"
-                  title="插入或编辑字段格式"
+                  label={officeMessage(messages, 'document.field.settings')}
+                  title={officeMessage(messages, 'document.field.settingsTitle')}
                   displayLabel
                   onClick={onOpenField}
                 >
@@ -883,8 +902,8 @@ export function DocumentToolbar({
                 </ToolbarButton>
                 {onOpenMailMergeRecipientFilter ? (
                   <ToolbarButton
-                    label="筛选收件人"
-                    title="按条件筛选邮件合并收件人"
+                    label={officeMessage(messages, 'document.mailMerge.filterRecipients')}
+                    title={officeMessage(messages, 'document.mailMerge.filterRecipientsTitle')}
                     displayLabel
                     onClick={onOpenMailMergeRecipientFilter}
                   >
@@ -936,9 +955,9 @@ export function DocumentToolbar({
           review: (
             <>
               {!reviewOnly && (
-                <RibbonGroup label="校对" priority="high">
+                <RibbonGroup label={officeMessage(messages, 'document.group.proofing')} priority="high">
                   <ToolbarButton
-                    label="拼写检查"
+                    label={documentCommandLabel('spelling', messages)}
                     displayLabel
                     shortcut={spellingCommand.shortcut?.label}
                     ariaKeyShortcuts={spellingCommand.shortcut?.aria}
@@ -948,7 +967,7 @@ export function DocumentToolbar({
                     <CheckCheck size={19} />
                   </ToolbarButton>
                   <ToolbarButton
-                    label="设置校对语言"
+                    label={officeMessage(messages, 'document.proofing.language')}
                     displayLabel
                     onClick={() => openProofingDialog(editor)}
                   >
@@ -957,24 +976,35 @@ export function DocumentToolbar({
                 </RibbonGroup>
               )}
               {!suggestionOnly && (
-                <RibbonGroup label="批注" priority="high">
+                <RibbonGroup label={officeMessage(messages, 'document.group.comments')} priority="high">
                   <ToolbarButton
-                    label="添加批注"
+                    label={documentCommandLabel('insertComment', messages)}
                     displayLabel
                     shortcut={insertCommentCommand.shortcut?.label}
                     ariaKeyShortcuts={insertCommentCommand.shortcut?.aria}
                     disabled={!canInsertComment}
                     title={
                       canInsertComment
-                        ? `添加批注（${insertCommentCommand.shortcut?.label}）`
-                        : '请先选择未批注的文字'
+                        ? officeMessage(
+                            messages,
+                            'document.comment.insertTitle',
+                            {
+                              shortcut:
+                                insertCommentCommand.shortcut?.label ?? '',
+                            },
+                          )
+                        : officeMessage(messages, 'document.comment.selectFirst')
                     }
                     onClick={onInsertComment}
                   >
                     <MessageSquarePlus size={19} />
                   </ToolbarButton>
                   <ToolbarButton
-                    label={`查看批注${commentCount ? `（${commentCount}）` : ''}`}
+                    label={commentCount
+                      ? officeMessage(messages, 'document.comment.viewWithCount', {
+                          count: String(commentCount),
+                        })
+                      : officeMessage(messages, 'document.comment.view')}
                     displayLabel
                     active={commentsOpen}
                     onClick={onToggleComments}
@@ -985,9 +1015,13 @@ export function DocumentToolbar({
               )}
               {(!reviewOnly || suggestionOnly) && (
                 <>
-                  <RibbonGroup label="修订" priority="high">
+                  <RibbonGroup label={officeMessage(messages, 'document.group.revisions')} priority="high">
                     <ToolbarButton
-                      label={suggestionOnly ? '建议模式' : '修订模式'}
+                      label={
+                        suggestionOnly
+                          ? officeMessage(messages, 'document.track.suggestionMode')
+                          : documentCommandLabel('trackChanges', messages)
+                      }
                       displayLabel
                       shortcut={trackChangesCommand.shortcut?.label}
                       ariaKeyShortcuts={trackChangesCommand.shortcut?.aria}
@@ -995,7 +1029,7 @@ export function DocumentToolbar({
                       disabled={suggestionOnly}
                       title={
                         suggestionOnly
-                          ? '建议模式始终记录带身份的文字修订'
+                          ? officeMessage(messages, 'document.track.suggestionModeHint')
                           : undefined
                       }
                       onClick={onToggleTrackChanges}
@@ -1003,7 +1037,11 @@ export function DocumentToolbar({
                       <FileDiff size={19} />
                     </ToolbarButton>
                     <ToolbarButton
-                      label={`查看修订${changeCount ? `（${changeCount}）` : ''}`}
+                      label={changeCount
+                        ? officeMessage(messages, 'document.changes.viewWithCount', {
+                            count: String(changeCount),
+                          })
+                        : officeMessage(messages, 'document.changes.view')}
                       displayLabel
                       active={changesOpen}
                       onClick={onToggleChanges}
@@ -1012,27 +1050,27 @@ export function DocumentToolbar({
                     </ToolbarButton>
                   </RibbonGroup>
                   {!suggestionOnly && (
-                    <RibbonGroup label="更改" priority="high">
+                    <RibbonGroup label={officeMessage(messages, 'document.group.changes')} priority="high">
                       <ToolbarButton
-                        label="接受修订"
+                        label={officeMessage(messages, 'document.changes.accept')}
                         displayLabel
                         disabled={actionableChangeIndex === null}
-                        title="接受当前修订并转到下一处"
+                        title={officeMessage(messages, 'document.changes.acceptTitle')}
                         onClick={() => decideDocumentChange('accept')}
                       >
                         <Check size={19} />
                       </ToolbarButton>
                       <ToolbarButton
-                        label="拒绝修订"
+                        label={officeMessage(messages, 'document.changes.reject')}
                         displayLabel
                         disabled={actionableChangeIndex === null}
-                        title="拒绝当前修订并转到下一处"
+                        title={officeMessage(messages, 'document.changes.rejectTitle')}
                         onClick={() => decideDocumentChange('reject')}
                       >
                         <XCircle size={19} />
                       </ToolbarButton>
                       <ToolbarButton
-                        label="上一处修订"
+                        label={officeMessage(messages, 'document.changes.previous')}
                         displayLabel
                         disabled={previousChangeIndex === null}
                         onClick={() => navigateDocumentChange(-1)}
@@ -1040,7 +1078,7 @@ export function DocumentToolbar({
                         <ChevronUp size={19} />
                       </ToolbarButton>
                       <ToolbarButton
-                        label="下一处修订"
+                        label={officeMessage(messages, 'document.changes.next')}
                         displayLabel
                         disabled={nextChangeIndex === null}
                         onClick={() => navigateDocumentChange(1)}
@@ -1052,19 +1090,19 @@ export function DocumentToolbar({
                 </>
               )}
               {!reviewOnly && !suggestionOnly && (
-                <RibbonGroup label="比较" priority="high">
+                <RibbonGroup label={officeMessage(messages, 'document.group.compare')} priority="high">
                   <ToolbarButton
-                    label="比较文档"
+                    label={officeMessage(messages, 'document.compare.documents')}
                     displayLabel
-                    title="将另一个版本转换为可接受或拒绝的修订"
+                    title={officeMessage(messages, 'document.compare.documentsTitle')}
                     onClick={() => onOpenComparison('compare')}
                   >
                     <GitCompareArrows size={19} />
                   </ToolbarButton>
                   <ToolbarButton
-                    label="合并文档"
+                    label={officeMessage(messages, 'document.compare.merge')}
                     displayLabel
-                    title="合入与当前基线一致的带修订审阅副本"
+                    title={officeMessage(messages, 'document.compare.mergeTitle')}
                     onClick={() => onOpenComparison('combine')}
                   >
                     <FileStack size={19} />
@@ -1075,9 +1113,9 @@ export function DocumentToolbar({
           ),
           view: (
             <>
-              <RibbonGroup label="文档视图" priority="high">
+              <RibbonGroup label={officeMessage(messages, 'document.group.documentViews')} priority="high">
                 <ToolbarButton
-                  label="页面视图"
+                  label={officeMessage(messages, 'document.view.page')}
                   displayLabel
                   active={viewMode === 'page'}
                   onClick={() => onViewModeChange('page')}
@@ -1085,7 +1123,7 @@ export function DocumentToolbar({
                   <FileText size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="网页视图"
+                  label={officeMessage(messages, 'document.view.web')}
                   displayLabel
                   active={viewMode === 'web'}
                   onClick={() => onViewModeChange('web')}
@@ -1093,23 +1131,23 @@ export function DocumentToolbar({
                   <Globe2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="显示" priority="high">
+              <RibbonGroup label={officeMessage(messages, 'document.group.show')} priority="high">
                 <ToolbarButton
-                  label="标尺"
+                  label={officeMessage(messages, 'document.view.ruler')}
                   displayLabel
                   active={showRulers}
                   disabled={viewMode !== 'page'}
                   title={
                     viewMode === 'page'
-                      ? '显示或隐藏标尺'
-                      : '标尺仅用于页面视图'
+                      ? officeMessage(messages, 'document.view.rulerTitle')
+                      : officeMessage(messages, 'document.view.rulerDisabled')
                   }
                   onClick={onToggleRulers}
                 >
                   <Ruler size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="导航窗格"
+                  label={documentCommandLabel('navigationPane', messages)}
                   displayLabel
                   active={navigationOpen}
                   onClick={onToggleNavigation}
@@ -1117,7 +1155,7 @@ export function DocumentToolbar({
                   <PanelLeftOpen size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="切换域代码"
+                  label={documentCommandLabel('toggleFieldCodes', messages)}
                   displayLabel
                   active={showFieldCodes}
                   shortcut={
@@ -1128,52 +1166,57 @@ export function DocumentToolbar({
                     getDocumentCommandDefinition('toggleFieldCodes').shortcut
                       ?.aria
                   }
-                  title="在域结果和域代码之间切换（Alt+F9；选中域 Shift+F9）"
+                  title={officeMessage(messages, 'document.view.toggleFieldCodesTitle')}
                   onClick={onToggleFieldCodes}
                 >
                   <Braces size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="显示隐藏文字"
+                  label={documentCommandLabel('showHiddenText', messages)}
                   displayLabel
                   active={showHiddenText}
-                  title="显示或隐藏以隐藏文字格式标记的内容"
+                  title={officeMessage(messages, 'document.view.showHiddenTitle')}
                   onClick={onToggleHiddenText}
                 >
                   <Eye size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label={`缩放 ${zoom}%`} priority="low">
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.zoom', {
+                  percent: String(zoom),
+                })}
+                priority="low"
+              >
                 <ToolbarButton
-                  label="缩小文档"
+                  label={officeMessage(messages, 'document.zoom.out')}
                   disabled={zoom <= MIN_DOCUMENT_ZOOM}
                   onClick={() => onZoomChange(zoom - 10)}
                 >
                   <ZoomOut size={17} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="缩放至 100%"
+                  label={officeMessage(messages, 'document.zoom.100')}
                   active={zoom === 100}
                   onClick={() => onZoomChange(100)}
                 >
                   100%
                 </ToolbarButton>
                 <ToolbarButton
-                  label="单页"
+                  label={officeMessage(messages, 'document.zoom.onePage')}
                   displayLabel
                   onClick={() => onZoomFit('page')}
                 >
                   <Scan size={17} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="页宽"
+                  label={officeMessage(messages, 'document.zoom.pageWidth')}
                   displayLabel
                   onClick={() => onZoomFit('width')}
                 >
                   <StretchHorizontal size={17} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label="放大文档"
+                  label={officeMessage(messages, 'document.zoom.in')}
                   disabled={zoom >= MAX_DOCUMENT_ZOOM}
                   onClick={() => onZoomChange(zoom + 10)}
                 >
@@ -1347,39 +1390,43 @@ function ToolbarButton({
 
 const RibbonGroup = WorkOfficeRibbonGroup;
 
-const documentFieldInsertActions = [
-  { value: 'page', label: '页码' },
-  { value: 'numPages', label: '总页数' },
-  { value: 'section', label: '当前节号' },
-  { value: 'sectionPages', label: '本节页数' },
-  { value: 'date', label: '当前日期' },
-  { value: 'time', label: '当前时间' },
-  { value: 'createDate', label: '创建日期' },
-  { value: 'saveDate', label: '保存日期' },
-  { value: 'printDate', label: '打印日期' },
-  { value: 'wordCount', label: '字数' },
-  { value: 'characterCount', label: '字符数' },
-  { value: 'fileName', label: '文件名' },
-  { value: 'author', label: '作者' },
-  { value: 'title', label: '标题' },
-  { value: 'subject', label: '主题' },
-  { value: 'keywords', label: '关键字' },
-  { value: 'lastSavedBy', label: '最后保存者' },
-  { value: 'comments', label: '备注' },
-] as const satisfies readonly {
-  value: WorkDocumentFieldKind;
-  label: string;
-}[];
+const DOCUMENT_FIELD_INSERT_KINDS = [
+  'page',
+  'numPages',
+  'section',
+  'sectionPages',
+  'date',
+  'time',
+  'createDate',
+  'saveDate',
+  'printDate',
+  'wordCount',
+  'characterCount',
+  'fileName',
+  'author',
+  'title',
+  'subject',
+  'keywords',
+  'lastSavedBy',
+  'comments',
+] as const satisfies readonly WorkDocumentFieldKind[];
 
 function DocumentFieldInsertMenu({
   onInsertField,
 }: {
   onInsertField: (kind: WorkDocumentFieldKind) => void;
 }) {
+  const messages = useOfficeMessages();
+  const documentFieldInsertActions = DOCUMENT_FIELD_INSERT_KINDS.map(
+    (value) => ({
+      value,
+      label: officeMessage(messages, `document.field.kind.${value}`),
+    }),
+  );
   return (
     <Popover
-      label="插入页码、日期或统计域"
-      panelLabel="插入页码、日期或统计域"
+      label={officeMessage(messages, 'document.field.insertMenu')}
+      panelLabel={officeMessage(messages, 'document.field.insertMenu')}
       panelRole="menu"
       portal
       className="work-document-field-insert-menu"
@@ -1391,9 +1438,9 @@ function DocumentFieldInsertMenu({
           {...triggerProps}
           type="button"
           className={`work-document-field-insert-trigger${open ? ' open' : ''}`}
-          title="插入页码、日期或统计域"
+          title={officeMessage(messages, 'document.field.insertMenu')}
         >
-          <span>插入域</span>
+          <span>{officeMessage(messages, 'document.field.insertLabel')}</span>
           <ChevronDown size={14} aria-hidden="true" />
         </button>
       )}

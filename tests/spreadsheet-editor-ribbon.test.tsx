@@ -630,7 +630,7 @@ test('routes WPS font, underline styles, vertical alignment, and wrapping throug
   );
   expect(growFont).toHaveAttribute(
     'title',
-    '增大字号（Cmd/Ctrl+Shift+. 或 Cmd/Ctrl+]）',
+    '增大字号（Cmd/Ctrl+Shift+. or Cmd/Ctrl+]）',
   );
   expect(shrinkFont).toHaveAttribute(
     'aria-keyshortcuts',
@@ -857,7 +857,7 @@ test('operates the WPS Find and Select menu from the Home ribbon', async () => {
   expect(find).toHaveAttribute('aria-keyshortcuts', 'Control+F Meta+F');
   expect(find).toHaveTextContent('Cmd/Ctrl+F');
   expect(goTo).toHaveAttribute('aria-keyshortcuts', 'Control+G F5');
-  expect(goTo).toHaveTextContent('Ctrl+G 或 F5');
+  expect(goTo).toHaveTextContent('Ctrl+G or F5');
   await waitFor(() => expect(find).toHaveFocus());
   fireEvent.keyDown(menu, { key: 'ArrowDown' });
   expect(goTo).toHaveFocus();

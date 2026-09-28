@@ -7,6 +7,21 @@ export interface XlsxWorksheetCellEntry {
   row: number;
 }
 
+export type XlsxDenseRows = Array<Array<CellObject | undefined> | undefined>;
+
+/** SheetJS dense worksheets keep their rows in `!data`. */
+export function xlsxDenseRows(
+  worksheet: WorkSheet | null | undefined,
+): XlsxDenseRows | null {
+  const rows = worksheet?.['!data'];
+  return Array.isArray(rows) ? (rows as XlsxDenseRows) : null;
+}
+
+/** Creates an empty SheetJS dense worksheet. */
+export function createXlsxDenseWorksheet(): WorkSheet {
+  return { '!data': [] };
+}
+
 /**
  * Iterates both SheetJS sparse address maps and dense row arrays without
  * materializing a second list of every worksheet cell.
@@ -14,9 +29,10 @@ export interface XlsxWorksheetCellEntry {
 export function* xlsxWorksheetCellEntries(
   worksheet: WorkSheet,
 ): Generator<XlsxWorksheetCellEntry> {
-  if (Array.isArray(worksheet)) {
-    for (let row = 0; row < worksheet.length; row += 1) {
-      const cells = worksheet[row];
+  const denseRows = xlsxDenseRows(worksheet);
+  if (denseRows) {
+    for (let row = 0; row < denseRows.length; row += 1) {
+      const cells = denseRows[row];
       if (!Array.isArray(cells)) continue;
       for (let column = 0; column < cells.length; column += 1) {
         const cell = cells[column];

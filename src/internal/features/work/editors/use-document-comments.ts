@@ -1,6 +1,8 @@
 import type { Editor } from '@tiptap/core';
 import { useCallback, useEffect, useState } from 'react';
 import type { WorkOfficeCollaborationActor } from '../../../collaboration/office-collaboration';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   canInsertDocumentComment,
   collectDocumentCommentAnchors,
@@ -11,8 +13,7 @@ import {
 import { createWorkId } from '../work-templates';
 import type { WorkDocumentContent } from '../work-types';
 import type { DocumentCommentDraft } from './document-comment-composer';
-
-const CURRENT_COMMENT_AUTHOR = '我';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentCommentsController {
   canDeleteComment: (id: string) => boolean;
@@ -48,6 +49,7 @@ export function useDocumentComments({
   enabled?: boolean;
   onBeforeDraft?: () => void;
 }): DocumentCommentsController {
+  const messages = useOfficeMessages();
   const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState<DocumentCommentDraft | null>(null);
 
@@ -69,12 +71,12 @@ export function useDocumentComments({
       if (!enabled) return;
       editor?.commands.addDocumentCommentReply(id, {
         id: createWorkId('comment-reply'),
-        ...commentActor(actor),
+        ...commentActor(actor, messages),
         date: new Date().toISOString(),
         text,
       });
     },
-    [actor, editor, enabled],
+    [actor, editor, enabled, messages],
   );
 
   const toggleResolved = useCallback(
@@ -144,32 +146,45 @@ export function useDocumentComments({
 
   const submitDraft = useCallback(
     (text: string): string | null => {
-      if (!enabled || !editor || !draft)
-        return '批注草稿已经关闭，请重新选择文字。';
+      if (!enabled || !editor || !draft) {
+        return officeMessage(messages, 'document.comment.error.draftClosed');
+      }
       const range = documentCommentDraftRange(editor);
-      if (!range) return '所选文字已变化，请重新选择。';
+      if (!range) {
+        return officeMessage(
+          messages,
+          'document.comment.error.selectionChanged',
+        );
+      }
       const anchorText = editor.state.doc.textBetween(
         range.from,
         range.to,
         '\n',
       );
-      if (anchorText !== draft.anchorText)
-        return '所选文字已变化，请重新选择。';
+      if (anchorText !== draft.anchorText) {
+        return officeMessage(
+          messages,
+          'document.comment.error.selectionChanged',
+        );
+      }
       const comment = {
         id: draft.id,
-        ...commentActor(actor),
+        ...commentActor(actor, messages),
         date: new Date().toISOString(),
         text,
         resolved: false,
       };
       if (!editor.commands.insertDocumentCommentThread(comment, range)) {
-        return '所选文字已经包含批注，请重新选择。';
+        return officeMessage(
+          messages,
+          'document.comment.error.alreadyCommented',
+        );
       }
       setDraft(null);
       setOpen(true);
       return null;
     },
-    [actor, draft, editor, enabled],
+    [actor, draft, editor, enabled, messages],
   );
 
   const comments = editor
@@ -204,11 +219,16 @@ export function useDocumentComments({
   };
 }
 
-function commentActor(actor: WorkOfficeCollaborationActor | undefined): {
+function commentActor(
+  actor: WorkOfficeCollaborationActor | undefined,
+  messages: OfficeMessageCatalog,
+): {
   actorId?: string;
   author: string;
 } {
   return actor
     ? { actorId: actor.id, author: actor.name }
-    : { author: CURRENT_COMMENT_AUTHOR };
+    : {
+        author: officeMessage(messages, 'document.comment.defaultAuthor'),
+      };
 }

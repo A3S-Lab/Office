@@ -9,6 +9,7 @@ import type {
   WorkSpreadsheetImage,
   WorkSpreadsheetSheet,
 } from './work-types';
+import { officeMessage, resolveOfficeMessages } from '../../i18n/office-locale';
 import {
   spreadsheetColumnWidth,
   spreadsheetRowHeight,
@@ -147,12 +148,15 @@ export function createSpreadsheetChartFromSelection(
     selection ?? sheet.luckysheet_select_save?.at(-1),
   );
   if (!bounds) return null;
+  const messages = resolveOfficeMessages();
   const rowCount = bounds.endRow - bounds.startRow + 1;
   const columnCount = bounds.endColumn - bounds.startColumn + 1;
   const hasHeader = rowCount > 1 && selectionHasHeader(sheet, bounds);
   const dataStartRow = hasHeader ? bounds.startRow + 1 : bounds.startRow;
   const chartNumber = spreadsheetChartCount(content) + 1;
-  const chartName = `图表 ${chartNumber}`;
+  const chartName = officeMessage(messages, 'spreadsheet.chart.defaultName', {
+    n: String(chartNumber),
+  });
   let categoryReference: string | undefined;
   let categories: string[];
   let series: WorkSpreadsheetChartSeries[];
@@ -176,9 +180,14 @@ export function createSpreadsheetChartFromSelection(
       (column, index) => ({
         name: hasHeader
           ? displayCellValue(
-              sheet.data?.[bounds.startRow]?.[column]?.v ?? `系列 ${index + 1}`,
+              sheet.data?.[bounds.startRow]?.[column]?.v ??
+              officeMessage(messages, 'spreadsheet.chart.seriesDefaultName', {
+                n: String(index + 1),
+              }),
             )
-          : `系列 ${index + 1}`,
+          : officeMessage(messages, 'spreadsheet.chart.seriesDefaultName', {
+              n: String(index + 1),
+            }),
         nameReference: hasHeader
           ? cellRangeFormula(
               sheet.name,
@@ -213,9 +222,13 @@ export function createSpreadsheetChartFromSelection(
         name: hasHeader
           ? displayCellValue(
               sheet.data?.[bounds.startRow]?.[bounds.startColumn]?.v ??
-                '系列 1',
+                officeMessage(messages, 'spreadsheet.chart.seriesDefaultName', {
+                  n: '1',
+                }),
             )
-          : '系列 1',
+          : officeMessage(messages, 'spreadsheet.chart.seriesDefaultName', {
+            n: '1',
+          }),
         nameReference: hasHeader
           ? cellRangeFormula(
               sheet.name,
@@ -253,7 +266,10 @@ export function createSpreadsheetChartFromSelection(
   return {
     id: createWorkId('chart'),
     name: chartName,
-    altText: `${chartName}，来源于 ${sheet.name} 的当前选区`,
+    altText: officeMessage(messages, 'spreadsheet.chart.altTextFromSelection', {
+      name: chartName,
+      sheet: sheet.name,
+    }),
     type: 'column',
     title: chartName,
     categories,

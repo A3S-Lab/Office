@@ -22,7 +22,9 @@ import {
   DocumentCitationSourceForm,
 } from './document-citation-source-form';
 import { OfficeSelect, useOfficeDialog } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { DocumentTaskPane } from './document-task-pane';
+import { officeMessage } from '../../../i18n/office-locale';
 
 export function DocumentCitationsPanel({
   editor,
@@ -35,6 +37,7 @@ export function DocumentCitationsPanel({
   onClose: () => void;
   onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const messages = useOfficeMessages();
   const bibliography = content.bibliography ?? createDocumentBibliography();
   const officeDialog = useOfficeDialog();
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -115,9 +118,15 @@ export function DocumentCitationsPanel({
     if (
       dirty &&
       !(await officeDialog.confirm({
-        title: '放弃未保存的更改？',
-        description: '当前文献尚未保存。',
-        confirmLabel: '放弃更改',
+        title: officeMessage(messages, 'document.citation.discard.title'),
+        description: officeMessage(
+          messages,
+          'document.citation.discard.description',
+        ),
+        confirmLabel: officeMessage(
+          messages,
+          'document.citation.discard.confirm',
+        ),
         confirmTone: 'danger',
         restoreFocusTarget: restoreDraftFocusTarget,
       }))
@@ -143,12 +152,15 @@ export function DocumentCitationsPanel({
     if (!isValidDocumentCitationTag(tag)) {
       reportValidationError(
         'tag',
-        '简称只能使用字母、数字、下划线及 . : + -，长度不超过 80。',
+        officeMessage(messages, 'document.citation.error.tagFormat'),
       );
       return;
     }
     if (!draft.title.trim()) {
-      reportValidationError('title', '请输入文献标题。');
+      reportValidationError(
+        'title',
+        officeMessage(messages, 'document.citation.error.titleRequired'),
+      );
       return;
     }
     if (
@@ -158,7 +170,10 @@ export function DocumentCitationsPanel({
           source.tag.toLowerCase() === tag.toLowerCase(),
       )
     ) {
-      reportValidationError('tag', '已经存在相同的简称。');
+      reportValidationError(
+        'tag',
+        officeMessage(messages, 'document.citation.error.tagDuplicate'),
+      );
       return;
     }
     const existing = bibliography.sources.find(
@@ -215,11 +230,20 @@ export function DocumentCitationsPanel({
       startNewSource();
       return;
     }
-    const sourceTitle = selectedSource?.title || '当前文献';
+    const sourceTitle =
+      selectedSource?.title ||
+      officeMessage(messages, 'document.citation.delete.fallbackTitle');
     const confirmed = await officeDialog.confirm({
-      title: '删除文献？',
-      description: `“${sourceTitle}”将从文献库中删除，文档中的引用可能无法识别。`,
-      confirmLabel: '删除',
+      title: officeMessage(messages, 'document.citation.delete.title'),
+      description: officeMessage(
+        messages,
+        'document.citation.delete.description',
+        { title: sourceTitle },
+      ),
+      confirmLabel: officeMessage(
+        messages,
+        'document.citation.delete.confirm',
+      ),
       confirmTone: 'danger',
       restoreFocusTarget: dirty ? restoreDraftFocusTarget : undefined,
     });
@@ -246,16 +270,27 @@ export function DocumentCitationsPanel({
     <>
       <DocumentTaskPane
         className="work-document-citations-panel"
-        title="文献库"
-        description={`${bibliography.sources.length} 条文献${dirty ? ' · 有未保存更改' : ''}`}
-        closeLabel="关闭文献库"
+        title={officeMessage(messages, 'document.citation.panel.title')}
+        description={officeMessage(
+          messages,
+          dirty
+            ? 'document.citation.panel.descriptionDirty'
+            : 'document.citation.panel.description',
+          { count: String(bibliography.sources.length) },
+        )}
+        closeLabel={officeMessage(messages, 'document.citation.panel.close')}
         onClose={onClose}
       >
         <div className="work-document-citation-actions">
           <div className="work-office-field">
-            <span>样式</span>
+            <span>
+              {officeMessage(messages, 'document.citation.panel.style')}
+            </span>
             <OfficeSelect
-              ariaLabel="引文样式"
+              ariaLabel={officeMessage(
+                messages,
+                'document.citation.panel.styleAria',
+              )}
               value={documentCitationStyle(bibliography.style)}
               options={[
                 { value: 'apa', label: 'APA' },
@@ -268,7 +303,10 @@ export function DocumentCitationsPanel({
           </div>
           <Button
             tone="secondary"
-            aria-label="插入参考文献"
+            aria-label={officeMessage(
+              messages,
+              'document.citation.panel.insertBibliography',
+            )}
             disabled={!bibliography.sources.length}
             onClick={() =>
               editor
@@ -279,7 +317,10 @@ export function DocumentCitationsPanel({
             }
           >
             <BookMarked size={13} />
-            插入参考文献
+            {officeMessage(
+              messages,
+              'document.citation.panel.insertBibliography',
+            )}
           </Button>
         </div>
         <div
@@ -287,9 +328,19 @@ export function DocumentCitationsPanel({
           onFocusCapture={rememberDraftFocus}
         >
           {bibliography.sources.length > 0 && (
-            <aside aria-label="文献列表">
+            <aside
+              aria-label={officeMessage(
+                messages,
+                'document.citation.panel.listAria',
+              )}
+            >
               <div className="work-document-citation-list-heading">
-                <strong>文献</strong>
+                <strong>
+                  {officeMessage(
+                    messages,
+                    'document.citation.panel.listHeading',
+                  )}
+                </strong>
                 <Button
                   className="create"
                   size="compact"
@@ -297,7 +348,7 @@ export function DocumentCitationsPanel({
                   onClick={() => void continueAfterDiscard(startNewSource)}
                 >
                   <Plus size={13} />
-                  新建
+                  {officeMessage(messages, 'document.citation.panel.create')}
                 </Button>
               </div>
               <div className="work-document-citation-source-list">
@@ -311,9 +362,27 @@ export function DocumentCitationsPanel({
                       void continueAfterDiscard(() => selectSource(source))
                     }
                   >
-                    <strong>{source.title || '未命名文献'}</strong>
+                    <strong>
+                      {source.title ||
+                        officeMessage(
+                          messages,
+                          'document.citation.panel.untitled',
+                        )}
+                    </strong>
                     <span>
-                      {source.tag} · {source.year || '无年份'}
+                      {officeMessage(
+                        messages,
+                        'document.citation.panel.sourceMeta',
+                        {
+                          tag: source.tag,
+                          year:
+                            source.year ||
+                            officeMessage(
+                              messages,
+                              'document.citation.panel.noYear',
+                            ),
+                        },
+                      )}
                     </span>
                   </button>
                 ))}

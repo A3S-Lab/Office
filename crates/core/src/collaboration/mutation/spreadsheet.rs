@@ -6,13 +6,20 @@ use super::super::{
     NativeOfficeCollaborationSpreadsheetCellChange, NativeOfficeCollaborationSpreadsheetSheet,
 };
 
+mod addresses;
 mod cell;
 mod cell_text;
 mod find;
 mod json;
+mod sort;
 mod state;
+mod structure;
+mod structured_reference;
+mod table;
+mod table_appearance;
 
 pub(in crate::collaboration) use find::find_spreadsheet_text;
+pub(in crate::collaboration) use table::table_origin;
 
 const MAX_SPREADSHEET_ROWS: u32 = 1_048_576;
 const MAX_SPREADSHEET_COLUMNS: u32 = 16_384;
@@ -22,6 +29,15 @@ const MAX_SPREADSHEET_DENSE_CELLS: u64 = 1_000_000;
 pub(super) fn validate_spreadsheet_mutation(
     mutation: &NativeOfficeCollaborationMutation,
 ) -> UseResult<()> {
+    if structure::is_structure_mutation(mutation) {
+        return structure::validate_structure_mutation(mutation);
+    }
+    if sort::is_sort_mutation(mutation) {
+        return sort::validate_sort_mutation(mutation);
+    }
+    if table::is_table_mutation(mutation) {
+        return table::validate_table_mutation(mutation);
+    }
     cell::validate_cell_mutation(mutation)
 }
 
@@ -55,6 +71,15 @@ pub(super) fn apply_spreadsheet_mutation(
     manifest: &NativeOfficeCollaborationManifest,
     mutation: &NativeOfficeCollaborationMutation,
 ) -> UseResult<()> {
+    if structure::is_structure_mutation(mutation) {
+        return structure::apply_structure_mutation(doc, manifest, mutation);
+    }
+    if sort::is_sort_mutation(mutation) {
+        return sort::apply_sort_mutation(doc, manifest, mutation);
+    }
+    if table::is_table_mutation(mutation) {
+        return table::apply_table_mutation(doc, manifest, mutation);
+    }
     cell::apply_cell_mutation(doc, manifest, mutation)
 }
 

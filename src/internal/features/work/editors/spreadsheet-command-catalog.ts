@@ -1,19 +1,24 @@
-import { spreadsheetNumberFormatPresetLabels } from './spreadsheet-number-format';
+import { resolveOfficeMessages } from '../../../i18n/office-locale';
 
+const spreadsheetCommandMessages = resolveOfficeMessages();
 export const spreadsheetRibbonTabs = [
-  { id: 'home', label: '开始' },
-  { id: 'insert', label: '插入' },
-  { id: 'pageLayout', label: '页面布局', compactLabel: '布局' },
-  { id: 'formulas', label: '公式' },
-  { id: 'data', label: '数据' },
-  { id: 'review', label: '审阅' },
-  { id: 'view', label: '视图' },
+  { id: 'home', label: spreadsheetCommandMessages['spreadsheet.ribbon.home'] },
+  { id: 'insert', label: spreadsheetCommandMessages['spreadsheet.ribbon.insert'] },
+  {
+    id: 'pageLayout',
+    label: spreadsheetCommandMessages['spreadsheet.ribbon.pageLayout'],
+    compactLabel: spreadsheetCommandMessages['spreadsheet.ribbon.pageLayout.compact'],
+  },
+  { id: 'formulas', label: spreadsheetCommandMessages['spreadsheet.ribbon.formulas'] },
+  { id: 'data', label: spreadsheetCommandMessages['spreadsheet.ribbon.data'] },
+  { id: 'review', label: spreadsheetCommandMessages['spreadsheet.ribbon.review'] },
+  { id: 'view', label: spreadsheetCommandMessages['spreadsheet.ribbon.view'] },
 ] as const;
 
 export const spreadsheetTableDesignRibbonTab = {
   id: 'tableDesign',
-  label: '表格设计',
-  compactLabel: '设计',
+  label: spreadsheetCommandMessages['spreadsheet.ribbon.tableDesign'],
+  compactLabel: spreadsheetCommandMessages['spreadsheet.ribbon.tableDesign.compact'],
   contextual: true,
 } as const;
 
@@ -46,7 +51,7 @@ export interface SpreadsheetCommandDefinition {
 export const spreadsheetCommandCatalog = {
   undo: {
     id: 'history.undo',
-    label: '撤销',
+    label: spreadsheetCommandMessages['spreadsheet.command.undo'],
     location: { area: 'quickAccess' },
     shortcut: {
       label: 'Cmd/Ctrl+Z',
@@ -56,17 +61,17 @@ export const spreadsheetCommandCatalog = {
   },
   redo: {
     id: 'history.redo',
-    label: '重做',
+    label: spreadsheetCommandMessages['spreadsheet.command.redo'],
     location: { area: 'quickAccess' },
     shortcut: {
-      label: 'Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y',
+      label: 'Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y',
       aria: 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
       editor: ['Mod-Shift-z', 'Mod-y'],
     },
   },
   paste: {
     id: 'clipboard.paste',
-    label: '粘贴',
+    label: spreadsheetCommandMessages['spreadsheet.command.paste'],
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
     shortcut: {
       label: 'Cmd/Ctrl+V',
@@ -76,7 +81,7 @@ export const spreadsheetCommandCatalog = {
   },
   pasteSpecial: {
     id: 'clipboard.pasteSpecial',
-    label: '选择性粘贴',
+    label: spreadsheetCommandMessages['spreadsheet.command.pasteSpecial'],
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
     shortcut: {
       label: 'Cmd/Ctrl+Alt+V',
@@ -86,7 +91,7 @@ export const spreadsheetCommandCatalog = {
   },
   cut: {
     id: 'clipboard.cut',
-    label: '剪切',
+    label: spreadsheetCommandMessages['spreadsheet.command.cut'],
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
     shortcut: {
       label: 'Cmd/Ctrl+X',
@@ -96,7 +101,7 @@ export const spreadsheetCommandCatalog = {
   },
   copy: {
     id: 'clipboard.copy',
-    label: '复制',
+    label: spreadsheetCommandMessages['spreadsheet.command.copy'],
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
     shortcut: {
       label: 'Cmd/Ctrl+C',
@@ -106,42 +111,42 @@ export const spreadsheetCommandCatalog = {
   },
   formatPainter: {
     id: 'clipboard.formatPainter',
-    label: '格式刷',
+    label: spreadsheetCommandMessages['spreadsheet.command.formatPainter'],
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
   },
   bold: {
     id: 'font.bold',
-    label: '加粗',
+    label: spreadsheetCommandMessages['spreadsheet.command.bold'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+B 或 Ctrl+2',
+      label: 'Cmd/Ctrl+B or Ctrl+2',
       aria: 'Control+B Meta+B Control+2',
       editor: ['Mod-b', 'Control-2'],
     },
   },
   italic: {
     id: 'font.italic',
-    label: '斜体',
+    label: spreadsheetCommandMessages['spreadsheet.command.italic'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+I 或 Ctrl+3',
+      label: 'Cmd/Ctrl+I or Ctrl+3',
       aria: 'Control+I Meta+I Control+3',
       editor: ['Mod-i', 'Control-3'],
     },
   },
   underline: {
     id: 'font.underline',
-    label: '下划线',
+    label: spreadsheetCommandMessages['spreadsheet.command.underline'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+U 或 Ctrl+4',
+      label: 'Cmd/Ctrl+U or Ctrl+4',
       aria: 'Control+U Meta+U Control+4',
       editor: ['Mod-u', 'Control-4'],
     },
   },
   strike: {
     id: 'font.strike',
-    label: '删除线',
+    label: spreadsheetCommandMessages['spreadsheet.command.strike'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+5',
@@ -151,27 +156,27 @@ export const spreadsheetCommandCatalog = {
   },
   growFont: {
     id: 'font.grow',
-    label: '增大字号',
+    label: spreadsheetCommandMessages['spreadsheet.command.growFont'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+Shift+. 或 Cmd/Ctrl+]',
+      label: 'Cmd/Ctrl+Shift+. or Cmd/Ctrl+]',
       aria: 'Control+Shift+. Meta+Shift+. Control+] Meta+]',
       editor: ['Mod-Shift-.', 'Mod-]'],
     },
   },
   shrinkFont: {
     id: 'font.shrink',
-    label: '减小字号',
+    label: spreadsheetCommandMessages['spreadsheet.command.shrinkFont'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+Shift+, 或 Cmd/Ctrl+[',
+      label: 'Cmd/Ctrl+Shift+, or Cmd/Ctrl+[',
       aria: 'Control+Shift+, Meta+Shift+, Control+[ Meta+[',
       editor: ['Mod-Shift-,', 'Mod-['],
     },
   },
   numberFormatGeneral: {
     id: 'number.general',
-    label: spreadsheetNumberFormatPresetLabels.general,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatGeneral'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+~',
@@ -181,7 +186,7 @@ export const spreadsheetCommandCatalog = {
   },
   numberFormatNumber: {
     id: 'number.number',
-    label: spreadsheetNumberFormatPresetLabels.number,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatNumber'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+!',
@@ -191,7 +196,7 @@ export const spreadsheetCommandCatalog = {
   },
   numberFormatCurrency: {
     id: 'number.currency',
-    label: spreadsheetNumberFormatPresetLabels.currency,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatCurrency'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+$',
@@ -201,12 +206,12 @@ export const spreadsheetCommandCatalog = {
   },
   numberFormatAccounting: {
     id: 'number.accounting',
-    label: spreadsheetNumberFormatPresetLabels.accounting,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatAccounting'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
   numberFormatPercent: {
     id: 'number.percent',
-    label: spreadsheetNumberFormatPresetLabels.percent,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatPercent'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+%',
@@ -216,7 +221,7 @@ export const spreadsheetCommandCatalog = {
   },
   numberFormatDate: {
     id: 'number.date',
-    label: spreadsheetNumberFormatPresetLabels.date,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatDate'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+#',
@@ -226,7 +231,7 @@ export const spreadsheetCommandCatalog = {
   },
   numberFormatTime: {
     id: 'number.time',
-    label: spreadsheetNumberFormatPresetLabels.time,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatTime'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+@',
@@ -236,7 +241,7 @@ export const spreadsheetCommandCatalog = {
   },
   numberFormatScientific: {
     id: 'number.scientific',
-    label: spreadsheetNumberFormatPresetLabels.scientific,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatScientific'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+^',
@@ -246,27 +251,27 @@ export const spreadsheetCommandCatalog = {
   },
   numberFormatFraction: {
     id: 'number.fraction',
-    label: spreadsheetNumberFormatPresetLabels.fraction,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatFraction'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
   numberFormatText: {
     id: 'number.text',
-    label: spreadsheetNumberFormatPresetLabels.text,
+    label: spreadsheetCommandMessages['spreadsheet.command.numberFormatText'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
   decreaseDecimalPlaces: {
     id: 'number.decreaseDecimalPlaces',
-    label: '减少小数位',
+    label: spreadsheetCommandMessages['spreadsheet.command.decreaseDecimalPlaces'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
   increaseDecimalPlaces: {
     id: 'number.increaseDecimalPlaces',
-    label: '增加小数位',
+    label: spreadsheetCommandMessages['spreadsheet.command.increaseDecimalPlaces'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
   },
   insertCurrentDate: {
     id: 'number.insertCurrentDate',
-    label: '插入当前日期',
+    label: spreadsheetCommandMessages['spreadsheet.command.insertCurrentDate'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Ctrl+;',
@@ -276,7 +281,7 @@ export const spreadsheetCommandCatalog = {
   },
   insertCurrentTime: {
     id: 'number.insertCurrentTime',
-    label: '插入当前时间',
+    label: spreadsheetCommandMessages['spreadsheet.command.insertCurrentTime'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Ctrl+Shift+;',
@@ -286,7 +291,7 @@ export const spreadsheetCommandCatalog = {
   },
   formatCells: {
     id: 'number.formatCells',
-    label: '设置单元格格式',
+    label: spreadsheetCommandMessages['spreadsheet.command.formatCells'],
     location: { area: 'ribbon', tab: 'home', group: 'number' },
     shortcut: {
       label: 'Cmd/Ctrl+1',
@@ -296,7 +301,7 @@ export const spreadsheetCommandCatalog = {
   },
   formatCellsFont: {
     id: 'font.formatCellsFont',
-    label: '设置字体格式',
+    label: spreadsheetCommandMessages['spreadsheet.command.formatCellsFont'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+F',
@@ -306,7 +311,7 @@ export const spreadsheetCommandCatalog = {
   },
   formatCellsFontSize: {
     id: 'font.formatCellsFontSize',
-    label: '设置字号格式',
+    label: spreadsheetCommandMessages['spreadsheet.command.formatCellsFontSize'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+P',
@@ -316,27 +321,27 @@ export const spreadsheetCommandCatalog = {
   },
   borderTop: {
     id: 'font.borderTop',
-    label: '上框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderTop'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderBottom: {
     id: 'font.borderBottom',
-    label: '下框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderBottom'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderLeft: {
     id: 'font.borderLeft',
-    label: '左框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderLeft'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderRight: {
     id: 'font.borderRight',
-    label: '右框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderRight'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderNone: {
     id: 'font.borderNone',
-    label: '无框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderNone'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+_',
@@ -346,12 +351,12 @@ export const spreadsheetCommandCatalog = {
   },
   borderAll: {
     id: 'font.borderAll',
-    label: '所有框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderAll'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderOutside: {
     id: 'font.borderOutside',
-    label: '外侧框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderOutside'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+&',
@@ -361,62 +366,62 @@ export const spreadsheetCommandCatalog = {
   },
   borderInside: {
     id: 'font.borderInside',
-    label: '内部框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderInside'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderHorizontal: {
     id: 'font.borderHorizontal',
-    label: '内部横框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderHorizontal'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderVertical: {
     id: 'font.borderVertical',
-    label: '内部竖框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderVertical'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderDiagonalDown: {
     id: 'font.borderDiagonalDown',
-    label: '斜下框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderDiagonalDown'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   borderDiagonalUp: {
     id: 'font.borderDiagonalUp',
-    label: '斜上框线',
+    label: spreadsheetCommandMessages['spreadsheet.command.borderDiagonalUp'],
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   textOrientationHorizontal: {
     id: 'alignment.textOrientation.horizontal',
-    label: '横排文字',
+    label: spreadsheetCommandMessages['spreadsheet.command.textOrientationHorizontal'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   textOrientationAngleCounterclockwise: {
     id: 'alignment.textOrientation.angleCounterclockwise',
-    label: '逆时针倾斜',
+    label: spreadsheetCommandMessages['spreadsheet.command.textOrientationAngleCounterclockwise'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   textOrientationAngleClockwise: {
     id: 'alignment.textOrientation.angleClockwise',
-    label: '顺时针倾斜',
+    label: spreadsheetCommandMessages['spreadsheet.command.textOrientationAngleClockwise'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   textOrientationVertical: {
     id: 'alignment.textOrientation.vertical',
-    label: '竖排文字',
+    label: spreadsheetCommandMessages['spreadsheet.command.textOrientationVertical'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   textOrientationRotateUp: {
     id: 'alignment.textOrientation.rotateUp',
-    label: '向上旋转文字',
+    label: spreadsheetCommandMessages['spreadsheet.command.textOrientationRotateUp'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   textOrientationRotateDown: {
     id: 'alignment.textOrientation.rotateDown',
-    label: '向下旋转文字',
+    label: spreadsheetCommandMessages['spreadsheet.command.textOrientationRotateDown'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   mergeAndCenter: {
     id: 'alignment.mergeAndCenter',
-    label: '合并居中',
+    label: spreadsheetCommandMessages['spreadsheet.command.mergeAndCenter'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
     shortcut: {
       label: 'Ctrl+M',
@@ -426,67 +431,67 @@ export const spreadsheetCommandCatalog = {
   },
   mergeCells: {
     id: 'alignment.mergeCells',
-    label: '合并单元格',
+    label: spreadsheetCommandMessages['spreadsheet.command.mergeCells'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   mergeAcross: {
     id: 'alignment.mergeAcross',
-    label: '跨行合并',
+    label: spreadsheetCommandMessages['spreadsheet.command.mergeAcross'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   unmergeCells: {
     id: 'alignment.unmergeCells',
-    label: '取消合并单元格',
+    label: spreadsheetCommandMessages['spreadsheet.command.unmergeCells'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   unmergeAndFill: {
     id: 'alignment.unmergeAndFill',
-    label: '取消合并并填充',
+    label: spreadsheetCommandMessages['spreadsheet.command.unmergeAndFill'],
     location: { area: 'ribbon', tab: 'home', group: 'alignment' },
   },
   conditionalFormatting: {
     id: 'styles.conditionalFormatting',
-    label: '条件格式',
+    label: spreadsheetCommandMessages['spreadsheet.command.conditionalFormatting'],
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
   },
   cellStyles: {
     id: 'styles.cellStyles',
-    label: '单元格样式',
+    label: spreadsheetCommandMessages['spreadsheet.command.cellStyles'],
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
   },
   insertRowsAbove: {
     id: 'cells.insertRowsAbove',
-    label: '在上方插入行',
+    label: spreadsheetCommandMessages['spreadsheet.command.insertRowsAbove'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
   insertRowsBelow: {
     id: 'cells.insertRowsBelow',
-    label: '在下方插入行',
+    label: spreadsheetCommandMessages['spreadsheet.command.insertRowsBelow'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
   insertColumnsLeft: {
     id: 'cells.insertColumnsLeft',
-    label: '在左侧插入列',
+    label: spreadsheetCommandMessages['spreadsheet.command.insertColumnsLeft'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
   insertColumnsRight: {
     id: 'cells.insertColumnsRight',
-    label: '在右侧插入列',
+    label: spreadsheetCommandMessages['spreadsheet.command.insertColumnsRight'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
   deleteRows: {
     id: 'cells.deleteRows',
-    label: '删除所选行',
+    label: spreadsheetCommandMessages['spreadsheet.command.deleteRows'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
   deleteColumns: {
     id: 'cells.deleteColumns',
-    label: '删除所选列',
+    label: spreadsheetCommandMessages['spreadsheet.command.deleteColumns'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
   hideRows: {
     id: 'cells.hideRows',
-    label: '隐藏所选行',
+    label: spreadsheetCommandMessages['spreadsheet.command.hideRows'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
     shortcut: {
       label: 'Cmd/Ctrl+9',
@@ -496,7 +501,7 @@ export const spreadsheetCommandCatalog = {
   },
   hideColumns: {
     id: 'cells.hideColumns',
-    label: '隐藏所选列',
+    label: spreadsheetCommandMessages['spreadsheet.command.hideColumns'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
     shortcut: {
       label: 'Cmd/Ctrl+0',
@@ -506,7 +511,7 @@ export const spreadsheetCommandCatalog = {
   },
   unhideRows: {
     id: 'cells.unhideRows',
-    label: '取消隐藏所选行',
+    label: spreadsheetCommandMessages['spreadsheet.command.unhideRows'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+9',
@@ -516,7 +521,7 @@ export const spreadsheetCommandCatalog = {
   },
   unhideColumns: {
     id: 'cells.unhideColumns',
-    label: '取消隐藏所选列',
+    label: spreadsheetCommandMessages['spreadsheet.command.unhideColumns'],
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+0',
@@ -526,7 +531,7 @@ export const spreadsheetCommandCatalog = {
   },
   autoSum: {
     id: 'editing.autoSum',
-    label: '自动求和',
+    label: spreadsheetCommandMessages['spreadsheet.command.autoSum'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: 'Alt+=',
@@ -536,27 +541,27 @@ export const spreadsheetCommandCatalog = {
   },
   autoAverage: {
     id: 'editing.autoAverage',
-    label: '平均值',
+    label: spreadsheetCommandMessages['spreadsheet.command.autoAverage'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   autoCount: {
     id: 'editing.autoCount',
-    label: '计数',
+    label: spreadsheetCommandMessages['spreadsheet.command.autoCount'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   autoMaximum: {
     id: 'editing.autoMaximum',
-    label: '最大值',
+    label: spreadsheetCommandMessages['spreadsheet.command.autoMaximum'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   autoMinimum: {
     id: 'editing.autoMinimum',
-    label: '最小值',
+    label: spreadsheetCommandMessages['spreadsheet.command.autoMinimum'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   fillDown: {
     id: 'editing.fillDown',
-    label: '向下填充',
+    label: spreadsheetCommandMessages['spreadsheet.command.fillDown'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: 'Cmd/Ctrl+D',
@@ -566,7 +571,7 @@ export const spreadsheetCommandCatalog = {
   },
   fillRight: {
     id: 'editing.fillRight',
-    label: '向右填充',
+    label: spreadsheetCommandMessages['spreadsheet.command.fillRight'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: 'Cmd/Ctrl+R',
@@ -576,17 +581,17 @@ export const spreadsheetCommandCatalog = {
   },
   fillUp: {
     id: 'editing.fillUp',
-    label: '向上填充',
+    label: spreadsheetCommandMessages['spreadsheet.command.fillUp'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   fillLeft: {
     id: 'editing.fillLeft',
-    label: '向左填充',
+    label: spreadsheetCommandMessages['spreadsheet.command.fillLeft'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   copyFormulaFromAbove: {
     id: 'editing.copyFormulaFromAbove',
-    label: '复制上方公式',
+    label: spreadsheetCommandMessages['spreadsheet.command.copyFormulaFromAbove'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: "Ctrl+'",
@@ -596,7 +601,7 @@ export const spreadsheetCommandCatalog = {
   },
   copyValueFromAbove: {
     id: 'editing.copyValueFromAbove',
-    label: '复制上方值',
+    label: spreadsheetCommandMessages['spreadsheet.command.copyValueFromAbove'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: "Ctrl+Shift+'",
@@ -606,17 +611,17 @@ export const spreadsheetCommandCatalog = {
   },
   clearAll: {
     id: 'editing.clearAll',
-    label: '清除全部',
+    label: spreadsheetCommandMessages['spreadsheet.command.clearAll'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   clearFormats: {
     id: 'editing.clearFormats',
-    label: '清除格式',
+    label: spreadsheetCommandMessages['spreadsheet.command.clearFormats'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   clearContents: {
     id: 'editing.clearContents',
-    label: '清除内容',
+    label: spreadsheetCommandMessages['spreadsheet.command.clearContents'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: 'Delete/Backspace',
@@ -626,17 +631,17 @@ export const spreadsheetCommandCatalog = {
   },
   clearComments: {
     id: 'editing.clearComments',
-    label: '清除批注',
+    label: spreadsheetCommandMessages['spreadsheet.command.clearComments'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   clearHyperlinks: {
     id: 'editing.clearHyperlinks',
-    label: '清除超链接',
+    label: spreadsheetCommandMessages['spreadsheet.command.clearHyperlinks'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   find: {
     id: 'editing.find',
-    label: '查找',
+    label: spreadsheetCommandMessages['spreadsheet.command.find'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: 'Cmd/Ctrl+F',
@@ -646,27 +651,27 @@ export const spreadsheetCommandCatalog = {
   },
   findAndSelect: {
     id: 'editing.findAndSelect',
-    label: '查找和选择',
+    label: spreadsheetCommandMessages['spreadsheet.command.findAndSelect'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
   },
   goTo: {
     id: 'editing.goTo',
-    label: '定位',
+    label: spreadsheetCommandMessages['spreadsheet.command.goTo'],
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
-      label: 'Ctrl+G 或 F5',
+      label: 'Ctrl+G or F5',
       aria: 'Control+G F5',
       editor: ['Control-g', 'F5'],
     },
   },
   insertChart: {
     id: 'insert.chart',
-    label: '插入图表',
+    label: spreadsheetCommandMessages['spreadsheet.command.insertChart'],
     location: { area: 'ribbon', tab: 'insert', group: 'charts' },
   },
   table: {
     id: 'insert.table',
-    label: '表格',
+    label: spreadsheetCommandMessages['spreadsheet.command.table'],
     location: { area: 'ribbon', tab: 'insert', group: 'tables' },
     shortcut: {
       label: 'Cmd/Ctrl+T',
@@ -676,7 +681,7 @@ export const spreadsheetCommandCatalog = {
   },
   hyperlink: {
     id: 'insert.hyperlink',
-    label: '超链接',
+    label: spreadsheetCommandMessages['spreadsheet.command.hyperlink'],
     location: { area: 'ribbon', tab: 'insert', group: 'links' },
     shortcut: {
       label: 'Cmd/Ctrl+K',
@@ -686,43 +691,43 @@ export const spreadsheetCommandCatalog = {
   },
   printSettings: {
     id: 'pageLayout.printSettings',
-    label: '打印设置',
+    label: spreadsheetCommandMessages['spreadsheet.command.printSettings'],
     location: { area: 'ribbon', tab: 'pageLayout', group: 'pageSetup' },
   },
   nameManager: {
     id: 'formulas.nameManager',
-    label: '名称管理器',
+    label: spreadsheetCommandMessages['spreadsheet.command.nameManager'],
     location: { area: 'ribbon', tab: 'formulas', group: 'definedNames' },
   },
   formulaManager: {
     id: 'formulas.manager',
-    label: '公式与计算',
+    label: spreadsheetCommandMessages['spreadsheet.command.formulaManager'],
     location: { area: 'ribbon', tab: 'formulas', group: 'calculation' },
   },
   recalculateWorkbook: {
     id: 'formulas.recalculateWorkbook',
-    label: '重新计算工作簿',
+    label: spreadsheetCommandMessages['spreadsheet.command.recalculateWorkbook'],
     location: { area: 'ribbon', tab: 'formulas', group: 'calculation' },
     shortcut: { label: 'F9', aria: 'F9', editor: ['F9'] },
   },
   sortAscending: {
     id: 'data.sortAscending',
-    label: '升序',
+    label: spreadsheetCommandMessages['spreadsheet.command.sortAscending'],
     location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
   },
   sortDescending: {
     id: 'data.sortDescending',
-    label: '降序',
+    label: spreadsheetCommandMessages['spreadsheet.command.sortDescending'],
     location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
   },
   customSort: {
     id: 'data.customSort',
-    label: '自定义排序',
+    label: spreadsheetCommandMessages['spreadsheet.command.customSort'],
     location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
   },
   autoFilter: {
     id: 'data.autoFilter',
-    label: '自动筛选',
+    label: spreadsheetCommandMessages['spreadsheet.command.autoFilter'],
     location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+L',
@@ -737,32 +742,32 @@ export const spreadsheetCommandCatalog = {
   },
   dataValidation: {
     id: 'data.validation',
-    label: '数据验证',
+    label: spreadsheetCommandMessages['spreadsheet.command.dataValidation'],
     location: { area: 'ribbon', tab: 'data', group: 'dataTools' },
   },
   pivotTable: {
     id: 'data.pivotTable',
-    label: '数据透视表',
+    label: spreadsheetCommandMessages['spreadsheet.command.pivotTable'],
     location: { area: 'ribbon', tab: 'data', group: 'analysis' },
   },
   protectSheet: {
     id: 'review.protectSheet',
-    label: '工作表保护',
+    label: spreadsheetCommandMessages['spreadsheet.command.protectSheet'],
     location: { area: 'ribbon', tab: 'review', group: 'protection' },
   },
   gridLines: {
     id: 'view.gridLines',
-    label: '网格线',
+    label: spreadsheetCommandMessages['spreadsheet.command.gridLines'],
     location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
   },
   formulaBar: {
     id: 'view.formulaBar',
-    label: '编辑栏',
+    label: spreadsheetCommandMessages['spreadsheet.command.formulaBar'],
     location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
   },
   showFormulas: {
     id: 'view.showFormulas',
-    label: '显示公式',
+    label: spreadsheetCommandMessages['spreadsheet.command.showFormulas'],
     location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
     shortcut: {
       label: 'Ctrl+`',
@@ -772,12 +777,12 @@ export const spreadsheetCommandCatalog = {
   },
   headings: {
     id: 'view.headings',
-    label: '标题',
+    label: spreadsheetCommandMessages['spreadsheet.command.headings'],
     location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
   },
   freezePanes: {
     id: 'view.freezePanes',
-    label: '冻结窗格',
+    label: spreadsheetCommandMessages['spreadsheet.command.freezePanes'],
     location: { area: 'ribbon', tab: 'view', group: 'window' },
   },
 } as const satisfies Record<string, SpreadsheetCommandDefinition>;

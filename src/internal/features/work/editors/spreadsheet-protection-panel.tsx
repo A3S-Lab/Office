@@ -1,6 +1,7 @@
 import type { Sheet } from '@fortune-sheet/core';
 import { KeyRound, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
 import {
   Button,
@@ -28,6 +29,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { useOfficeDraft } from './use-office-draft';
 
 interface SpreadsheetProtectionPanelProps {
@@ -46,6 +48,7 @@ export function SpreadsheetProtectionPanel({
   content,
   onChange,
 }: SpreadsheetProtectionPanelProps) {
+  const messages = useOfficeMessages();
   const sheets = content.sheets.filter(
     (sheet): sheet is Sheet & { id: string } => Boolean(sheet.id),
   );
@@ -86,7 +89,7 @@ export function SpreadsheetProtectionPanel({
       <StateView
         className="work-office-panel-empty work-spreadsheet-protection-empty"
         size="compact"
-        title="当前工作簿没有可保护的工作表"
+        title={officeMessage(messages, 'spreadsheet.protection.emptyTitle')}
       />
     );
   }
@@ -102,7 +105,7 @@ export function SpreadsheetProtectionPanel({
   const changeSheet = (nextSheetId: string) => {
     if (nextSheetId === sheetId) return;
     if (dirty) {
-      setError('当前区域有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.protection.error.unsaved'));
       return;
     }
     setSheetId(nextSheetId);
@@ -113,7 +116,7 @@ export function SpreadsheetProtectionPanel({
   const selectRange = (index: number) => {
     if (index === selectedIndex) return;
     if (dirty) {
-      setError('当前区域有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.protection.error.unsaved'));
       return;
     }
     const range = ranges[index];
@@ -124,7 +127,7 @@ export function SpreadsheetProtectionPanel({
   };
   const startNew = () => {
     if (dirty) {
-      setError('当前区域有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.protection.error.unsaved'));
       return;
     }
     setSelectedIndex(null);
@@ -136,11 +139,11 @@ export function SpreadsheetProtectionPanel({
     const name = draft.name.trim();
     const parsed = parseSpreadsheetCellRanges(draft.reference);
     if (!name) {
-      setError('请输入可编辑区域名称。');
+      setError(officeMessage(messages, 'spreadsheet.protection.error.nameRequired'));
       return;
     }
     if (!parsed) {
-      setError('请输入有效的单元格范围，例如 B2:B20 或 B2:B20,D2:D20。');
+      setError(officeMessage(messages, 'spreadsheet.protection.error.invalidRange'));
       return;
     }
     if (
@@ -150,11 +153,11 @@ export function SpreadsheetProtectionPanel({
           range.name.trim().toLowerCase() === name.toLowerCase(),
       )
     ) {
-      setError('当前工作表中已经存在这个区域名称。');
+      setError(officeMessage(messages, 'spreadsheet.protection.error.duplicateName'));
       return;
     }
     if (editableRangeCellCount(parsed) > MAX_EDITABLE_RANGE_CELLS) {
-      setError('一次最多可设置 100,000 个可编辑单元格。');
+      setError(officeMessage(messages, 'spreadsheet.protection.error.tooManyCells'));
       return;
     }
     const maximumRow = Math.max(1, sheet.row ?? sheet.data?.length ?? 1) - 1;
@@ -166,7 +169,10 @@ export function SpreadsheetProtectionPanel({
       )
     ) {
       setError(
-        `范围必须位于当前工作表的 ${maximumRow + 1} 行 × ${maximumColumn + 1} 列以内。`,
+        officeMessage(messages, 'spreadsheet.protection.error.outOfBounds', {
+          rows: String(maximumRow + 1),
+          cols: String(maximumColumn + 1),
+        }),
       );
       return;
     }
@@ -223,11 +229,11 @@ export function SpreadsheetProtectionPanel({
         cancelDraft();
       }}
     >
-      <legend className="sr-only">可编辑区域设置</legend>
-      <aside aria-label="允许编辑的区域">
+      <legend className="sr-only">{officeMessage(messages, 'spreadsheet.protection.legend')}</legend>
+      <aside aria-label={officeMessage(messages, 'spreadsheet.protection.rangesAria')}>
         <Button className="create" tone="secondary" onClick={startNew}>
           <Plus size={13} />
-          新建可编辑区域
+          {officeMessage(messages, 'spreadsheet.protection.newRange')}
         </Button>
         <div className="work-spreadsheet-protection-list">
           {ranges.map((range, index) => (
@@ -241,7 +247,7 @@ export function SpreadsheetProtectionPanel({
               {editableRangeRequiresCredentials(range) && (
                 <span className="credential">
                   <KeyRound size={10} />
-                  源凭据
+                  {officeMessage(messages, 'spreadsheet.protection.sourceCredential')}
                 </span>
               )}
               <small>{range.sqref}</small>
@@ -252,7 +258,7 @@ export function SpreadsheetProtectionPanel({
               className="work-office-collection-empty"
               role="status"
             >
-              还没有命名的可编辑区域。
+              {officeMessage(messages, 'spreadsheet.protection.noRanges')}
             </CollectionState>
           )}
         </div>
@@ -264,9 +270,9 @@ export function SpreadsheetProtectionPanel({
         }}
       >
         <div className="work-office-field">
-          <span>工作表</span>
+          <span>{officeMessage(messages, 'spreadsheet.protection.sheet')}</span>
           <OfficeSelect
-            ariaLabel="保护工作表"
+            ariaLabel={officeMessage(messages, 'spreadsheet.protection.sheetAria')}
             value={sheet.id}
             options={sheets.map((item) => ({
               value: item.id,
@@ -277,49 +283,49 @@ export function SpreadsheetProtectionPanel({
         </div>
         <OfficeCheckbox
           className="toggle"
-          ariaLabel="启用工作表保护"
+          ariaLabel={officeMessage(messages, 'spreadsheet.protection.enableAria')}
           checked={authority.sheet === 1}
           onCheckedChange={(checked) =>
             updateSheet(withSheetProtection(sheet, checked))
           }
         >
-          保护工作表和锁定单元格
+          {officeMessage(messages, 'spreadsheet.protection.enable')}
         </OfficeCheckbox>
         <fieldset>
-          <legend>允许选择</legend>
+          <legend>{officeMessage(messages, 'spreadsheet.protection.allowSelect')}</legend>
           <OfficeCheckbox
             className="check"
-            ariaLabel="允许选择锁定单元格"
+            ariaLabel={officeMessage(messages, 'spreadsheet.protection.selectLockedAria')}
             checked={authority.selectLockedCells === 1}
             onCheckedChange={setSelectLocked}
           >
-            锁定单元格
+            {officeMessage(messages, 'spreadsheet.protection.selectLocked')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="check"
-            ariaLabel="允许选择未锁定单元格"
+            ariaLabel={officeMessage(messages, 'spreadsheet.protection.selectUnlockedAria')}
             checked={authority.selectunLockedCells === 1}
             onCheckedChange={setSelectUnlocked}
           >
-            未锁定单元格
+            {officeMessage(messages, 'spreadsheet.protection.selectUnlocked')}
           </OfficeCheckbox>
         </fieldset>
         <div className="work-office-field">
-          <span>区域名称</span>
+          <span>{officeMessage(messages, 'spreadsheet.protection.rangeName')}</span>
           <OfficeTextField
-            aria-label="可编辑区域名称"
+            aria-label={officeMessage(messages, 'spreadsheet.protection.rangeNameAria')}
             value={draft.name}
             maxLength={255}
-            placeholder="例如 InputCells"
+            placeholder={officeMessage(messages, 'spreadsheet.protection.rangeNamePlaceholder')}
             onChange={(event) =>
               setDraft({ ...draft, name: event.target.value })
             }
           />
         </div>
         <div className="work-office-field reference">
-          <span>可编辑范围</span>
+          <span>{officeMessage(messages, 'spreadsheet.protection.rangeRef')}</span>
           <OfficeTextField
-            aria-label="可编辑区域范围"
+            aria-label={officeMessage(messages, 'spreadsheet.protection.rangeRefAria')}
             value={draft.reference}
             placeholder="B2:B20"
             onChange={(event) =>
@@ -328,8 +334,9 @@ export function SpreadsheetProtectionPanel({
           />
         </div>
         <p>
-          当前有 {unlockedCellCount(sheet)}{' '}
-          个未锁定单元格。受凭据保护的区域将原样保留。
+          {officeMessage(messages, 'spreadsheet.protection.unlockedSummary', {
+            n: String(unlockedCellCount(sheet)),
+          })}
         </p>
         {selectedRange && editableRangeRequiresCredentials(selectedRange) && (
           <InlineNotice
@@ -337,7 +344,7 @@ export function SpreadsheetProtectionPanel({
             tone="warning"
             role="note"
           >
-            保存对此区域的修改会将它转换为无需源凭据的可编辑区域。
+            {officeMessage(messages, 'spreadsheet.protection.credentialConvertNote')}
           </InlineNotice>
         )}
         <div className="actions">
@@ -356,17 +363,17 @@ export function SpreadsheetProtectionPanel({
             onClick={deleteRange}
           >
             <Trash2 size={13} />
-            删除区域
+            {officeMessage(messages, 'spreadsheet.protection.deleteRange')}
           </Button>
           <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
-            取消更改
+            {officeMessage(messages, 'spreadsheet.protection.cancelChanges')}
           </Button>
           <Button
             type="submit"
             tone="primary"
             disabled={selectedIndex !== null && !dirty}
           >
-            保存区域
+            {officeMessage(messages, 'spreadsheet.protection.saveRange')}
           </Button>
         </div>
       </form>

@@ -1,3 +1,4 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   ArrowUpRight,
   ChevronDown,
@@ -22,6 +23,7 @@ import {
 } from 'react';
 import { Popover, Tabs } from '../../../design-system/primitives';
 import { WorkOfficeCollaborationParticipants } from './office-collaboration-participants';
+import { useOfficeMessages } from './office-messages-context';
 import { OfficeSlider } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
@@ -103,6 +105,7 @@ export function WorkOfficeRibbon<T extends string>({
   className?: string;
   toolbarClassName?: string;
 }) {
+  const messages = useOfficeMessages();
   const reactId = useId().replaceAll(':', '');
   const [internalTab, setInternalTab] = useState(defaultTab);
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
@@ -373,11 +376,11 @@ export function WorkOfficeRibbon<T extends string>({
           {(tabOverflow.backward || tabOverflow.forward) && (
             <nav
               className="work-office-ribbon-tab-navigation"
-              aria-label="功能区标签翻页"
+              aria-label={officeMessage(messages, 'office.ribbon.tabsScrollAria')}
             >
               <button
                 type="button"
-                aria-label="向左查看更多功能区标签"
+                aria-label={officeMessage(messages, 'office.ribbon.tabsScrollLeft')}
                 disabled={!tabOverflow.backward}
                 onClick={() => scrollTabs(-1)}
               >
@@ -385,7 +388,7 @@ export function WorkOfficeRibbon<T extends string>({
               </button>
               <button
                 type="button"
-                aria-label="向右查看更多功能区标签"
+                aria-label={officeMessage(messages, 'office.ribbon.tabsScrollRight')}
                 disabled={!tabOverflow.forward}
                 onClick={() => scrollTabs(1)}
               >
@@ -398,9 +401,11 @@ export function WorkOfficeRibbon<T extends string>({
           <button
             type="button"
             className="work-office-ribbon-collapse"
-            aria-label={collapsed ? '展开功能区' : '折叠功能区'}
+            aria-label={collapsed ? officeMessage(messages, 'office.ribbon.expand') : officeMessage(messages, 'office.ribbon.collapse')}
             title={
-              collapsed ? '展开功能区（Ctrl+F1）' : '折叠功能区（Ctrl+F1）'
+              collapsed
+                ? officeMessage(messages, 'office.ribbon.expandTitle')
+                : officeMessage(messages, 'office.ribbon.collapseTitle')
             }
             aria-keyshortcuts="Control+F1 Meta+F1"
             aria-controls={`${reactId}-panel`}
@@ -429,7 +434,7 @@ export function WorkOfficeRibbon<T extends string>({
               <button
                 type="button"
                 className="work-office-ribbon-scroll previous"
-                aria-label={`向左查看更多${selectedLabel}工具`}
+                aria-label={officeMessage(messages, 'office.ribbon.toolsScrollLeft', { label: selectedLabel })}
                 disabled={!ribbonOverflow.backward}
                 onClick={() => scrollRibbon(-1)}
               >
@@ -442,7 +447,7 @@ export function WorkOfficeRibbon<T extends string>({
               data-density={ribbonDensity}
               data-has-overflow={hasRibbonOverflow ? 'true' : undefined}
               role="toolbar"
-              aria-label={`${selectedLabel}工具栏`}
+              aria-label={officeMessage(messages, 'office.ribbon.toolbarAria', { label: selectedLabel })}
               onKeyDown={moveOfficeToolbarFocus}
               onScroll={updateRibbonOverflow}
             >
@@ -452,7 +457,7 @@ export function WorkOfficeRibbon<T extends string>({
               <button
                 type="button"
                 className="work-office-ribbon-scroll next"
-                aria-label={`向右查看更多${selectedLabel}工具`}
+                aria-label={officeMessage(messages, 'office.ribbon.toolsScrollRight', { label: selectedLabel })}
                 disabled={!ribbonOverflow.forward}
                 onClick={() => scrollRibbon(1)}
               >
@@ -471,11 +476,12 @@ function WorkOfficeQuickAccessToolbar({
 }: {
   actions: readonly WorkOfficeQuickAccessAction[];
 }) {
+  const messages = useOfficeMessages();
   return (
     <div
       className="work-office-quick-access"
       role="toolbar"
-      aria-label="快速访问工具栏"
+      aria-label={officeMessage(messages, 'office.ribbon.qatAria')}
       onKeyDown={moveOfficeToolbarFocus}
     >
       {actions.map((action) => (
@@ -579,6 +585,7 @@ function WorkOfficeFileMenu({
 }: {
   actions: readonly WorkOfficeFileAction[];
 }) {
+  const messages = useOfficeMessages();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLElement>(null);
   const focusEdgeRef = useRef<'first' | 'last'>('first');
@@ -597,8 +604,8 @@ function WorkOfficeFileMenu({
 
   return (
     <Popover
-      label="文件"
-      panelLabel="文件菜单"
+      label={officeMessage(messages, 'office.ribbon.file')}
+      panelLabel={officeMessage(messages, 'office.ribbon.fileMenu')}
       panelRole="menu"
       portal
       className="work-office-file-menu"
@@ -622,7 +629,7 @@ function WorkOfficeFileMenu({
             else focusRequestedAction();
           }}
         >
-          <span>文件</span>
+          <span>{officeMessage(messages, 'office.ribbon.file')}</span>
           <ChevronDown size={12} aria-hidden="true" />
         </button>
       )}
@@ -743,10 +750,10 @@ export function WorkOfficeRibbonButton({
 }
 
 export function WorkOfficeStatusBar({
-  ariaLabel = '编辑器状态栏',
+  ariaLabel,
   children,
   controls,
-  controlsLabel = '视图与缩放',
+  controlsLabel,
   className = '',
 }: {
   ariaLabel?: string;
@@ -755,10 +762,15 @@ export function WorkOfficeStatusBar({
   controlsLabel?: string;
   className?: string;
 }) {
+  const messages = useOfficeMessages();
+  const resolvedAriaLabel =
+    ariaLabel ?? officeMessage(messages, 'office.status.aria');
+  const resolvedControlsLabel =
+    controlsLabel ?? officeMessage(messages, 'office.status.controls');
   return (
     <section
       className={`work-office-status ${className}`.trim()}
-      aria-label={ariaLabel}
+      aria-label={resolvedAriaLabel}
     >
       <div className="work-office-status-info">{children}</div>
       <WorkOfficeCollaborationParticipants />
@@ -766,7 +778,7 @@ export function WorkOfficeStatusBar({
         <div
           className="work-office-status-view"
           role="toolbar"
-          aria-label={controlsLabel}
+          aria-label={resolvedControlsLabel}
           onKeyDown={moveOfficeToolbarFocus}
         >
           {controls}

@@ -10,6 +10,7 @@ import {
   isSpreadsheetCellEditorTarget,
   isSpreadsheetCellEditingTarget,
   isSpreadsheetNativeTextUndoTarget,
+  shouldRestoreSpreadsheetGridFocusAfterEscape,
 } from '../src/internal/features/work/editors/spreadsheet-editor-support';
 
 test('recognizes live cell and formula editors before restoring grid focus', () => {
@@ -27,6 +28,7 @@ test('recognizes live cell and formula editors before restoring grid focus', () 
   hiddenInputBox.style.zIndex = '-1';
   const hiddenCellInput = document.createElement('div');
   hiddenCellInput.className = 'luckysheet-cell-input';
+  hiddenCellInput.id = 'luckysheet-rich-text-editor';
   hiddenCellInput.contentEditable = 'true';
   hiddenInputBox.append(hiddenCellInput);
   const formulaInput = document.createElement('div');
@@ -34,8 +36,23 @@ test('recognizes live cell and formula editors before restoring grid focus', () 
   formulaInput.contentEditable = 'true';
   const grid = document.createElement('div');
   grid.className = 'fortune-sheet-overlay';
+  const filterTrigger = document.createElement('div');
+  filterTrigger.className = 'luckysheet-filter-options';
+  filterTrigger.setAttribute('role', 'button');
+  const filterMenu = document.createElement('div');
+  filterMenu.className = 'fortune-filter-menu';
+  filterMenu.setAttribute('role', 'dialog');
+  const filterMenuButton = document.createElement('button');
+  filterMenu.append(filterMenuButton);
   const unrelatedInput = document.createElement('input');
-  fortune.append(inputBox, hiddenInputBox, formulaInput, grid);
+  fortune.append(
+    inputBox,
+    hiddenInputBox,
+    formulaInput,
+    grid,
+    filterTrigger,
+    filterMenu,
+  );
 
   expect(isSpreadsheetCellEditingTarget(cellInput)).toBe(true);
   expect(isSpreadsheetCellEditingTarget(hiddenCellInput)).toBe(false);
@@ -47,6 +64,87 @@ test('recognizes live cell and formula editors before restoring grid focus', () 
   expect(isSpreadsheetNativeTextUndoTarget(formulaInput)).toBe(true);
   expect(isSpreadsheetNativeTextUndoTarget(grid)).toBe(false);
   expect(isSpreadsheetNativeTextUndoTarget(unrelatedInput)).toBe(true);
+  expect(shouldRestoreSpreadsheetGridFocusAfterEscape(grid)).toBe(true);
+  expect(shouldRestoreSpreadsheetGridFocusAfterEscape(filterTrigger)).toBe(
+    true,
+  );
+  expect(shouldRestoreSpreadsheetGridFocusAfterEscape(hiddenCellInput)).toBe(
+    true,
+  );
+  expect(shouldRestoreSpreadsheetGridFocusAfterEscape(cellInput)).toBe(true);
+  expect(shouldRestoreSpreadsheetGridFocusAfterEscape(filterMenuButton)).toBe(
+    false,
+  );
+  expect(shouldRestoreSpreadsheetGridFocusAfterEscape(unrelatedInput)).toBe(
+    false,
+  );
+});
+
+test('restores overlay focus after Escape parks Fortune in the hidden editor', async () => {
+  const container = document.createElement('div');
+  const fortune = document.createElement('div');
+  fortune.className = 'fortune-container';
+  const overlay = document.createElement('main');
+  overlay.className = 'fortune-sheet-overlay';
+  overlay.tabIndex = -1;
+  const inputBox = document.createElement('div');
+  inputBox.className = 'luckysheet-input-box';
+  inputBox.style.zIndex = '-1';
+  const cellInput = document.createElement('div');
+  cellInput.className = 'luckysheet-cell-input';
+  cellInput.id = 'luckysheet-rich-text-editor';
+  cellInput.contentEditable = 'true';
+  cellInput.tabIndex = 0;
+  inputBox.append(cellInput);
+  fortune.append(overlay, inputBox);
+  container.append(fortune);
+  document.body.append(container);
+  overlay.focus();
+
+  // Mirror spreadsheet-editor Escape capture: restore after Fortune parks focus.
+  let escapePending = false;
+  const restore = () => {
+    requestAnimationFrame(() => {
+      focusSpreadsheetGrid(container, { forceCellEditingExit: true });
+      requestAnimationFrame(() =>
+        focusSpreadsheetGrid(container, { forceCellEditingExit: true }),
+      );
+    });
+  };
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (
+      event.key !== 'Escape' ||
+      !shouldRestoreSpreadsheetGridFocusAfterEscape(event.target)
+    ) {
+      return;
+    }
+    escapePending = true;
+    restore();
+  };
+  const onKeyUp = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || !escapePending) return;
+    escapePending = false;
+    restore();
+  };
+  container.addEventListener('keydown', onKeyDown, true);
+  container.addEventListener('keyup', onKeyUp, true);
+
+  overlay.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+  );
+  // Fortune's handleGlobalKeyDown ends by focusing the rich-text editor.
+  cellInput.focus();
+  overlay.dispatchEvent(
+    new KeyboardEvent('keyup', { key: 'Escape', bubbles: true }),
+  );
+
+  await waitForAnimationFrames(4);
+  expect(document.activeElement).toBe(overlay);
+  expect(isSpreadsheetNativeTextUndoTarget(document.activeElement)).toBe(false);
+
+  container.removeEventListener('keydown', onKeyDown, true);
+  container.removeEventListener('keyup', onKeyUp, true);
+  container.remove();
 });
 
 test('restores focus to the interactive spreadsheet overlay', async () => {

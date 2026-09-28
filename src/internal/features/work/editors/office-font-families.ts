@@ -1,13 +1,28 @@
-export type OfficeFontFamilyGroup = '中文字体' | '西文字体' | '等宽字体';
+import type { OfficeMessageCatalog, OfficeMessageKey } from '../../../i18n/office-messages';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
+
+export type OfficeFontFamilyGroupId = 'cjk' | 'latin' | 'mono';
 
 export interface OfficeFontFamily {
   id: string;
   name: string;
   cssValue: string;
   cssFamily: string;
-  label: string;
-  group: OfficeFontFamilyGroup;
+  group: OfficeFontFamilyGroupId;
+  labelKey?: OfficeMessageKey;
 }
+
+const FONT_FAMILY_LABEL_KEYS: Record<string, OfficeMessageKey> = {
+  'microsoft-yahei': 'document.font.family.microsoftYahei',
+  'pingfang-sc': 'document.font.family.pingfangSc',
+  simsun: 'document.font.family.simsun',
+  stsong: 'document.font.family.stsong',
+  simhei: 'document.font.family.simhei',
+  stheiti: 'document.font.family.stheiti',
+  kaiti: 'document.font.family.kaiti',
+  fangsong: 'document.font.family.fangsong',
+  'hiragino-sans-gb': 'document.font.family.hiraginoSansGb',
+};
 
 export const officeFontFamilies = [
   {
@@ -15,202 +30,208 @@ export const officeFontFamilies = [
     name: 'Microsoft YaHei',
     cssValue: '"Microsoft YaHei"',
     cssFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
-    label: '微软雅黑',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS['microsoft-yahei'],
   },
   {
     id: 'pingfang-sc',
     name: 'PingFang SC',
     cssValue: '"PingFang SC"',
     cssFamily: '"PingFang SC", "Microsoft YaHei", sans-serif',
-    label: '苹方',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS['pingfang-sc'],
   },
   {
     id: 'simsun',
     name: 'SimSun',
     cssValue: 'SimSun',
     cssFamily: 'SimSun, "Songti SC", serif',
-    label: '宋体',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS.simsun,
   },
   {
     id: 'stsong',
     name: 'STSong',
     cssValue: 'STSong',
     cssFamily: 'STSong, "Songti SC", SimSun, serif',
-    label: '华文宋体',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS.stsong,
   },
   {
     id: 'simhei',
     name: 'SimHei',
     cssValue: 'SimHei',
     cssFamily: 'SimHei, "Heiti SC", sans-serif',
-    label: '黑体',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS.simhei,
   },
   {
     id: 'stheiti',
     name: 'STHeiti',
     cssValue: 'STHeiti',
     cssFamily: 'STHeiti, "Heiti SC", SimHei, sans-serif',
-    label: '华文黑体',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS.stheiti,
   },
   {
     id: 'kaiti',
     name: 'KaiTi',
     cssValue: 'KaiTi',
     cssFamily: 'KaiTi, "Kaiti SC", serif',
-    label: '楷体',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS.kaiti,
   },
   {
     id: 'fangsong',
     name: 'FangSong',
     cssValue: 'FangSong',
     cssFamily: 'FangSong, STFangsong, serif',
-    label: '仿宋',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS.fangsong,
   },
   {
     id: 'hiragino-sans-gb',
     name: 'Hiragino Sans GB',
     cssValue: '"Hiragino Sans GB"',
     cssFamily: '"Hiragino Sans GB", "PingFang SC", sans-serif',
-    label: '冬青黑体',
-    group: '中文字体',
+    group: 'cjk',
+    labelKey: FONT_FAMILY_LABEL_KEYS['hiragino-sans-gb'],
   },
   {
     id: 'aptos',
     name: 'Aptos',
     cssValue: 'Aptos',
     cssFamily: 'Aptos, sans-serif',
-    label: 'Aptos',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'calibri',
     name: 'Calibri',
     cssValue: 'Calibri',
     cssFamily: 'Calibri',
-    label: 'Calibri',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'arial',
     name: 'Arial',
     cssValue: 'Arial',
     cssFamily: 'Arial, sans-serif',
-    label: 'Arial',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'helvetica',
     name: 'Helvetica',
     cssValue: 'Helvetica',
     cssFamily: 'Helvetica, Arial, sans-serif',
-    label: 'Helvetica',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'times-new-roman',
     name: 'Times New Roman',
     cssValue: '"Times New Roman"',
     cssFamily: '"Times New Roman", Times, serif',
-    label: 'Times New Roman',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'georgia',
     name: 'Georgia',
     cssValue: 'Georgia',
     cssFamily: 'Georgia, "Times New Roman", serif',
-    label: 'Georgia',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'cambria',
     name: 'Cambria',
     cssValue: 'Cambria',
     cssFamily: 'Cambria, Georgia, serif',
-    label: 'Cambria',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'garamond',
     name: 'Garamond',
     cssValue: 'Garamond',
     cssFamily: 'Garamond, Georgia, serif',
-    label: 'Garamond',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'verdana',
     name: 'Verdana',
     cssValue: 'Verdana',
     cssFamily: 'Verdana, Arial, sans-serif',
-    label: 'Verdana',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'tahoma',
     name: 'Tahoma',
     cssValue: 'Tahoma',
     cssFamily: 'Tahoma, Verdana, sans-serif',
-    label: 'Tahoma',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'trebuchet-ms',
     name: 'Trebuchet MS',
     cssValue: '"Trebuchet MS"',
     cssFamily: '"Trebuchet MS", Arial, sans-serif',
-    label: 'Trebuchet MS',
-    group: '西文字体',
+    group: 'latin',
   },
   {
     id: 'sf-mono',
     name: 'SFMono-Regular',
     cssValue: 'SFMono-Regular',
     cssFamily: 'SFMono-Regular, Menlo, Consolas, monospace',
-    label: 'SF Mono',
-    group: '等宽字体',
+    group: 'mono',
   },
   {
     id: 'menlo',
     name: 'Menlo',
     cssValue: 'Menlo',
     cssFamily: 'Menlo, SFMono-Regular, Consolas, monospace',
-    label: 'Menlo',
-    group: '等宽字体',
+    group: 'mono',
   },
   {
     id: 'consolas',
     name: 'Consolas',
     cssValue: 'Consolas',
     cssFamily: 'Consolas, "Courier New", monospace',
-    label: 'Consolas',
-    group: '等宽字体',
+    group: 'mono',
   },
   {
     id: 'courier-new',
     name: 'Courier New',
     cssValue: '"Courier New"',
     cssFamily: '"Courier New", Courier, monospace',
-    label: 'Courier New',
-    group: '等宽字体',
+    group: 'mono',
   },
   {
     id: 'monaco',
     name: 'Monaco',
     cssValue: 'Monaco',
     cssFamily: 'Monaco, Menlo, Consolas, monospace',
-    label: 'Monaco',
-    group: '等宽字体',
+    group: 'mono',
   },
 ] as const satisfies readonly OfficeFontFamily[];
+
+export function officeFontFamilyGroupLabel(
+  group: OfficeFontFamilyGroupId,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
+): string {
+  if (group === 'cjk') {
+    return officeMessage(messages, 'document.font.familyGroup.cjk');
+  }
+  if (group === 'mono') {
+    return officeMessage(messages, 'document.font.familyGroup.mono');
+  }
+  return officeMessage(messages, 'document.font.familyGroup.latin');
+}
+
+export function officeFontFamilyLocalizedLabel(
+  family: Pick<OfficeFontFamily, 'labelKey' | 'name'>,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
+): string {
+  return family.labelKey
+    ? officeMessage(messages, family.labelKey)
+    : family.name;
+}
 
 export function officeFontFamilyLabel(value: string): string {
   const firstFamily = value.split(',')[0]?.trim() || value.trim();

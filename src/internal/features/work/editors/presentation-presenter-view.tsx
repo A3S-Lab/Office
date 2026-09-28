@@ -1,6 +1,8 @@
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import type { WorkPresentationContent, WorkSlide } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import { SlideCanvas } from './presentation-slide-canvas';
 
 export interface PresentationTimerController {
@@ -36,6 +38,7 @@ export function PresentationPresenterView({
   aspectRatio: string;
   timer: PresentationTimerController;
 }) {
+  const messages = useOfficeMessages();
   const [, setTimerRevision] = useState(0);
   const now = Date.now();
   const running = timer.runningSinceMilliseconds !== null;
@@ -74,12 +77,12 @@ export function PresentationPresenterView({
   };
 
   return (
-    <section className="work-presentation-presenter" aria-label="演讲者视图">
+    <section className="work-presentation-presenter" aria-label={officeMessage(messages, 'presentation.presenter.aria')}>
       <header>
         <div>
-          <span>演讲计时</span>
+          <span>{officeMessage(messages, 'presentation.presenter.timer')}</span>
           <strong>
-            <span className="sr-only">已用时间：</span>
+            <span className="sr-only">{officeMessage(messages, 'presentation.presenter.elapsedPrefix')}</span>
             <time dateTime={`PT${elapsedSeconds}S`}>
               {formatDuration(elapsedSeconds)}
             </time>
@@ -88,25 +91,25 @@ export function PresentationPresenterView({
         <div className="work-presentation-presenter-timer-actions">
           <button
             type="button"
-            aria-label={running ? '暂停计时' : '继续计时'}
+            aria-label={running ? officeMessage(messages, 'presentation.presenter.pause') : officeMessage(messages, 'presentation.presenter.resume')}
             aria-pressed={!running}
             onClick={toggleTimer}
           >
             {running ? <Pause size={15} /> : <Play size={15} />}
           </button>
-          <button type="button" aria-label="重置计时" onClick={resetTimer}>
+          <button type="button" aria-label={officeMessage(messages, 'presentation.presenter.reset')} onClick={resetTimer}>
             <RotateCcw size={15} />
           </button>
         </div>
         <output aria-live="polite">
-          幻灯片 {index + 1} / {total}
+          {officeMessage(messages, 'presentation.presenter.slideOf', { current: String(index + 1), total: String(total) })}
         </output>
       </header>
 
       <div className="work-presentation-presenter-grid">
         <section
           className="work-presentation-presenter-current"
-          aria-label="当前幻灯片"
+          aria-label={officeMessage(messages, 'presentation.presenter.currentSlideAria')}
         >
           <h2>{slide.name}</h2>
           <SlideCanvas
@@ -119,9 +122,9 @@ export function PresentationPresenterView({
         </section>
         <section
           className="work-presentation-presenter-next"
-          aria-label="下一张幻灯片"
+          aria-label={officeMessage(messages, 'presentation.presenter.nextSlideAria')}
         >
-          <h2>下一张</h2>
+          <h2>{officeMessage(messages, 'presentation.presenter.next')}</h2>
           {nextSlide ? (
             <>
               <SlideCanvas
@@ -133,15 +136,15 @@ export function PresentationPresenterView({
               <span>{nextSlide.name}</span>
             </>
           ) : (
-            <p>演示结束</p>
+            <p>{officeMessage(messages, 'presentation.presenter.end')}</p>
           )}
         </section>
         <aside
           className="work-presentation-presenter-notes"
-          aria-label="演讲者备注"
+          aria-label={officeMessage(messages, 'presentation.presenter.notesAria')}
         >
-          <h2>演讲者备注</h2>
-          <p>{slide.notes?.trim() || '此页没有演讲者备注'}</p>
+          <h2>{officeMessage(messages, 'presentation.presenter.notes')}</h2>
+          <p>{slide.notes?.trim() || officeMessage(messages, 'presentation.presenter.notesEmpty')}</p>
         </aside>
       </div>
     </section>

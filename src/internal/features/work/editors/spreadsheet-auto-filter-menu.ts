@@ -1,3 +1,7 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type {
   WorkSpreadsheetDateSystem,
   WorkSpreadsheetSheet,
@@ -36,30 +40,44 @@ export function enhanceSpreadsheetAutoFilterSurface(
     trigger.dataset.filterColumn = String(column);
     trigger.dataset.officeShortcuts = 'ignore';
     trigger.setAttribute('role', 'button');
-    trigger.setAttribute('aria-label', `${label} 筛选`);
+    const catalog = resolveOfficeMessages();
+    trigger.dataset.filterLabel = label;
+    trigger.setAttribute(
+      'aria-label',
+      officeMessage(catalog, 'spreadsheet.autoFilter.triggerAria', { label }),
+    );
     trigger.setAttribute('aria-haspopup', 'dialog');
     trigger.setAttribute('aria-expanded', 'false');
-    trigger.setAttribute('title', `${label} 筛选（Alt+↓）`);
+    trigger.setAttribute(
+      'title',
+      officeMessage(catalog, 'spreadsheet.autoFilter.triggerTitle', { label }),
+    );
   }
 
   const menu = container.querySelector<HTMLElement>('.fortune-filter-menu');
   if (!menu) return null;
   const trigger =
     invoker ?? triggers.find((candidate) => candidate.matches(':focus'));
-  const triggerLabel = trigger
-    ?.getAttribute('aria-label')
-    ?.replace(/\s*筛选$/, '');
-  const label = triggerLabel || '列';
+  const catalog = resolveOfficeMessages();
+  const label =
+    trigger?.dataset.filterLabel ||
+    officeMessage(catalog, 'spreadsheet.autoFilter.columnFallback');
   menu.setAttribute('role', 'dialog');
   menu.dataset.officeShortcuts = 'ignore';
-  menu.setAttribute('aria-label', `${label} 筛选`);
+  menu.setAttribute(
+    'aria-label',
+    officeMessage(catalog, 'spreadsheet.autoFilter.menuAria', { label }),
+  );
   menu.setAttribute('aria-modal', 'false');
   trigger?.setAttribute('aria-expanded', 'true');
 
   const search = menu.querySelector<HTMLInputElement>(
     '.filtermenu-input-container input, input:not([type="checkbox"])',
   );
-  search?.setAttribute('aria-label', '搜索筛选值');
+  search?.setAttribute(
+    'aria-label',
+    officeMessage(catalog, 'spreadsheet.autoFilter.searchAria'),
+  );
   for (const checkbox of menu.querySelectorAll<HTMLInputElement>(
     'input[type="checkbox"]',
   )) {
@@ -75,7 +93,14 @@ export function enhanceSpreadsheetAutoFilterSurface(
           .map((child) => child.textContent?.trim())
           .find(Boolean)
       : undefined;
-    checkbox.setAttribute('aria-label', `显示 ${itemLabel || '筛选值'}`);
+    checkbox.setAttribute(
+      'aria-label',
+      officeMessage(catalog, 'spreadsheet.autoFilter.showValueAria', {
+        label:
+          itemLabel ||
+          officeMessage(catalog, 'spreadsheet.autoFilter.valueFallback'),
+      }),
+    );
   }
   for (const action of menu.querySelectorAll<HTMLElement>(
     '.luckysheet-cols-menuitem, .fortune-byvalue-btn, .button-basic',
@@ -84,8 +109,8 @@ export function enhanceSpreadsheetAutoFilterSurface(
     const actionLabel = action.textContent?.replace(/\s+/g, ' ').trim();
     if (actionLabel) action.setAttribute('aria-label', actionLabel);
     if (
-      actionLabel === '按条件过滤' ||
-      actionLabel === '按條件過濾' ||
+      actionLabel === '\u6309\u6761\u4ef6\u8fc7\u6ee4' ||
+      actionLabel === '\u6309\u689d\u4ef6\u904e\u6ffe' ||
       actionLabel === 'Filter by condition'
     ) {
       action.dataset.a3sAutoFilterCondition = '';
@@ -127,9 +152,11 @@ function synchronizeSpreadsheetAutoFilterRankAction(
   action.dataset.filterColumn = String(column);
   action.dataset.officeShortcuts = 'ignore';
   action.tabIndex = 0;
-  action.textContent = '前 10 项';
+  const catalog = resolveOfficeMessages();
+  const top10 = officeMessage(catalog, 'spreadsheet.autoFilter.top10');
+  action.textContent = top10;
   action.setAttribute('role', 'button');
-  action.setAttribute('aria-label', '前 10 项');
+  action.setAttribute('aria-label', top10);
   action.setAttribute('aria-haspopup', 'dialog');
   const condition = menu.querySelector<HTMLElement>(
     '[data-a3s-auto-filter-condition]',
@@ -202,7 +229,12 @@ export function spreadsheetAutoFilterColumnLabel(
   const value = cell?.m ?? cell?.v;
   const label =
     value === undefined || value === null ? '' : String(value).trim();
-  return label || `列 ${spreadsheetColumnName(column)}`;
+  if (label) return label;
+  return officeMessage(
+    resolveOfficeMessages(),
+    'spreadsheet.autoFilter.columnWithName',
+    { column: spreadsheetColumnName(column) },
+  );
 }
 
 function spreadsheetColumnName(column: number): string {

@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import { formatSpreadsheetCellRanges } from '../work-spreadsheet-ranges';
 import type { WorkSpreadsheetSheet } from '../work-types';
 import {
@@ -304,7 +305,12 @@ export function createSpreadsheetSortDialogSource(
     }),
     rows: Array.from({ length: height }, (_, offset) => {
       const index = range.row[0] + offset;
-      return { index, label: `行 ${index + 1}` };
+      return {
+      index,
+      label: officeMessage(resolveOfficeMessages(), 'spreadsheet.sort.rowLabel', {
+        n: String(index + 1),
+      }),
+    };
     }),
     value: {
       orientation: 'top-to-bottom',
@@ -611,34 +617,44 @@ export function spreadsheetSortAppearanceRowsMatch(
 export function spreadsheetSortError(
   code: SpreadsheetSortErrorCode,
 ): Extract<SpreadsheetSortValidationResult, { ok: false }> {
-  const messages: Record<SpreadsheetSortErrorCode, string> = {
-    'column-out-of-range': '排序列必须位于当前选定区域内。',
-    'duplicate-key': '同一行或列不能重复使用相同的值或外观排序条件。',
-    'formula-reference-out-of-range':
-      '排序会使相对公式引用超出工作表范围，因此未应用任何更改。',
-    'invalid-appearance':
-      '外观排序条件或当前颜色/图标快照无效，因此未应用任何更改。',
-    'invalid-case-sensitivity': '请选择有效的大小写比较规则。',
-    'invalid-custom-list': '自定义排序序列无效，请检查项目数量、长度和重复项。',
-    'invalid-direction': '请选择有效的升序或降序次序。',
-    'invalid-header': '按行排序会移动所有选定列，不能保留标题列。',
-    'invalid-matrix': '排序只能应用到已完整读取的矩形区域。',
-    'invalid-orientation': '请选择有效的按列或按行排序方向。',
-    'invalid-range': '请选择一个有效的连续单元格区域。',
-    'invalid-scope': '排序区域的表格或筛选所有权已变化，请重新打开排序。',
-    'invalid-text-method': '请选择拼音排序或笔画排序。',
-    'missing-key': '请至少添加一个排序条件。',
-    'not-enough-columns': '当前区域没有足够的数据列可供按行排序。',
-    'not-enough-rows': '当前区域没有足够的数据行可供排序。',
-    'range-too-large': `一次最多可排序 ${MAX_SPREADSHEET_SORT_CELLS.toLocaleString('en-US')} 个单元格。`,
-    'row-out-of-range': '排序行必须位于当前选定区域内。',
-    'too-many-keys': `一次最多可设置 ${MAX_SPREADSHEET_SORT_KEYS} 个排序条件。`,
-    'unsupported-text-method':
-      '当前运行环境不支持所选中文排序方法，因此未应用任何更改。',
-    'unsupported-linked-cell':
-      '当前区域包含坐标关联的超链接，尚不能安全地随排序移动。',
-  };
-  return { ok: false, code, message: messages[code] };
+  const catalog = resolveOfficeMessages();
+  const keyByCode = {
+    'column-out-of-range': 'spreadsheet.sort.error.columnOutOfRange',
+    'duplicate-key': 'spreadsheet.sort.error.duplicateKey',
+    'formula-reference-out-of-range': 'spreadsheet.sort.error.formulaOutOfBounds',
+    'invalid-appearance': 'spreadsheet.sort.error.invalidAppearance',
+    'invalid-case-sensitivity': 'spreadsheet.sort.error.invalidCaseSensitivity',
+    'invalid-custom-list': 'spreadsheet.sort.error.invalidCustomList',
+    'invalid-direction': 'spreadsheet.sort.error.invalidDirection',
+    'invalid-header': 'spreadsheet.sort.error.invalidHeader',
+    'invalid-matrix': 'spreadsheet.sort.error.invalidMatrix',
+    'invalid-orientation': 'spreadsheet.sort.error.invalidOrientation',
+    'invalid-range': 'spreadsheet.sort.error.invalidRange',
+    'invalid-scope': 'spreadsheet.sort.error.invalidScope',
+    'invalid-text-method': 'spreadsheet.sort.error.invalidTextMethod',
+    'missing-key': 'spreadsheet.sort.error.missingKey',
+    'not-enough-columns': 'spreadsheet.sort.error.notEnoughColumns',
+    'not-enough-rows': 'spreadsheet.sort.error.notEnoughRows',
+    'range-too-large': 'spreadsheet.sort.error.rangeTooLarge',
+    'row-out-of-range': 'spreadsheet.sort.error.rowOutOfRange',
+    'too-many-keys': 'spreadsheet.sort.error.tooManyKeys',
+    'unsupported-text-method': 'spreadsheet.sort.error.unsupportedCollation',
+    'unsupported-linked-cell': 'spreadsheet.sort.error.unsafeHyperlinks',
+  } as const satisfies Record<
+    SpreadsheetSortErrorCode,
+    Parameters<typeof officeMessage>[1]
+  >;
+  const message =
+    code === 'range-too-large'
+      ? officeMessage(catalog, keyByCode[code], {
+          n: MAX_SPREADSHEET_SORT_CELLS.toLocaleString('en-US'),
+        })
+      : code === 'too-many-keys'
+        ? officeMessage(catalog, keyByCode[code], {
+            n: String(MAX_SPREADSHEET_SORT_KEYS),
+          })
+        : officeMessage(catalog, keyByCode[code]);
+  return { ok: false, code, message };
 }
 
 function normalizeSpreadsheetSortOwnedScope(

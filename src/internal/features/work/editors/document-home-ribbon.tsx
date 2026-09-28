@@ -27,6 +27,8 @@ import {
   useCallback,
   useSyncExternalStore,
 } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   canChangeDocumentIndent,
@@ -40,6 +42,7 @@ import {
   type DocumentCommandId,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
+import { documentCommandLabel } from './document-command-i18n';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentFormatTools } from './document-format-tools';
 import {
@@ -57,30 +60,11 @@ import { DocumentStyleGallery } from './document-style-gallery';
 import { DocumentTextCaseRibbon } from './document-text-case-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
-
-const documentLineHeightOptions = [
-  { value: 'default', label: '默认行距' },
-  {
-    value: '1',
-    label: '单倍',
-    meta: getDocumentCommandDefinition('lineSpacingSingle').shortcut?.label,
-  },
-  { value: '1.15', label: '1.15 倍' },
-  {
-    value: '1.5',
-    label: '1.5 倍',
-    meta: getDocumentCommandDefinition('lineSpacingOneAndHalf').shortcut?.label,
-  },
-  {
-    value: '2',
-    label: '2 倍',
-    meta: getDocumentCommandDefinition('lineSpacingDouble').shortcut?.label,
-  },
-] as const;
 
 const lineSpacingAriaKeyShortcuts = [
   getDocumentCommandDefinition('lineSpacingSingle').shortcut?.aria,
@@ -89,6 +73,52 @@ const lineSpacingAriaKeyShortcuts = [
 ]
   .filter((value): value is string => Boolean(value))
   .join(' ');
+
+function documentLineHeightOptions(messages: OfficeMessageCatalog) {
+  return [
+    { value: 'default', label: messages['document.lineHeight.default'] },
+    {
+      value: '1',
+      label: messages['document.lineHeight.single'],
+      meta: getDocumentCommandDefinition('lineSpacingSingle').shortcut?.label,
+    },
+    { value: '1.15', label: messages['document.lineHeight.1_15'] },
+    {
+      value: '1.5',
+      label: messages['document.lineHeight.1_5'],
+      meta: getDocumentCommandDefinition('lineSpacingOneAndHalf').shortcut
+        ?.label,
+    },
+    {
+      value: '2',
+      label: messages['document.lineHeight.double'],
+      meta: getDocumentCommandDefinition('lineSpacingDouble').shortcut?.label,
+    },
+  ] as const;
+}
+
+function documentLineHeightOptionsForValue(
+  messages: OfficeMessageCatalog,
+  value: string,
+) {
+  const options = documentLineHeightOptions(messages);
+  if (options.some((option) => option.value === value)) {
+    return options;
+  }
+  const numeric = Number(value);
+  return [
+    ...options,
+    {
+      value,
+      label:
+        Number.isFinite(numeric) && numeric > 0
+          ? officeMessage(messages, 'document.lineHeight.custom', {
+              value: String(numeric),
+            })
+          : value,
+    },
+  ];
+}
 
 export function DocumentHomeRibbon({
   editor,
@@ -116,8 +146,13 @@ export function DocumentHomeRibbon({
     () => editor.state,
     () => editor.state,
   );
+  const messages = useOfficeMessages();
   if (editor.isDestroyed) return null;
-  const fontFamilyValue = documentFontFamilyValue(editor, layoutFonts);
+  const fontFamilyValue = documentFontFamilyValue(
+    editor,
+    layoutFonts,
+    messages,
+  );
   const fontSizeValue = documentFontSizeValue(editor);
   const lineHeightValue = documentLineHeightValue(editor);
 
@@ -125,12 +160,12 @@ export function DocumentHomeRibbon({
     <>
       <DocumentFormatTools editor={editor} />
       <RibbonGroup
-        label="字体"
+        label={messages['document.group.font']}
         priority="high"
         dialogLauncher={
           onOpenFontDialog
             ? {
-                label: '字体高级设置',
+                label: documentCommandLabel('fontDialog', messages),
                 ...commandShortcut('fontDialog'),
                 onClick: onOpenFontDialog,
               }
@@ -140,12 +175,13 @@ export function DocumentHomeRibbon({
         <div className="work-document-font-tools">
           <div className="work-document-font-selects">
             <OfficeSelect
-              ariaLabel="字体"
+              ariaLabel={officeMessage(messages, 'document.home.fontFamilyAria')}
               className="work-document-font-family-select"
               value={fontFamilyValue}
               options={documentFontFamilyOptionsForValue(
                 fontFamilyValue,
                 layoutFonts,
+                messages,
               )}
               onValueChange={(value) => {
                 // Keep ribbon focus on the font combobox via Popover restore.
@@ -155,7 +191,7 @@ export function DocumentHomeRibbon({
               }}
             />
             <OfficeSelect
-              ariaLabel="字号"
+              ariaLabel={officeMessage(messages, 'document.home.fontSizeAria')}
               className="work-document-font-size-select"
               value={fontSizeValue}
               options={documentFontSizeOptionsForValue(fontSizeValue)}
@@ -167,7 +203,7 @@ export function DocumentHomeRibbon({
               }}
             />
             <ToolbarButton
-              label="增大字号"
+              label={documentCommandLabel('growFont', messages)}
               {...commandShortcut('growFont')}
               disabled={!canChangeDocumentFontSize(editor, 1)}
               onMouseDown={(event) => event.preventDefault()}
@@ -176,7 +212,7 @@ export function DocumentHomeRibbon({
               <AArrowUp size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="减小字号"
+              label={documentCommandLabel('shrinkFont', messages)}
               {...commandShortcut('shrinkFont')}
               disabled={!canChangeDocumentFontSize(editor, -1)}
               onMouseDown={(event) => event.preventDefault()}
@@ -187,7 +223,7 @@ export function DocumentHomeRibbon({
           </div>
           <div className="work-document-font-actions">
             <ToolbarButton
-              label="加粗"
+              label={documentCommandLabel('bold', messages)}
               {...commandShortcut('bold')}
               active={editor.isActive('bold')}
               onMouseDown={(event) => event.preventDefault()}
@@ -200,7 +236,7 @@ export function DocumentHomeRibbon({
               <Bold size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="斜体"
+              label={documentCommandLabel('italic', messages)}
               {...commandShortcut('italic')}
               active={editor.isActive('italic')}
               onMouseDown={(event) => event.preventDefault()}
@@ -216,7 +252,7 @@ export function DocumentHomeRibbon({
             <DocumentStrikeRibbon editor={editor} />
             <DocumentTextCaseRibbon editor={editor} />
             <ToolbarButton
-              label="下标"
+              label={documentCommandLabel('subscript', messages)}
               {...commandShortcut('subscript')}
               active={editor.isActive('subscript')}
               onClick={() => editor.commands.toggleDocumentSubscript()}
@@ -224,7 +260,7 @@ export function DocumentHomeRibbon({
               <SubscriptIcon size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="上标"
+              label={documentCommandLabel('superscript', messages)}
               {...commandShortcut('superscript')}
               active={editor.isActive('superscript')}
               onClick={() => editor.commands.toggleDocumentSuperscript()}
@@ -235,7 +271,7 @@ export function DocumentHomeRibbon({
               compact
               className="work-color-tool"
               value={editor.getAttributes('textStyle').color ?? '#172033'}
-              ariaLabel="文字颜色"
+              ariaLabel={officeMessage(messages, 'document.home.textColorAria')}
               onValueChange={(color) => {
                 // Keep ribbon focus on the color trigger via Popover restore.
                 // chain().focus() schedules into the editor and breaks L2 loops.
@@ -243,7 +279,7 @@ export function DocumentHomeRibbon({
               }}
             />
             <ToolbarButton
-              label="突出显示"
+              label={documentCommandLabel('highlight', messages)}
               active={editor.isActive('highlight')}
               onClick={() => {
                 // Keep ribbon focus on the highlight trigger.
@@ -254,7 +290,7 @@ export function DocumentHomeRibbon({
               <Highlighter size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="字符边框"
+              label={documentCommandLabel('runBorder', messages)}
               active={documentRunBorderIsVisible(
                 parseDocumentRunBorder(
                   editor.getAttributes('textStyle').runBorder,
@@ -265,7 +301,7 @@ export function DocumentHomeRibbon({
               <Square size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="清除格式"
+              label={documentCommandLabel('clearFormatting', messages)}
               {...commandShortcut('clearFormatting')}
               onClick={() => editor.commands.clearDocumentFormatting()}
             >
@@ -274,12 +310,12 @@ export function DocumentHomeRibbon({
           </div>
         </div>
       </RibbonGroup>
-      <RibbonGroup label="段落" priority="high">
+      <RibbonGroup label={messages['document.group.paragraph']} priority="high">
         <div className="work-document-paragraph-tools">
           <div className="work-document-paragraph-actions">
             <DocumentListGallery editor={editor} />
             <ToolbarButton
-              label="减少缩进"
+              label={documentCommandLabel('decreaseIndent', messages)}
               {...commandShortcut('decreaseIndent')}
               disabled={!canChangeDocumentIndent(editor, -1)}
               onClick={() => editor.commands.changeDocumentIndent(-1)}
@@ -287,7 +323,7 @@ export function DocumentHomeRibbon({
               <IndentDecrease size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="增加缩进"
+              label={documentCommandLabel('increaseIndent', messages)}
               {...commandShortcut('increaseIndent')}
               disabled={!canChangeDocumentIndent(editor, 1)}
               onClick={() => editor.commands.changeDocumentIndent(1)}
@@ -295,11 +331,17 @@ export function DocumentHomeRibbon({
               <IndentIncrease size={16} />
             </ToolbarButton>
             <OfficeSelect
-              ariaLabel="行距"
+              ariaLabel={officeMessage(
+                messages,
+                'document.home.lineSpacingAria',
+              )}
               ariaKeyShortcuts={lineSpacingAriaKeyShortcuts}
               className="work-document-line-height-select"
               value={lineHeightValue}
-              options={documentLineHeightOptionsForValue(lineHeightValue)}
+              options={documentLineHeightOptionsForValue(
+                messages,
+                lineHeightValue,
+              )}
               onValueChange={(value) =>
                 editor.commands.setDocumentLineHeight(
                   value === 'default' ? null : value,
@@ -309,7 +351,7 @@ export function DocumentHomeRibbon({
           </div>
           <div className="work-document-alignment-actions">
             <ToolbarButton
-              label="左对齐"
+              label={documentCommandLabel('alignLeft', messages)}
               {...commandShortcut('alignLeft')}
               active={editor.isActive({ textAlign: 'left' })}
               onMouseDown={(event) => event.preventDefault()}
@@ -322,7 +364,7 @@ export function DocumentHomeRibbon({
               <AlignLeft size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="居中"
+              label={documentCommandLabel('alignCenter', messages)}
               {...commandShortcut('alignCenter')}
               active={editor.isActive({ textAlign: 'center' })}
               onMouseDown={(event) => event.preventDefault()}
@@ -335,7 +377,7 @@ export function DocumentHomeRibbon({
               <AlignCenter size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="右对齐"
+              label={documentCommandLabel('alignRight', messages)}
               {...commandShortcut('alignRight')}
               active={editor.isActive({ textAlign: 'right' })}
               onMouseDown={(event) => event.preventDefault()}
@@ -348,7 +390,7 @@ export function DocumentHomeRibbon({
               <AlignRight size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="两端对齐"
+              label={documentCommandLabel('alignJustify', messages)}
               {...commandShortcut('alignJustify')}
               active={editor.isActive({ textAlign: 'justify' })}
               onMouseDown={(event) => event.preventDefault()}
@@ -361,7 +403,7 @@ export function DocumentHomeRibbon({
               <AlignJustify size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="分散对齐"
+              label={documentCommandLabel('alignDistribute', messages)}
               {...commandShortcut('alignDistribute')}
               active={editor.isActive({ textAlign: 'distribute' })}
               onMouseDown={(event) => event.preventDefault()}
@@ -374,7 +416,7 @@ export function DocumentHomeRibbon({
               <AlignHorizontalDistributeCenter size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="从左向右"
+              label={officeMessage(messages, 'document.home.ltr')}
               active={documentParagraphDirection(editor) === 'ltr'}
               onClick={() =>
                 editor.commands.setDocumentParagraphDirection('ltr')
@@ -383,7 +425,7 @@ export function DocumentHomeRibbon({
               <PilcrowRight size={16} />
             </ToolbarButton>
             <ToolbarButton
-              label="从右向左"
+              label={officeMessage(messages, 'document.home.rtl')}
               active={documentParagraphDirection(editor) === 'rtl'}
               onClick={() =>
                 editor.commands.setDocumentParagraphDirection('rtl')
@@ -394,12 +436,12 @@ export function DocumentHomeRibbon({
           </div>
         </div>
       </RibbonGroup>
-      <RibbonGroup label="样式" priority="low">
+      <RibbonGroup label={messages['document.group.style']} priority="low">
         <DocumentStyleGallery editor={editor} />
       </RibbonGroup>
-      <RibbonGroup label="编辑" priority="low">
+      <RibbonGroup label={messages['document.group.edit']} priority="low">
         <ToolbarButton
-          label="查找"
+          label={documentCommandLabel('find', messages)}
           {...commandShortcut('find')}
           active={findReplaceMode === 'find'}
           onClick={() => onFindText(false)}
@@ -407,7 +449,7 @@ export function DocumentHomeRibbon({
           <Search size={16} />
         </ToolbarButton>
         <ToolbarButton
-          label="替换"
+          label={documentCommandLabel('replace', messages)}
           {...commandShortcut('replace')}
           active={findReplaceMode === 'replace'}
           onClick={() => onFindText(true)}
@@ -465,17 +507,3 @@ function commandShortcut(commandId: DocumentCommandId): {
 }
 
 const RibbonGroup = WorkOfficeRibbonGroup;
-
-function documentLineHeightOptionsForValue(value: string) {
-  if (documentLineHeightOptions.some((option) => option.value === value)) {
-    return documentLineHeightOptions;
-  }
-  const numeric = Number(value);
-  return [
-    ...documentLineHeightOptions,
-    {
-      value,
-      label: Number.isFinite(numeric) && numeric > 0 ? `${numeric} 倍` : value,
-    },
-  ];
-}

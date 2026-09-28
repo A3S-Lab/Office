@@ -11,6 +11,8 @@ import {
 } from '../work-document-layout';
 import type { WorkDocumentSectionLayout } from '../work-types';
 import { documentRulerPageHeight } from './document-ruler';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 type DocumentVerticalRulerHandleKind = 'page-top-margin' | 'page-bottom-margin';
 
@@ -28,6 +30,7 @@ export function DocumentVerticalRuler({
   layout,
   onLayoutChange,
 }: DocumentVerticalRulerProps) {
+  const messages = useOfficeMessages();
   const rulerRef = useRef<HTMLFieldSetElement>(null);
   const pageHeight = documentRulerPageHeight(layout);
   const marginTop = millimetersToPixels(layout.margins.top);
@@ -114,7 +117,9 @@ export function DocumentVerticalRuler({
           } as CSSProperties
         }
       >
-        <legend className="sr-only">垂直标尺</legend>
+        <legend className="sr-only">
+          {officeMessage(messages, 'document.ruler.verticalLegend')}
+        </legend>
         <span
           aria-hidden="true"
           className="work-document-vertical-ruler-margin top"
@@ -136,7 +141,7 @@ export function DocumentVerticalRuler({
         </span>
         <DocumentVerticalRulerHandle
           kind="page-top-margin"
-          label="上页边距"
+          label={officeMessage(messages, 'document.ruler.topMargin')}
           position={marginTop}
           value={layout.margins.top}
           onKeyboardChange={updateFromKeyboard}
@@ -144,7 +149,7 @@ export function DocumentVerticalRuler({
         />
         <DocumentVerticalRulerHandle
           kind="page-bottom-margin"
-          label="下页边距"
+          label={officeMessage(messages, 'document.ruler.bottomMargin')}
           position={pageHeight - marginBottom}
           value={layout.margins.bottom}
           onKeyboardChange={updateFromKeyboard}
@@ -176,6 +181,7 @@ function DocumentVerticalRulerHandle({
     clientY: number,
   ) => void;
 }) {
+  const messages = useOfficeMessages();
   const activePointer = useRef<number | null>(null);
   const startPointer = (event: PointerEvent<HTMLButtonElement>): void => {
     if (event.button !== 0) return;
@@ -209,8 +215,13 @@ function DocumentVerticalRulerHandle({
       aria-valuemax={60}
       aria-valuemin={5}
       aria-valuenow={value}
-      aria-valuetext={`${formatRulerValue(value)} 毫米`}
-      title={`${label}：${formatRulerValue(value)} 毫米`}
+      aria-valuetext={officeMessage(messages, 'document.ruler.mm', {
+        value: formatRulerValue(value),
+      })}
+      title={officeMessage(messages, 'document.ruler.mmTitle', {
+        label,
+        value: formatRulerValue(value),
+      })}
       style={
         {
           '--work-document-vertical-ruler-handle-position': `${position}px`,

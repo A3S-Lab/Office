@@ -19,7 +19,12 @@ import type {
   WorkOfficeSpreadsheetPresenceCell,
   WorkOfficeSpreadsheetPresenceRange,
 } from '../../../collaboration/office-collaboration-presence';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { showToast } from '../../../state/app-state';
+import { useOfficeMessages } from './office-messages-context';
 import {
   isWorkspaceContextMenuKeyboardEvent,
   WorkspaceContextMenu,
@@ -78,6 +83,7 @@ import {
   type SpreadsheetFrameCell,
   useSpreadsheetCollaborationPresenceProjection,
 } from './spreadsheet-collaboration-presence';
+import { SpreadsheetFrameCaretMark } from './spreadsheet-frame-caret';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import {
   createSpreadsheetEditorExtensions,
@@ -144,7 +150,10 @@ import {
   spreadsheetGoToValidationMessage,
 } from './spreadsheet-go-to';
 import { synchronizeSpreadsheetWorkbookInPlace } from './spreadsheet-in-place-workbook-sync';
+import { spreadsheetActiveCellAnnouncement } from './spreadsheet-active-cell-announcement';
 import { spreadsheetSelectionContainsFocus } from './spreadsheet-keyboard-navigation';
+import { SpreadsheetVirtualGrid } from './spreadsheet-virtual-grid';
+import { spreadsheetVirtualGridCommitCell } from './spreadsheet-virtual-grid-commit';
 import { MAX_SPREADSHEET_PASTE_SPECIAL_CELLS } from './spreadsheet-paste-special';
 import { SpreadsheetPasteSpecialDialog } from './spreadsheet-paste-special-dialog';
 import { captureSpreadsheetRichTextPaste } from './spreadsheet-rich-text-paste';
@@ -210,6 +219,13 @@ export interface SpreadsheetEditorProps {
   fileActions?: readonly WorkOfficeFileAction[];
   onChange: (content: WorkSpreadsheetContent) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
+/**
+ * Opt-in A3S virtual grid for Spreadsheet (`virtualGrid` / playground
+ * `?virtualGrid=1`). Owns viewport paint, `role="grid"`, and literal cell
+ * edits. Fortune remains mounted underneath for the command port during
+ * migration.
+ */
+virtualGrid?: boolean;
 }
 
 const spreadsheetFocusRetryFrames = 12;
@@ -296,13 +312,18 @@ function SpreadsheetEditorSurface({
   collaborationWrittenCell = null,
   kernelWasmUrl,
   preview,
-  saveStatus = '已自动保存',
+  saveStatus = officeMessage(
+    resolveOfficeMessages(),
+    'spreadsheet.editor.saveStatus.autoSaved',
+  ),
   sortCustomListStore,
   fileActions,
   onChange,
   onDerivedChange,
   onAgentRequest,
+  virtualGrid = false,
 }: SpreadsheetEditorSurfaceProps) {
+  const messages = useOfficeMessages();
   const materializedContent = useMemo(
     () => refreshSpreadsheetPivotTables(content),
     [content],
@@ -520,9 +541,21 @@ function SpreadsheetEditorSurface({
       }
 
       button.setAttribute('role', 'button');
-      button.setAttribute('aria-label', '打开下拉列表');
+      button.setAttribute(
+        'aria-label',
+        officeMessage(
+          resolveOfficeMessages(),
+          'spreadsheet.editor.dropdown.openAria',
+        ),
+      );
       button.setAttribute('aria-haspopup', 'listbox');
-      button.setAttribute('title', '打开下拉列表');
+      button.setAttribute(
+        'title',
+        officeMessage(
+          resolveOfficeMessages(),
+          'spreadsheet.editor.dropdown.openTitle',
+        ),
+      );
       const cellBounds = selectedCell.getBoundingClientRect();
       const areaBounds = cellArea.getBoundingClientRect();
       const buttonWidth = 20;
@@ -859,7 +892,13 @@ function SpreadsheetEditorSurface({
             },
           );
         } catch {
-          showToast('无法保留此输入，请重试。', 'error');
+          showToast(
+            officeMessage(
+              resolveOfficeMessages(),
+              'spreadsheet.editor.commitFailed',
+            ),
+            'error',
+          );
         }
       }
       restoreValidationSelection();
@@ -869,7 +908,10 @@ function SpreadsheetEditorSurface({
         await officeDialog.notice({
           title: spreadsheetDataValidationDialogTitle(request.item),
           description,
-          confirmLabel: '知道了',
+          confirmLabel: officeMessage(
+            resolveOfficeMessages(),
+            'spreadsheet.editor.ack',
+          ),
           restoreFocusTarget: getSpreadsheetDialogGridFocusTarget,
         });
         finish(false);
@@ -925,9 +967,21 @@ function SpreadsheetEditorSurface({
         '.header-arrow',
       )) {
         trigger.setAttribute('role', 'button');
-        trigger.setAttribute('aria-label', '列操作');
+        trigger.setAttribute(
+          'aria-label',
+          officeMessage(
+            resolveOfficeMessages(),
+            'spreadsheet.editor.columnActionsAria',
+          ),
+        );
         trigger.setAttribute('aria-haspopup', 'menu');
-        trigger.setAttribute('title', '列操作');
+        trigger.setAttribute(
+          'title',
+          officeMessage(
+            resolveOfficeMessages(),
+            'spreadsheet.editor.columnActionsTitle',
+          ),
+        );
       }
     };
     enhanceTriggers();
@@ -1563,13 +1617,24 @@ function SpreadsheetEditorSurface({
     void officeDialog
       .prompt({
         title: spreadsheetCommandCatalog.goTo.label,
-        description:
-          '输入单元格、连续区域或已定义名称；可用工作表名称限定目标。',
-        fieldLabel: '引用位置',
+        description: officeMessage(
+          resolveOfficeMessages(),
+          'spreadsheet.editor.goTo.description',
+        ),
+        fieldLabel: officeMessage(
+          resolveOfficeMessages(),
+          'spreadsheet.editor.goTo.fieldLabel',
+        ),
         initialValue: spreadsheetSelectionReference(selection),
-        placeholder: '例如 A1、B2:D8 或 MyRange',
+        placeholder: officeMessage(
+          resolveOfficeMessages(),
+          'spreadsheet.editor.goTo.placeholder',
+        ),
         confirmLabel: spreadsheetCommandCatalog.goTo.label,
-        required: '请输入单元格、连续区域或已定义名称。',
+        required: officeMessage(
+          resolveOfficeMessages(),
+          'spreadsheet.editor.goTo.required',
+        ),
         validate: (candidate) =>
           spreadsheetGoToValidationMessage(
             contentRef.current,
@@ -1602,7 +1667,14 @@ function SpreadsheetEditorSurface({
             column: resolution.target.selection.column_focus,
           },
         );
-        if (!navigated) showToast('无法定位到所选区域。', 'error');
+        if (!navigated)
+          showToast(
+            officeMessage(
+              resolveOfficeMessages(),
+              'spreadsheet.editor.goTo.failed',
+            ),
+            'error',
+          );
       });
     return true;
   }, [navigateToSpreadsheetRange, officeDialog]);
@@ -2007,7 +2079,13 @@ function SpreadsheetEditorSurface({
     const menu = contextMenu;
     if (!menu) return;
     const row = axis === 'row';
-    const label = row ? '行高' : '列宽';
+    const catalog = resolveOfficeMessages();
+    const label = officeMessage(
+      catalog,
+      row
+        ? 'spreadsheet.editor.resize.rowHeight'
+        : 'spreadsheet.editor.resize.columnWidth',
+    );
     const maximum = row ? 545 : 2_038;
     const currentSize = spreadsheetStructureSize(
       workbookRef.current,
@@ -2016,24 +2094,37 @@ function SpreadsheetEditorSurface({
       menu.selection.sheetId,
     );
     const value = await officeDialog.prompt({
-      title: `设置${label}`,
-      fieldLabel: `${label}（1–${maximum} 像素）`,
+      title: officeMessage(catalog, 'spreadsheet.editor.resize.title', {
+        label,
+      }),
+      fieldLabel: officeMessage(catalog, 'spreadsheet.editor.resize.fieldLabel', {
+        label,
+        maximum: String(maximum),
+      }),
       initialValue: currentSize === null ? '' : String(currentSize),
       inputMode: 'numeric',
-      confirmLabel: '应用',
+      confirmLabel: officeMessage(catalog, 'spreadsheet.editor.resize.confirm'),
       restoreFocusTarget: () =>
         spreadsheetGridFocusTarget(spreadsheetCanvasRef.current),
-      required: `请输入${label}。`,
+      required: officeMessage(catalog, 'spreadsheet.editor.resize.required', {
+        label,
+      }),
       validate: (candidate) => {
         const size = Number(candidate);
         return Number.isInteger(size) && size >= 1 && size <= maximum
           ? null
-          : `${label}需为 1–${maximum} 之间的整数。`;
+          : officeMessage(catalog, 'spreadsheet.editor.resize.invalid', {
+              label,
+              maximum: String(maximum),
+            });
       },
     });
     if (value === null) return;
     if (!spreadsheetCommands.setSelectedStructureSize(axis, Number(value))) {
-      showToast(`无法设置${label}。`, 'error');
+      showToast(
+        officeMessage(catalog, 'spreadsheet.editor.resize.failed', { label }),
+        'error',
+      );
     }
   };
   return (
@@ -2060,7 +2151,7 @@ function SpreadsheetEditorSurface({
       data-spreadsheet-profile={
         activeSheetProfile?.fortuneReady ? 'ready' : undefined
       }
-      aria-label="表格工作区"
+      aria-label={officeMessage(messages, 'spreadsheet.editor.workspaceAria')}
       onKeyDownCapture={handleSpreadsheetKeyDownCapture}
       onPointerDownCapture={handleSpreadsheetPointerDownCapture}
       onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
@@ -2069,9 +2160,14 @@ function SpreadsheetEditorSurface({
     >
       {preview && (
         <WorkOfficePreviewBar
-          ariaLabel="表格预览工具"
-          label="只读预览"
-          detail={`${content.sheets.length} 个工作表`}
+          ariaLabel={officeMessage(
+            messages,
+            'spreadsheet.editor.previewToolbarAria',
+          )}
+          label={officeMessage(messages, 'spreadsheet.editor.previewLabel')}
+          detail={officeMessage(messages, 'spreadsheet.editor.previewDetail', {
+            count: String(content.sheets.length),
+          })}
           fileActions={fileActions}
           className="work-spreadsheet-ribbon"
         />
@@ -2117,6 +2213,18 @@ function SpreadsheetEditorSurface({
       )}
       <output className="sr-only" aria-live="polite" aria-atomic="true">
         {[
+          spreadsheetActiveCellAnnouncement({
+            row: toolbarRow,
+            column: toolbarColumn,
+            displayValue:
+              typeof toolbarCell?.m === 'string'
+                ? toolbarCell.m
+                : toolbarCell?.v === undefined || toolbarCell?.v === null
+                  ? null
+                  : String(toolbarCell.v),
+            formula:
+              typeof toolbarCell?.f === 'string' ? toolbarCell.f : null,
+          }),
           spreadsheetFormatPainterStatus(formatPainterMode),
           autoFilterStatus,
           spreadsheetFreezePanesStatus(toolbarSheet?.frozen),
@@ -2128,6 +2236,7 @@ function SpreadsheetEditorSurface({
         <div
           ref={spreadsheetCanvasRef}
           className="work-spreadsheet-canvas"
+          data-virtual-grid={virtualGrid ? 'a3s' : undefined}
           onFocusCapture={(event) =>
             preserveSpreadsheetGridFocus(
               spreadsheetCanvasRef.current,
@@ -2151,27 +2260,90 @@ function SpreadsheetEditorSurface({
             openSpreadsheetContextMenu(event);
           }}
         >
-          <ControlledWorkbook
-            ref={bindWorkbookInstance}
-            key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}:fx-${formulaBarVisible ? 1 : 0}:hd-${headingsVisible ? 1 : 0}:sf-${showFormulas ? 1 : 0}`}
-            data={displayedWorkbookSheets}
-            lang="zh"
-            allowEdit={!preview && !showFormulas}
-            showToolbar={false}
-            showFormulaBar={!preview && formulaBarVisible}
-            showSheetTabs={false}
-            row={60}
-            column={26}
-            rowHeaderWidth={headingsVisible ? 44 : 0}
-            columnHeaderHeight={headingsVisible ? 24 : 0}
-            defaultRowHeight={24}
-            defaultColWidth={96}
-            defaultFontSize={DEFAULT_SPREADSHEET_FONT_SIZE}
-            filterContextMenu={SPREADSHEET_AUTO_FILTER_MENU_ITEMS}
-            hooks={workbookHooks}
-            onChange={handleWorkbookChange}
-            onOp={handleWorkbookOperations}
-          />
+          <div
+            className="work-spreadsheet-fortune-host"
+            aria-hidden={virtualGrid ? true : undefined}
+          >
+            <ControlledWorkbook
+              ref={bindWorkbookInstance}
+              key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}:fx-${formulaBarVisible ? 1 : 0}:hd-${headingsVisible ? 1 : 0}:sf-${showFormulas ? 1 : 0}`}
+              data={displayedWorkbookSheets}
+              lang="zh"
+              allowEdit={!preview && !showFormulas}
+              showToolbar={false}
+              showFormulaBar={!preview && formulaBarVisible}
+              showSheetTabs={false}
+              row={60}
+              column={26}
+              rowHeaderWidth={headingsVisible ? 44 : 0}
+              columnHeaderHeight={headingsVisible ? 24 : 0}
+              defaultRowHeight={24}
+              defaultColWidth={96}
+              defaultFontSize={DEFAULT_SPREADSHEET_FONT_SIZE}
+              filterContextMenu={SPREADSHEET_AUTO_FILTER_MENU_ITEMS}
+              hooks={workbookHooks}
+              onChange={handleWorkbookChange}
+              onOp={handleWorkbookOperations}
+            />
+          </div>
+          {virtualGrid ? (
+            <SpreadsheetVirtualGrid
+              sheetName={toolbarSheet?.name ?? 'Sheet'}
+              data={toolbarSheet?.data}
+              rowCount={
+                targetSheetGridSize?.rowCount ?? toolbarSheet?.row ?? 60
+              }
+              columnCount={
+                targetSheetGridSize?.columnCount ?? toolbarSheet?.column ?? 26
+              }
+              activeRow={toolbarRow ?? 0}
+              activeColumn={toolbarColumn ?? 0}
+              editable={!preview && !showFormulas}
+              merges={Object.values(toolbarSheet?.config?.merge ?? {})}
+              onActiveCellChange={(row, column) => {
+                const sheetId = toolbarSheetId ?? activeSheetIdRef.current;
+                if (!sheetId) return;
+                const selection = {
+                  row: [row, row],
+                  column: [column, column],
+                  row_focus: row,
+                  column_focus: column,
+                };
+                const nextSelection = { sheetId, selection };
+                selectionStateRef.current.current = nextSelection;
+                selectionStateRef.current.requested = {
+                  sheetId,
+                  selection: {
+                    ...selection,
+                    row: [...selection.row],
+                    column: [...selection.column],
+                  },
+                };
+                setSelectionState(nextSelection);
+                try {
+                  workbookRef.current?.setSelection(
+                    [{ row: selection.row, column: selection.column }],
+                    { id: sheetId },
+                  );
+                } catch {
+                  // Selection state remains authoritative for the A3S grid.
+                }
+              }}
+              onCommitCell={(row, column, raw) => {
+                const sheetId = toolbarSheetId ?? activeSheetIdRef.current;
+                if (!sheetId || preview) return;
+                acceptWorkbookContent(
+                  spreadsheetVirtualGridCommitCell(
+                    contentRef.current,
+                    sheetId,
+                    row,
+                    column,
+                    raw,
+                  ),
+                );
+              }}
+            />
+          ) : null}
           {findOpen && (
             <SpreadsheetFindBar
               sheet={activeSheet}
@@ -2180,6 +2352,14 @@ function SpreadsheetEditorSurface({
               onSelectMatch={selectSpreadsheetFindMatch}
             />
           )}
+            {collaborationWrittenCell ? (
+              <SpreadsheetFrameCaretMark
+                cell={collaborationWrittenCell}
+                columnHeaderHeight={headingsVisible ? 24 : 0}
+                content={materializedContent}
+                rowHeaderWidth={headingsVisible ? 44 : 0}
+              />
+            ) : null}
         </div>
         {!preview && panel && (
           <SpreadsheetWorkbookPanel
@@ -2243,18 +2423,36 @@ function SpreadsheetEditorSurface({
               <span
                 className="work-spreadsheet-view-mode"
                 role="img"
-                aria-label="普通表格视图"
-                title="普通表格视图"
+                aria-label={officeMessage(
+                  messages,
+                  'spreadsheet.editor.normalViewAria',
+                )}
+                title={officeMessage(
+                  messages,
+                  'spreadsheet.editor.normalViewTitle',
+                )}
               >
                 <Grid3X3 size={13} />
               </span>
               <span className="work-office-status-divider" />
               <WorkOfficeZoomControls
                 zoom={preview ? previewZoom : zoom}
-                decreaseLabel="缩小表格"
-                increaseLabel="放大表格"
-                outputLabel="表格缩放比例"
-                sliderLabel="表格缩放"
+                decreaseLabel={officeMessage(
+                  messages,
+                  'spreadsheet.editor.zoomOut',
+                )}
+                increaseLabel={officeMessage(
+                  messages,
+                  'spreadsheet.editor.zoomIn',
+                )}
+                outputLabel={officeMessage(
+                  messages,
+                  'spreadsheet.editor.zoomOutput',
+                )}
+                sliderLabel={officeMessage(
+                  messages,
+                  'spreadsheet.editor.zoomSlider',
+                )}
                 onChange={(nextZoom) => {
                   const sheetId = activeSheetIdRef.current;
                   if (sheetId)
@@ -2266,22 +2464,42 @@ function SpreadsheetEditorSurface({
             </>
           }
         >
-          <output aria-label="表格选区状态">
+          <output
+            aria-label={officeMessage(
+              messages,
+              'spreadsheet.editor.selectionStatusAria',
+            )}
+          >
             {selectionState
               ? spreadsheetSelectionReference(selectionState.selection)
-              : '未选择单元格'}
+              : officeMessage(messages, 'spreadsheet.editor.noSelection')}
           </output>
           {formulaResultText && (
-            <output aria-label="当前单元格结果">{formulaResultText}</output>
+            <output
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.editor.cellResultAria',
+              )}
+            >
+              {formulaResultText}
+            </output>
           )}
           {selectionSummary && selectionSummary.nonEmptyCount > 0 && (
-            <output aria-label="表格选区统计">
+            <output
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.editor.selectionStatsAria',
+              )}
+            >
               {spreadsheetSelectionSummaryText(selectionSummary)}
             </output>
           )}
           {!preview && (
             <output
-              aria-label="表格保存状态"
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.editor.saveStatusAria',
+              )}
               className="work-office-save-status"
             >
               <Cloud size={12} />
@@ -2366,7 +2584,14 @@ function SpreadsheetEditorSurface({
             } finally {
               formatCellsApplyingRef.current = false;
             }
-            if (!handled) showToast('无法应用单元格格式。', 'error');
+            if (!handled)
+              showToast(
+                officeMessage(
+                  resolveOfficeMessages(),
+                  'spreadsheet.editor.formatFailed',
+                ),
+                'error',
+              );
             return handled;
           }}
           onClose={closeSpreadsheetFormatCells}
@@ -2613,11 +2838,12 @@ function spreadsheetNavigationShortcutOwnsFocus(event: KeyboardEvent): boolean {
 function spreadsheetFormatPainterStatus(
   mode: SpreadsheetFormatPainterMode | null,
 ): string {
+  const catalog = resolveOfficeMessages();
   if (mode === 'locked') {
-    return '格式刷已锁定，可连续选择目标区域；再次点击格式刷或按 Escape 退出。';
+    return officeMessage(catalog, 'spreadsheet.editor.formatPainter.locked');
   }
   if (mode === 'once') {
-    return '格式刷已开启，请选择一个目标区域；按 Escape 退出。';
+    return officeMessage(catalog, 'spreadsheet.editor.formatPainter.active');
   }
   return '';
 }
@@ -2626,6 +2852,7 @@ function spreadsheetGridFocusTarget(
   container: HTMLElement | null,
 ): HTMLElement | null {
   return (
+    container?.querySelector<HTMLElement>('.work-spreadsheet-virtual-grid') ??
     container?.querySelector<HTMLElement>('.fortune-sheet-overlay') ??
     container?.querySelector<HTMLElement>('.fortune-cell-area') ??
     null
@@ -2655,8 +2882,19 @@ function spreadsheetContextMenuLabel({
   kind,
   selection,
 }: SpreadsheetContextMenuState): string {
-  const subject = kind === 'row' ? '行' : kind === 'column' ? '列' : '表格选区';
-  return `${subject} ${selection.reference} 操作`;
+  const catalog = resolveOfficeMessages();
+  const subject = officeMessage(
+    catalog,
+    kind === 'row'
+      ? 'spreadsheet.editor.structure.row'
+      : kind === 'column'
+        ? 'spreadsheet.editor.structure.column'
+        : 'spreadsheet.editor.structure.selection',
+  );
+  return officeMessage(catalog, 'spreadsheet.editor.structure.action', {
+    subject,
+    reference: selection.reference,
+  });
 }
 
 function spreadsheetStructureSize(
@@ -2751,10 +2989,23 @@ function spreadsheetPresenceSheetSize(
 function spreadsheetSelectionSummaryText(
   summary: ReturnType<typeof spreadsheetSelectionSummary>,
 ): string {
-  const parts = [`计数 ${summary.nonEmptyCount}`];
+  const catalog = resolveOfficeMessages();
+  const parts = [
+    officeMessage(catalog, 'spreadsheet.editor.stats.count', {
+      count: String(summary.nonEmptyCount),
+    }),
+  ];
   if (summary.average !== null && summary.sum !== null) {
-    parts.push(`平均 ${formatSpreadsheetStatistic(summary.average)}`);
-    parts.push(`求和 ${formatSpreadsheetStatistic(summary.sum)}`);
+    parts.push(
+      officeMessage(catalog, 'spreadsheet.editor.stats.average', {
+        value: formatSpreadsheetStatistic(summary.average),
+      }),
+    );
+    parts.push(
+      officeMessage(catalog, 'spreadsheet.editor.stats.sum', {
+        value: formatSpreadsheetStatistic(summary.sum),
+      }),
+    );
   }
   return parts.join(' · ');
 }

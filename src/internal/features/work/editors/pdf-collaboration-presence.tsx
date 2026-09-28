@@ -1,14 +1,17 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   OfficePresenceAvatar,
   officePresenceColorStyle,
   useOfficeRemoteParticipants,
 } from './office-collaboration-presence-ui';
+import { useOfficeMessages } from './office-messages-context';
 
 export function PdfCollaborationPresenceLayer({
   pageIndex,
 }: {
   pageIndex: number;
 }) {
+  const messages = useOfficeMessages();
   const participants = useOfficeRemoteParticipants().filter(
     (participant) =>
       participant.location?.kind === 'pdf' &&
@@ -38,7 +41,7 @@ export function PdfCollaborationPresenceLayer({
             <span>
               <strong>{participant.actor.name}</strong>
               <small>
-                {location.annotationId ? '正在查看批注' : '正在查看此页'}
+                {location.annotationId ? officeMessage(messages, 'pdf.presence.viewingAnnotation') : officeMessage(messages, 'pdf.presence.viewingPage')}
               </small>
             </span>
           </span>

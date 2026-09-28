@@ -1,4 +1,5 @@
 use super::*;
+use yrs::{XmlElementPrelim, XmlTextPrelim};
 
 #[test]
 fn projects_canonical_markdown_after_reordered_delivery_and_restart() {
@@ -191,4 +192,250 @@ fn browser_edit_after_projection_makes_stale_agent_paragraph_guard_fail_closed()
     };
     assert_eq!(plain_text, "Hello 😀 world edited by user");
     assert_eq!(paragraphs[0].text_id.as_deref(), Some("00000003"));
+}
+
+#[test]
+fn document_replica_export_writes_every_paragraph_or_returns_no_package() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = NativeOfficeCollaborationStore::create(document_create_request(
+        &temp.path().join("export-document"),
+    ))
+    .unwrap();
+    store
+        .apply(document_apply_request(
+            "export-bootstrap-document",
+            STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+    store
+        .mutate(document_mutation_request(
+            "export-insert-paragraph",
+            NativeOfficeCollaborationMutation::DocumentInsertParagraph {
+                anchor_paragraph_id: "00000001".to_owned(),
+                position: NativeOfficeCollaborationParagraphPosition::After,
+                paragraph_id: "00000020".to_owned(),
+                text_id: "00000021".to_owned(),
+                text: "BETA".to_owned(),
+            },
+        ))
+        .unwrap();
+
+    let document = br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><w:p w14:paraId="00000001"><w:r><w:t>Hello</w:t></w:r></w:p><w:p w14:paraId="00000020"><w:r><w:t>OLD</w:t></w:r></w:p><w:p w14:paraId="00000099"><w:r><w:t>KEEP</w:t></w:r></w:p></w:body></w:document>"#;
+    let mut parts = std::collections::BTreeMap::new();
+    parts.insert("word/document.xml".to_owned(), document.to_vec());
+    parts.insert("word/styles.xml".to_owned(), b"<styles/>".to_vec());
+
+    let written = export_document_replica(&store, parts.clone()).unwrap();
+    let xml = String::from_utf8(written["word/document.xml"].clone()).unwrap();
+    assert!(xml.contains("Hello 😀 world"));
+    assert!(xml.contains("BETA"));
+    assert!(xml.contains("KEEP"));
+    assert_eq!(written["word/styles.xml"], parts["word/styles.xml"]);
+
+    let two_runs = br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><w:p w14:paraId="00000001"><w:r><w:t>Hello</w:t></w:r></w:p><w:p w14:paraId="00000020"><w:r><w:t>A</w:t></w:r><w:r><w:t>B</w:t></w:r></w:p></w:body></w:document>"#;
+    let mut split = parts.clone();
+    split.insert("word/document.xml".to_owned(), two_runs.to_vec());
+    assert!(export_document_replica(&store, split).is_err());
+
+    let missing = br#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><w:p w14:paraId="00000001"><w:r><w:t>Hello</w:t></w:r></w:p></w:body></w:document>"#;
+    let mut missing_parts = parts.clone();
+    missing_parts.insert("word/document.xml".to_owned(), missing.to_vec());
+    assert!(export_document_replica(&store, missing_parts).is_err());
+
+    let browser = Doc::with_client_id(424_301);
+    browser
+        .transact_mut()
+        .apply_update(Update::decode_v1(&store.synchronize(None).unwrap().update).unwrap())
+        .unwrap();
+    let before = browser.transact().state_vector();
+    let fragment = browser.get_or_insert_xml_fragment("a3s.office.document.content");
+    {
+        let mut transaction = browser.transact_mut();
+        let section = fragment
+            .successors(&transaction)
+            .find_map(|node| match node {
+                XmlOut::Element(element) if element.tag().as_ref() == "documentSection" => {
+                    Some(element)
+                }
+                _ => None,
+            })
+            .unwrap();
+        let element = section.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+        element.push_back(&mut transaction, XmlTextPrelim::new("orphan"));
+    }
+    store
+        .apply(document_apply_request(
+            "export-paragraph-without-id",
+            browser.transact().encode_state_as_update_v1(&before),
+        ))
+        .unwrap();
+    let unnamed = export_document_replica(&store, parts).unwrap_err();
+    assert_eq!(unnamed.code, "office.collaboration.snapshot_invalid");
+    assert!(unnamed.message.contains("paraId"));
+}
+
+#[test]
+fn reordered_document_updates_converge_and_reopen_the_merged_export() {
+    let temp = tempfile::tempdir().unwrap();
+    let updates = [
+        offline_document_update(
+            &temp,
+            940_111,
+            "offline-splice",
+            NativeOfficeCollaborationMutation::DocumentSplice {
+                paragraph_id: "00000001".to_owned(),
+                text_id: "00000002".to_owned(),
+                index_utf16: 6,
+                delete_utf16: 2,
+                expected_slice: "😀".to_owned(),
+                insert: "🦀".to_owned(),
+            },
+        ),
+        offline_document_update(
+            &temp,
+            940_112,
+            "offline-page-color",
+            NativeOfficeCollaborationMutation::DocumentSetPageColor {
+                page_color: "#101828".to_owned(),
+            },
+        ),
+        offline_document_update(
+            &temp,
+            940_113,
+            "offline-track-changes",
+            NativeOfficeCollaborationMutation::DocumentSetTrackChanges {
+                track_changes: false,
+            },
+        ),
+    ];
+
+    let mut hashes = Vec::new();
+    for (permutation_index, permutation) in three_document_permutations().into_iter().enumerate() {
+        let ordered = [
+            updates[permutation[0]].clone(),
+            updates[permutation[1]].clone(),
+            updates[permutation[2]].clone(),
+        ];
+        let store = deliver_document_updates(
+            &temp.path().join(format!("order-{permutation_index}")),
+            940_200 + permutation_index as u64,
+            &ordered,
+        );
+        let state = document_state(&store);
+        assert_eq!(
+            state.paragraphs,
+            vec![document_paragraph("00000001", "00000002", "Hello 🦀 world")]
+        );
+        assert_eq!(state.page_color.as_deref(), Some("#101828"));
+        assert_eq!(state.track_changes, Some(false));
+        hashes.push(store.inspect().unwrap().document_state_sha256);
+    }
+    assert!(hashes.iter().all(|hash| hash == &hashes[0]));
+
+    let repeated = [
+        updates[0].clone(),
+        updates[0].clone(),
+        updates[1].clone(),
+        updates[2].clone(),
+    ];
+    let replayed = deliver_document_updates(&temp.path().join("repeated"), 940_220, &repeated);
+    assert_eq!(replayed.inspect().unwrap().document_state_sha256, hashes[0]);
+
+    let document = "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:w14=\"http://schemas.microsoft.com/office/word/2010/wordml\"><w:body><w:p w14:paraId=\"00000001\"><w:r><w:t>Hello 😀 world</w:t></w:r></w:p><w:p w14:paraId=\"00000099\"><w:r><w:t>KEEP</w:t></w:r></w:p></w:body></w:document>";
+    let mut parts = std::collections::BTreeMap::new();
+    parts.insert("word/document.xml".to_owned(), document.as_bytes().to_vec());
+    parts.insert("word/styles.xml".to_owned(), b"<styles/>".to_vec());
+    let written = export_document_replica(&replayed, parts.clone()).unwrap();
+    assert_eq!(written["word/styles.xml"], parts["word/styles.xml"]);
+    let xml = String::from_utf8(written["word/document.xml"].clone()).unwrap();
+    assert!(xml.contains("KEEP"));
+
+    let package = temp.path().join("merged.docx");
+    std::fs::write(&package, b"snapshot").unwrap();
+    let imported = import_document_snapshot(
+        &package,
+        &written,
+        &temp.path().join("reopened"),
+        "merged-letter",
+    )
+    .unwrap();
+    let reopened = document_state(&imported.store);
+    assert_eq!(
+        reopened
+            .paragraphs
+            .iter()
+            .map(|paragraph| paragraph.text.as_str())
+            .collect::<Vec<_>>(),
+        vec!["Hello 🦀 world", "KEEP"]
+    );
+}
+
+fn offline_document_update(
+    temp: &tempfile::TempDir,
+    client_id: u64,
+    operation_id: &str,
+    mutation: NativeOfficeCollaborationMutation,
+) -> Vec<u8> {
+    let store = document_store_with_client(&temp.path().join(operation_id), client_id);
+    let base = store.synchronize(None).unwrap().state_vector;
+    store
+        .mutate(document_mutation_request(operation_id, mutation))
+        .unwrap();
+    store.synchronize(Some(&base)).unwrap().update
+}
+
+fn deliver_document_updates(
+    root: &std::path::Path,
+    client_id: u64,
+    updates: &[Vec<u8>],
+) -> NativeOfficeCollaborationStore {
+    let store = document_store_with_client(root, client_id);
+    for (index, update) in updates.iter().enumerate() {
+        store
+            .apply(document_apply_request(
+                &format!("deliver-{client_id}-{index}"),
+                update.clone(),
+            ))
+            .unwrap();
+    }
+    store
+}
+
+fn document_store_with_client(
+    root: &std::path::Path,
+    client_id: u64,
+) -> NativeOfficeCollaborationStore {
+    let mut request = document_create_request(root);
+    request.client_id = Some(client_id);
+    request.operation_id = format!("create-document-{client_id}");
+    let store = NativeOfficeCollaborationStore::create(request).unwrap();
+    store
+        .apply(document_apply_request(
+            "bootstrap-browser-document",
+            STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+    store
+}
+
+fn three_document_permutations() -> Vec<[usize; 3]> {
+    let mut result = Vec::with_capacity(6);
+    for first in 0..3 {
+        for second in 0..3 {
+            for third in 0..3 {
+                let permutation = [first, second, third];
+                if permutation
+                    .iter()
+                    .copied()
+                    .collect::<std::collections::HashSet<_>>()
+                    .len()
+                    == 3
+                {
+                    result.push(permutation);
+                }
+            }
+        }
+    }
+    assert_eq!(result.len(), 6);
+    result
 }

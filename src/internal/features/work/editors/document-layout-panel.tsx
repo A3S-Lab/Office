@@ -1,5 +1,7 @@
 import { useId, useState } from 'react';
 import { Button, Tabs } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { clampDocumentMargin } from '../work-document-layout';
 import {
   documentPageMarginsForLayout,
@@ -32,6 +34,7 @@ import { DocumentColumnsPanel } from './document-columns-panel';
 import { DocumentPageChromePanel } from './document-page-chrome-panel';
 import { DocumentTaskPane } from './document-task-pane';
 import { CommittedOfficeNumberField, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export type DocumentLayoutPanelTab = 'columns' | 'headerFooter' | 'page';
 
@@ -56,6 +59,7 @@ export function DocumentLayoutPanel({
   onMergeSection: () => void;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const tabsId = useId();
   const [internalActiveTab, setInternalActiveTab] =
     useState<DocumentLayoutPanelTab>('page');
@@ -67,12 +71,7 @@ export function DocumentLayoutPanel({
     if (controlledActiveTab === undefined) setInternalActiveTab(tab);
     onActiveTabChange?.(tab);
   };
-  const marginFields: Array<[keyof WorkDocumentMargins, string]> = [
-    ['top', '上'],
-    ['right', '右'],
-    ['bottom', '下'],
-    ['left', '左'],
-  ];
+  const marginFields = documentLayoutMarginFields(messages);
   const pageMargins = documentPageMarginsForLayout(layout);
   const exactPageGeometry = normalizeDocumentPageGeometry(layout.pageGeometry);
   const resolvedPageSize = resolveDocumentPageSize(layout);
@@ -89,16 +88,23 @@ export function DocumentLayoutPanel({
       : 'left';
   const update = (patch: Partial<WorkDocumentSectionLayout>) =>
     onChange({ ...layout, ...patch });
+  const pageNumberStartSuffix = officeMessage(
+    messages,
+    'document.layout.pageNumber.start',
+  );
   return (
     <DocumentTaskPane
       className="work-document-layout-panel"
-      title="页面设置"
-      description={`第 ${sectionIndex + 1} 节 · 共 ${sectionCount} 节`}
-      closeLabel="关闭页面设置"
+      title={officeMessage(messages, 'document.layout.title')}
+      description={officeMessage(messages, 'document.layout.description', {
+        section: String(sectionIndex + 1),
+        count: String(sectionCount),
+      })}
+      closeLabel={officeMessage(messages, 'document.layout.close')}
       onClose={onClose}
     >
       <Tabs
-        ariaLabel="页面设置类别"
+        ariaLabel={officeMessage(messages, 'document.layout.tabsAria')}
         className="work-document-layout-tabs"
         value={activeTab}
         variant="line"
@@ -106,19 +112,19 @@ export function DocumentLayoutPanel({
         items={[
           {
             id: 'page',
-            label: '页面',
+            label: officeMessage(messages, 'document.layout.tab.page'),
             tabId: `${tabsId}-page-tab`,
             panelId: `${tabsId}-page-panel`,
           },
           {
             id: 'columns',
-            label: '分栏与分节',
+            label: officeMessage(messages, 'document.layout.tab.columns'),
             tabId: `${tabsId}-columns-tab`,
             panelId: `${tabsId}-columns-panel`,
           },
           {
             id: 'headerFooter',
-            label: '页眉页脚',
+            label: officeMessage(messages, 'document.layout.tab.headerFooter'),
             tabId: `${tabsId}-header-footer-tab`,
             panelId: `${tabsId}-header-footer-panel`,
           },
@@ -133,13 +139,26 @@ export function DocumentLayoutPanel({
             role="tabpanel"
             aria-labelledby={`${tabsId}-page-tab`}
           >
-            <section className="work-document-layout-group" aria-label="纸张">
-              <h3>纸张</h3>
+            <section
+              className="work-document-layout-group"
+              aria-label={officeMessage(
+                messages,
+                'document.layout.paper.sectionAria',
+              )}
+            >
+              <h3>
+                {officeMessage(messages, 'document.layout.paper.heading')}
+              </h3>
               <div className="work-document-layout-paired-fields">
                 <div className="work-office-field">
-                  <span>大小</span>
+                  <span>
+                    {officeMessage(messages, 'document.layout.paper.size')}
+                  </span>
                   <OfficeSelect<WorkDocumentPaperSize>
-                    ariaLabel="纸张大小"
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.layout.paper.sizeAria',
+                    )}
                     value={customPaperSelected ? 'custom' : layout.pageSize}
                     options={[
                       { value: 'a3', label: 'A3' },
@@ -148,7 +167,13 @@ export function DocumentLayoutPanel({
                       { value: 'letter', label: 'Letter' },
                       { value: 'legal', label: 'Legal' },
                       { value: 'tabloid', label: 'Tabloid' },
-                      { value: 'custom', label: '自定义' },
+                      {
+                        value: 'custom',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.paper.custom',
+                        ),
+                      },
                     ]}
                     onValueChange={(pageSize) => {
                       if (pageSize === 'custom') {
@@ -161,13 +186,33 @@ export function DocumentLayoutPanel({
                   />
                 </div>
                 <div className="work-office-field">
-                  <span>方向</span>
+                  <span>
+                    {officeMessage(
+                      messages,
+                      'document.layout.paper.orientation',
+                    )}
+                  </span>
                   <OfficeSelect
-                    ariaLabel="页面方向"
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.layout.paper.orientationAria',
+                    )}
                     value={layout.orientation}
                     options={[
-                      { value: 'portrait', label: '纵向' },
-                      { value: 'landscape', label: '横向' },
+                      {
+                        value: 'portrait',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.paper.portrait',
+                        ),
+                      },
+                      {
+                        value: 'landscape',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.paper.landscape',
+                        ),
+                      },
                     ]}
                     onValueChange={(orientation) =>
                       onChange(
@@ -181,37 +226,52 @@ export function DocumentLayoutPanel({
                 <div className="work-document-layout-paired-fields">
                   {(
                     [
-                      ['width', '宽度'],
-                      ['height', '高度'],
+                      ['width', 'document.layout.paper.width'],
+                      ['height', 'document.layout.paper.height'],
                     ] as const
-                  ).map(([dimension, label]) => (
-                    <div className="work-office-field" key={dimension}>
-                      <span>{label}（毫米）</span>
-                      <CommittedOfficeNumberField
-                        min={25.4}
-                        max={558.8}
-                        step={0.1}
-                        ariaLabel={`纸张${label}`}
-                        value={customPageDimensions[dimension]}
-                        normalizeValue={normalizeDocumentPageDimensionInput}
-                        onValueCommit={(value) => {
-                          setCustomPaperSelected(false);
-                          onChange(
-                            updateDocumentCustomPageMillimeters(
-                              layout,
-                              dimension,
-                              value,
-                            ),
-                          );
-                        }}
-                      />
-                    </div>
-                  ))}
+                  ).map(([dimension, labelKey]) => {
+                    const label = officeMessage(messages, labelKey);
+                    return (
+                      <div className="work-office-field" key={dimension}>
+                        <span>
+                          {officeMessage(
+                            messages,
+                            'document.layout.paper.dimensionMm',
+                            { label },
+                          )}
+                        </span>
+                        <CommittedOfficeNumberField
+                          min={25.4}
+                          max={558.8}
+                          step={0.1}
+                          ariaLabel={officeMessage(
+                            messages,
+                            'document.layout.paper.dimensionAria',
+                            { label },
+                          )}
+                          value={customPageDimensions[dimension]}
+                          normalizeValue={normalizeDocumentPageDimensionInput}
+                          onValueCommit={(value) => {
+                            setCustomPaperSelected(false);
+                            onChange(
+                              updateDocumentCustomPageMillimeters(
+                                layout,
+                                dimension,
+                                value,
+                              ),
+                            );
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
             <fieldset className="work-document-layout-group">
-              <legend>页边距（毫米）</legend>
+              <legend>
+                {officeMessage(messages, 'document.layout.margins.legend')}
+              </legend>
               <div className="work-document-layout-margin-grid">
                 {marginFields.map(([side, label]) => (
                   <div className="work-office-field" key={side}>
@@ -220,7 +280,11 @@ export function DocumentLayoutPanel({
                       min={5}
                       max={60}
                       step={1}
-                      ariaLabel={`${label}页边距`}
+                      ariaLabel={officeMessage(
+                        messages,
+                        'document.layout.margins.sideAria',
+                        { label },
+                      )}
                       value={layout.margins[side]}
                       normalizeValue={normalizeDocumentMarginInput}
                       onValueCommit={(value) =>
@@ -239,48 +303,76 @@ export function DocumentLayoutPanel({
             </fieldset>
             <section
               className="work-document-layout-group"
-              aria-label="高级页边距"
+              aria-label={officeMessage(
+                messages,
+                'document.layout.advanced.sectionAria',
+              )}
             >
-              <h3>高级页边距</h3>
+              <h3>
+                {officeMessage(messages, 'document.layout.advanced.heading')}
+              </h3>
               <div className="work-document-layout-margin-grid">
                 {(
                   [
-                    ['header', '页眉距顶端'],
-                    ['footer', '页脚距底端'],
-                    ['gutter', '装订线'],
+                    ['header', 'document.layout.advanced.header'],
+                    ['footer', 'document.layout.advanced.footer'],
+                    ['gutter', 'document.layout.advanced.gutter'],
                   ] as const
-                ).map(([key, label]) => (
-                  <div className="work-office-field" key={key}>
-                    <span>{label}</span>
-                    <CommittedOfficeNumberField
-                      min={0}
-                      max={60}
-                      step={0.1}
-                      ariaLabel={label}
-                      value={twipsToMillimeters(pageMargins[key])}
-                      normalizeValue={normalizeDocumentPageOffsetInput}
-                      onValueCommit={(value) =>
-                        onChange(
-                          updateDocumentPageMarginMillimeters(
-                            layout,
-                            key,
-                            value,
-                          ),
-                        )
-                      }
-                    />
-                  </div>
-                ))}
+                ).map(([key, labelKey]) => {
+                  const label = officeMessage(messages, labelKey);
+                  return (
+                    <div className="work-office-field" key={key}>
+                      <span>{label}</span>
+                      <CommittedOfficeNumberField
+                        min={0}
+                        max={60}
+                        step={0.1}
+                        ariaLabel={label}
+                        value={twipsToMillimeters(pageMargins[key])}
+                        normalizeValue={normalizeDocumentPageOffsetInput}
+                        onValueCommit={(value) =>
+                          onChange(
+                            updateDocumentPageMarginMillimeters(
+                              layout,
+                              key,
+                              value,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  );
+                })}
               </div>
               <div className="work-document-layout-paired-fields">
                 <div className="work-office-field">
-                  <span>上边距规则</span>
+                  <span>
+                    {officeMessage(
+                      messages,
+                      'document.layout.advanced.topRule',
+                    )}
+                  </span>
                   <OfficeSelect<WorkDocumentPageMarginMode>
-                    ariaLabel="上边距与页眉关系"
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.layout.advanced.topRuleAria',
+                    )}
                     value={pageMargins.top < 0 ? 'fromPageEdge' : 'clearChrome'}
                     options={[
-                      { value: 'clearChrome', label: '避让页眉' },
-                      { value: 'fromPageEdge', label: '允许重叠' },
+                      {
+                        value: 'clearChrome',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.clearHeader',
+                        ),
+                      },
+                      {
+                        value: 'fromPageEdge',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.allowOverlap',
+                        ),
+                      },
                     ]}
                     onValueChange={(mode) =>
                       onChange(
@@ -290,15 +382,35 @@ export function DocumentLayoutPanel({
                   />
                 </div>
                 <div className="work-office-field">
-                  <span>下边距规则</span>
+                  <span>
+                    {officeMessage(
+                      messages,
+                      'document.layout.advanced.bottomRule',
+                    )}
+                  </span>
                   <OfficeSelect<WorkDocumentPageMarginMode>
-                    ariaLabel="下边距与页脚关系"
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.layout.advanced.bottomRuleAria',
+                    )}
                     value={
                       pageMargins.bottom < 0 ? 'fromPageEdge' : 'clearChrome'
                     }
                     options={[
-                      { value: 'clearChrome', label: '避让页脚' },
-                      { value: 'fromPageEdge', label: '允许重叠' },
+                      {
+                        value: 'clearChrome',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.clearFooter',
+                        ),
+                      },
+                      {
+                        value: 'fromPageEdge',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.allowOverlap',
+                        ),
+                      },
                     ]}
                     onValueChange={(mode) =>
                       onChange(
@@ -310,13 +422,33 @@ export function DocumentLayoutPanel({
               </div>
               <div className="work-document-layout-paired-fields">
                 <div className="work-office-field">
-                  <span>多页方式</span>
+                  <span>
+                    {officeMessage(
+                      messages,
+                      'document.layout.advanced.multiPage',
+                    )}
+                  </span>
                   <OfficeSelect<'mirrored' | 'normal'>
-                    ariaLabel="镜像页边距"
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.layout.advanced.mirrorAria',
+                    )}
                     value={pageMargins.mirrorMargins ? 'mirrored' : 'normal'}
                     options={[
-                      { value: 'normal', label: '普通' },
-                      { value: 'mirrored', label: '镜像页边距' },
+                      {
+                        value: 'normal',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.normal',
+                        ),
+                      },
+                      {
+                        value: 'mirrored',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.mirrored',
+                        ),
+                      },
                     ]}
                     onValueChange={(value) =>
                       onChange(
@@ -329,14 +461,40 @@ export function DocumentLayoutPanel({
                   />
                 </div>
                 <div className="work-office-field">
-                  <span>装订线位置</span>
+                  <span>
+                    {officeMessage(
+                      messages,
+                      'document.layout.advanced.gutterPosition',
+                    )}
+                  </span>
                   <OfficeSelect<WorkDocumentGutterPosition>
-                    ariaLabel="装订线位置"
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.layout.advanced.gutterPositionAria',
+                    )}
                     value={gutterPosition}
                     options={[
-                      { value: 'left', label: '左侧' },
-                      { value: 'right', label: '右侧' },
-                      { value: 'top', label: '顶部' },
+                      {
+                        value: 'left',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.gutterLeft',
+                        ),
+                      },
+                      {
+                        value: 'right',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.gutterRight',
+                        ),
+                      },
+                      {
+                        value: 'top',
+                        label: officeMessage(
+                          messages,
+                          'document.layout.advanced.gutterTop',
+                        ),
+                      },
                     ]}
                     onValueChange={(position) =>
                       onChange(updateDocumentGutterPosition(layout, position))
@@ -358,26 +516,69 @@ export function DocumentLayoutPanel({
               columns={layout.columns}
               onChange={(columns) => update({ columns })}
             />
-            <section className="work-document-layout-group" aria-label="分节">
-              <h3>分节</h3>
+            <section
+              className="work-document-layout-group"
+              aria-label={officeMessage(
+                messages,
+                'document.layout.section.sectionAria',
+              )}
+            >
+              <h3>
+                {officeMessage(messages, 'document.layout.section.heading')}
+              </h3>
               <div className="work-office-field">
-                <span>本节之后</span>
+                <span>
+                  {officeMessage(messages, 'document.layout.section.after')}
+                </span>
                 <OfficeSelect
-                  ariaLabel="分节方式"
+                  ariaLabel={officeMessage(
+                    messages,
+                    'document.layout.section.breakAria',
+                  )}
                   value={layout.breakAfter}
                   options={[
-                    { value: 'nextPage', label: '下一页' },
-                    { value: 'continuous', label: '连续' },
-                    { value: 'evenPage', label: '下一偶数页' },
-                    { value: 'oddPage', label: '下一奇数页' },
-                    { value: 'nextColumn', label: '下一栏（预览按连续节）' },
+                    {
+                      value: 'nextPage',
+                      label: officeMessage(
+                        messages,
+                        'document.layout.section.nextPage',
+                      ),
+                    },
+                    {
+                      value: 'continuous',
+                      label: officeMessage(
+                        messages,
+                        'document.layout.section.continuous',
+                      ),
+                    },
+                    {
+                      value: 'evenPage',
+                      label: officeMessage(
+                        messages,
+                        'document.layout.section.evenPage',
+                      ),
+                    },
+                    {
+                      value: 'oddPage',
+                      label: officeMessage(
+                        messages,
+                        'document.layout.section.oddPage',
+                      ),
+                    },
+                    {
+                      value: 'nextColumn',
+                      label: officeMessage(
+                        messages,
+                        'document.layout.section.nextColumn',
+                      ),
+                    },
                   ]}
                   onValueChange={(breakAfter) => update({ breakAfter })}
                 />
               </div>
               <div className="work-document-section-actions">
                 <Button size="compact" onClick={onInsertSection}>
-                  插入新节
+                  {officeMessage(messages, 'document.layout.section.insert')}
                 </Button>
                 <Button
                   size="compact"
@@ -385,7 +586,7 @@ export function DocumentLayoutPanel({
                   disabled={sectionIndex === 0}
                   onClick={onMergeSection}
                 >
-                  与上一节合并
+                  {officeMessage(messages, 'document.layout.section.merge')}
                 </Button>
               </div>
             </section>
@@ -411,22 +612,40 @@ export function DocumentLayoutPanel({
               }
             />
             <div className="work-office-field work-document-page-number-option">
-              <span>本节页码从</span>
+              <span>
+                {officeMessage(messages, 'document.layout.pageNumber.from')}
+              </span>
               <CommittedOfficeNumberField
                 min={1}
                 max={9999}
-                ariaLabel="起始页码"
+                ariaLabel={officeMessage(
+                  messages,
+                  'document.layout.pageNumber.aria',
+                )}
                 value={Math.max(1, layout.pageNumberStart ?? 1)}
                 normalizeValue={normalizeDocumentPageNumberInput}
                 onValueCommit={(pageNumberStart) => update({ pageNumberStart })}
               />
-              <span>开始</span>
+              {pageNumberStartSuffix ? (
+                <span>{pageNumberStartSuffix}</span>
+              ) : null}
             </div>
           </div>
         )}
       </div>
     </DocumentTaskPane>
   );
+}
+
+function documentLayoutMarginFields(
+  messages: OfficeMessageCatalog,
+): Array<[keyof WorkDocumentMargins, string]> {
+  return [
+    ['top', officeMessage(messages, 'document.layout.margins.top')],
+    ['right', officeMessage(messages, 'document.layout.margins.right')],
+    ['bottom', officeMessage(messages, 'document.layout.margins.bottom')],
+    ['left', officeMessage(messages, 'document.layout.margins.left')],
+  ];
 }
 
 function normalizeDocumentMarginInput(value: string): number | null {

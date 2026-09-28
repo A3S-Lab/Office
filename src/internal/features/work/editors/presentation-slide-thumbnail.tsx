@@ -1,3 +1,5 @@
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
 import { isWorkspaceContextMenuKeyboardEvent } from '../../workspace/components/workspace-context-menu';
 import type { WorkPresentationDesignContent } from '../work-presentation-layouts';
@@ -36,11 +38,16 @@ export function PresentationSlideThumbnail({
   onContextMenu?: (event: WorkspaceContextMenuEvent<HTMLButtonElement>) => void;
   onDoubleClick?: () => void;
 }) {
+  const messages = useOfficeMessages();
   return (
     <button
       type="button"
       className={selected ? 'active' : ''}
-      aria-label={`幻灯片 ${index + 1} / ${slideCount}：${slide.name}`}
+      aria-label={officeMessage(messages, 'presentation.thumb.slideAria', {
+        index: String(index + 1),
+        total: String(slideCount),
+        name: slide.name,
+      })}
       data-slide-thumbnail
       data-slide-id={slide.id}
       data-slide-index={index}

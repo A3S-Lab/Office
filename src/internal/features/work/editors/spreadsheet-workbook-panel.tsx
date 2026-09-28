@@ -1,6 +1,7 @@
 import type { Selection } from '@fortune-sheet/core';
 import { Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   Button,
   CollectionState,
@@ -15,6 +16,7 @@ import type {
   WorkSpreadsheetNamedRange,
 } from '../work-types';
 import { OfficeSelect, OfficeTextField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { SpreadsheetChartPanel } from './spreadsheet-chart-panel';
 import type {
   SpreadsheetEditorCanCommands,
@@ -67,7 +69,8 @@ export function SpreadsheetWorkbookPanel({
   restoreFocusTarget,
   onClose,
 }: SpreadsheetWorkbookPanelProps) {
-  const title = panelTitle(view);
+  const messages = useOfficeMessages();
+  const title = panelTitle(view, messages);
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const modal = useOfficeTaskPaneModal();
@@ -102,7 +105,7 @@ export function SpreadsheetWorkbookPanel({
         </div>
         <IconButton
           ref={closeRef}
-          label={`关闭${title.heading}`}
+          label={officeMessage(messages, 'spreadsheet.workbook.closeAria', { heading: title.heading })}
           onClick={onClose}
         >
           <X size={14} />
@@ -111,7 +114,7 @@ export function SpreadsheetWorkbookPanel({
       <section
         key={view}
         className="work-spreadsheet-workbook-panel-body"
-        aria-label={`${title.heading}内容`}
+        aria-label={officeMessage(messages, 'spreadsheet.workbook.contentAria', { heading: title.heading })}
       >
         {view === 'names' ? (
           <NamedRangeManager
@@ -161,53 +164,56 @@ export function SpreadsheetWorkbookPanel({
   );
 }
 
-function panelTitle(view: SpreadsheetWorkbookPanelView) {
+function panelTitle(
+  view: SpreadsheetWorkbookPanelView,
+  messages: ReturnType<typeof useOfficeMessages>,
+) {
   if (view === 'names') {
     return {
-      label: '名称管理器',
-      heading: '名称管理器',
-      description: '管理名称和引用范围',
+      label: officeMessage(messages, 'spreadsheet.workbook.nav.names'),
+      heading: officeMessage(messages, 'spreadsheet.workbook.nav.namesHeading'),
+      description: officeMessage(messages, 'spreadsheet.workbook.nav.namesDesc'),
     };
   }
   if (view === 'conditional-formatting') {
     return {
-      label: '条件格式管理器',
-      heading: '条件格式',
-      description: '管理规则、范围和优先级',
+      label: officeMessage(messages, 'spreadsheet.workbook.nav.cf'),
+      heading: officeMessage(messages, 'spreadsheet.workbook.nav.cfHeading'),
+      description: officeMessage(messages, 'spreadsheet.workbook.nav.cfDesc'),
     };
   }
   if (view === 'formulas') {
     return {
-      label: '公式与计算',
-      heading: '公式与计算',
-      description: '计算设置与公式检查',
+      label: officeMessage(messages, 'spreadsheet.workbook.nav.formula'),
+      heading: officeMessage(messages, 'spreadsheet.workbook.nav.formulaHeading'),
+      description: officeMessage(messages, 'spreadsheet.workbook.nav.formulaDesc'),
     };
   }
   if (view === 'charts') {
     return {
-      label: '图表管理器',
-      heading: '工作簿图表',
-      description: '创建和编辑图表',
+      label: officeMessage(messages, 'spreadsheet.workbook.nav.charts'),
+      heading: officeMessage(messages, 'spreadsheet.workbook.nav.chartsHeading'),
+      description: officeMessage(messages, 'spreadsheet.workbook.nav.chartsDesc'),
     };
   }
   if (view === 'pivots') {
     return {
-      label: '数据透视表管理器',
-      heading: '数据透视表',
-      description: '按字段汇总和分析数据',
+      label: officeMessage(messages, 'spreadsheet.workbook.nav.pivot'),
+      heading: officeMessage(messages, 'spreadsheet.workbook.nav.pivotHeading'),
+      description: officeMessage(messages, 'spreadsheet.workbook.nav.pivotDesc'),
     };
   }
   if (view === 'protection') {
     return {
-      label: '工作表保护',
-      heading: '工作表保护',
-      description: '设置保护和可编辑区域',
+      label: officeMessage(messages, 'spreadsheet.workbook.nav.protection'),
+      heading: officeMessage(messages, 'spreadsheet.workbook.nav.protectionHeading'),
+      description: officeMessage(messages, 'spreadsheet.workbook.nav.protectionDesc'),
     };
   }
   return {
-    label: '打印设置',
-    heading: '打印设置',
-    description: '页面、边距和打印范围',
+    label: officeMessage(messages, 'spreadsheet.workbook.nav.print'),
+    heading: officeMessage(messages, 'spreadsheet.workbook.nav.printHeading'),
+    description: officeMessage(messages, 'spreadsheet.workbook.nav.printDesc'),
   };
 }
 
@@ -226,6 +232,7 @@ function NamedRangeManager({
   content: WorkSpreadsheetContent;
   onChange: (content: WorkSpreadsheetContent) => void;
 }) {
+  const messages = useOfficeMessages();
   const ranges = content.namedRanges ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(
     ranges[0]?.id ?? null,
@@ -252,7 +259,7 @@ function NamedRangeManager({
   const selectRange = (range: WorkSpreadsheetNamedRange) => {
     if (range.id === selectedId) return;
     if (dirty) {
-      setError('当前名称有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.workbook.names.error.unsaved'));
       return;
     }
     setSelectedId(range.id);
@@ -261,7 +268,7 @@ function NamedRangeManager({
   };
   const startNewRange = () => {
     if (dirty) {
-      setError('当前名称有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.workbook.names.error.unsaved'));
       return;
     }
     setSelectedId(null);
@@ -273,11 +280,11 @@ function NamedRangeManager({
     const name = draft.name.trim();
     const reference = draft.reference.trim().replace(/^=/, '');
     if (!isValidSpreadsheetDefinedName(name)) {
-      setError('名称必须以字母、下划线或反斜杠开头，且不能是单元格地址。');
+      setError(officeMessage(messages, 'spreadsheet.workbook.names.error.invalidName'));
       return;
     }
     if (!reference) {
-      setError('请输入引用位置或公式。');
+      setError(officeMessage(messages, 'spreadsheet.workbook.names.error.refRequired'));
       return;
     }
     const scopeSheetId = draft.scopeSheetId || undefined;
@@ -289,7 +296,7 @@ function NamedRangeManager({
           (range.scopeSheetId ?? '') === (scopeSheetId ?? ''),
       )
     ) {
-      setError('同一作用域中已经存在这个名称。');
+      setError(officeMessage(messages, 'spreadsheet.workbook.names.error.duplicate'));
       return;
     }
     const saved: WorkSpreadsheetNamedRange = {
@@ -335,11 +342,11 @@ function NamedRangeManager({
         cancelDraft();
       }}
     >
-      <legend className="sr-only">名称编辑</legend>
-      <aside aria-label="已定义名称">
+      <legend className="sr-only">{officeMessage(messages, 'spreadsheet.workbook.names.legend')}</legend>
+      <aside aria-label={officeMessage(messages, 'spreadsheet.workbook.names.listAria')}>
         <Button className="create" tone="secondary" onClick={startNewRange}>
           <Plus size={13} />
-          新建名称
+          {officeMessage(messages, 'spreadsheet.workbook.names.new')}
         </Button>
         <div className="work-spreadsheet-name-list">
           {ranges.map((range) => (
@@ -354,8 +361,8 @@ function NamedRangeManager({
                 {range.scopeSheetId
                   ? (content.sheets.find(
                       (sheet) => sheet.id === range.scopeSheetId,
-                    )?.name ?? '工作表')
-                  : '工作簿'}
+                    )?.name ?? officeMessage(messages, 'spreadsheet.workbook.names.scopeSheet'))
+                  : officeMessage(messages, 'spreadsheet.workbook.names.scopeWorkbook')}
               </span>
             </button>
           ))}
@@ -364,7 +371,7 @@ function NamedRangeManager({
               className="work-office-collection-empty"
               role="status"
             >
-              还没有定义名称。
+              {officeMessage(messages, 'spreadsheet.workbook.names.empty')}
             </CollectionState>
           )}
         </div>
@@ -376,24 +383,24 @@ function NamedRangeManager({
         }}
       >
         <div className="work-office-field">
-          <span>名称</span>
+          <span>{officeMessage(messages, 'spreadsheet.workbook.names.name')}</span>
           <OfficeTextField
-            aria-label="名称"
+            aria-label={officeMessage(messages, 'spreadsheet.workbook.names.nameAria')}
             value={draft.name}
             maxLength={255}
-            placeholder="例如 Revenue_2026"
+            placeholder={officeMessage(messages, 'spreadsheet.workbook.names.namePlaceholder')}
             onChange={(event) =>
               setDraft({ ...draft, name: event.target.value })
             }
           />
         </div>
         <div className="work-office-field">
-          <span>作用域</span>
+          <span>{officeMessage(messages, 'spreadsheet.workbook.names.scope')}</span>
           <OfficeSelect
-            ariaLabel="名称作用域"
+            ariaLabel={officeMessage(messages, 'spreadsheet.workbook.names.scopeAria')}
             value={draft.scopeSheetId}
             options={[
-              { value: '', label: '工作簿' },
+              { value: '', label: officeMessage(messages, 'spreadsheet.workbook.names.scopeWorkbook') },
               ...content.sheets.flatMap((sheet) =>
                 sheet.id ? [{ value: sheet.id, label: sheet.name }] : [],
               ),
@@ -404,23 +411,23 @@ function NamedRangeManager({
           />
         </div>
         <div className="work-office-field reference">
-          <span>引用位置</span>
+          <span>{officeMessage(messages, 'spreadsheet.workbook.names.ref')}</span>
           <OfficeTextField
-            aria-label="名称引用位置"
+            aria-label={officeMessage(messages, 'spreadsheet.workbook.names.refAria')}
             value={draft.reference}
-            placeholder="'工作表1'!$A$1:$B$20"
+            placeholder={officeMessage(messages, 'spreadsheet.workbook.names.refPlaceholder')}
             onChange={(event) =>
               setDraft({ ...draft, reference: event.target.value })
             }
           />
         </div>
         <div className="work-office-field comment">
-          <span>备注</span>
+          <span>{officeMessage(messages, 'spreadsheet.workbook.names.comment')}</span>
           <OfficeTextField
-            aria-label="名称备注"
+            aria-label={officeMessage(messages, 'spreadsheet.workbook.names.commentAria')}
             value={draft.comment}
             maxLength={255}
-            placeholder="可选"
+            placeholder={officeMessage(messages, 'spreadsheet.workbook.names.commentPlaceholder')}
             onChange={(event) =>
               setDraft({ ...draft, comment: event.target.value })
             }
@@ -438,17 +445,17 @@ function NamedRangeManager({
           )}
           <Button tone="danger" disabled={!draft.id} onClick={deleteRange}>
             <Trash2 size={13} />
-            删除
+            {officeMessage(messages, 'spreadsheet.workbook.names.delete')}
           </Button>
           <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
-            取消更改
+            {officeMessage(messages, 'spreadsheet.workbook.names.cancel')}
           </Button>
           <Button
             type="submit"
             tone="primary"
             disabled={Boolean(draft.id) && !dirty}
           >
-            保存名称
+            {officeMessage(messages, 'spreadsheet.workbook.names.save')}
           </Button>
         </div>
       </form>

@@ -25,36 +25,67 @@ import {
 import { getDocumentCommandDefinition } from './document-command-catalog';
 import { OfficeNumberField } from './office-controls';
 import { WorkOfficeRibbonButton } from './work-office-chrome';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import { useOfficeMessages } from './office-messages-context';
 
-const bulletStyles: ReadonlyArray<{
+function bulletStyles(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentBulletListStyle;
   label: string;
   marker: string;
-}> = [
-  { value: 'disc', label: '实心圆点', marker: '●' },
-  { value: 'circle', label: '空心圆点', marker: '○' },
-  { value: 'square', label: '方块', marker: '■' },
-];
+}> {
+  return [
+    {
+      value: 'disc',
+      label: officeMessage(messages, 'document.list.bullet.disc'),
+      marker: '●',
+    },
+    {
+      value: 'circle',
+      label: officeMessage(messages, 'document.list.bullet.circle'),
+      marker: '○',
+    },
+    {
+      value: 'square',
+      label: officeMessage(messages, 'document.list.bullet.square'),
+      marker: '■',
+    },
+  ];
+}
 
-const orderedStyles: ReadonlyArray<{
+function orderedStyles(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentOrderedListStyle;
   label: string;
   markers: readonly [string, string, string];
-}> = [
-  { value: 'decimal', label: '数字', markers: ['1.', '2.', '3.'] },
-  { value: 'lower-alpha', label: '小写字母', markers: ['a.', 'b.', 'c.'] },
-  { value: 'upper-alpha', label: '大写字母', markers: ['A.', 'B.', 'C.'] },
-  {
-    value: 'lower-roman',
-    label: '小写罗马数字',
-    markers: ['i.', 'ii.', 'iii.'],
-  },
-  {
-    value: 'upper-roman',
-    label: '大写罗马数字',
-    markers: ['I.', 'II.', 'III.'],
-  },
-];
+}> {
+  return [
+    {
+      value: 'decimal',
+      label: officeMessage(messages, 'document.list.number.decimal'),
+      markers: ['1.', '2.', '3.'],
+    },
+    {
+      value: 'lower-alpha',
+      label: officeMessage(messages, 'document.list.number.lowerAlpha'),
+      markers: ['a.', 'b.', 'c.'],
+    },
+    {
+      value: 'upper-alpha',
+      label: officeMessage(messages, 'document.list.number.upperAlpha'),
+      markers: ['A.', 'B.', 'C.'],
+    },
+    {
+      value: 'lower-roman',
+      label: officeMessage(messages, 'document.list.number.lowerRoman'),
+      markers: ['i.', 'ii.', 'iii.'],
+    },
+    {
+      value: 'upper-roman',
+      label: officeMessage(messages, 'document.list.number.upperRoman'),
+      markers: ['I.', 'II.', 'III.'],
+    },
+  ];
+}
 
 export function DocumentListGallery({ editor }: { editor: Editor }) {
   const subscribe = useCallback(
@@ -86,11 +117,12 @@ function BulletListControl({
   editor: Editor;
   activeStyle: DocumentBulletListStyle | null;
 }) {
+  const messages = useOfficeMessages();
   const [open, setOpen] = useState(false);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const activeIndex = Math.max(
     0,
-    bulletStyles.findIndex((style) => style.value === activeStyle),
+    bulletStyles(messages).findIndex((style) => style.value === activeStyle),
   );
   const [focusIndex, setFocusIndex] = useState(activeIndex);
   const focusActiveOption = () => {
@@ -107,9 +139,13 @@ function BulletListControl({
       data-active={Boolean(activeStyle)}
     >
       <WorkOfficeRibbonButton
-        label="项目符号"
+        label={officeMessage(messages, 'document.list.bullet')}
         title={
-          bulletShortcut ? `项目符号（${bulletShortcut.label}）` : '项目符号'
+          bulletShortcut
+          ? officeMessage(messages, 'document.list.bulletWithShortcut', {
+              shortcut: bulletShortcut.label,
+            })
+          : officeMessage(messages, 'document.list.bullet')
         }
         aria-keyshortcuts={bulletShortcut?.aria}
         displayLabel={false}
@@ -125,8 +161,8 @@ function BulletListControl({
         <List size={16} />
       </WorkOfficeRibbonButton>
       <Popover
-        label="项目符号库"
-        panelLabel="项目符号库"
+        label={officeMessage(messages, 'document.list.bulletGallery')}
+        panelLabel={officeMessage(messages, 'document.list.bulletGallery')}
         panelRole="dialog"
         portal
         open={open}
@@ -140,7 +176,7 @@ function BulletListControl({
           <button
             {...triggerProps}
             className={`work-document-list-gallery-trigger${popoverOpen ? ' active' : ''}`}
-            title="项目符号库"
+            title={officeMessage(messages, 'document.list.bulletGallery')}
             onKeyDown={(event) => {
               if (event.key !== 'ArrowDown') return;
               event.preventDefault();
@@ -154,13 +190,13 @@ function BulletListControl({
       >
         {(close) => (
           <>
-            <strong className="work-document-list-panel-title">项目符号</strong>
+            <strong className="work-document-list-panel-title">{officeMessage(messages, 'document.list.bullet')}</strong>
             <div
               className="work-document-list-options bullet-options"
               role="radiogroup"
-              aria-label="项目符号样式"
+              aria-label={officeMessage(messages, 'document.list.bulletStylesAria')}
             >
-              {bulletStyles.map((style, index) => (
+              {bulletStyles(messages).map((style, index) => (
                 // biome-ignore lint/a11y/useSemanticElements: styled gallery radios; native input radios can't host glyph + keyboard grid.
                 <button
                   ref={(element) => {
@@ -210,7 +246,7 @@ function BulletListControl({
               }
             >
               <Unlink size={13} aria-hidden="true" />
-              清除项目符号
+              {officeMessage(messages, 'document.list.clearBullet')}
             </button>
           </>
         )}
@@ -226,12 +262,13 @@ function OrderedListControl({
   editor: Editor;
   activeState: ReturnType<typeof documentOrderedListState>;
 }) {
+  const messages = useOfficeMessages();
   const [open, setOpen] = useState(false);
   const [startValue, setStartValue] = useState('1');
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const activeIndex = Math.max(
     0,
-    orderedStyles.findIndex((style) => style.value === activeState?.style),
+    orderedStyles(messages).findIndex((style) => style.value === activeState?.style),
   );
   const [focusIndex, setFocusIndex] = useState(activeIndex);
   const validStart = validStartValue(startValue);
@@ -268,8 +305,8 @@ function OrderedListControl({
       data-active={Boolean(activeState)}
     >
       <WorkOfficeRibbonButton
-        label="编号"
-        title="编号"
+        label={officeMessage(messages, 'document.list.number')}
+        title={officeMessage(messages, 'document.list.number')}
         displayLabel={false}
         active={Boolean(activeState)}
         className="work-document-list-primary"
@@ -283,8 +320,8 @@ function OrderedListControl({
         <ListOrdered size={16} />
       </WorkOfficeRibbonButton>
       <Popover
-        label="编号库"
-        panelLabel="编号库"
+        label={officeMessage(messages, 'document.list.numberGallery')}
+        panelLabel={officeMessage(messages, 'document.list.numberGallery')}
         panelRole="dialog"
         portal
         open={open}
@@ -301,7 +338,7 @@ function OrderedListControl({
           <button
             {...triggerProps}
             className={`work-document-list-gallery-trigger${popoverOpen ? ' active' : ''}`}
-            title="编号库"
+            title={officeMessage(messages, 'document.list.numberGallery')}
             onKeyDown={(event) => {
               if (event.key !== 'ArrowDown') return;
               event.preventDefault();
@@ -315,13 +352,13 @@ function OrderedListControl({
       >
         {(close) => (
           <>
-            <strong className="work-document-list-panel-title">编号</strong>
+            <strong className="work-document-list-panel-title">{officeMessage(messages, 'document.list.number')}</strong>
             <div
               className="work-document-list-options ordered-options"
               role="radiogroup"
-              aria-label="编号样式"
+              aria-label={officeMessage(messages, 'document.list.numberStylesAria')}
             >
-              {orderedStyles.map((style, index) => (
+              {orderedStyles(messages).map((style, index) => (
                 // biome-ignore lint/a11y/useSemanticElements: styled gallery radios; native input radios can't host glyph + keyboard grid.
                 <button
                   ref={(element) => {
@@ -375,7 +412,7 @@ function OrderedListControl({
                   setStartValue(committedStart);
                 }}
               >
-                <legend className="sr-only">编号起始与续排</legend>
+                <legend className="sr-only">{officeMessage(messages, 'document.list.numberStartLegend')}</legend>
                 <div className="work-document-numbering-actions">
                   <button
                     type="button"
@@ -387,7 +424,7 @@ function OrderedListControl({
                     }
                   >
                     <RotateCcw size={13} aria-hidden="true" />
-                    重新从 1 开始
+                    {officeMessage(messages, 'document.list.restart')}
                   </button>
                   <button
                     type="button"
@@ -398,20 +435,20 @@ function OrderedListControl({
                       )
                     }
                   >
-                    继续前一列表
+                    {officeMessage(messages, 'document.list.continue')}
                   </button>
                 </div>
                 <form
                   className="work-document-numbering-start"
-                  aria-label="起始编号设置"
+                  aria-label={officeMessage(messages, 'document.list.startSettingsAria')}
                   onSubmit={(event) => {
                     event.preventDefault();
                     applyStart(close);
                   }}
                 >
-                  <span>起始编号</span>
+                  <span>{officeMessage(messages, 'document.list.startNumber')}</span>
                   <OfficeNumberField
-                    ariaLabel="起始编号"
+                    ariaLabel={officeMessage(messages, 'document.list.startNumberAria')}
                     value={startValue}
                     min={1}
                     max={MAX_DOCUMENT_NUMBERING_START}
@@ -426,7 +463,7 @@ function OrderedListControl({
                     }
                   />
                   <button type="submit" disabled={validStart === null}>
-                    应用起始值
+                    {officeMessage(messages, 'document.list.applyStart')}
                   </button>
                 </form>
               </fieldset>
@@ -442,7 +479,7 @@ function OrderedListControl({
               }
             >
               <Unlink size={13} aria-hidden="true" />
-              清除编号
+              {officeMessage(messages, 'document.list.clearNumber')}
             </button>
           </>
         )}

@@ -1,5 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   Button,
   IconButton,
@@ -31,6 +33,7 @@ import {
   OfficeSelect,
   type OfficeSelectOption,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 interface FillPanelProps {
   source: SpreadsheetFormatCellsDialogSource;
@@ -41,42 +44,55 @@ interface FillPanelProps {
   touch: (field: keyof SpreadsheetCellFormatPatch) => void;
 }
 
-const fillModeItems = [
-  { id: 'none', label: '无填充' },
-  { id: 'solid', label: '纯色' },
-  { id: 'pattern', label: '图案' },
-  { id: 'gradient', label: '渐变' },
-] as const;
+function fillModeItems(messages: OfficeMessageCatalog) {
+  return [
+    { id: 'none' as const, label: officeMessage(messages, 'spreadsheet.formatCells.fill.mode.none') },
+    { id: 'solid' as const, label: officeMessage(messages, 'spreadsheet.formatCells.fill.mode.solid') },
+    { id: 'pattern' as const, label: officeMessage(messages, 'spreadsheet.formatCells.fill.mode.pattern') },
+    { id: 'gradient' as const, label: officeMessage(messages, 'spreadsheet.formatCells.fill.mode.gradient') },
+  ];
+}
 
-const gradientTypeOptions = [
-  { value: 'linear', label: '线性' },
-  { value: 'path', label: '路径' },
-] as const satisfies readonly OfficeSelectOption<XlsxGradientFill['type']>[];
+function gradientTypeOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption<XlsxGradientFill['type']>[] {
+  return [
+    { value: 'linear', label: officeMessage(messages, 'spreadsheet.formatCells.fill.gradient.linear') },
+    { value: 'path', label: officeMessage(messages, 'spreadsheet.formatCells.fill.gradient.path') },
+  ];
+}
 
-const patternLabels: Record<XlsxPatternFillType, string> = {
-  darkDown: '深色下斜线',
-  darkGray: '深灰',
-  darkGrid: '深色网格',
-  darkHorizontal: '深色横线',
-  darkTrellis: '深色菱形网格',
-  darkUp: '深色上斜线',
-  darkVertical: '深色竖线',
-  gray0625: '6.25% 灰度',
-  gray125: '12.5% 灰度',
-  lightDown: '浅色下斜线',
-  lightGray: '浅灰',
-  lightGrid: '浅色网格',
-  lightHorizontal: '浅色横线',
-  lightTrellis: '浅色菱形网格',
-  lightUp: '浅色上斜线',
-  lightVertical: '浅色竖线',
-  mediumGray: '中灰',
-};
+function patternLabels(
+  messages: OfficeMessageCatalog,
+): Record<XlsxPatternFillType, string> {
+  return {
+    darkDown: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.darkDown'),
+    darkGray: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.darkGray'),
+    darkGrid: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.darkGrid'),
+    darkHorizontal: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.darkHorizontal'),
+    darkTrellis: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.darkTrellis'),
+    darkUp: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.darkUp'),
+    darkVertical: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.darkVertical'),
+    gray0625: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.gray0625'),
+    gray125: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.gray125'),
+    lightDown: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.lightDown'),
+    lightGray: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.lightGray'),
+    lightGrid: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.lightGrid'),
+    lightHorizontal: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.lightHorizontal'),
+    lightTrellis: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.lightTrellis'),
+    lightUp: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.lightUp'),
+    lightVertical: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.lightVertical'),
+    mediumGray: officeMessage(messages, 'spreadsheet.formatCells.fill.pattern.mediumGray'),
+  };
+}
 
-const patternOptions = xlsxPatternFillTypes.map((value) => ({
-  label: patternLabels[value],
-  value,
-}));
+function patternOptions(messages: OfficeMessageCatalog) {
+  const labels = patternLabels(messages);
+  return xlsxPatternFillTypes.map((value) => ({
+    label: labels[value],
+    value,
+  }));
+}
 
 export function SpreadsheetFormatCellsFillPanel({
   source,
@@ -86,6 +102,7 @@ export function SpreadsheetFormatCellsFillPanel({
   setDraft,
   touch,
 }: FillPanelProps) {
+  const messages = useOfficeMessages();
   const updateFill = (
     update: (
       current: SpreadsheetFormatCellsFillDraft,
@@ -97,15 +114,16 @@ export function SpreadsheetFormatCellsFillPanel({
       fill: update(current.fill),
     }));
   };
+  const fillMixed = source.fields.fill.mixed && !touched.fill;
   const activeFill = spreadsheetFormatCellsActiveFill(draft);
 
   return (
     <div className="work-spreadsheet-format-cells-fill">
       <SegmentedControl
-        ariaLabel="填充类型"
+        ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.modeAria')}
         className="work-spreadsheet-format-cells-fill-modes"
-        value={draft.fill.mode}
-        items={fillModeItems}
+        value={fillMixed ? null : draft.fill.mode}
+        items={fillModeItems(messages)}
         layout="equal"
         size="compact"
         onChange={(mode) => updateFill((current) => ({ ...current, mode }))}
@@ -115,14 +133,19 @@ export function SpreadsheetFormatCellsFillPanel({
         <div className="work-spreadsheet-format-cells-fill-controls">
           {draft.fill.mode === 'none' && (
             <p className="work-spreadsheet-format-cells-fill-empty-copy">
-              应用后会移除选区中的纯色、图案和渐变填充。
+              {officeMessage(messages, 'spreadsheet.formatCells.fill.noneHint')}
             </p>
           )}
           {draft.fill.mode === 'solid' && (
-            <FillField label="背景色">
+            <FillField label={officeMessage(messages, 'spreadsheet.formatCells.fill.bgColor')}>
               <OfficeColorPicker
-                ariaLabel="单元格填充颜色"
+                ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.solidColorAria')}
                 value={draft.fill.solidColor}
+                triggerLabel={
+                  fillMixed
+                    ? officeMessage(messages, 'spreadsheet.formatCells.mixed')
+                    : undefined
+                }
                 onValueChange={(solidColor) =>
                   updateFill((current) => ({ ...current, solidColor }))
                 }
@@ -148,13 +171,13 @@ export function SpreadsheetFormatCellsFillPanel({
           {errors.fill && <p role="alert">{errors.fill}</p>}
           {source.fields.fill.mixed && !touched.fill && (
             <p className="work-spreadsheet-format-cells-mixed">
-              选区包含多种填充；只有选择新的填充类型或参数后才会统一应用。
+              {officeMessage(messages, 'spreadsheet.formatCells.fill.mixedHint')}
             </p>
           )}
         </div>
         <SpreadsheetFormatCellsFillPreview
           fill={activeFill}
-          patternLabels={patternLabels}
+          patternLabels={patternLabels(messages)}
         />
       </div>
     </div>
@@ -168,6 +191,7 @@ function PatternFillControls({
   fill: XlsxPatternFill;
   onChange: (fill: XlsxPatternFill) => void;
 }) {
+  const messages = useOfficeMessages();
   const updateColor = (
     field: 'backgroundColor' | 'foregroundColor',
     color: string,
@@ -179,24 +203,24 @@ function PatternFillControls({
   };
   return (
     <div className="work-spreadsheet-format-cells-pattern-controls">
-      <FillField label="图案样式">
+      <FillField label={officeMessage(messages, 'spreadsheet.formatCells.fill.patternStyle')}>
         <OfficeSelect
-          ariaLabel="填充图案样式"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.patternStyleAria')}
           value={fill.patternType}
-          options={patternOptions}
+          options={patternOptions(messages)}
           onValueChange={(patternType) => onChange({ ...fill, patternType })}
         />
       </FillField>
-      <FillField label="图案颜色">
+      <FillField label={officeMessage(messages, 'spreadsheet.formatCells.fill.patternColor')}>
         <OfficeColorPicker
-          ariaLabel="填充图案颜色"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.patternColorAria')}
           value={fill.foregroundColor}
           onValueChange={(color) => updateColor('foregroundColor', color)}
         />
       </FillField>
-      <FillField label="背景色">
+      <FillField label={officeMessage(messages, 'spreadsheet.formatCells.fill.bgColor')}>
         <OfficeColorPicker
-          ariaLabel="填充图案背景色"
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.patternBgAria')}
           value={fill.backgroundColor}
           onValueChange={(color) => updateColor('backgroundColor', color)}
         />
@@ -228,6 +252,7 @@ function GradientFillControls({
           },
     );
   };
+  const messages = useOfficeMessages();
   const changeStops = (stops: XlsxGradientStop[]) =>
     onChange({ ...fill, stops } as XlsxGradientFill);
   const updateStop = (
@@ -246,18 +271,18 @@ function GradientFillControls({
       data-gradient-type={fill.type}
     >
       <div className="work-spreadsheet-format-cells-gradient-geometry">
-        <FillField label="渐变类型">
+        <FillField label={officeMessage(messages, 'spreadsheet.formatCells.fill.gradientType')}>
           <OfficeSelect
-            ariaLabel="渐变类型"
+            ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.gradientType')}
             value={fill.type}
-            options={gradientTypeOptions}
+            options={gradientTypeOptions(messages)}
             onValueChange={changeType}
           />
         </FillField>
         {fill.type === 'linear' ? (
           <PercentField
-            label="角度（°）"
-            ariaLabel="线性渐变角度"
+            label={officeMessage(messages, 'spreadsheet.formatCells.fill.angle')}
+            ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.angleAria')}
             value={fill.degree}
             step={1}
             onChange={(degree) => onChange({ ...fill, degree })}
@@ -269,7 +294,7 @@ function GradientFillControls({
 
       <div className="work-spreadsheet-format-cells-gradient-stops-heading">
         <div>
-          <strong>渐变色标</strong>
+          <strong>{officeMessage(messages, 'spreadsheet.formatCells.fill.stops')}</strong>
           <span>
             {fill.stops.length} / {MAX_XLSX_GRADIENT_STOPS}
           </span>
@@ -281,13 +306,13 @@ function GradientFillControls({
           onClick={() => changeStops(addGradientStop(fill.stops))}
         >
           <Plus size={13} aria-hidden="true" />
-          添加色标
+          {officeMessage(messages, 'spreadsheet.formatCells.fill.addStop')}
         </Button>
       </div>
 
       <ol
         className="work-spreadsheet-format-cells-gradient-stops"
-        aria-label="渐变色标列表"
+        aria-label={officeMessage(messages, 'spreadsheet.formatCells.fill.stopsListAria')}
         data-stop-count={fill.stops.length}
       >
         {fill.stops.map((stop, index) => (
@@ -299,7 +324,7 @@ function GradientFillControls({
               {index + 1}
             </span>
             <OfficeColorPicker
-              ariaLabel={`色标 ${index + 1} 颜色`}
+              ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.stopColorAria', { n: String(index + 1) })}
               value={stop.color}
               onValueChange={(color) =>
                 updateStop(index, (current) => {
@@ -310,9 +335,9 @@ function GradientFillControls({
               }
             />
             <div className="work-spreadsheet-format-cells-stop-position">
-              <span className="sr-only">色标 {index + 1} 位置</span>
+              <span className="sr-only">{officeMessage(messages, 'spreadsheet.formatCells.fill.stopPosSr', { n: String(index + 1) })}</span>
               <OfficeNumberField
-                ariaLabel={`色标 ${index + 1} 位置`}
+                ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.stopPosAria', { n: String(index + 1) })}
                 value={formatPercentage(stop.position)}
                 min={0}
                 max={100}
@@ -336,7 +361,7 @@ function GradientFillControls({
             </div>
             <IconButton
               className="work-spreadsheet-format-cells-gradient-stop-remove"
-              label={`删除色标 ${index + 1}`}
+              label={officeMessage(messages, 'spreadsheet.formatCells.fill.deleteStop', { n: String(index + 1) })}
               disabled={fill.stops.length <= 2}
               onClick={() =>
                 changeStops(
@@ -350,8 +375,7 @@ function GradientFillControls({
         ))}
       </ol>
       <small className="work-spreadsheet-format-cells-gradient-help">
-        色标按列表顺序写入 XLSX；位置需从小到大排列。编辑颜色后会改用显式
-        RGB，未修改的主题色语义会继续保留。
+        {officeMessage(messages, 'spreadsheet.formatCells.fill.stopsNote')}
       </small>
     </div>
   );
@@ -364,19 +388,20 @@ function PathGeometryFields({
   fill: Extract<XlsxGradientFill, { type: 'path' }>;
   onChange: (fill: XlsxGradientFill) => void;
 }) {
+  const messages = useOfficeMessages();
   const fields = [
-    ['left', '左边界'],
-    ['right', '右边界'],
-    ['top', '上边界'],
-    ['bottom', '下边界'],
+    ['left', officeMessage(messages, 'spreadsheet.formatCells.fill.path.left')],
+    ['right', officeMessage(messages, 'spreadsheet.formatCells.fill.path.right')],
+    ['top', officeMessage(messages, 'spreadsheet.formatCells.fill.path.top')],
+    ['bottom', officeMessage(messages, 'spreadsheet.formatCells.fill.path.bottom')],
   ] as const;
   return (
     <div className="work-spreadsheet-format-cells-path-geometry">
       {fields.map(([field, label]) => (
         <PercentField
           key={field}
-          label={`${label}（%）`}
-          ariaLabel={`路径渐变${label}`}
+          label={officeMessage(messages, 'spreadsheet.formatCells.fill.pathBoundPercent', { label })}
+          ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.fill.pathBoundAria', { label })}
           value={fill[field] * 100}
           min={0}
           max={100}

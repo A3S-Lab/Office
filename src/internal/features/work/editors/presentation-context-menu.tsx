@@ -6,6 +6,10 @@ import {
   Scissors,
   Trash2,
 } from 'lucide-react';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type { WorkspaceContextMenuItem } from '../../workspace/components/workspace-context-menu';
 import type {
   PresentationEditorCanCommands,
@@ -47,11 +51,12 @@ export function presentationCoreContextMenuItems({
   slideId: string;
   target: 'slide' | 'element';
 }): WorkspaceContextMenuItem[] {
+  const catalog = resolveOfficeMessages();
   if (target === 'slide') {
     return [
       {
         id: 'add-slide',
-        label: '新建幻灯片',
+        label: officeMessage(catalog, 'presentation.context.newSlide'),
         icon: <Plus size={14} />,
         shortcut: 'Ctrl+M / ⌘⇧N',
         ariaKeyShortcut: 'Control+M Meta+Shift+N',
@@ -60,7 +65,7 @@ export function presentationCoreContextMenuItems({
       },
       {
         id: 'duplicate-slide',
-        label: '复制幻灯片',
+        label: officeMessage(catalog, 'presentation.context.duplicateSlide'),
         icon: <CopyPlus size={14} />,
         shortcut: 'Ctrl+D / ⌘D',
         ariaKeyShortcut: 'Control+D Meta+D',
@@ -69,7 +74,7 @@ export function presentationCoreContextMenuItems({
       },
       {
         id: 'paste-slide',
-        label: '粘贴',
+        label: officeMessage(catalog, 'presentation.context.paste'),
         icon: <ClipboardPaste size={14} />,
         shortcut: '⌘V',
         ariaKeyShortcut: 'Control+V Meta+V',
@@ -78,7 +83,7 @@ export function presentationCoreContextMenuItems({
       },
       {
         id: 'delete-slide',
-        label: '删除幻灯片',
+        label: officeMessage(catalog, 'presentation.context.deleteSlide'),
         icon: <Trash2 size={14} />,
         shortcut: 'Delete / Backspace',
         ariaKeyShortcut: 'Delete Backspace',
@@ -92,7 +97,7 @@ export function presentationCoreContextMenuItems({
   return [
     {
       id: 'copy-object',
-      label: '复制对象',
+      label: officeMessage(catalog, 'presentation.context.copyObject'),
       icon: <Copy size={14} />,
       shortcut: '⌘C',
       ariaKeyShortcut: 'Control+C Meta+C',
@@ -101,7 +106,7 @@ export function presentationCoreContextMenuItems({
     },
     {
       id: 'cut-object',
-      label: '剪切对象',
+      label: officeMessage(catalog, 'presentation.context.cutObject'),
       icon: <Scissors size={14} />,
       shortcut: '⌘X',
       ariaKeyShortcut: 'Control+X Meta+X',
@@ -110,7 +115,7 @@ export function presentationCoreContextMenuItems({
     },
     {
       id: 'paste-object',
-      label: '粘贴',
+      label: officeMessage(catalog, 'presentation.context.paste'),
       icon: <ClipboardPaste size={14} />,
       shortcut: '⌘V',
       ariaKeyShortcut: 'Control+V Meta+V',
@@ -119,7 +124,7 @@ export function presentationCoreContextMenuItems({
     },
     {
       id: 'duplicate-object',
-      label: '创建副本',
+      label: officeMessage(catalog, 'presentation.context.duplicateObject'),
       icon: <CopyPlus size={14} />,
       shortcut: '⌘D',
       ariaKeyShortcut: 'Control+D Meta+D',
@@ -128,7 +133,7 @@ export function presentationCoreContextMenuItems({
     },
     {
       id: 'delete-object',
-      label: '删除对象',
+      label: officeMessage(catalog, 'presentation.context.deleteObject'),
       icon: <Trash2 size={14} />,
       shortcut: 'Delete',
       ariaKeyShortcut: 'Delete',

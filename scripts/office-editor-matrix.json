@@ -238,6 +238,7 @@
         "visual-tests/markdown-source-scroll.functional.spec.ts"
       ],
       "acl": [
+        "tests/e2e/markdown-daily-loop.acl",
         "tests/e2e/markdown-phone-modes.acl",
         "tests/e2e/markdown-ribbon-collapse.acl",
         "tests/e2e/markdown-link-shortcut.acl",

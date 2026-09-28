@@ -58,7 +58,9 @@ import {
 import {
   normalizeOfficeFontFamily,
   officeFontFamilies,
+  officeFontFamilyGroupLabel,
   officeFontFamilyLabel,
+  officeFontFamilyLocalizedLabel,
 } from './office-font-families';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import { OfficeTableInsertPopover } from './office-table-insert-popover';
@@ -74,40 +76,92 @@ import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+  type OfficeMessageCatalog,
+} from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
-const presentationRibbonTabs = [
-  { id: 'home', label: '开始' },
-  { id: 'insert', label: '插入' },
-  { id: 'design', label: '设计' },
-  { id: 'transitions', label: '切换' },
-  { id: 'animations', label: '动画' },
-  { id: 'slideshow', label: '幻灯片放映', compactLabel: '放映' },
-  { id: 'review', label: '审阅' },
-  { id: 'view', label: '视图' },
-] as const;
+function presentationRibbonTabs(catalog: OfficeMessageCatalog) {
+  return [
+    { id: 'home' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.home') },
+    { id: 'insert' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.insert') },
+    { id: 'design' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.design') },
+    {
+      id: 'transitions' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.transitions'),
+    },
+    {
+      id: 'animations' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.animations'),
+    },
+    {
+      id: 'slideshow' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.slideshow'),
+      compactLabel: officeMessage(
+        catalog,
+        'presentation.ribbon.tab.slideshowCompact',
+      ),
+    },
+    { id: 'review' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.review') },
+    { id: 'view' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.view') },
+  ];
+}
 
-const basePresentationFontFamilyOptions = officeFontFamilies.map(
-  ({ cssFamily, cssValue, group, label, name }) => ({
-    value: cssValue,
-    group,
+const presentationFontMessages = resolveOfficeMessages();
+const basePresentationFontFamilyOptions = officeFontFamilies.map((family) => {
+  const label = officeFontFamilyLocalizedLabel(
+    family,
+    presentationFontMessages,
+  );
+  return {
+    value: family.cssValue,
+    group: officeFontFamilyGroupLabel(family.group, presentationFontMessages),
     label,
-    previewStyle: { fontFamily: cssFamily },
-    searchText: `${name} ${label}`,
-  }),
-);
+    previewStyle: { fontFamily: family.cssFamily },
+    searchText: `${family.name} ${label}`,
+  };
+});
 
-const presentationAlignmentActions = [
-  { value: 'left', label: '左对齐', Icon: AlignLeft },
-  { value: 'center', label: '水平居中', Icon: AlignCenter },
-  { value: 'right', label: '右对齐', Icon: AlignRight },
-  { value: 'top', label: '顶端对齐', Icon: AlignVerticalJustifyStart },
-  { value: 'middle', label: '垂直居中', Icon: AlignVerticalJustifyCenter },
-  { value: 'bottom', label: '底端对齐', Icon: AlignVerticalJustifyEnd },
-] as const satisfies readonly {
-  value: OfficeKernelPresentationAlignment;
-  label: string;
-  Icon: typeof AlignLeft;
-}[];
+function presentationAlignmentActions(catalog: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'left' as const,
+      label: officeMessage(catalog, 'presentation.align.left'),
+      Icon: AlignLeft,
+    },
+    {
+      value: 'center' as const,
+      label: officeMessage(catalog, 'presentation.align.centerH'),
+      Icon: AlignCenter,
+    },
+    {
+      value: 'right' as const,
+      label: officeMessage(catalog, 'presentation.align.right'),
+      Icon: AlignRight,
+    },
+    {
+      value: 'top' as const,
+      label: officeMessage(catalog, 'presentation.align.top'),
+      Icon: AlignVerticalJustifyStart,
+    },
+    {
+      value: 'middle' as const,
+      label: officeMessage(catalog, 'presentation.align.middle'),
+      Icon: AlignVerticalJustifyCenter,
+    },
+    {
+      value: 'bottom' as const,
+      label: officeMessage(catalog, 'presentation.align.bottom'),
+      Icon: AlignVerticalJustifyEnd,
+    },
+  ] as const satisfies readonly {
+    value: OfficeKernelPresentationAlignment;
+    label: string;
+    Icon: typeof AlignLeft;
+  }[];
+}
 
 export function PresentationToolbar({
   selectedSlide,
@@ -145,6 +199,9 @@ export function PresentationToolbar({
   commands: PresentationEditorCommands;
 }) {
   const officeDialog = useOfficeDialog();
+  const messages = useOfficeMessages();
+  const ribbonTabs = presentationRibbonTabs(messages);
+  const alignmentActions = presentationAlignmentActions(messages);
   const selectedFontSize = selectedElement
     ? String(selectedElement.fontSize)
     : '';
@@ -189,8 +246,8 @@ export function PresentationToolbar({
   return (
     <>
       <WorkOfficeRibbon
-        ariaLabel="演示功能区"
-        tabs={presentationRibbonTabs}
+        ariaLabel={officeMessage(messages, 'presentation.toolbar.aria')}
+        tabs={ribbonTabs}
         defaultTab="home"
         fileActions={fileActions}
         collapsible
@@ -199,10 +256,10 @@ export function PresentationToolbar({
         panels={{
           home: (
             <>
-              <WorkOfficeRibbonGroup label="撤销与恢复">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.undo')}>
                 <WorkOfficeRibbonButton
-                  label="撤销"
-                  title="撤销（Cmd/Ctrl+Z）"
+                  label={officeMessage(messages, 'presentation.action.undo')}
+                  title={officeMessage(messages, 'presentation.action.undoTitle')}
                   aria-keyshortcuts="Control+Z Meta+Z"
                   disabled={!can.undo()}
                   onClick={commands.undo}
@@ -210,8 +267,8 @@ export function PresentationToolbar({
                   <Undo2 size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label="重做"
-                  title="重做（Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y）"
+                  label={officeMessage(messages, 'presentation.action.redo')}
+                  title={officeMessage(messages, 'presentation.action.redoTitle')}
                   aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
                   disabled={!can.redo()}
                   onClick={commands.redo}
@@ -219,10 +276,10 @@ export function PresentationToolbar({
                   <Redo2 size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="幻灯片">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.slides')}>
                 <WorkOfficeRibbonButton
-                  label="新建幻灯片"
-                  title="新建幻灯片（Ctrl+M / ⌘⇧N）"
+                  label={officeMessage(messages, 'presentation.action.newSlide')}
+                  title={officeMessage(messages, 'presentation.action.newSlideTitle')}
                   aria-keyshortcuts="Control+M Meta+Shift+N"
                   disabled={!can.addSlide()}
                   onClick={commands.addSlide}
@@ -230,8 +287,8 @@ export function PresentationToolbar({
                   <Plus size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label="复制幻灯片"
-                  title="复制幻灯片（Ctrl+D / ⌘D）"
+                  label={officeMessage(messages, 'presentation.action.duplicateSlide')}
+                  title={officeMessage(messages, 'presentation.action.duplicateSlideTitle')}
                   aria-keyshortcuts="Control+D Meta+D"
                   disabled={!can.duplicateSlide()}
                   onClick={commands.duplicateSlide}
@@ -239,8 +296,8 @@ export function PresentationToolbar({
                   <Copy size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label="删除幻灯片"
-                  title="删除幻灯片（Delete / Backspace）"
+                  label={officeMessage(messages, 'presentation.action.deleteSlide')}
+                  title={officeMessage(messages, 'presentation.action.deleteSlideTitle')}
                   aria-keyshortcuts="Delete Backspace"
                   disabled={!can.deleteSlide()}
                   onClick={commands.deleteSlide}
@@ -248,10 +305,10 @@ export function PresentationToolbar({
                   <Trash2 size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="剪贴板">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.clipboard')}>
                 <WorkOfficeRibbonButton
-                  label="复制"
-                  title="复制（⌘/Ctrl+C）"
+                  label={officeMessage(messages, 'presentation.action.copy')}
+                  title={officeMessage(messages, 'presentation.action.copyTitle')}
                   aria-keyshortcuts="Control+C Meta+C"
                   disabled={!can.copySelection()}
                   onClick={commands.copySelection}
@@ -259,8 +316,8 @@ export function PresentationToolbar({
                   <Copy size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label="剪切"
-                  title="剪切（⌘/Ctrl+X）"
+                  label={officeMessage(messages, 'presentation.action.cut')}
+                  title={officeMessage(messages, 'presentation.action.cutTitle')}
                   aria-keyshortcuts="Control+X Meta+X"
                   disabled={!can.cutSelection()}
                   onClick={commands.cutSelection}
@@ -268,8 +325,8 @@ export function PresentationToolbar({
                   <Scissors size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label="粘贴"
-                  title="粘贴（⌘/Ctrl+V）"
+                  label={officeMessage(messages, 'presentation.action.paste')}
+                  title={officeMessage(messages, 'presentation.action.pasteTitle')}
                   aria-keyshortcuts="Control+V Meta+V"
                   disabled={!can.pasteSelection()}
                   onClick={commands.pasteSelection}
@@ -280,9 +337,9 @@ export function PresentationToolbar({
               {selectedElement && (
                 <>
                   {textFormattingAvailable && (
-                    <WorkOfficeRibbonGroup label="字体">
+                    <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.font')}>
                       <OfficeSelect
-                        ariaLabel="演示字体"
+                        ariaLabel={officeMessage(messages, 'presentation.font.familyAria')}
                         className="presentation-font-family-select"
                         value={fontFamilyValue}
                         options={presentationFontFamilyOptions(fontFamilyValue)}
@@ -294,7 +351,7 @@ export function PresentationToolbar({
                         }
                       />
                       <OfficeNumberField
-                        ariaLabel="演示字号"
+                        ariaLabel={officeMessage(messages, 'presentation.font.sizeAria')}
                         className="presentation-font-size-field"
                         min={8}
                         max={96}
@@ -310,8 +367,8 @@ export function PresentationToolbar({
                         }
                       />
                       <WorkOfficeRibbonButton
-                        label="加粗"
-                        title="加粗（Cmd/Ctrl+B）"
+                        label={officeMessage(messages, 'presentation.action.bold')}
+                        title={officeMessage(messages, 'presentation.action.boldTitle')}
                         aria-keyshortcuts="Control+B Meta+B"
                         displayLabel={false}
                         active={Boolean(selectedElement.bold)}
@@ -321,8 +378,8 @@ export function PresentationToolbar({
                         <Bold size={15} />
                       </WorkOfficeRibbonButton>
                       <WorkOfficeRibbonButton
-                        label="斜体"
-                        title="斜体（Cmd/Ctrl+I）"
+                        label={officeMessage(messages, 'presentation.action.italic')}
+                        title={officeMessage(messages, 'presentation.action.italicTitle')}
                         aria-keyshortcuts="Control+I Meta+I"
                         displayLabel={false}
                         active={Boolean(selectedElement.italic)}
@@ -332,8 +389,8 @@ export function PresentationToolbar({
                         <Italic size={15} />
                       </WorkOfficeRibbonButton>
                       <WorkOfficeRibbonButton
-                        label="下划线"
-                        title="下划线（Cmd/Ctrl+U）"
+                        label={officeMessage(messages, 'presentation.action.underline')}
+                        title={officeMessage(messages, 'presentation.action.underlineTitle')}
                         aria-keyshortcuts="Control+U Meta+U"
                         displayLabel={false}
                         active={Boolean(selectedElement.underline)}
@@ -348,10 +405,19 @@ export function PresentationToolbar({
                         <WorkOfficeRibbonButton
                           label={
                             align === 'left'
-                              ? '左对齐'
+                              ? officeMessage(
+                                  messages,
+                                  'presentation.align.textLeft',
+                                )
                               : align === 'center'
-                                ? '居中'
-                                : '右对齐'
+                                ? officeMessage(
+                                    messages,
+                                    'presentation.align.textCenter',
+                                  )
+                                : officeMessage(
+                                    messages,
+                                    'presentation.align.textRight',
+                                  )
                           }
                           displayLabel={false}
                           active={selectedElement.align === align}
@@ -371,7 +437,7 @@ export function PresentationToolbar({
                         compact
                         className="work-color-tool"
                         value={selectedElement.color}
-                        ariaLabel="演示文字颜色"
+                        ariaLabel={officeMessage(messages, 'presentation.font.colorAria')}
                         onValueChange={(color) =>
                           commands.updateElement(
                             { color },
@@ -381,7 +447,7 @@ export function PresentationToolbar({
                       />
                     </WorkOfficeRibbonGroup>
                   )}
-                  <WorkOfficeRibbonGroup label="排列">
+                  <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.arrange')}>
                     <PresentationAlignMenu
                       selectedUnitCount={selectedUnitCount}
                       can={can}
@@ -390,7 +456,7 @@ export function PresentationToolbar({
                     {selectedUnitCount >= 3 && (
                       <>
                         <WorkOfficeRibbonButton
-                          label="横向均匀分布"
+                          label={officeMessage(messages, 'presentation.action.distributeH')}
                           displayLabel={false}
                           disabled={!can.distributeElements('horizontal')}
                           onClick={() =>
@@ -400,7 +466,7 @@ export function PresentationToolbar({
                           <AlignHorizontalSpaceBetween size={17} />
                         </WorkOfficeRibbonButton>
                         <WorkOfficeRibbonButton
-                          label="纵向均匀分布"
+                          label={officeMessage(messages, 'presentation.action.distributeV')}
                           displayLabel={false}
                           disabled={!can.distributeElements('vertical')}
                           onClick={() =>
@@ -412,8 +478,8 @@ export function PresentationToolbar({
                       </>
                     )}
                     <WorkOfficeRibbonButton
-                      label="组合"
-                      title="组合（⌘/Ctrl+G）"
+                      label={officeMessage(messages, 'presentation.action.group')}
+                      title={officeMessage(messages, 'presentation.action.groupTitle')}
                       aria-keyshortcuts="Control+G Meta+G"
                       displayLabel={false}
                       disabled={!can.groupElements()}
@@ -422,8 +488,8 @@ export function PresentationToolbar({
                       <Group size={19} />
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
-                      label="取消组合"
-                      title="取消组合（⌘/Ctrl+Shift+G）"
+                      label={officeMessage(messages, 'presentation.action.ungroup')}
+                      title={officeMessage(messages, 'presentation.action.ungroupTitle')}
                       aria-keyshortcuts="Control+Shift+G Meta+Shift+G"
                       displayLabel={false}
                       disabled={!can.ungroupElements()}
@@ -432,7 +498,7 @@ export function PresentationToolbar({
                       <Ungroup size={19} />
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
-                      label="下移一层"
+                      label={officeMessage(messages, 'presentation.action.sendBackward')}
                       displayLabel={false}
                       disabled={!can.reorderElement(-1)}
                       onClick={() => commands.reorderElement(-1)}
@@ -440,7 +506,7 @@ export function PresentationToolbar({
                       <ArrowDownToLine size={19} />
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
-                      label="上移一层"
+                      label={officeMessage(messages, 'presentation.action.bringForward')}
                       displayLabel={false}
                       disabled={!can.reorderElement(1)}
                       onClick={() => commands.reorderElement(1)}
@@ -454,25 +520,25 @@ export function PresentationToolbar({
           ),
           insert: (
             <>
-              <WorkOfficeRibbonGroup label="文本与形状">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.textShapes')}>
                 <WorkOfficeRibbonButton
-                  label="文本框"
+                  label={officeMessage(messages, 'presentation.action.textBox')}
                   disabled={!can.addElement('text')}
                   onClick={() => commands.addElement('text')}
                 >
                   <Type size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label="形状"
+                  label={officeMessage(messages, 'presentation.action.shape')}
                   disabled={!can.addElement('shape')}
                   onClick={() => commands.addElement('shape')}
                 >
                   <Square size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="内容">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.content')}>
                 <WorkOfficeRibbonButton
-                  label="图片"
+                  label={officeMessage(messages, 'presentation.action.picture')}
                   disabled={!can.requestImage()}
                   onClick={commands.requestImage}
                 >
@@ -481,12 +547,12 @@ export function PresentationToolbar({
                 {!editingDesign && (
                   <>
                     <OfficeTableInsertPopover
-                      label="表格"
+                      label={officeMessage(messages, 'presentation.action.table')}
                       disabled={!can.addTable({ rows: 1, columns: 1 })}
                       onInsert={commands.addTable}
                     />
                     <WorkOfficeRibbonButton
-                      label="图表"
+                      label={officeMessage(messages, 'presentation.action.chart')}
                       disabled={!can.addChart()}
                       onClick={commands.addChart}
                     >
@@ -498,21 +564,29 @@ export function PresentationToolbar({
               {selectedElement &&
                 (selectedElement.type === 'text' ||
                   selectedElement.type === 'shape') && (
-                  <WorkOfficeRibbonGroup label="链接">
+                  <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.link')}>
                     <WorkOfficeRibbonButton
-                      label="链接"
+                      label={officeMessage(messages, 'presentation.action.link')}
                       active={Boolean(selectedElement.href)}
                       onClick={() =>
                         void officeDialog
                           .prompt({
-                            title: '链接地址',
-                            description:
-                              '为所选对象设置网页、邮箱或文档内链接。',
-                            fieldLabel: '链接地址',
+                            title: officeMessage(messages, 'presentation.link.title'),
+                            description: officeMessage(
+                              messages,
+                              'presentation.link.description',
+                            ),
+                            fieldLabel: officeMessage(
+                              messages,
+                              'presentation.link.field',
+                            ),
                             initialValue: selectedElement.href ?? 'https://',
                             placeholder: 'https://',
                             inputMode: 'url',
-                            confirmLabel: '应用链接',
+                            confirmLabel: officeMessage(
+                              messages,
+                              'presentation.link.confirm',
+                            ),
                             validate: (value) =>
                               value.trim() && !normalizeDocumentHref(value)
                                 ? DOCUMENT_LINK_VALIDATION_MESSAGE
@@ -538,21 +612,21 @@ export function PresentationToolbar({
           ),
           design: (
             <>
-              <WorkOfficeRibbonGroup label="母版">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.master')}>
                 <WorkOfficeRibbonButton
-                  label="母版和版式"
+                  label={officeMessage(messages, 'presentation.action.masterLayouts')}
                   active={designOpen}
                   onClick={commands.toggleDesign}
                 >
                   <LayoutTemplate size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="背景">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.background')}>
                 <OfficeColorPicker
                   compact
                   className="work-color-tool slide-background-tool"
                   value={background ?? selectedSlide.background}
-                  ariaLabel={editingDesign ? '设计背景颜色' : '幻灯片背景颜色'}
+                  ariaLabel={editingDesign ? officeMessage(messages, 'presentation.background.designAria') : officeMessage(messages, 'presentation.background.slideAria')}
                   onValueChange={commands.setBackground}
                 />
               </WorkOfficeRibbonGroup>
@@ -589,10 +663,10 @@ export function PresentationToolbar({
             />
           ),
           slideshow: (
-            <WorkOfficeRibbonGroup label="开始放映">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.startShow')}>
               <WorkOfficeRibbonButton
-                label="从头开始放映"
-                title="从头开始放映（F5）"
+                label={officeMessage(messages, 'presentation.action.showFromStart')}
+                title={officeMessage(messages, 'presentation.action.showFromStartTitle')}
                 aria-keyshortcuts="F5"
                 data-presentation-slideshow-source="beginning"
                 disabled={!can.startSlideshow('beginning')}
@@ -601,8 +675,8 @@ export function PresentationToolbar({
                 <Play size={19} />
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
-                label="从当前幻灯片放映"
-                title="从当前幻灯片放映（Shift+F5）"
+                label={officeMessage(messages, 'presentation.action.showFromCurrent')}
+                title={officeMessage(messages, 'presentation.action.showFromCurrentTitle')}
                 aria-keyshortcuts="Shift+F5"
                 data-presentation-slideshow-source="current"
                 disabled={!can.startSlideshow('current')}
@@ -613,16 +687,24 @@ export function PresentationToolbar({
             </WorkOfficeRibbonGroup>
           ),
           review: (
-            <WorkOfficeRibbonGroup label="批注">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.comments')}>
               <WorkOfficeRibbonButton
-                label="新建批注"
+                label={officeMessage(messages, 'presentation.action.newComment')}
                 disabled={editingDesign || !can.addComment()}
                 onClick={commands.addComment}
               >
                 <MessageSquarePlus size={19} />
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
-                label={`查看批注${commentCount ? `（${commentCount}）` : ''}`}
+                label={
+                  commentCount
+                    ? officeMessage(
+                        messages,
+                        'presentation.action.viewCommentsWithCount',
+                        { count: String(commentCount) },
+                      )
+                    : officeMessage(messages, 'presentation.action.viewComments')
+                }
                 disabled={editingDesign}
                 active={commentsOpen}
                 onClick={commands.toggleComments}
@@ -633,42 +715,42 @@ export function PresentationToolbar({
           ),
           view: (
             <>
-              <WorkOfficeRibbonGroup label="演示文稿视图">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.presentationViews')}>
                 <WorkOfficeRibbonButton
-                  label="普通视图"
+                  label={officeMessage(messages, 'presentation.action.normalView')}
                   active={viewMode === 'normal'}
                   onClick={() => commands.setViewMode('normal')}
                 >
                   <PanelsTopLeft size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label="幻灯片浏览"
+                  label={officeMessage(messages, 'presentation.action.slideSorter')}
                   active={viewMode === 'sorter'}
                   onClick={() => commands.setViewMode('sorter')}
                 >
                   <Grid2X2 size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="显示">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.show')}>
                 <WorkOfficeRibbonButton
-                  label="备注"
+                  label={officeMessage(messages, 'presentation.action.notes')}
                   active={notesVisible}
                   disabled={viewMode !== 'normal' || !onToggleNotes}
                   title={
                     viewMode === 'normal'
                       ? notesVisible
-                        ? '隐藏演讲者备注'
-                        : '显示演讲者备注'
-                      : '备注仅用于普通视图'
+                        ? officeMessage(messages, 'presentation.action.hideNotes')
+                        : officeMessage(messages, 'presentation.action.showNotes')
+                      : officeMessage(messages, 'presentation.action.notesNormalOnly')
                   }
                   onClick={() => onToggleNotes?.()}
                 >
                   <NotebookPen size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="母版">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.master')}>
                 <WorkOfficeRibbonButton
-                  label="母版视图"
+                  label={officeMessage(messages, 'presentation.action.masterView')}
                   active={designOpen}
                   onClick={commands.toggleDesign}
                 >
@@ -693,12 +775,17 @@ function PresentationAlignMenu({
   can: PresentationEditorCanCommands;
   commands: PresentationEditorCommands;
 }) {
-  const modeHint = selectedUnitCount > 1 ? '对齐所选对象' : '元素对齐到幻灯片';
+  const messages = useOfficeMessages();
+  const alignmentActions = presentationAlignmentActions(messages);
+  const modeHint =
+    selectedUnitCount > 1
+      ? officeMessage(messages, 'presentation.align.selectedHint')
+      : officeMessage(messages, 'presentation.align.slideHint');
   const disabled = !can.alignElement('left');
 
   return (
     <Popover
-      label="对象对齐"
+      label={officeMessage(messages, 'presentation.align.objects')}
       panelLabel={modeHint}
       panelRole="menu"
       portal
@@ -715,13 +802,13 @@ function PresentationAlignMenu({
           title={modeHint}
           aria-description={modeHint}
         >
-          <span>对象对齐</span>
+          <span>{officeMessage(messages, 'presentation.align.objects')}</span>
           <ChevronDown size={14} aria-hidden="true" />
         </button>
       )}
     >
       {(close) =>
-        presentationAlignmentActions.map(
+        alignmentActions.map(
           ({ value, label: itemLabel, Icon }) => (
             <button
               key={value}
@@ -774,7 +861,7 @@ function presentationFontFamilyOptions(current: string) {
     ...basePresentationFontFamilyOptions,
     {
       value: current,
-      group: '文档字体',
+      group: officeMessage(resolveOfficeMessages(), 'presentation.font.documentGroup'),
       label: officeFontFamilyLabel(current),
       previewStyle: { fontFamily: current },
       searchText: current,

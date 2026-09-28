@@ -29,6 +29,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   type FormEvent,
   type KeyboardEvent,
@@ -46,6 +47,7 @@ import {
   StatusBadge,
 } from '../../../design-system/primitives';
 import { WorkOfficeCollaborationParticipants } from './office-collaboration-participants';
+import { useOfficeMessages } from './office-messages-context';
 import { OfficeColorPicker } from './office-color-picker';
 import { OfficeTextField } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
@@ -108,6 +110,7 @@ export function PdfToolbar({
   searchInputRef: RefObject<HTMLInputElement | null>;
   state: PdfViewerControllerState;
 }) {
+  const messages = useOfficeMessages();
   const showSave = saveAvailable ?? editable;
   const showPageOrganization = pageOrganizationAvailable ?? editable;
   const [pageValue, setPageValue] = useState('');
@@ -152,24 +155,24 @@ export function PdfToolbar({
     <header
       className="work-pdf-toolbar"
       role="toolbar"
-      aria-label="PDF 工具栏"
+      aria-label={officeMessage(messages, 'pdf.toolbar.aria')}
       onKeyDown={moveOfficeToolbarFocus}
     >
       {showSave && (
         <div className="work-pdf-toolbar-group work-pdf-save">
-          <output aria-label="PDF 保存状态" aria-live="polite">
+          <output aria-label={officeMessage(messages, 'pdf.toolbar.saveStatusAria')} aria-live="polite">
             {saveState === 'saving' && (
               <StatusBadge tone="info">
-                <Loader2 className="spin" size={12} /> 保存中
+                <Loader2 className="spin" size={12} /> {officeMessage(messages, 'pdf.toolbar.saving')}
               </StatusBadge>
             )}
             {saveState === 'saved' && (
               <StatusBadge tone="success">
-                <Check size={12} /> 已保存
+                <Check size={12} /> {officeMessage(messages, 'pdf.toolbar.saved')}
               </StatusBadge>
             )}
             {saveState === 'error' && (
-              <StatusBadge tone="danger">保存失败</StatusBadge>
+              <StatusBadge tone="danger">{officeMessage(messages, 'pdf.toolbar.saveFailed')}</StatusBadge>
             )}
           </output>
           <Button
@@ -188,8 +191,8 @@ export function PdfToolbar({
       {editable && (
         <div className="work-pdf-toolbar-group work-pdf-history">
           <IconButton
-            label="撤销"
-            title="撤销（Cmd/Ctrl+Z）"
+            label={officeMessage(messages, 'pdf.toolbar.undo')}
+            title={officeMessage(messages, 'pdf.toolbar.undoTitle')}
             aria-keyshortcuts={pdfKeyboardShortcuts.undo}
             disabled={!can.undo()}
             onClick={commands.undo}
@@ -197,8 +200,8 @@ export function PdfToolbar({
             <Undo2 size={15} />
           </IconButton>
           <IconButton
-            label="重做"
-            title="重做（Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y）"
+            label={officeMessage(messages, 'pdf.toolbar.redo')}
+            title={officeMessage(messages, 'pdf.toolbar.redoTitle')}
             aria-keyshortcuts={pdfKeyboardShortcuts.redo}
             disabled={!can.redo()}
             onClick={commands.redo}
@@ -214,23 +217,23 @@ export function PdfToolbar({
             tone="secondary"
             className="work-pdf-page-organizer-trigger"
             data-pdf-page-organizer-trigger
-            aria-label="组织 PDF 页面"
-            title="组织 PDF 页面"
+            aria-label={officeMessage(messages, 'pdf.toolbar.organizeAria')}
+            title={officeMessage(messages, 'pdf.toolbar.organizeTitle')}
             disabled={!can.openPageOrganizer()}
             onClick={commands.openPageOrganizer}
           >
             <LayoutGrid size={15} />
-            <span className="work-pdf-page-organizer-label">组织页面</span>
+            <span className="work-pdf-page-organizer-label">{officeMessage(messages, 'pdf.toolbar.organizeLabel')}</span>
           </Button>
         </div>
       )}
 
       {editable && (
         <fieldset className="work-pdf-toolbar-group work-pdf-annotation">
-          <legend className="sr-only">PDF 批注工具</legend>
+          <legend className="sr-only">{officeMessage(messages, 'pdf.toolbar.annotationToolsLegend')}</legend>
           <IconButton
             className="work-pdf-annotation-selection"
-            label="选择"
+            label={officeMessage(messages, 'pdf.toolbar.select')}
             selected={annotationState.activeToolId === null}
             disabled={!can.selectAnnotationTool(null)}
             onClick={() => commands.selectAnnotationTool(null)}
@@ -238,7 +241,7 @@ export function PdfToolbar({
             <MousePointer2 size={14} />
           </IconButton>
           <IconButton
-            label="高亮"
+            label={officeMessage(messages, 'pdf.toolbar.highlight')}
             selected={annotationState.activeToolId === 'highlight'}
             disabled={!can.selectAnnotationTool('highlight')}
             onClick={() => commands.selectAnnotationTool('highlight')}
@@ -247,7 +250,7 @@ export function PdfToolbar({
           </IconButton>
           <IconButton
             className="work-pdf-annotation-optional"
-            label="下划线批注"
+            label={officeMessage(messages, 'pdf.toolbar.underline')}
             selected={annotationState.activeToolId === 'underline'}
             disabled={!can.selectAnnotationTool('underline')}
             onClick={() => commands.selectAnnotationTool('underline')}
@@ -256,7 +259,7 @@ export function PdfToolbar({
           </IconButton>
           <IconButton
             className="work-pdf-annotation-optional"
-            label="删除线批注"
+            label={officeMessage(messages, 'pdf.toolbar.strikeout')}
             selected={annotationState.activeToolId === 'strikeout'}
             disabled={!can.selectAnnotationTool('strikeout')}
             onClick={() => commands.selectAnnotationTool('strikeout')}
@@ -265,7 +268,7 @@ export function PdfToolbar({
           </IconButton>
           <IconButton
             className="work-pdf-annotation-ink"
-            label="画笔"
+            label={officeMessage(messages, 'pdf.toolbar.ink')}
             selected={annotationState.activeToolId === 'ink'}
             disabled={!can.selectAnnotationTool('ink')}
             onClick={() => commands.selectAnnotationTool('ink')}
@@ -274,7 +277,7 @@ export function PdfToolbar({
           </IconButton>
           <IconButton
             className="work-pdf-annotation-optional"
-            label="文字批注"
+            label={officeMessage(messages, 'pdf.toolbar.freeText')}
             selected={annotationState.activeToolId === 'freeText'}
             disabled={!can.selectAnnotationTool('freeText')}
             onClick={() => commands.selectAnnotationTool('freeText')}
@@ -282,7 +285,7 @@ export function PdfToolbar({
             <Type size={14} />
           </IconButton>
           <OfficeColorPicker
-            ariaLabel="批注颜色"
+            ariaLabel={officeMessage(messages, 'pdf.toolbar.colorAria')}
             className="work-pdf-annotation-color"
             compact
             value={annotationState.annotationColor}
@@ -296,8 +299,8 @@ export function PdfToolbar({
           />
           <IconButton
             className="work-pdf-annotation-delete"
-            label="删除所选批注"
-            title="删除所选批注（Delete / Backspace）"
+            label={officeMessage(messages, 'pdf.toolbar.deleteAnnotation')}
+            title={officeMessage(messages, 'pdf.toolbar.deleteAnnotationTitle')}
             aria-keyshortcuts={pdfKeyboardShortcuts.deleteAnnotation}
             disabled={!can.deleteAnnotationSelection()}
             onClick={commands.deleteAnnotationSelection}
@@ -322,9 +325,9 @@ export function PdfToolbar({
           <OfficeTextField
             ref={searchInputRef}
             type="search"
-            aria-label="在 PDF 中搜索"
+            aria-label={officeMessage(messages, 'pdf.toolbar.searchAria')}
             aria-keyshortcuts={pdfKeyboardShortcuts.search}
-            placeholder="搜索"
+            placeholder={officeMessage(messages, 'pdf.toolbar.searchPlaceholder')}
             value={searchValue}
             disabled={!can.search(searchValue)}
             onChange={(event) => setSearchValue(event.target.value)}
@@ -355,7 +358,7 @@ export function PdfToolbar({
           {(searchValue || state.search.active) && (
             <IconButton
               className="work-pdf-search-clear"
-              label="清除搜索"
+              label={officeMessage(messages, 'pdf.toolbar.clearSearch')}
               onClick={() => {
                 setSearchValue('');
                 commands.clearSearch();
@@ -366,17 +369,17 @@ export function PdfToolbar({
             </IconButton>
           )}
           <output className="work-pdf-search-state" aria-live="polite">
-            {searchStatus(state)}
+            {searchStatus(state, messages)}
           </output>
           <IconButton
-            label="上一个搜索结果"
+            label={officeMessage(messages, 'pdf.toolbar.prevMatch')}
             disabled={!can.previousSearchResult()}
             onClick={commands.previousSearchResult}
           >
             <ChevronUp size={14} />
           </IconButton>
           <IconButton
-            label="下一个搜索结果"
+            label={officeMessage(messages, 'pdf.toolbar.nextMatch')}
             disabled={!can.nextSearchResult()}
             onClick={commands.nextSearchResult}
           >
@@ -390,22 +393,22 @@ export function PdfToolbar({
           <IconButton
             ref={pageNavigation.toggleRef}
             className="work-pdf-page-navigation-toggle"
-            label="打开 PDF 页面导航"
-            tooltip="页面缩略图"
+            label={officeMessage(messages, 'pdf.toolbar.openNav')}
+            tooltip={officeMessage(messages, 'pdf.toolbar.navTooltip')}
             aria-controls={pageNavigation.controlsId}
             aria-expanded={pageNavigation.expanded}
             onClick={pageNavigation.onOpen}
           >
             <GalleryVerticalEnd size={15} />
             <span className="sr-only">
-              第 {Math.max(1, state.currentPage)} 页
+              {officeMessage(messages, 'pdf.toolbar.pageBadge', { page: String(Math.max(1, state.currentPage)) })}
             </span>
           </IconButton>
         )}
         <IconButton
           className="work-pdf-page-step"
-          label="上一页"
-          title="上一页（PageUp）"
+          label={officeMessage(messages, 'pdf.toolbar.prevPage')}
+          title={officeMessage(messages, 'pdf.toolbar.prevPageTitle')}
           aria-keyshortcuts={pdfKeyboardShortcuts.previousPage}
           disabled={!can.previousPage()}
           onClick={commands.previousPage}
@@ -414,7 +417,7 @@ export function PdfToolbar({
         </IconButton>
         <OfficeTextField
           className="work-pdf-page-field"
-          aria-label="页码"
+          aria-label={officeMessage(messages, 'pdf.toolbar.pageNumberAria')}
           inputMode="numeric"
           value={pageValue}
           disabled={!can.goToPage(state.currentPage || 1)}
@@ -459,8 +462,8 @@ export function PdfToolbar({
         <span className="work-pdf-page-total">/ {state.totalPages || '—'}</span>
         <IconButton
           className="work-pdf-page-step"
-          label="下一页"
-          title="下一页（PageDown）"
+          label={officeMessage(messages, 'pdf.toolbar.nextPage')}
+          title={officeMessage(messages, 'pdf.toolbar.nextPageTitle')}
           aria-keyshortcuts={pdfKeyboardShortcuts.nextPage}
           disabled={!can.nextPage()}
           onClick={commands.nextPage}
@@ -471,18 +474,18 @@ export function PdfToolbar({
 
       <div className="work-pdf-toolbar-group work-pdf-zoom-controls">
         <IconButton
-          label="缩小"
-          title="缩小（Cmd/Ctrl+-）"
+          label={officeMessage(messages, 'pdf.toolbar.zoomOut')}
+          title={officeMessage(messages, 'pdf.toolbar.zoomOutTitle')}
           aria-keyshortcuts={pdfKeyboardShortcuts.zoomOut}
           disabled={!can.zoomOut()}
           onClick={commands.zoomOut}
         >
           <Minus size={14} />
         </IconButton>
-        <output aria-label="PDF 缩放比例">{state.zoomPercent}%</output>
+        <output aria-label={officeMessage(messages, 'pdf.toolbar.zoomAria')}>{state.zoomPercent}%</output>
         <IconButton
-          label="放大"
-          title="放大（Cmd/Ctrl++）"
+          label={officeMessage(messages, 'pdf.toolbar.zoomIn')}
+          title={officeMessage(messages, 'pdf.toolbar.zoomInTitle')}
           aria-keyshortcuts={pdfKeyboardShortcuts.zoomIn}
           disabled={!can.zoomIn()}
           onClick={commands.zoomIn}
@@ -492,38 +495,38 @@ export function PdfToolbar({
         <button
           type="button"
           className="work-pdf-fit-button"
-          aria-label="实际大小"
-          title="实际大小（Cmd/Ctrl+1）"
+          aria-label={officeMessage(messages, 'pdf.toolbar.actualSizeAria')}
+          title={officeMessage(messages, 'pdf.toolbar.actualSizeTitle')}
           aria-keyshortcuts={pdfKeyboardShortcuts.actualSize}
           aria-pressed={isPdfActualSize(state)}
           disabled={!can.actualSize()}
           onClick={commands.actualSize}
         >
-          实际大小
+          {officeMessage(messages, 'pdf.toolbar.actualSize')}
         </button>
         <button
           type="button"
           className="work-pdf-fit-button"
-          aria-label="整页"
-          title="整页（Cmd/Ctrl+0）"
+          aria-label={officeMessage(messages, 'pdf.toolbar.fitPageAria')}
+          title={officeMessage(messages, 'pdf.toolbar.fitPageTitle')}
           aria-keyshortcuts={pdfKeyboardShortcuts.fitPage}
           aria-pressed={state.zoomMode === 'fit-page'}
           disabled={!can.fitPage()}
           onClick={commands.fitPage}
         >
-          整页
+          {officeMessage(messages, 'pdf.toolbar.fitPage')}
         </button>
         <button
           type="button"
           className="work-pdf-fit-button"
-          aria-label="页宽"
-          title="页宽（Cmd/Ctrl+2）"
+          aria-label={officeMessage(messages, 'pdf.toolbar.fitWidthAria')}
+          title={officeMessage(messages, 'pdf.toolbar.fitWidthTitle')}
           aria-keyshortcuts={pdfKeyboardShortcuts.fitWidth}
           aria-pressed={state.zoomMode === 'fit-width'}
           disabled={!can.fitWidth()}
           onClick={commands.fitWidth}
         >
-          页宽
+          {officeMessage(messages, 'pdf.toolbar.fitWidth')}
         </button>
       </div>
       <WorkOfficeCollaborationParticipants variant="toolbar" />
@@ -543,6 +546,7 @@ function PdfAnnotationStyleControl({
   can: PdfEditorCanCommands;
   commands: PdfEditorCommands;
 }) {
+  const messages = useOfficeMessages();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
   const opacityGroupName = useId();
@@ -552,13 +556,13 @@ function PdfAnnotationStyleControl({
     !can.setAnnotationOpacity(annotationState.annotationOpacity) &&
     !can.setAnnotationStrokeWidth(annotationState.annotationStrokeWidth);
   const title = annotationState.supportsStrokeWidth
-    ? `批注样式（${opacityPercent}%，线宽 ${annotationState.annotationStrokeWidth}）`
-    : `批注样式（${opacityPercent}%）`;
+    ? officeMessage(messages, 'pdf.toolbar.styleSummaryStroke', { opacity: String(opacityPercent), stroke: String(annotationState.annotationStrokeWidth) })
+    : officeMessage(messages, 'pdf.toolbar.styleSummary', { opacity: String(opacityPercent) });
 
   return (
     <Popover
-      label="批注样式"
-      panelLabel="批注样式"
+      label={officeMessage(messages, 'pdf.toolbar.style')}
+      panelLabel={officeMessage(messages, 'pdf.toolbar.style')}
       panelRole="dialog"
       placement="bottom-end"
       portal
@@ -591,7 +595,7 @@ function PdfAnnotationStyleControl({
       <div className="work-pdf-annotation-style-content">
         {annotationState.supportsOpacity && (
           <fieldset className="work-pdf-annotation-style-row">
-            <legend>透明度</legend>
+            <legend>{officeMessage(messages, 'pdf.toolbar.opacityLegend')}</legend>
             <div className="work-pdf-annotation-style-options">
               {PDF_ANNOTATION_OPACITY_OPTIONS.map((opacity) => {
                 const label = `${Math.round(opacity * 100)}%`;
@@ -600,7 +604,7 @@ function PdfAnnotationStyleControl({
                     <input
                       type="radio"
                       name={opacityGroupName}
-                      aria-label={`透明度 ${label}`}
+                      aria-label={officeMessage(messages, 'pdf.toolbar.opacityAria', { label })}
                       checked={annotationState.annotationOpacity === opacity}
                       disabled={!can.setAnnotationOpacity(opacity)}
                       onChange={() => commands.setAnnotationOpacity(opacity)}
@@ -615,14 +619,14 @@ function PdfAnnotationStyleControl({
         )}
         {annotationState.supportsStrokeWidth && (
           <fieldset className="work-pdf-annotation-style-row">
-            <legend>线宽</legend>
+            <legend>{officeMessage(messages, 'pdf.toolbar.strokeLegend')}</legend>
             <div className="work-pdf-annotation-style-options">
               {PDF_ANNOTATION_STROKE_WIDTH_OPTIONS.map((strokeWidth) => (
                 <label key={strokeWidth}>
                   <input
                     type="radio"
                     name={strokeWidthGroupName}
-                    aria-label={`线宽 ${strokeWidth}`}
+                    aria-label={officeMessage(messages, 'pdf.toolbar.strokeAria', { width: String(strokeWidth) })}
                     checked={
                       annotationState.annotationStrokeWidth === strokeWidth
                     }
@@ -696,6 +700,7 @@ function PdfToolbarOverflow({
   pageOrganizationAvailable: boolean;
   state: PdfViewerControllerState;
 }) {
+  const messages = useOfficeMessages();
   const hasOverflowTools =
     (editable && annotationState.available) ||
     (editable && state.features.history) ||
@@ -704,8 +709,8 @@ function PdfToolbarOverflow({
     state.features.zoom;
   return (
     <Popover
-      label="更多 PDF 工具"
-      panelLabel="更多 PDF 工具"
+      label={officeMessage(messages, 'pdf.toolbar.more')}
+      panelLabel={officeMessage(messages, 'pdf.toolbar.more')}
       panelRole="menu"
       placement="bottom-end"
       portal
@@ -718,7 +723,7 @@ function PdfToolbarOverflow({
         <button
           {...triggerProps}
           className="ds-icon-button work-pdf-overflow-trigger"
-          title="更多 PDF 工具"
+          title={officeMessage(messages, 'pdf.toolbar.more')}
         >
           <Ellipsis size={16} />
         </button>
@@ -732,9 +737,9 @@ function PdfToolbarOverflow({
         return (
           <>
             {editable && annotationState.available && (
-              <PdfOverflowGroup ariaLabel="批注工具">
+              <PdfOverflowGroup ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowAnnotation')}>
                 <PdfOverflowAction
-                  label="选择"
+                  label={officeMessage(messages, 'pdf.toolbar.select')}
                   active={annotationState.activeToolId === null}
                   disabled={!can.selectAnnotationTool(null)}
                   onSelect={() =>
@@ -744,7 +749,7 @@ function PdfToolbarOverflow({
                   <MousePointer2 size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="高亮"
+                  label={officeMessage(messages, 'pdf.toolbar.highlight')}
                   active={annotationState.activeToolId === 'highlight'}
                   disabled={!can.selectAnnotationTool('highlight')}
                   onSelect={() =>
@@ -754,7 +759,7 @@ function PdfToolbarOverflow({
                   <Highlighter size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="画笔"
+                  label={officeMessage(messages, 'pdf.toolbar.ink')}
                   active={annotationState.activeToolId === 'ink'}
                   disabled={!can.selectAnnotationTool('ink')}
                   onSelect={() =>
@@ -764,7 +769,7 @@ function PdfToolbarOverflow({
                   <Pencil size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="下划线批注"
+                  label={officeMessage(messages, 'pdf.toolbar.underline')}
                   active={annotationState.activeToolId === 'underline'}
                   disabled={!can.selectAnnotationTool('underline')}
                   onSelect={() =>
@@ -774,7 +779,7 @@ function PdfToolbarOverflow({
                   <Underline size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="删除线批注"
+                  label={officeMessage(messages, 'pdf.toolbar.strikeout')}
                   active={annotationState.activeToolId === 'strikeout'}
                   disabled={!can.selectAnnotationTool('strikeout')}
                   onSelect={() =>
@@ -784,7 +789,7 @@ function PdfToolbarOverflow({
                   <Strikethrough size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="文字批注"
+                  label={officeMessage(messages, 'pdf.toolbar.freeText')}
                   active={annotationState.activeToolId === 'freeText'}
                   disabled={!can.selectAnnotationTool('freeText')}
                   onSelect={() =>
@@ -794,7 +799,7 @@ function PdfToolbarOverflow({
                   <Type size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="删除所选批注"
+                  label={officeMessage(messages, 'pdf.toolbar.deleteAnnotation')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.deleteAnnotation}
                   disabled={!can.deleteAnnotationSelection()}
                   onSelect={() => select(commands.deleteAnnotationSelection)}
@@ -806,9 +811,9 @@ function PdfToolbarOverflow({
             {editable &&
               annotationState.available &&
               annotationState.supportsOpacity && (
-                <PdfOverflowGroup ariaLabel="透明度">
+                <PdfOverflowGroup ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowOpacity')}>
                   {PDF_ANNOTATION_OPACITY_OPTIONS.map((opacity) => {
-                    const label = `透明度 ${Math.round(opacity * 100)}%`;
+                    const label = officeMessage(messages, 'pdf.toolbar.overflowOpacityItem', { percent: String(Math.round(opacity * 100)) });
                     return (
                       <PdfOverflowAction
                         key={opacity}
@@ -828,11 +833,11 @@ function PdfToolbarOverflow({
             {editable &&
               annotationState.available &&
               annotationState.supportsStrokeWidth && (
-                <PdfOverflowGroup ariaLabel="线宽">
+                <PdfOverflowGroup ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowStroke')}>
                   {PDF_ANNOTATION_STROKE_WIDTH_OPTIONS.map((strokeWidth) => (
                     <PdfOverflowAction
                       key={strokeWidth}
-                      label={`线宽 ${strokeWidth}`}
+                      label={officeMessage(messages, 'pdf.toolbar.overflowStrokeItem', { width: String(strokeWidth) })}
                       active={
                         annotationState.annotationStrokeWidth === strokeWidth
                       }
@@ -849,9 +854,9 @@ function PdfToolbarOverflow({
                 </PdfOverflowGroup>
               )}
             {editable && state.features.history && (
-              <PdfOverflowGroup ariaLabel="历史记录">
+              <PdfOverflowGroup ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowHistory')}>
                 <PdfOverflowAction
-                  label="撤销"
+                  label={officeMessage(messages, 'pdf.toolbar.undo')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.undo}
                   disabled={!can.undo()}
                   onSelect={() => select(commands.undo)}
@@ -859,7 +864,7 @@ function PdfToolbarOverflow({
                   <Undo2 size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="重做"
+                  label={officeMessage(messages, 'pdf.toolbar.redo')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.redo}
                   disabled={!can.redo()}
                   onSelect={() => select(commands.redo)}
@@ -869,9 +874,9 @@ function PdfToolbarOverflow({
               </PdfOverflowGroup>
             )}
             {pageOrganizationAvailable && (
-              <PdfOverflowGroup ariaLabel="页面组织">
+              <PdfOverflowGroup ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowOrganize')}>
                 <PdfOverflowAction
-                  label="组织页面"
+                  label={officeMessage(messages, 'pdf.toolbar.organizeLabel')}
                   disabled={!can.openPageOrganizer()}
                   onSelect={() => select(commands.openPageOrganizer)}
                 >
@@ -880,9 +885,9 @@ function PdfToolbarOverflow({
               </PdfOverflowGroup>
             )}
             {state.features.navigation && (
-              <PdfOverflowGroup ariaLabel="翻页">
+              <PdfOverflowGroup ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowNav')}>
                 <PdfOverflowAction
-                  label="首页"
+                  label={officeMessage(messages, 'pdf.toolbar.firstPage')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.firstPage}
                   disabled={!can.goToPage(1)}
                   onSelect={() => select(() => commands.goToPage(1))}
@@ -890,7 +895,7 @@ function PdfToolbarOverflow({
                   <ChevronsLeft size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="上一页"
+                  label={officeMessage(messages, 'pdf.toolbar.prevPage')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.previousPage}
                   disabled={!can.previousPage()}
                   onSelect={() => select(commands.previousPage)}
@@ -898,7 +903,7 @@ function PdfToolbarOverflow({
                   <ChevronLeft size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="下一页"
+                  label={officeMessage(messages, 'pdf.toolbar.nextPage')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.nextPage}
                   disabled={!can.nextPage()}
                   onSelect={() => select(commands.nextPage)}
@@ -906,7 +911,7 @@ function PdfToolbarOverflow({
                   <ChevronRight size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="末页"
+                  label={officeMessage(messages, 'pdf.toolbar.lastPage')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.lastPage}
                   disabled={!can.goToPage(state.totalPages || 1)}
                   onSelect={() =>
@@ -918,9 +923,9 @@ function PdfToolbarOverflow({
               </PdfOverflowGroup>
             )}
             {state.features.zoom && (
-              <PdfOverflowGroup ariaLabel="缩放">
+              <PdfOverflowGroup ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowZoom')}>
                 <PdfOverflowAction
-                  label="缩小"
+                  label={officeMessage(messages, 'pdf.toolbar.zoomOut')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.zoomOut}
                   disabled={!can.zoomOut()}
                   onSelect={() => select(commands.zoomOut)}
@@ -928,7 +933,7 @@ function PdfToolbarOverflow({
                   <Minus size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="放大"
+                  label={officeMessage(messages, 'pdf.toolbar.zoomIn')}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.zoomIn}
                   disabled={!can.zoomIn()}
                   onSelect={() => select(commands.zoomIn)}
@@ -936,7 +941,7 @@ function PdfToolbarOverflow({
                   <Plus size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="实际大小"
+                  label={officeMessage(messages, 'pdf.toolbar.actualSize')}
                   active={isPdfActualSize(state)}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.actualSize}
                   disabled={!can.actualSize()}
@@ -945,7 +950,7 @@ function PdfToolbarOverflow({
                   <Ratio size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="整页"
+                  label={officeMessage(messages, 'pdf.toolbar.fitPage')}
                   active={state.zoomMode === 'fit-page'}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.fitPage}
                   disabled={!can.fitPage()}
@@ -954,7 +959,7 @@ function PdfToolbarOverflow({
                   <Scan size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="页宽"
+                  label={officeMessage(messages, 'pdf.toolbar.fitWidth')}
                   active={state.zoomMode === 'fit-width'}
                   ariaKeyShortcuts={pdfKeyboardShortcuts.fitWidth}
                   disabled={!can.fitWidth()}
@@ -966,18 +971,18 @@ function PdfToolbarOverflow({
             )}
             {state.features.search && (
               <PdfOverflowGroup
-                ariaLabel="搜索结果"
+                ariaLabel={officeMessage(messages, 'pdf.toolbar.overflowSearch')}
                 className="work-pdf-overflow-group work-pdf-overflow-narrow"
               >
                 <PdfOverflowAction
-                  label="上一个搜索结果"
+                  label={officeMessage(messages, 'pdf.toolbar.prevMatch')}
                   disabled={!can.previousSearchResult()}
                   onSelect={() => select(commands.previousSearchResult)}
                 >
                   <ChevronUp size={15} />
                 </PdfOverflowAction>
                 <PdfOverflowAction
-                  label="下一个搜索结果"
+                  label={officeMessage(messages, 'pdf.toolbar.nextMatch')}
                   disabled={!can.nextSearchResult()}
                   onSelect={() => select(commands.nextSearchResult)}
                 >
@@ -1066,10 +1071,17 @@ function isPdfActualSize(state: PdfViewerControllerState): boolean {
   return state.zoomMode === null && state.zoomPercent === 100;
 }
 
-function searchStatus(state: PdfViewerControllerState): string {
+function searchStatus(
+  state: PdfViewerControllerState,
+  messages: ReturnType<typeof useOfficeMessages>,
+): string {
   const { search } = state;
-  if (search.loading) return '搜索中';
-  if (search.error) return '失败';
+  if (search.loading) {
+    return officeMessage(messages, 'pdf.toolbar.searchLoading');
+  }
+  if (search.error) {
+    return officeMessage(messages, 'pdf.toolbar.searchFailed');
+  }
   if (!search.query && !search.active) return '';
   if (search.total === 0) return '0 / 0';
   return `${search.activeResultIndex + 1} / ${search.total}`;

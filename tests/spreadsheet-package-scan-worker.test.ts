@@ -156,7 +156,7 @@ describe('spreadsheet package scan worker', () => {
     expect(result?.workbook).toEqual({
       SheetNames: ['Plain'],
       Sheets: {
-        Plain: Object.assign([], { '!ref': 'A1:A1' }),
+        Plain: { '!data': [], '!ref': 'A1:A1' },
       },
     });
     expect(result?.plainWorksheets).toEqual({

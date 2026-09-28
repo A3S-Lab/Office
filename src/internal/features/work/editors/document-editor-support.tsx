@@ -7,6 +7,8 @@ import {
   TextQuote,
   WandSparkles,
 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { showToast } from '../../../state/app-state';
 import type { WorkspaceContextMenuItem } from '../../workspace/components/workspace-context-menu';
 import {
@@ -41,6 +43,7 @@ export function documentEditorSelectionText(
 export function documentAgentMenuItems(
   selection: string,
   onAgentRequest: (request: WorkEditorAgentRequest) => void | Promise<void>,
+  messages: OfficeMessageCatalog,
   proposalOptions?: {
     target: WorkAgentProposalTarget;
     apply: WorkAgentProposalRequest['apply'];
@@ -49,47 +52,61 @@ export function documentAgentMenuItems(
   return [
     {
       id: 'copy',
-      label: '复制',
+      label: officeMessage(messages, 'document.agent.copy'),
       icon: <Copy size={14} />,
       onSelect: () => {
-        void copyDocumentSelection(selection);
+        void copyDocumentSelection(selection, messages);
       },
     },
     {
       id: 'ask',
-      label: '询问 AI 助手',
+      label: officeMessage(messages, 'document.agent.ask'),
       icon: <MessageSquareText size={14} />,
       separatorBefore: true,
       onSelect: () =>
         void onAgentRequest({
-          instruction: '请围绕这段选中文本回答我的问题：\n\n问题：',
+          instruction: officeMessage(
+            messages,
+            'document.agent.askInstruction',
+          ),
           selection,
         }),
     },
     {
       id: 'summarize',
-      label: '总结选中内容',
+      label: officeMessage(messages, 'document.agent.summarize'),
       icon: <TextQuote size={14} />,
       onSelect: () =>
         void onAgentRequest({
-          instruction:
-            '请用简洁、准确的语言总结这段选中文本，保留关键事实和结论。',
+          instruction: officeMessage(
+            messages,
+            'document.agent.summarizeInstruction',
+          ),
           selection,
         }),
     },
     {
       id: 'rewrite',
-      label: '改写得更清晰',
+      label: officeMessage(messages, 'document.agent.rewrite'),
       icon: <Sparkles size={14} />,
       onSelect: () =>
         void onAgentRequest({
-          instruction:
-            '请改写这段选中文本，使表达更清晰、自然、专业，并说明主要改动。先提供建议稿，不要直接修改文档。',
+          instruction: officeMessage(
+            messages,
+            'document.agent.rewriteInstruction',
+          ),
           selection,
           proposal: proposalOptions
             ? createWorkAgentProposalRequest({
-                title: '审阅文字改写',
-                description: `选中文本 · ${selection.length} 个字符`,
+                title: officeMessage(
+                  messages,
+                  'document.agent.rewriteProposalTitle',
+                ),
+                description: officeMessage(
+                  messages,
+                  'document.agent.selectionDescription',
+                  { count: String(selection.length) },
+                ),
                 targets: [proposalOptions.target],
                 apply: proposalOptions.apply,
               })
@@ -98,17 +115,26 @@ export function documentAgentMenuItems(
     },
     {
       id: 'translate',
-      label: '翻译选中内容',
+      label: officeMessage(messages, 'document.agent.translate'),
       icon: <Languages size={14} />,
       onSelect: () =>
         void onAgentRequest({
-          instruction:
-            '请翻译这段选中文本。请先判断原语言，并询问或根据上下文确定目标语言；先提供译文，不要直接修改文档。',
+          instruction: officeMessage(
+            messages,
+            'document.agent.translateInstruction',
+          ),
           selection,
           proposal: proposalOptions
             ? createWorkAgentProposalRequest({
-                title: '审阅翻译建议',
-                description: `选中文本 · ${selection.length} 个字符`,
+                title: officeMessage(
+                  messages,
+                  'document.agent.translateProposalTitle',
+                ),
+                description: officeMessage(
+                  messages,
+                  'document.agent.selectionDescription',
+                  { count: String(selection.length) },
+                ),
                 targets: [proposalOptions.target],
                 apply: proposalOptions.apply,
               })
@@ -264,13 +290,19 @@ export function documentHasRefreshableFields(editor: Editor): boolean {
   return found;
 }
 
-async function copyDocumentSelection(selection: string): Promise<void> {
+async function copyDocumentSelection(
+  selection: string,
+  messages: OfficeMessageCatalog,
+): Promise<void> {
   try {
     if (!navigator.clipboard?.writeText)
       throw new Error('Clipboard API is unavailable');
     await navigator.clipboard.writeText(selection);
-    showToast('选中文本已复制', 'success');
+    showToast(officeMessage(messages, 'document.agent.copySuccess'), 'success');
   } catch {
-    showToast('无法访问剪贴板，请使用系统复制快捷键。', 'error');
+    showToast(
+      officeMessage(messages, 'document.agent.copyUnavailable'),
+      'error',
+    );
   }
 }

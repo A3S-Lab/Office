@@ -1,0 +1,99 @@
+name: Performance budgets (nightly)
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  performance-budgets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Set up Node.js for Playwright
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-perf-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: Build playground
+        run: bun run playground:build
+
+      - name: Start playground preview
+        run: |
+          bun run playground:preview &
+          echo "PLAYGROUND_PID=$!" >> "$GITHUB_ENV"
+          for _ in $(seq 1 60); do
+            if curl --silent --fail "http://127.0.0.1:4175/playground/" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Playground preview did not become ready" >&2
+          exit 1
+
+      - name: Run performance benchmarks
+        run: |
+          mkdir -p artifacts/performance
+          bun .a3s-test/performance/generate-fixtures.ts
+          bun .a3s-test/performance/benchmark.ts \
+            --url http://127.0.0.1:4175/playground/ \
+            --scenarios document-text,document-table,spreadsheet \
+            --runs 3 \
+            --timeout-ms 180000 \
+            --out artifacts/performance/benchmark-report.json
+          bun .a3s-test/performance/benchmark-presentation.ts \
+            --url http://127.0.0.1:4175/playground/ \
+            --runs 3 \
+            --timeout-ms 120000 \
+            --modes default \
+            --out artifacts/performance/presentation-report.json
+          bun .a3s-test/performance/benchmark-pdf.ts \
+            --url http://127.0.0.1:4175/playground/ \
+            --runs 3 \
+            --timeout-ms 120000 \
+            --out artifacts/performance/pdf-report.json
+
+      - name: Check performance budgets
+        run: |
+          bun run performance:check-budgets -- artifacts/performance/benchmark-report.json
+          bun run performance:check-budgets -- artifacts/performance/presentation-report.json
+          bun run performance:check-budgets -- artifacts/performance/pdf-report.json
+
+      - name: Upload performance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: office-performance-reports
+          path: artifacts/performance
+          if-no-files-found: ignore
+
+      - name: Stop playground preview
+        if: always()
+        run: |
+          if [[ -n "${PLAYGROUND_PID:-}" ]]; then
+            kill "${PLAYGROUND_PID}" || true
+          fi

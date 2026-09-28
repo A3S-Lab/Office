@@ -1,5 +1,6 @@
 import { Plus, Trash2, X } from 'lucide-react';
 import { useRef } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, IconButton } from '../../../design-system/primitives';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import {
@@ -37,6 +38,7 @@ import { PresentationChartDataLabelEditor } from './presentation-chart-data-labe
 import { PresentationChartLayoutEditor } from './presentation-chart-layout-editor';
 import { PresentationChartSeriesAnalysisEditor } from './presentation-chart-series-analysis-editor';
 import { SpreadsheetChartSeriesStyleEditor } from './spreadsheet-chart-series-style-editor';
+import { useOfficeMessages } from './office-messages-context';
 import {
   handleOfficeTaskPaneKeyDown,
   useOfficeTaskPaneModal,
@@ -69,6 +71,7 @@ export function PresentationChartPanel({
   onClose: () => void;
   restoreFocusTarget?: () => HTMLElement | null;
 }) {
+  const messages = useOfficeMessages();
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const modal = useOfficeTaskPaneModal(PRESENTATION_CHART_PANE_MODAL_QUERY);
@@ -98,7 +101,7 @@ export function PresentationChartPanel({
       {...modalAttributes}
       ref={panelRef}
       className="work-presentation-chart-panel"
-      aria-label="演示图表数据"
+      aria-label={officeMessage(messages, 'presentation.chart.panelAria')}
       onKeyDown={(event) => {
         focusScope.handleKeyDown(event);
         if (!event.defaultPrevented)
@@ -107,18 +110,18 @@ export function PresentationChartPanel({
     >
       <header>
         <div>
-          <strong>图表数据</strong>
-          <span>配置数据、布局与系列</span>
+          <strong>{officeMessage(messages, 'presentation.chart.panelTitle')}</strong>
+          <span>{officeMessage(messages, 'presentation.chart.panelHint')}</span>
         </div>
         <div>
-          <Button tone="danger" aria-label="删除演示图表" onClick={onDelete}>
+          <Button tone="danger" aria-label={officeMessage(messages, 'presentation.chart.deleteAria')} onClick={onDelete}>
             <Trash2 size={13} />
-            删除图表
+            {officeMessage(messages, 'presentation.chart.delete')}
           </Button>
           <IconButton
             ref={closeRef}
             className="close"
-            label="关闭演示图表数据"
+            label={officeMessage(messages, 'presentation.chart.close')}
             onClick={(event) => {
               event.stopPropagation();
               onClose();
@@ -130,13 +133,13 @@ export function PresentationChartPanel({
       </header>
       <div className="work-presentation-chart-controls">
         <div className="work-office-field">
-          <span>类型</span>
+          <span>{officeMessage(messages, 'presentation.chart.type')}</span>
           <OfficeSelect
-            ariaLabel="演示图表类型"
+            ariaLabel={officeMessage(messages, 'presentation.chart.typeAria')}
             value={chart.type}
             options={CHART_TYPES.map((type) => ({
               value: type,
-              label: presentationChartTypeLabel(type),
+              label: presentationChartTypeLabel(type, messages),
             }))}
             onValueChange={(type) =>
               onChange(
@@ -146,9 +149,9 @@ export function PresentationChartPanel({
           />
         </div>
         <div className="work-office-field">
-          <span>标题</span>
+          <span>{officeMessage(messages, 'presentation.chart.title')}</span>
           <CommittedOfficeTextField
-            aria-label="演示图表标题"
+            aria-label={officeMessage(messages, 'presentation.chart.titleAria')}
             value={chart.title}
             formatValue={(title) => title ?? ''}
             parseValue={(draft) => draft.trim().slice(0, 255) || undefined}
@@ -168,9 +171,9 @@ export function PresentationChartPanel({
         />
         {chart.type === 'doughnut' && (
           <div className="work-office-field">
-            <span>孔径</span>
+            <span>{officeMessage(messages, 'presentation.chart.holeSize')}</span>
             <CommittedOfficeNumberField
-              ariaLabel="圆环孔径"
+              ariaLabel={officeMessage(messages, 'presentation.chart.holeSizeAria')}
               min={10}
               max={90}
               value={normalizeDoughnutHoleSize(chart.doughnutHoleSize)}
@@ -188,14 +191,14 @@ export function PresentationChartPanel({
         )}
         {chart.type === 'radar' && (
           <div className="work-office-field">
-            <span>样式</span>
+            <span>{officeMessage(messages, 'presentation.chart.style')}</span>
             <OfficeSelect
-              ariaLabel="雷达图样式"
+              ariaLabel={officeMessage(messages, 'presentation.chart.radarStyleAria')}
               value={chart.radarStyle ?? 'standard'}
               options={[
-                { value: 'standard', label: '标准' },
-                { value: 'marker', label: '带数据标记' },
-                { value: 'filled', label: '填充' },
+                { value: 'standard', label: officeMessage(messages, 'presentation.chart.radar.standard') },
+                { value: 'marker', label: officeMessage(messages, 'presentation.chart.radar.marker') },
+                { value: 'filled', label: officeMessage(messages, 'presentation.chart.radar.filled') },
               ]}
               onValueChange={(radarStyle) =>
                 onChange({
@@ -208,16 +211,16 @@ export function PresentationChartPanel({
         )}
         {chart.type === 'scatter' && (
           <div className="work-office-field">
-            <span>散点样式</span>
+            <span>{officeMessage(messages, 'presentation.chart.scatterStyle')}</span>
             <OfficeSelect
-              ariaLabel="演示散点图样式"
+              ariaLabel={officeMessage(messages, 'presentation.chart.scatterStyleAria')}
               value={normalizePresentationScatterStyle(chart.scatterStyle)}
               options={[
-                { value: 'marker', label: '仅数据标记' },
-                { value: 'line', label: '直线' },
-                { value: 'lineMarker', label: '直线和数据标记' },
-                { value: 'smooth', label: '平滑线' },
-                { value: 'smoothMarker', label: '平滑线和数据标记' },
+                { value: 'marker', label: officeMessage(messages, 'presentation.chart.scatter.marker') },
+                { value: 'line', label: officeMessage(messages, 'presentation.chart.scatter.line') },
+                { value: 'lineMarker', label: officeMessage(messages, 'presentation.chart.scatter.lineMarker') },
+                { value: 'smooth', label: officeMessage(messages, 'presentation.chart.scatter.smooth') },
+                { value: 'smoothMarker', label: officeMessage(messages, 'presentation.chart.scatter.smoothMarker') },
               ]}
               onValueChange={(scatterStyle) =>
                 onChange({
@@ -231,9 +234,9 @@ export function PresentationChartPanel({
         {chart.type === 'bubble' && (
           <>
             <div className="work-office-field">
-              <span>气泡缩放</span>
+              <span>{officeMessage(messages, 'presentation.chart.bubbleScale')}</span>
               <CommittedOfficeNumberField
-                ariaLabel="演示气泡图缩放"
+                ariaLabel={officeMessage(messages, 'presentation.chart.bubbleScaleAria')}
                 min={5}
                 max={300}
                 value={normalizePresentationBubbleScale(chart.bubbleScale)}
@@ -249,15 +252,15 @@ export function PresentationChartPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>大小表示</span>
+              <span>{officeMessage(messages, 'presentation.chart.sizeRepresents')}</span>
               <OfficeSelect
-                ariaLabel="演示气泡大小表示"
+                ariaLabel={officeMessage(messages, 'presentation.chart.sizeRepresentsAria')}
                 value={normalizePresentationBubbleSizeRepresents(
                   chart.bubbleSizeRepresents,
                 )}
                 options={[
-                  { value: 'area', label: '面积' },
-                  { value: 'width', label: '宽度' },
+                  { value: 'area', label: officeMessage(messages, 'presentation.chart.size.area') },
+                  { value: 'width', label: officeMessage(messages, 'presentation.chart.size.width') },
                 ]}
                 onValueChange={(bubbleSizeRepresents) =>
                   onChange({
@@ -269,24 +272,24 @@ export function PresentationChartPanel({
               />
             </div>
             <div className="check">
-              <span>负气泡</span>
+              <span>{officeMessage(messages, 'presentation.chart.negativeBubbles')}</span>
               <OfficeCheckbox
                 className="work-presentation-chart-check-control"
-                ariaLabel="显示负气泡"
+                ariaLabel={officeMessage(messages, 'presentation.chart.negativeBubblesAria')}
                 checked={chart.showNegativeBubbles === true}
                 onCheckedChange={(showNegativeBubbles) =>
                   onChange({ ...chart, showNegativeBubbles })
                 }
               >
-                显示
+                {officeMessage(messages, 'presentation.chart.show')}
               </OfficeCheckbox>
             </div>
           </>
         )}
         <div className="work-office-field categories">
-          <span>{numericXAxis ? 'X 值' : '分类'}（每行一项）</span>
+          <span>{(numericXAxis ? officeMessage(messages, 'presentation.chart.xValues') : officeMessage(messages, 'presentation.chart.categories')) + officeMessage(messages, 'presentation.chart.perLine')}</span>
           <CommittedOfficeTextArea
-            aria-label={numericXAxis ? '演示图表 X 值' : '演示图表分类'}
+            aria-label={numericXAxis ? officeMessage(messages, 'presentation.chart.xValuesAria') : officeMessage(messages, 'presentation.chart.categoriesAria')}
             value={chart.categories}
             formatValue={(categories) => categories.join('\n')}
             parseValue={(draft) => {
@@ -306,16 +309,16 @@ export function PresentationChartPanel({
           {chart.series.map((series, index) => (
             <div className="work-presentation-chart-series-card" key={index}>
               <fieldset>
-                <legend>系列 {index + 1}</legend>
+                <legend>{officeMessage(messages, 'presentation.chart.seriesLegend', { index: String(index + 1) })}</legend>
                 <CommittedOfficeTextField
-                  aria-label={`演示图表系列 ${index + 1} 名称`}
+                  aria-label={officeMessage(messages, 'presentation.chart.seriesNameAria', { index: String(index + 1) })}
                   value={series.name}
                   formatValue={(name) => name}
                   parseValue={(draft) => draft.trim().slice(0, 255)}
                   onValueCommit={(name) => updateSeries(index, { name })}
                 />
                 <CommittedOfficeTextArea
-                  aria-label={`演示图表系列 ${index + 1} ${numericXAxis ? 'Y 值' : '数据'}`}
+                  aria-label={officeMessage(messages, numericXAxis ? 'presentation.chart.seriesYAria' : 'presentation.chart.seriesDataAria', { index: String(index + 1) })}
                   value={series.values}
                   formatValue={(values) => values.join(', ')}
                   parseValue={parsePresentationChartValueDraft}
@@ -327,7 +330,7 @@ export function PresentationChartPanel({
                 />
                 {chart.type === 'bubble' && (
                   <CommittedOfficeTextArea
-                    aria-label={`演示气泡图系列 ${index + 1} 大小`}
+                    aria-label={officeMessage(messages, 'presentation.chart.seriesBubbleAria', { index: String(index + 1) })}
                     value={series.bubbleSizes ?? []}
                     formatValue={(values) => values.join(', ')}
                     parseValue={parsePresentationChartValueDraft}
@@ -339,7 +342,7 @@ export function PresentationChartPanel({
                   />
                 )}
                 <IconButton
-                  label={`删除演示图表系列 ${index + 1}`}
+                  label={officeMessage(messages, 'presentation.chart.deleteSeriesAria', { index: String(index + 1) })}
                   disabled={chart.series.length === 1}
                   onClick={() =>
                     onChange({
@@ -375,16 +378,16 @@ export function PresentationChartPanel({
           <Button
             tone="secondary"
             className="add-series"
-            aria-label="添加图表系列"
+            aria-label={officeMessage(messages, 'presentation.chart.addSeriesAria')}
             onClick={() =>
               onChange({
                 ...chart,
-                series: [...chart.series, createPresentationChartSeries(chart)],
+                series: [...chart.series, createPresentationChartSeries(chart, messages)],
               })
             }
           >
             <Plus size={13} />
-            添加系列
+            {officeMessage(messages, 'presentation.chart.addSeries')}
           </Button>
         </div>
       </div>

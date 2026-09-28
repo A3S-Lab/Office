@@ -4,6 +4,7 @@ import {
   type UISchema,
 } from '@embedpdf/react-pdf-viewer';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   useCallback,
   useEffect,
@@ -22,6 +23,7 @@ import type { WorkPdfCollaborationContent } from '../../../collaboration/office-
 import { Button, StateView } from '../../../design-system/primitives';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import { useOfficeMessages } from './office-messages-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { usePdfAnnotationController } from './pdf-annotation-controller';
 import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
@@ -91,12 +93,15 @@ export function PdfViewer({
   onPageChange,
   onPageExport,
   onSave,
-  saveLabel = '保存',
+  saveLabel,
   selectedEvidenceRegionId,
   sourceKey,
   wasmUrl,
   worker = true,
 }: PdfViewerProps) {
+  const messages = useOfficeMessages();
+  const resolvedSaveLabel =
+    saveLabel ?? officeMessage(messages, 'pdf.viewer.save');
   const [sourceBlob, setSourceBlob] = useState<Blob | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -441,12 +446,12 @@ export function PdfViewer({
         tone="danger"
         role="alert"
         icon={<AlertCircle size={24} />}
-        title="无法打开 PDF"
-        description="请重试。"
+        title={officeMessage(messages, 'pdf.viewer.openFailedTitle')}
+        description={officeMessage(messages, 'pdf.viewer.openFailedDesc')}
         descriptionTitle={loadError}
         actions={
           <Button onClick={() => setRetryCount((value) => value + 1)}>
-            重试
+            {officeMessage(messages, 'pdf.viewer.retry')}
           </Button>
         }
       />
@@ -459,7 +464,7 @@ export function PdfViewer({
         className="work-pdf-state"
         role="status"
         icon={<Loader2 className="spin" size={22} />}
-        title="正在加载 PDF…"
+        title={officeMessage(messages, 'pdf.viewer.loading')}
       />
     );
   }
@@ -468,7 +473,7 @@ export function PdfViewer({
     <section
       ref={pdfRootRef}
       className="work-pdf-viewer"
-      aria-label={`PDF 编辑器：${fileName}`}
+      aria-label={officeMessage(messages, 'pdf.viewer.aria', { fileName })}
     >
       <PdfToolbar
         annotationState={annotation.state}
@@ -488,7 +493,7 @@ export function PdfViewer({
             : undefined
         }
         searchInputRef={searchInputRef}
-        saveLabel={saveLabel}
+        saveLabel={resolvedSaveLabel}
         saveState={saveState}
         state={viewerController.state}
       />
@@ -539,7 +544,7 @@ export function PdfViewer({
           <button
             type="button"
             className="work-pdf-page-navigation-backdrop"
-            aria-label="关闭 PDF 页面导航遮罩"
+            aria-label={officeMessage(messages, 'pdf.viewer.closeNav')}
             tabIndex={-1}
             onClick={closeMobilePageNavigation}
           />
@@ -547,7 +552,7 @@ export function PdfViewer({
         <div
           className="work-pdf-embed"
           role="application"
-          aria-label="PDF 页面画布"
+          aria-label={officeMessage(messages, 'pdf.viewer.canvasAria')}
           aria-busy={!viewerReady}
           data-ready={viewerReady || undefined}
           // biome-ignore lint/a11y/noNoninteractiveTabindex: EmbedPDF is a composite canvas application and this wrapper is its stable navigation focus target.
@@ -582,7 +587,7 @@ export function PdfViewer({
                 width: 132,
               },
               annotations: {
-                annotationAuthor: 'A3S Office 用户',
+                annotationAuthor: officeMessage(messages, 'pdf.viewer.defaultAuthor'),
                 autoCommit: true,
               },
               export: { defaultFileName: fileName },
@@ -611,7 +616,7 @@ export function PdfViewer({
           {!viewerReady && (
             <div className="work-pdf-loading" role="status">
               <Loader2 className="spin" size={18} />
-              正在打开…
+              {officeMessage(messages, 'pdf.viewer.opening')}
             </div>
           )}
         </div>

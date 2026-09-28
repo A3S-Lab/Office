@@ -1,30 +1,37 @@
 import type { Editor } from '@tiptap/core';
 import { ALargeSmall, CaseUpper, Type } from 'lucide-react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   normalizeDocumentTextCase,
   type WorkDocumentTextCase,
 } from '../work-document-text-case';
 import { getDocumentCommandDefinition } from './document-command-catalog';
+import { documentCommandLabel } from './document-command-i18n';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
-
-const textCaseOptions = [
-  { value: 'none', label: '常规', icon: Type },
-  {
-    value: 'all-caps',
-    label: '全部大写',
-    icon: CaseUpper,
-    command: 'allCaps',
-  },
-  {
-    value: 'small-caps',
-    label: '小型大写',
-    icon: ALargeSmall,
-    command: 'smallCaps',
-  },
-] as const;
+import { useOfficeMessages } from './office-messages-context';
 
 export function DocumentTextCaseRibbon({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
+  const textCaseOptions = [
+    {
+      value: 'none' as const,
+      label: messages['document.textCase.none'],
+      icon: Type,
+    },
+    {
+      value: 'all-caps' as const,
+      label: documentCommandLabel('allCaps', messages),
+      icon: CaseUpper,
+      command: 'allCaps' as const,
+    },
+    {
+      value: 'small-caps' as const,
+      label: documentCommandLabel('smallCaps', messages),
+      icon: ALargeSmall,
+      command: 'smallCaps' as const,
+    },
+  ];
   const value =
     normalizeDocumentTextCase(editor.getAttributes('textStyle').textCase) ??
     'none';
@@ -33,11 +40,12 @@ export function DocumentTextCaseRibbon({ editor }: { editor: Editor }) {
     textCaseOptions[0];
   const changeCaseShortcut =
     getDocumentCommandDefinition('changeCase').shortcut;
+  const menuLabel = messages['document.textCase.menu'];
 
   return (
     <Popover
-      label="大小写效果"
-      panelLabel="大小写效果"
+      label={menuLabel}
+      panelLabel={menuLabel}
       panelRole="menu"
       portal
       placement="bottom-end"
@@ -51,9 +59,14 @@ export function DocumentTextCaseRibbon({ editor }: { editor: Editor }) {
           type="button"
           className={value !== 'none' || open ? 'active' : ''}
           aria-keyshortcuts={changeCaseShortcut?.aria}
-          title={`大小写效果（${current.label}${
-            changeCaseShortcut ? `，${changeCaseShortcut.label}` : ''
-          }）`}
+          title={officeMessage(messages, 'document.textCase.title', {
+            current: current.label,
+            shortcut: changeCaseShortcut
+              ? officeMessage(messages, 'document.textCase.titleShortcut', {
+                  shortcut: changeCaseShortcut.label,
+                })
+              : '',
+          })}
         >
           <ALargeSmall size={16} aria-hidden="true" />
         </button>
@@ -63,8 +76,10 @@ export function DocumentTextCaseRibbon({ editor }: { editor: Editor }) {
         textCaseOptions.map((option) => {
           const Icon = option.icon;
           const shortcut =
-            'command' in option
-              ? getDocumentCommandDefinition(option.command).shortcut
+            option.value === 'all-caps' || option.value === 'small-caps'
+              ? getDocumentCommandDefinition(
+                  option.value === 'all-caps' ? 'allCaps' : 'smallCaps',
+                ).shortcut
               : undefined;
           return (
             <button

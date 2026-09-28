@@ -1,3 +1,7 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { withPresentationDesign } from '../work-presentation-layouts';
 import { createWorkId } from '../work-templates';
 import type {
@@ -63,7 +67,9 @@ export function updateSlide(
 export function newSlide(number: number): WorkSlide {
   return {
     id: createWorkId('slide'),
-    name: `幻灯片 ${number}`,
+    name: officeMessage(resolveOfficeMessages(), 'presentation.ops.slideName', {
+      number: String(number),
+    }),
     background: '#ffffff',
     elements: [
       {
@@ -82,7 +88,7 @@ export function newSlide(number: number): WorkSlide {
         placeholder: {
           key: 'title',
           type: 'title',
-          prompt: '单击添加标题',
+          prompt: officeMessage(resolveOfficeMessages(), 'presentation.ops.titlePrompt'),
         },
       },
     ],
@@ -134,7 +140,11 @@ export function newPresentationTableElement(
       headerRows: 1,
       rows: Array.from({ length: rows }, (_, rowIndex) =>
         Array.from({ length: columns }, (_, columnIndex) =>
-          rowIndex === 0 ? `标题 ${columnIndex + 1}` : '内容',
+          rowIndex === 0
+            ? officeMessage(resolveOfficeMessages(), 'presentation.ops.tableHeader', {
+                column: String(columnIndex + 1),
+              })
+            : officeMessage(resolveOfficeMessages(), 'presentation.ops.tableBody'),
         ),
       ),
     },

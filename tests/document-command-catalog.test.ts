@@ -3,6 +3,8 @@ import {
   documentCommandCatalog,
   getDocumentCommandDefinition,
 } from '../src/internal/features/work/editors/document-command-catalog';
+import { documentCommandLabel } from '../src/internal/features/work/editors/document-command-i18n';
+import { resolveOfficeMessages } from '../src/internal/i18n/office-locale';
 
 test('keeps Writer command ids and WPS locations unique', () => {
   const commands = Object.values(documentCommandCatalog);
@@ -114,8 +116,16 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
   expect(getDocumentCommandDefinition('refreshIndex').shortcut).toBeUndefined();
   expect(getDocumentCommandDefinition('doubleStrike')).toMatchObject({
     id: 'font.doubleStrike',
-    label: '双删除线',
   });
+  expect(documentCommandLabel('doubleStrike', resolveOfficeMessages())).toBe(
+    '双删除线',
+  );
+  expect(
+    documentCommandLabel(
+      'doubleStrike',
+      resolveOfficeMessages({ locale: 'en-US' }),
+    ),
+  ).toBe('Double strikethrough');
   expect(getDocumentCommandDefinition('doubleStrike').shortcut).toEqual({
     label: 'Cmd/Ctrl+Shift+X',
     aria: 'Control+Shift+X Meta+Shift+X',

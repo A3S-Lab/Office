@@ -1,3 +1,5 @@
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeStatusBar,
   WorkOfficeZoomControls,
@@ -19,6 +21,7 @@ export function MarkdownStatus({
   zoom: number;
   onZoomChange: (zoom: number) => void;
 }) {
+  const messages = useOfficeMessages();
   return (
     <WorkOfficeStatusBar
       className="work-markdown-status"
@@ -27,16 +30,16 @@ export function MarkdownStatus({
           zoom={zoom}
           minimum={MARKDOWN_MIN_ZOOM}
           maximum={MARKDOWN_MAX_ZOOM}
-          decreaseLabel="缩小内容"
-          increaseLabel="放大内容"
-          outputLabel="Markdown 缩放比例"
-          sliderLabel="调整 Markdown 缩放比例"
+          decreaseLabel={officeMessage(messages, 'markdown.status.zoomOut')}
+          increaseLabel={officeMessage(messages, 'markdown.status.zoomIn')}
+          outputLabel={officeMessage(messages, 'markdown.status.zoomOutput')}
+          sliderLabel={officeMessage(messages, 'markdown.status.zoomSlider')}
           onChange={onZoomChange}
         />
       }
     >
-      <output>{lineCount} 行</output>
-      <output>{characterCount} 字符</output>
+      <output>{officeMessage(messages, 'markdown.status.lines', { count: String(lineCount) })}</output>
+      <output>{officeMessage(messages, 'markdown.status.chars', { count: String(characterCount) })}</output>
       {saveStatus && (
         <span className="work-office-save-status">{saveStatus}</span>
       )}

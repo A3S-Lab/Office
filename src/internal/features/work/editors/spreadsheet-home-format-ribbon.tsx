@@ -12,11 +12,13 @@ import {
   Strikethrough,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   OfficeColorPicker,
   OfficeSelect,
   type OfficeSelectOption,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { SpreadsheetBorderRibbon } from './spreadsheet-border-ribbon';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
@@ -42,73 +44,6 @@ import {
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 
-const spreadsheetNumberFormatOptions: readonly OfficeSelectOption<SpreadsheetNumberFormatPreset>[] =
-  [
-    {
-      value: 'general',
-      label: spreadsheetCommandCatalog.numberFormatGeneral.label,
-      group: '常用',
-      meta: spreadsheetCommandCatalog.numberFormatGeneral.shortcut.label,
-    },
-    {
-      value: 'number',
-      label: spreadsheetCommandCatalog.numberFormatNumber.label,
-      group: '常用',
-      meta: spreadsheetCommandCatalog.numberFormatNumber.shortcut.label,
-    },
-    {
-      value: 'currency',
-      label: spreadsheetCommandCatalog.numberFormatCurrency.label,
-      group: '常用',
-      meta: spreadsheetCommandCatalog.numberFormatCurrency.shortcut.label,
-    },
-    {
-      value: 'accounting',
-      label: spreadsheetCommandCatalog.numberFormatAccounting.label,
-      group: '常用',
-    },
-    {
-      value: 'percent',
-      label: spreadsheetCommandCatalog.numberFormatPercent.label,
-      group: '常用',
-      meta: spreadsheetCommandCatalog.numberFormatPercent.shortcut.label,
-    },
-    {
-      value: 'date',
-      label: spreadsheetCommandCatalog.numberFormatDate.label,
-      group: '日期与时间',
-      meta: spreadsheetCommandCatalog.numberFormatDate.shortcut.label,
-    },
-    {
-      value: 'time',
-      label: spreadsheetCommandCatalog.numberFormatTime.label,
-      group: '日期与时间',
-      meta: spreadsheetCommandCatalog.numberFormatTime.shortcut.label,
-    },
-    {
-      value: 'scientific',
-      label: spreadsheetCommandCatalog.numberFormatScientific.label,
-      group: '其他',
-      meta: spreadsheetCommandCatalog.numberFormatScientific.shortcut.label,
-    },
-    {
-      value: 'fraction',
-      label: spreadsheetCommandCatalog.numberFormatFraction.label,
-      group: '其他',
-    },
-    {
-      value: 'text',
-      label: spreadsheetCommandCatalog.numberFormatText.label,
-      group: '其他',
-    },
-    {
-      value: 'custom',
-      label: spreadsheetNumberFormatPresetLabels.custom,
-      group: '其他',
-      disabled: true,
-    },
-  ];
-
 interface SpreadsheetHomeFormatRibbonProps {
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
@@ -120,6 +55,7 @@ export function SpreadsheetFontRibbonGroup({
   commands,
   toolbarCell,
 }: SpreadsheetHomeFormatRibbonProps) {
+  const messages = useOfficeMessages();
   const fontFamily =
     typeof toolbarCell?.ff === 'string' ? toolbarCell.ff : 'Aptos';
   const fontSize = Number(toolbarCell?.fs ?? DEFAULT_SPREADSHEET_FONT_SIZE);
@@ -134,10 +70,13 @@ export function SpreadsheetFontRibbonGroup({
   const shrinkFont = spreadsheetCommandCatalog.shrinkFont;
 
   return (
-    <WorkOfficeRibbonGroup label="字体" priority="high">
+    <WorkOfficeRibbonGroup
+      label={officeMessage(messages, 'spreadsheet.ribbon.font')}
+      priority="high"
+    >
       <OfficeSelect
         className="work-spreadsheet-font-family"
-        ariaLabel="字体"
+        ariaLabel={officeMessage(messages, 'spreadsheet.ribbon.fontAria')}
         value={fontFamily}
         disabled={!can.setCellFormat('ff', fontFamily)}
         options={spreadsheetFontFamilyOptions(
@@ -147,7 +86,7 @@ export function SpreadsheetFontRibbonGroup({
       />
       <OfficeSelect
         className="work-spreadsheet-font-size"
-        ariaLabel="字号"
+        ariaLabel={officeMessage(messages, 'spreadsheet.ribbon.fontSizeAria')}
         value={String(fontSize)}
         disabled={!can.setCellFormat('fs', fontSize)}
         options={spreadsheetFontSizeOptions(toolbarCell?.fs)}
@@ -155,7 +94,10 @@ export function SpreadsheetFontRibbonGroup({
       />
       <WorkOfficeRibbonButton
         label={growFont.label}
-        title={`${growFont.label}（${growFont.shortcut.label}）`}
+        title={officeMessage(messages, 'spreadsheet.ribbon.labelWithShortcut', {
+          label: growFont.label,
+          shortcut: growFont.shortcut.label,
+        })}
         aria-keyshortcuts={growFont.shortcut.aria}
         displayLabel={false}
         disabled={!can.adjustFontSize('grow')}
@@ -165,7 +107,10 @@ export function SpreadsheetFontRibbonGroup({
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
         label={shrinkFont.label}
-        title={`${shrinkFont.label}（${shrinkFont.shortcut.label}）`}
+        title={officeMessage(messages, 'spreadsheet.ribbon.labelWithShortcut', {
+          label: shrinkFont.label,
+          shortcut: shrinkFont.shortcut.label,
+        })}
         aria-keyshortcuts={shrinkFont.shortcut.aria}
         displayLabel={false}
         disabled={!can.adjustFontSize('shrink')}
@@ -205,26 +150,26 @@ export function SpreadsheetFontRibbonGroup({
       <OfficeColorPicker
         compact
         className="work-color-tool work-spreadsheet-font-color"
-        ariaLabel="文字颜色"
+        ariaLabel={officeMessage(messages, 'spreadsheet.ribbon.textColorAria')}
         value={textColor}
         disabled={!can.setCellFormat('fc', textColor)}
         onValueChange={(value) => commands.setCellFormat('fc', value)}
         resetAction={{
           kind: 'automatic',
-          label: '自动颜色',
+          label: officeMessage(messages, 'spreadsheet.ribbon.autoColor'),
           onSelect: () => commands.setCellFormat('fc', undefined),
         }}
       />
       <OfficeColorPicker
         compact
         className="work-color-tool work-spreadsheet-fill-color"
-        ariaLabel="填充颜色"
+        ariaLabel={officeMessage(messages, 'spreadsheet.ribbon.fillColorAria')}
         value={fillColor}
         disabled={!can.setCellFormat('bg', fillColor)}
         onValueChange={(value) => commands.setCellFormat('bg', value)}
         resetAction={{
           kind: 'none',
-          label: '无填充',
+          label: officeMessage(messages, 'spreadsheet.ribbon.noFill'),
           onSelect: () => commands.setCellFormat('bg', undefined),
         }}
       />
@@ -238,6 +183,7 @@ export function SpreadsheetNumberRibbonGroup({
   commands,
   toolbarCell,
 }: SpreadsheetHomeFormatRibbonProps) {
+  const messages = useOfficeMessages();
   const numberFormat = toolbarCell?.ct?.fa?.trim() || 'General';
   const numberFormatPreset = spreadsheetNumberFormatPreset(numberFormat);
   const currentNumberFormatValue = spreadsheetNumberFormatValue(
@@ -249,13 +195,97 @@ export function SpreadsheetNumberRibbonGroup({
   const decreaseDefinition = spreadsheetCommandCatalog.decreaseDecimalPlaces;
   const increaseDefinition = spreadsheetCommandCatalog.increaseDecimalPlaces;
   const formatCellsDefinition = spreadsheetCommandCatalog.formatCells;
+  const commonGroup = officeMessage(
+    messages,
+    'spreadsheet.numberFormat.group.common',
+  );
+  const dateTimeGroup = officeMessage(
+    messages,
+    'spreadsheet.numberFormat.group.dateTime',
+  );
+  const otherGroup = officeMessage(
+    messages,
+    'spreadsheet.numberFormat.group.other',
+  );
+  const spreadsheetNumberFormatOptions: readonly OfficeSelectOption<SpreadsheetNumberFormatPreset>[] =
+    [
+      {
+        value: 'general',
+        label: spreadsheetCommandCatalog.numberFormatGeneral.label,
+        group: commonGroup,
+        meta: spreadsheetCommandCatalog.numberFormatGeneral.shortcut.label,
+      },
+      {
+        value: 'number',
+        label: spreadsheetCommandCatalog.numberFormatNumber.label,
+        group: commonGroup,
+        meta: spreadsheetCommandCatalog.numberFormatNumber.shortcut.label,
+      },
+      {
+        value: 'currency',
+        label: spreadsheetCommandCatalog.numberFormatCurrency.label,
+        group: commonGroup,
+        meta: spreadsheetCommandCatalog.numberFormatCurrency.shortcut.label,
+      },
+      {
+        value: 'accounting',
+        label: spreadsheetCommandCatalog.numberFormatAccounting.label,
+        group: commonGroup,
+      },
+      {
+        value: 'percent',
+        label: spreadsheetCommandCatalog.numberFormatPercent.label,
+        group: commonGroup,
+        meta: spreadsheetCommandCatalog.numberFormatPercent.shortcut.label,
+      },
+      {
+        value: 'date',
+        label: spreadsheetCommandCatalog.numberFormatDate.label,
+        group: dateTimeGroup,
+        meta: spreadsheetCommandCatalog.numberFormatDate.shortcut.label,
+      },
+      {
+        value: 'time',
+        label: spreadsheetCommandCatalog.numberFormatTime.label,
+        group: dateTimeGroup,
+        meta: spreadsheetCommandCatalog.numberFormatTime.shortcut.label,
+      },
+      {
+        value: 'scientific',
+        label: spreadsheetCommandCatalog.numberFormatScientific.label,
+        group: otherGroup,
+        meta: spreadsheetCommandCatalog.numberFormatScientific.shortcut.label,
+      },
+      {
+        value: 'fraction',
+        label: spreadsheetCommandCatalog.numberFormatFraction.label,
+        group: otherGroup,
+      },
+      {
+        value: 'text',
+        label: spreadsheetCommandCatalog.numberFormatText.label,
+        group: otherGroup,
+      },
+      {
+        value: 'custom',
+        label: spreadsheetNumberFormatPresetLabels.custom,
+        group: otherGroup,
+        disabled: true,
+      },
+    ];
 
   return (
-    <WorkOfficeRibbonGroup label="数字" priority="high">
+    <WorkOfficeRibbonGroup
+      label={officeMessage(messages, 'spreadsheet.ribbon.number')}
+      priority="high"
+    >
       <div className="work-spreadsheet-number-format-stack">
         <OfficeSelect
           className="work-spreadsheet-number-format"
-          ariaLabel="数字格式"
+          ariaLabel={officeMessage(
+            messages,
+            'spreadsheet.ribbon.numberFormatAria',
+          )}
           value={numberFormatPreset}
           disabled={!can.setCellFormat('ct', currentNumberFormatValue)}
           options={spreadsheetNumberFormatOptions}
@@ -273,8 +303,17 @@ export function SpreadsheetNumberRibbonGroup({
         <SpreadsheetDateTimeMenu can={can} commands={commands} />
       </div>
       <WorkOfficeRibbonButton
-        label={`${currencyDefinition.label}格式`}
-        title={`${currencyDefinition.label}格式（${currencyDefinition.shortcut.label}）`}
+        label={officeMessage(messages, 'spreadsheet.ribbon.formatSuffix', {
+          label: currencyDefinition.label,
+        })}
+        title={officeMessage(
+          messages,
+          'spreadsheet.ribbon.formatSuffixWithShortcut',
+          {
+            label: currencyDefinition.label,
+            shortcut: currencyDefinition.shortcut.label,
+          },
+        )}
         aria-keyshortcuts={currencyDefinition.shortcut.aria}
         displayLabel={false}
         active={numberFormatPreset === 'currency'}
@@ -300,8 +339,17 @@ export function SpreadsheetNumberRibbonGroup({
         <BadgeJapaneseYen size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label={`${percentDefinition.label}格式`}
-        title={`${percentDefinition.label}格式（${percentDefinition.shortcut.label}）`}
+        label={officeMessage(messages, 'spreadsheet.ribbon.formatSuffix', {
+          label: percentDefinition.label,
+        })}
+        title={officeMessage(
+          messages,
+          'spreadsheet.ribbon.formatSuffixWithShortcut',
+          {
+            label: percentDefinition.label,
+            shortcut: percentDefinition.shortcut.label,
+          },
+        )}
         aria-keyshortcuts={percentDefinition.shortcut.aria}
         displayLabel={false}
         active={numberFormatPreset === 'percent'}
@@ -346,7 +394,10 @@ export function SpreadsheetNumberRibbonGroup({
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
         label={formatCellsDefinition.label}
-        title={`${formatCellsDefinition.label}（${formatCellsDefinition.shortcut.label}）`}
+        title={officeMessage(messages, 'spreadsheet.ribbon.labelWithShortcut', {
+          label: formatCellsDefinition.label,
+          shortcut: formatCellsDefinition.shortcut.label,
+        })}
         aria-keyshortcuts={formatCellsDefinition.shortcut.aria}
         displayLabel={false}
         disabled={!can.openFormatCells()}
@@ -371,12 +422,16 @@ function SpreadsheetFontToggle({
   command: 'bold' | 'italic' | 'strike';
   icon: ReactNode;
 }) {
+  const messages = useOfficeMessages();
   const definition = spreadsheetCommandCatalog[command];
   return (
     <WorkOfficeRibbonButton
       data-spreadsheet-rich-text-format="true"
       label={definition.label}
-      title={`${definition.label}（${definition.shortcut.label}）`}
+      title={officeMessage(messages, 'spreadsheet.ribbon.labelWithShortcut', {
+        label: definition.label,
+        shortcut: definition.shortcut.label,
+      })}
       aria-keyshortcuts={definition.shortcut.aria}
       displayLabel={false}
       active={active}

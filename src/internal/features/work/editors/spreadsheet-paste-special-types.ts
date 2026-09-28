@@ -1,53 +1,112 @@
 import type { Cell } from '@fortune-sheet/core';
-import type { SpreadsheetResolvedCellBorders } from './spreadsheet-cell-border';
-import type {
-  SpreadsheetCellRange,
-  SpreadsheetCellRangeInput,
-} from './spreadsheet-cell-range';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetDataValidationItem,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import type { SpreadsheetResolvedCellBorders } from './spreadsheet-cell-border';
+import type {
+  SpreadsheetCellRange,
+  SpreadsheetCellRangeInput,
+} from './spreadsheet-cell-range';
 
 export const MAX_SPREADSHEET_PASTE_SPECIAL_CELLS = 50_000;
 export const MAX_SPREADSHEET_ROWS = 1_048_576;
 export const MAX_SPREADSHEET_COLUMNS = 16_384;
 
-export const spreadsheetPasteContentOptions = [
-  { value: 'all', label: '全部', richOnly: false },
-  { value: 'formulas', label: '公式', richOnly: false },
-  { value: 'values', label: '值', richOnly: false },
-  { value: 'formats', label: '格式', richOnly: true },
-  { value: 'comments', label: '批注', richOnly: true },
-  { value: 'validation', label: '数据验证', richOnly: true },
-  { value: 'all-except-borders', label: '边框除外的全部', richOnly: true },
+const PASTE_CONTENT_SPECS = [
+  {
+    value: 'all',
+    labelKey: 'spreadsheet.pasteSpecial.content.all',
+    richOnly: false,
+  },
+  {
+    value: 'formulas',
+    labelKey: 'spreadsheet.pasteSpecial.content.formulas',
+    richOnly: false,
+  },
+  {
+    value: 'values',
+    labelKey: 'spreadsheet.pasteSpecial.content.values',
+    richOnly: false,
+  },
+  {
+    value: 'formats',
+    labelKey: 'spreadsheet.pasteSpecial.content.formats',
+    richOnly: true,
+  },
+  {
+    value: 'comments',
+    labelKey: 'spreadsheet.pasteSpecial.content.comments',
+    richOnly: true,
+  },
+  {
+    value: 'validation',
+    labelKey: 'spreadsheet.pasteSpecial.content.validation',
+    richOnly: true,
+  },
+  {
+    value: 'all-except-borders',
+    labelKey: 'spreadsheet.pasteSpecial.content.allExceptBorders',
+    richOnly: true,
+  },
   {
     value: 'formulas-and-number-formats',
-    label: '公式和数字格式',
+    labelKey: 'spreadsheet.pasteSpecial.content.formulasAndNumberFormats',
     richOnly: true,
   },
   {
     value: 'values-and-number-formats',
-    label: '值和数字格式',
+    labelKey: 'spreadsheet.pasteSpecial.content.valuesAndNumberFormats',
     richOnly: true,
   },
-  { value: 'column-widths', label: '列宽', richOnly: true },
+  {
+    value: 'column-widths',
+    labelKey: 'spreadsheet.pasteSpecial.content.columnWidths',
+    richOnly: true,
+  },
 ] as const;
 
-export type SpreadsheetPasteContent =
-  (typeof spreadsheetPasteContentOptions)[number]['value'];
-
-export const spreadsheetPasteOperationOptions = [
-  { value: 'none', label: '无' },
-  { value: 'add', label: '加' },
-  { value: 'subtract', label: '减' },
-  { value: 'multiply', label: '乘' },
-  { value: 'divide', label: '除' },
+const PASTE_OPERATION_SPECS = [
+  { value: 'none', labelKey: 'spreadsheet.pasteSpecial.op.none' },
+  { value: 'add', labelKey: 'spreadsheet.pasteSpecial.op.add' },
+  { value: 'subtract', labelKey: 'spreadsheet.pasteSpecial.op.subtract' },
+  { value: 'multiply', labelKey: 'spreadsheet.pasteSpecial.op.multiply' },
+  { value: 'divide', labelKey: 'spreadsheet.pasteSpecial.op.divide' },
 ] as const;
+
+export type SpreadsheetPasteContent = (typeof PASTE_CONTENT_SPECS)[number]['value'];
 
 export type SpreadsheetPasteOperation =
-  (typeof spreadsheetPasteOperationOptions)[number]['value'];
+  (typeof PASTE_OPERATION_SPECS)[number]['value'];
+
+export function spreadsheetPasteContentOptions(
+  catalog: OfficeMessageCatalog = resolveOfficeMessages(),
+): readonly {
+  value: SpreadsheetPasteContent;
+  label: string;
+  richOnly: boolean;
+}[] {
+  return PASTE_CONTENT_SPECS.map((spec) => ({
+    value: spec.value,
+    label: officeMessage(catalog, spec.labelKey),
+    richOnly: spec.richOnly,
+  }));
+}
+
+export function spreadsheetPasteOperationOptions(
+  catalog: OfficeMessageCatalog = resolveOfficeMessages(),
+): readonly { value: SpreadsheetPasteOperation; label: string }[] {
+  return PASTE_OPERATION_SPECS.map((spec) => ({
+    value: spec.value,
+    label: officeMessage(catalog, spec.labelKey),
+  }));
+}
 
 export interface SpreadsheetPasteSpecialOptions {
   content: SpreadsheetPasteContent;

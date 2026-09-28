@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { officeMessage } from '../../../i18n/office-locale';
 import { EditorContent } from '@tiptap/react';
 import {
   type CSSProperties,
@@ -21,6 +22,7 @@ import type {
   MarkdownSourceCommand,
   MarkdownSourceSelection,
 } from './markdown-source-commands';
+import { useOfficeMessages } from './office-messages-context';
 import {
   MarkdownSourcePresenceLayer,
   OfficeTiptapPresenceLayer,
@@ -103,6 +105,7 @@ export function MarkdownWorkspace({
   ) => boolean;
   onVisualIntent?: () => void;
 }) {
+  const messages = useOfficeMessages();
   const workspaceRef = useRef<HTMLDivElement>(null);
   const visualRef = useRef<HTMLElement>(null);
   const visualCanvasRef = useRef<HTMLDivElement>(null);
@@ -265,37 +268,37 @@ export function MarkdownWorkspace({
     >
       {mode === 'split' && (
         <fieldset className="work-markdown-compact-switch">
-          <legend className="sr-only">分屏显示内容</legend>
+          <legend className="sr-only">{officeMessage(messages, 'markdown.workspace.splitLegend')}</legend>
           <button
             type="button"
-            aria-label="显示源码窗格"
+            aria-label={officeMessage(messages, 'markdown.workspace.showSourceAria')}
             aria-pressed={compactPane === 'source'}
             onClick={() => setCompactPane('source')}
           >
-            源码
+            {officeMessage(messages, 'markdown.workspace.source')}
           </button>
           <button
             type="button"
-            aria-label="显示预览窗格"
+            aria-label={officeMessage(messages, 'markdown.workspace.showPreviewAria')}
             aria-pressed={compactPane === 'preview'}
             onClick={() => setCompactPane('preview')}
           >
-            预览
+            {officeMessage(messages, 'markdown.workspace.preview')}
           </button>
         </fieldset>
       )}
       {showSource && (
         <section
-          aria-label="Markdown 源码窗格"
+          aria-label={officeMessage(messages, 'markdown.workspace.sourcePaneAria')}
           className="work-markdown-pane source"
         >
           {mode === 'split' && (
-            <header className="work-markdown-pane-label">源码</header>
+            <header className="work-markdown-pane-label">{officeMessage(messages, 'markdown.workspace.source')}</header>
           )}
           <textarea
             ref={sourceRef}
-            aria-label="Markdown 源码"
-            placeholder="开始写 Markdown…"
+            aria-label={officeMessage(messages, 'markdown.workspace.sourceAria')}
+            placeholder={officeMessage(messages, 'markdown.workspace.sourcePlaceholder')}
             value={markdown}
             spellCheck
             onBeforeInput={(event: FormEvent<HTMLTextAreaElement>) => {
@@ -373,14 +376,14 @@ export function MarkdownWorkspace({
       {mode === 'split' && (
         <hr
           className="work-markdown-splitter"
-          aria-label="调整编辑与预览宽度"
+          aria-label={officeMessage(messages, 'markdown.workspace.resizeAria')}
           aria-orientation="vertical"
           aria-valuemin={MIN_MARKDOWN_SPLIT_PERCENT}
           aria-valuemax={MAX_MARKDOWN_SPLIT_PERCENT}
           aria-valuenow={sourcePanePercent}
-          aria-valuetext={`编辑窗格 ${sourcePanePercent}%`}
+          aria-valuetext={officeMessage(messages, 'markdown.workspace.resizeValue', { percent: String(sourcePanePercent) })}
           tabIndex={0}
-          title="拖动调整分栏宽度，双击恢复均分"
+          title={officeMessage(messages, 'markdown.workspace.resizeTitle')}
           onDoubleClick={() =>
             setSourcePanePercent(DEFAULT_MARKDOWN_SPLIT_PERCENT)
           }
@@ -395,7 +398,7 @@ export function MarkdownWorkspace({
         <section
           ref={visualRef}
           aria-label={
-            visualIsReadOnly ? 'Markdown 预览窗格' : 'Markdown 编辑窗格'
+            visualIsReadOnly ? officeMessage(messages, 'markdown.workspace.previewPaneAria') : officeMessage(messages, 'markdown.workspace.editPaneAria')
           }
           className="work-markdown-pane visual"
           data-readonly={visualIsReadOnly ? 'true' : 'false'}
@@ -409,7 +412,7 @@ export function MarkdownWorkspace({
           onScroll={handleVisualScroll}
         >
           {mode === 'split' && (
-            <header className="work-markdown-pane-label">预览</header>
+            <header className="work-markdown-pane-label">{officeMessage(messages, 'markdown.workspace.preview')}</header>
           )}
           <div ref={visualCanvasRef} className="work-markdown-canvas">
             <EditorContent editor={editor} />

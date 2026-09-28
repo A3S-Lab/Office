@@ -1,4 +1,8 @@
 import type { Cell, Selection } from '@fortune-sheet/core';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { OFFICE_KERNEL_SPREADSHEET_MAX_ROWS } from '../../../kernel/office-kernel-spreadsheet-protocol';
 import { sparseArrayEntries, sparseArrayIndexes } from '../spreadsheet-sparse';
 import {
@@ -722,24 +726,31 @@ function cloneRange(range: SpreadsheetCellRange): SpreadsheetCellRange {
 function tableError(
   code: SpreadsheetTableErrorCode,
 ): Extract<SpreadsheetTableValidation, { ok: false }> {
-  const messages: Record<SpreadsheetTableErrorCode, string> = {
-    'auto-filter-overlap': '表格区域不能与工作表自动筛选区域重叠。',
-    'invalid-column-name': '表格列名必须唯一且不超过 255 个字符。',
-    'invalid-name': '表格名称必须是有效且不类似单元格引用的标识符。',
-    'invalid-range': '表格至少需要一行数据。',
-    'invalid-style': '表格样式身份无效。',
-    'invalid-totals': '汇总行函数、标签或公式无效。',
-    'merged-range': '请先取消表格区域内的合并单元格。',
-    'name-conflict': '表格名称已被其他表格或名称使用。',
-    'out-of-bounds': '表格区域超出当前工作表边界。',
-    'pivot-table': '数据透视表工作表不能创建普通表格。',
-    'protected-range': '受保护或只读区域不能创建表格。',
-    'range-too-large': `一次最多可创建 ${MAX_SPREADSHEET_TABLE_CELLS.toLocaleString()} 个单元格的表格。`,
-    'sheet-not-found': '找不到目标工作表。',
-    'table-overlap': '表格区域不能与其他表格重叠。',
-    'totals-row-content': '汇总行目标单元格已有内容，请先清空后再启用。',
-  };
-  return { code, message: messages[code], ok: false };
+  const catalog = resolveOfficeMessages();
+  const messageKeys = {
+    'auto-filter-overlap': 'spreadsheet.table.error.autoFilterOverlap',
+    'invalid-column-name': 'spreadsheet.table.error.invalidColumnName',
+    'invalid-name': 'spreadsheet.table.error.invalidName',
+    'invalid-range': 'spreadsheet.table.error.invalidRange',
+    'invalid-style': 'spreadsheet.table.error.invalidStyle',
+    'invalid-totals': 'spreadsheet.table.error.invalidTotals',
+    'merged-range': 'spreadsheet.table.error.mergedRange',
+    'name-conflict': 'spreadsheet.table.error.nameConflict',
+    'out-of-bounds': 'spreadsheet.table.error.outOfBounds',
+    'pivot-table': 'spreadsheet.table.error.pivotTable',
+    'protected-range': 'spreadsheet.table.error.protectedRange',
+    'range-too-large': 'spreadsheet.table.error.rangeTooLarge',
+    'sheet-not-found': 'spreadsheet.table.error.sheetNotFound',
+    'table-overlap': 'spreadsheet.table.error.tableOverlap',
+    'totals-row-content': 'spreadsheet.table.error.totalsRowContent',
+  } as const satisfies Record<SpreadsheetTableErrorCode, string>;
+  const message =
+    code === 'range-too-large'
+      ? officeMessage(catalog, messageKeys[code], {
+          max: MAX_SPREADSHEET_TABLE_CELLS.toLocaleString(),
+        })
+      : officeMessage(catalog, messageKeys[code]);
+  return { code, message, ok: false };
 }
 
 function rangeEndRow(table: WorkSpreadsheetTable): number {

@@ -1,8 +1,10 @@
 import { ChevronDown } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import type {
   SpreadsheetCellBorderFormat,
   SpreadsheetCellBorderStyle,
@@ -14,21 +16,18 @@ import type {
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
 
-const spreadsheetBorderStyleOptions: readonly {
-  value: SpreadsheetCellBorderStyle;
-  label: string;
-}[] = [
-  { value: 'thin', label: '细实线' },
-  { value: 'dotted', label: '点线' },
-  { value: 'dashed', label: '虚线' },
-  { value: 'dash-dot', label: '点划线' },
-  { value: 'dash-dot-dot', label: '双点划线' },
-  { value: 'medium', label: '中等实线' },
-  { value: 'medium-dashed', label: '中等虚线' },
-  { value: 'medium-dash-dot', label: '中等点划线' },
-  { value: 'medium-dash-dot-dot', label: '中等双点划线' },
-  { value: 'thick', label: '粗实线' },
-];
+const BORDER_STYLE_KEYS = {
+  thin: 'spreadsheet.border.style.thin',
+  dotted: 'spreadsheet.border.style.dotted',
+  dashed: 'spreadsheet.border.style.dashed',
+  'dash-dot': 'spreadsheet.border.style.dashDot',
+  'dash-dot-dot': 'spreadsheet.border.style.dashDotDot',
+  medium: 'spreadsheet.border.style.medium',
+  'medium-dashed': 'spreadsheet.border.style.mediumDashed',
+  'medium-dash-dot': 'spreadsheet.border.style.mediumDashDot',
+  'medium-dash-dot-dot': 'spreadsheet.border.style.mediumDashDotDot',
+  thick: 'spreadsheet.border.style.thick',
+} as const satisfies Record<SpreadsheetCellBorderStyle, string>;
 
 const spreadsheetBorderTargetOptions: readonly {
   target: SpreadsheetCellBorderTarget;
@@ -79,6 +78,7 @@ export function SpreadsheetBorderRibbon({
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
 }) {
+  const messages = useOfficeMessages();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState<SpreadsheetCellBorderTarget>('all');
   const [style, setStyle] = useState<SpreadsheetCellBorderStyle>('thin');
@@ -107,7 +107,15 @@ export function SpreadsheetBorderRibbon({
     currentDefinition && 'shortcut' in currentDefinition
       ? currentDefinition.shortcut
       : undefined;
-  const currentLabel = currentDefinition?.label ?? '所有框线';
+  const currentLabel =
+    currentDefinition?.label ??
+    officeMessage(messages, 'spreadsheet.border.defaultAll');
+  const spreadsheetBorderStyleOptions = (
+    Object.keys(BORDER_STYLE_KEYS) as SpreadsheetCellBorderStyle[]
+  ).map((value) => ({
+    value,
+    label: officeMessage(messages, BORDER_STYLE_KEYS[value]),
+  }));
   const styleLabel = spreadsheetBorderStyleOptions.find(
     (option) => option.value === style,
   )?.label;
@@ -124,8 +132,8 @@ export function SpreadsheetBorderRibbon({
 
   return (
     <Popover
-      label="更多框线"
-      panelLabel="框线设置"
+      label={officeMessage(messages, 'spreadsheet.border.more')}
+      panelLabel={officeMessage(messages, 'spreadsheet.border.panel')}
       panelRole="dialog"
       portal
       placement="bottom-end"
@@ -154,9 +162,24 @@ export function SpreadsheetBorderRibbon({
             className="work-spreadsheet-border-primary"
             aria-label={currentLabel}
             aria-keyshortcuts={currentShortcut?.aria}
-            title={`${currentLabel}（${styleLabel}，${color.toUpperCase()}${
-              currentShortcut ? `；${currentShortcut.label}` : ''
-            }）`}
+            title={
+              currentShortcut
+                ? officeMessage(
+                    messages,
+                    'spreadsheet.border.primaryTitleWithShortcut',
+                    {
+                      label: currentLabel,
+                      style: styleLabel ?? '',
+                      color: color.toUpperCase(),
+                      shortcut: currentShortcut.label,
+                    },
+                  )
+                : officeMessage(messages, 'spreadsheet.border.primaryTitle', {
+                    label: currentLabel,
+                    style: styleLabel ?? '',
+                    color: color.toUpperCase(),
+                  })
+            }
             disabled={!can.setSelectedCellBorders(format)}
             onClick={() => commands.setSelectedCellBorders(format)}
           >
@@ -165,7 +188,7 @@ export function SpreadsheetBorderRibbon({
           <button
             {...triggerProps}
             className={`work-spreadsheet-border-disclosure${popoverOpen ? ' active' : ''}`}
-            title="更多框线"
+            title={officeMessage(messages, 'spreadsheet.border.more')}
           >
             <ChevronDown size={12} aria-hidden="true" />
           </button>
@@ -182,12 +205,16 @@ export function SpreadsheetBorderRibbon({
             restoreBaseline();
           }}
         >
-          <legend className="sr-only">更多框线</legend>
-          <div className="work-spreadsheet-border-section-label">框线位置</div>
+          <legend className="sr-only">
+            {officeMessage(messages, 'spreadsheet.border.more')}
+          </legend>
+          <div className="work-spreadsheet-border-section-label">
+            {officeMessage(messages, 'spreadsheet.border.position')}
+          </div>
           <div
             className="work-spreadsheet-border-targets"
             role="radiogroup"
-            aria-label="框线位置"
+            aria-label={officeMessage(messages, 'spreadsheet.border.position')}
             onKeyDown={(event) => moveOfficeGridMenuFocus(event, 2)}
           >
             {spreadsheetBorderTargetOptions.map(
@@ -217,7 +244,7 @@ export function SpreadsheetBorderRibbon({
                     <span className="work-spreadsheet-border-target-label">
                       {definition.label}
                     </span>
-                    {shortcut && <kbd>{shortcut.label}</kbd>}
+                    {shortcut ? <kbd>{shortcut.label}</kbd> : null}
                   </button>
                 );
               },
@@ -225,18 +252,28 @@ export function SpreadsheetBorderRibbon({
           </div>
           <div className="work-spreadsheet-border-settings">
             <div className="work-office-field">
-              <span>线型</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.border.lineStyle')}
+              </span>
               <OfficeSelect<SpreadsheetCellBorderStyle>
-                ariaLabel="框线样式"
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.border.lineStyleAria',
+                )}
                 value={style}
                 options={spreadsheetBorderStyleOptions}
                 onValueChange={setStyle}
               />
             </div>
             <div className="work-office-field">
-              <span>颜色</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.border.color')}
+              </span>
               <OfficeColorPicker
-                ariaLabel="框线颜色"
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.border.colorAria',
+                )}
                 value={color}
                 onValueChange={setColor}
               />

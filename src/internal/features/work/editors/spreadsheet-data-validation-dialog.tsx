@@ -5,9 +5,12 @@ import {
   Sigma,
   TriangleAlert,
 } from 'lucide-react';
-import { type FormEvent, useId, useState } from 'react';
+import { type FormEvent, useId, useMemo, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
 import { OfficeCheckbox, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT,
   SPREADSHEET_DATA_VALIDATION_FORMULA_LIMIT,
@@ -23,32 +26,69 @@ import {
 } from './spreadsheet-data-validation';
 import { isSpreadsheetDependentListFormula } from './spreadsheet-data-validation-list';
 
-const validationTypes: readonly {
+function validationTypeOptions(messages: OfficeMessageCatalog): readonly {
   label: string;
   value: SpreadsheetDataValidationType;
-}[] = [
-  { value: 'custom', label: '自定义公式' },
-  { value: 'dropdown', label: '序列' },
-  { value: 'number_integer', label: '整数' },
-  { value: 'number', label: '小数' },
-  { value: 'date', label: '日期' },
-  { value: 'text_length', label: '文本长度' },
-];
+}[] {
+  return [
+    {
+      value: 'custom',
+      label: officeMessage(messages, 'spreadsheet.dv.type.custom'),
+    },
+    {
+      value: 'dropdown',
+      label: officeMessage(messages, 'spreadsheet.dv.type.dropdown'),
+    },
+    {
+      value: 'number_integer',
+      label: officeMessage(messages, 'spreadsheet.dv.type.integer'),
+    },
+    {
+      value: 'number',
+      label: officeMessage(messages, 'spreadsheet.dv.type.decimal'),
+    },
+    {
+      value: 'date',
+      label: officeMessage(messages, 'spreadsheet.dv.type.date'),
+    },
+    {
+      value: 'text_length',
+      label: officeMessage(messages, 'spreadsheet.dv.type.textLength'),
+    },
+  ];
+}
 
-const operatorLabels: Record<SpreadsheetDataValidationOperator, string> = {
-  between: '介于',
-  notBetween: '未介于',
-  equal: '等于',
-  notEqualTo: '不等于',
-  moreThanThe: '大于',
-  lessThan: '小于',
-  greaterOrEqualTo: '大于或等于',
-  lessThanOrEqualTo: '小于或等于',
-  earlierThan: '早于',
-  noEarlierThan: '不早于',
-  laterThan: '晚于',
-  noLaterThan: '不晚于',
-};
+function operatorLabel(
+  messages: OfficeMessageCatalog,
+  operator: SpreadsheetDataValidationOperator,
+): string {
+  switch (operator) {
+    case 'between':
+      return officeMessage(messages, 'spreadsheet.dv.op.between');
+    case 'notBetween':
+      return officeMessage(messages, 'spreadsheet.dv.op.notBetween');
+    case 'equal':
+      return officeMessage(messages, 'spreadsheet.dv.op.equal');
+    case 'notEqualTo':
+      return officeMessage(messages, 'spreadsheet.dv.op.notEqualTo');
+    case 'moreThanThe':
+      return officeMessage(messages, 'spreadsheet.dv.op.moreThanThe');
+    case 'lessThan':
+      return officeMessage(messages, 'spreadsheet.dv.op.lessThan');
+    case 'greaterOrEqualTo':
+      return officeMessage(messages, 'spreadsheet.dv.op.greaterOrEqualTo');
+    case 'lessThanOrEqualTo':
+      return officeMessage(messages, 'spreadsheet.dv.op.lessThanOrEqualTo');
+    case 'earlierThan':
+      return officeMessage(messages, 'spreadsheet.dv.op.earlierThan');
+    case 'noEarlierThan':
+      return officeMessage(messages, 'spreadsheet.dv.op.noEarlierThan');
+    case 'laterThan':
+      return officeMessage(messages, 'spreadsheet.dv.op.laterThan');
+    case 'noLaterThan':
+      return officeMessage(messages, 'spreadsheet.dv.op.noLaterThan');
+  }
+}
 
 export function SpreadsheetDataValidationDialog({
   source,
@@ -65,6 +105,7 @@ export function SpreadsheetDataValidationDialog({
   onRemove: () => boolean;
   onValidate: (value: SpreadsheetDataValidationDialogValue) => string | null;
 }) {
+  const messages = useOfficeMessages();
   const [value, setValue] = useState(source.value);
   const [touched, setTouched] = useState(false);
   const formId = useId();
@@ -73,6 +114,29 @@ export function SpreadsheetDataValidationDialog({
   const valueDirty = !sameSpreadsheetDataValidationValue(value, source.value);
   const dirty = source.mixed || valueDirty;
   const visibleError = touched ? validationError : null;
+  const validationTypes = useMemo(
+    () => validationTypeOptions(messages),
+    [messages],
+  );
+  const allowLabel = officeMessage(messages, 'spreadsheet.dv.allow');
+  const dataLabel = officeMessage(messages, 'spreadsheet.dv.data');
+  const allowBlankLabel = officeMessage(messages, 'spreadsheet.dv.allowBlank');
+  const showDropdownLabel = officeMessage(
+    messages,
+    'spreadsheet.dv.showDropdown',
+  );
+  const sourceLabel = officeMessage(messages, 'spreadsheet.dv.source');
+  const inputTitleLabel = officeMessage(messages, 'spreadsheet.dv.inputTitle');
+  const inputMessageLabel = officeMessage(
+    messages,
+    'spreadsheet.dv.inputMessage',
+  );
+  const errorStyleLabel = officeMessage(messages, 'spreadsheet.dv.errorStyle');
+  const errorTitleLabel = officeMessage(messages, 'spreadsheet.dv.errorTitle');
+  const errorMessageLabel = officeMessage(
+    messages,
+    'spreadsheet.dv.errorMessage',
+  );
 
   const resetDraft = () => {
     setValue(source.value);
@@ -102,7 +166,7 @@ export function SpreadsheetDataValidationDialog({
 
   return (
     <Dialog
-      title="数据验证"
+      title={officeMessage(messages, 'spreadsheet.dv.title')}
       description={`${source.sheetName}!${source.rangeReference}`}
       className="work-spreadsheet-data-validation-dialog"
       restoreFocusTarget={restoreFocusTarget}
@@ -124,11 +188,11 @@ export function SpreadsheetDataValidationDialog({
                 if (onRemove()) onClose();
               }}
             >
-              全部清除
+              {officeMessage(messages, 'spreadsheet.dv.clearAll')}
             </Button>
           )}
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.dv.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -136,7 +200,7 @@ export function SpreadsheetDataValidationDialog({
             form={formId}
             disabled={!dirty || Boolean(validationError)}
           >
-            确定
+            {officeMessage(messages, 'spreadsheet.dv.ok')}
           </Button>
         </>
       }
@@ -150,41 +214,45 @@ export function SpreadsheetDataValidationDialog({
             <strong>{source.rangeReference}</strong>
             <small>
               {source.ranges.length === 1
-                ? '当前连续区域'
-                : `${source.ranges.length} 个选定区域`}
+                ? officeMessage(messages, 'spreadsheet.dv.scope.contiguous')
+                : officeMessage(messages, 'spreadsheet.dv.scope.multi', {
+                    n: String(source.ranges.length),
+                  })}
             </small>
           </div>
         </div>
 
-        {source.mixed && (
+        {source.mixed ? (
           <p className="work-spreadsheet-data-validation-mixed" role="status">
-            所选区域包含不同的数据验证规则。确定后将统一为当前设置。
+            {officeMessage(messages, 'spreadsheet.dv.mixedRules')}
           </p>
-        )}
+        ) : null}
 
         <section aria-labelledby={`${formId}-condition`}>
           <div className="work-spreadsheet-data-validation-section-heading">
             <ShieldCheck size={16} aria-hidden="true" />
-            <h3 id={`${formId}-condition`}>验证条件</h3>
+            <h3 id={`${formId}-condition`}>
+              {officeMessage(messages, 'spreadsheet.dv.section.condition')}
+            </h3>
           </div>
           <div className="work-spreadsheet-data-validation-condition-grid">
-            <Field label="允许">
+            <Field label={allowLabel}>
               <OfficeSelect
-                ariaLabel="允许"
+                ariaLabel={allowLabel}
                 value={value.type}
                 options={validationTypes}
                 onValueChange={(type) => changeType(type)}
               />
             </Field>
 
-            {value.type !== 'dropdown' && value.type !== 'custom' && (
-              <Field label="数据">
+            {value.type !== 'dropdown' && value.type !== 'custom' ? (
+              <Field label={dataLabel}>
                 <OfficeSelect
-                  ariaLabel="数据"
+                  ariaLabel={dataLabel}
                   value={value.type2}
                   options={operators.map((operator) => ({
                     value: operator,
-                    label: operatorLabels[operator],
+                    label: operatorLabel(messages, operator),
                   }))}
                   onValueChange={(type2) => {
                     update({
@@ -197,45 +265,51 @@ export function SpreadsheetDataValidationDialog({
                   }}
                 />
               </Field>
-            )}
+            ) : null}
           </div>
 
           <div className="work-spreadsheet-data-validation-behavior">
             <OfficeCheckbox
-              ariaLabel="忽略空值"
+              ariaLabel={allowBlankLabel}
               checked={value.allowBlank}
               onCheckedChange={(allowBlank) => update({ allowBlank })}
             >
-              忽略空值
+              {allowBlankLabel}
             </OfficeCheckbox>
-            {value.type === 'dropdown' && (
+            {value.type === 'dropdown' ? (
               <OfficeCheckbox
-                ariaLabel="在单元格内显示下拉箭头"
+                ariaLabel={showDropdownLabel}
                 checked={value.showDropdownArrow}
                 onCheckedChange={(showDropdownArrow) =>
                   update({ showDropdownArrow })
                 }
               >
-                在单元格内显示下拉箭头
+                {showDropdownLabel}
               </OfficeCheckbox>
-            )}
+            ) : null}
           </div>
 
           {value.type === 'dropdown' ? (
             <div className="work-spreadsheet-data-validation-list-source">
               <Field
-                label="来源"
+                label={sourceLabel}
                 required
                 description={
                   isSpreadsheetDependentListFormula(value.value1)
-                    ? '动态来源支持 =INDIRECT(单元格或文本拼接)，驱动单元格需返回区域或已定义名称。'
-                    : '输入逗号分隔项目，或单行/单列区域，例如 Ready,Blocked 或 Lists!A1:A8。'
+                    ? officeMessage(
+                        messages,
+                        'spreadsheet.dv.source.desc.dependent',
+                      )
+                    : officeMessage(
+                        messages,
+                        'spreadsheet.dv.source.desc.static',
+                      )
                 }
                 error={visibleError ?? undefined}
               >
                 <input
                   type="text"
-                  aria-label="来源"
+                  aria-label={sourceLabel}
                   autoCapitalize="none"
                   spellCheck={false}
                   value={value.value1}
@@ -246,17 +320,21 @@ export function SpreadsheetDataValidationDialog({
                   }}
                 />
               </Field>
-              {isSpreadsheetDependentListFormula(value.value1) && (
+              {isSpreadsheetDependentListFormula(value.value1) ? (
                 <p className="work-spreadsheet-data-validation-formula-note">
                   <Sigma size={14} aria-hidden="true" />
                   <span>
-                    每个受验证单元格会按相对引用重新解析来源；空驱动值会显示为空列表，引用范围限制为本地有限区域。
+                    {officeMessage(
+                      messages,
+                      'spreadsheet.dv.source.note.dependent',
+                    )}
                   </span>
                 </p>
-              )}
+              ) : null}
             </div>
           ) : value.type === 'custom' ? (
             <SpreadsheetDataValidationCustomFormulaField
+              messages={messages}
               value={value.value1}
               error={visibleError}
               onTouched={() => setTouched(true)}
@@ -264,6 +342,7 @@ export function SpreadsheetDataValidationDialog({
             />
           ) : (
             <SpreadsheetDataValidationBoundaryFields
+              messages={messages}
               type={value.type}
               type2={value.type2}
               value1={value.value1}
@@ -278,21 +357,26 @@ export function SpreadsheetDataValidationDialog({
         <section aria-labelledby={`${formId}-input-message`}>
           <div className="work-spreadsheet-data-validation-section-heading">
             <Info size={16} aria-hidden="true" />
-            <h3 id={`${formId}-input-message`}>输入信息</h3>
+            <h3 id={`${formId}-input-message`}>
+              {officeMessage(messages, 'spreadsheet.dv.section.inputMessage')}
+            </h3>
           </div>
           <OfficeCheckbox
-            ariaLabel="选中单元格时显示输入信息"
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.dv.showInputMessage',
+            )}
             checked={value.hintShow}
             onCheckedChange={(hintShow) => update({ hintShow })}
           >
-            选中单元格时显示输入信息
+            {officeMessage(messages, 'spreadsheet.dv.showInputMessage')}
           </OfficeCheckbox>
-          {value.hintShow && (
+          {value.hintShow ? (
             <div className="work-spreadsheet-data-validation-message-grid">
-              <Field label="输入信息标题">
+              <Field label={inputTitleLabel}>
                 <input
                   type="text"
-                  aria-label="输入信息标题"
+                  aria-label={inputTitleLabel}
                   maxLength={SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT}
                   value={value.hintTitle}
                   onChange={(event) =>
@@ -301,12 +385,16 @@ export function SpreadsheetDataValidationDialog({
                 />
               </Field>
               <Field
-                label="输入信息"
+                label={inputMessageLabel}
                 className="message"
-                description={`最多 ${SPREADSHEET_DATA_VALIDATION_HINT_LIMIT} 个字符，将在用户选中受验证单元格时显示。`}
+                description={officeMessage(
+                  messages,
+                  'spreadsheet.dv.inputMessage.desc',
+                  { n: String(SPREADSHEET_DATA_VALIDATION_HINT_LIMIT) },
+                )}
               >
                 <textarea
-                  aria-label="输入信息"
+                  aria-label={inputMessageLabel}
                   rows={3}
                   maxLength={SPREADSHEET_DATA_VALIDATION_HINT_LIMIT}
                   value={value.hintValue}
@@ -316,42 +404,65 @@ export function SpreadsheetDataValidationDialog({
                 />
               </Field>
             </div>
-          )}
+          ) : null}
         </section>
 
         <section aria-labelledby={`${formId}-error-alert`}>
           <div className="work-spreadsheet-data-validation-section-heading">
             <TriangleAlert size={16} aria-hidden="true" />
-            <h3 id={`${formId}-error-alert`}>错误警告</h3>
+            <h3 id={`${formId}-error-alert`}>
+              {officeMessage(messages, 'spreadsheet.dv.section.errorAlert')}
+            </h3>
           </div>
           <OfficeCheckbox
-            ariaLabel="输入无效数据时显示错误警告"
+            ariaLabel={officeMessage(messages, 'spreadsheet.dv.showErrorAlert')}
             checked={value.prohibitInput}
             onCheckedChange={(prohibitInput) => update({ prohibitInput })}
           >
-            输入无效数据时显示错误警告
+            {officeMessage(messages, 'spreadsheet.dv.showErrorAlert')}
           </OfficeCheckbox>
-          {value.prohibitInput && (
+          {value.prohibitInput ? (
             <div className="work-spreadsheet-data-validation-message-grid">
               <Field
-                label="错误警告样式"
-                description="停止会阻止无效输入；警告和信息会询问是否保留。三种样式都会写入原生文件。"
+                label={errorStyleLabel}
+                description={officeMessage(
+                  messages,
+                  'spreadsheet.dv.errorStyle.desc',
+                )}
               >
                 <OfficeSelect
-                  ariaLabel="错误警告样式"
+                  ariaLabel={errorStyleLabel}
                   value={value.errorStyle}
                   options={[
-                    { value: 'stop', label: '停止' },
-                    { value: 'warning', label: '警告' },
-                    { value: 'information', label: '信息' },
+                    {
+                      value: 'stop',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.dv.errorStyle.stop',
+                      ),
+                    },
+                    {
+                      value: 'warning',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.dv.errorStyle.warning',
+                      ),
+                    },
+                    {
+                      value: 'information',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.dv.errorStyle.information',
+                      ),
+                    },
                   ]}
                   onValueChange={(errorStyle) => update({ errorStyle })}
                 />
               </Field>
-              <Field label="错误警告标题">
+              <Field label={errorTitleLabel}>
                 <input
                   type="text"
-                  aria-label="错误警告标题"
+                  aria-label={errorTitleLabel}
                   maxLength={SPREADSHEET_DATA_VALIDATION_TITLE_LIMIT}
                   value={value.errorTitle}
                   onChange={(event) =>
@@ -360,12 +471,16 @@ export function SpreadsheetDataValidationDialog({
                 />
               </Field>
               <Field
-                label="错误警告消息"
+                label={errorMessageLabel}
                 className="message"
-                description={`最多 ${SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT} 个字符。`}
+                description={officeMessage(
+                  messages,
+                  'spreadsheet.dv.errorMessage.desc',
+                  { n: String(SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT) },
+                )}
               >
                 <textarea
-                  aria-label="错误警告消息"
+                  aria-label={errorMessageLabel}
                   rows={3}
                   maxLength={SPREADSHEET_DATA_VALIDATION_ERROR_LIMIT}
                   value={value.errorMessage}
@@ -375,14 +490,14 @@ export function SpreadsheetDataValidationDialog({
                 />
               </Field>
             </div>
-          )}
+          ) : null}
         </section>
 
-        {visibleError && value.type !== 'dropdown' && (
+        {visibleError && value.type !== 'dropdown' ? (
           <p className="work-spreadsheet-data-validation-error" role="alert">
             {visibleError}
           </p>
-        )}
+        ) : null}
       </form>
     </Dialog>
   );
@@ -390,28 +505,34 @@ export function SpreadsheetDataValidationDialog({
 
 function SpreadsheetDataValidationCustomFormulaField({
   error,
+  messages,
   onTouched,
   onValueChange,
   value,
 }: {
   error: string | null;
+  messages: OfficeMessageCatalog;
   onTouched: () => void;
   onValueChange: (value: string) => void;
   value: string;
 }) {
+  const formulaLabel = officeMessage(messages, 'spreadsheet.dv.formula');
   return (
     <div className="work-spreadsheet-data-validation-custom-formula">
       <Field
-        label="公式"
+        label={formulaLabel}
         required
-        description="公式必须返回 TRUE；相对引用以每个选定区域的左上角为基准。仅计算本地单元格和区域，不访问网络。"
+        description={officeMessage(messages, 'spreadsheet.dv.formula.desc')}
         error={error ?? undefined}
       >
         <textarea
-          aria-label="公式"
+          aria-label={formulaLabel}
           rows={2}
           maxLength={SPREADSHEET_DATA_VALIDATION_FORMULA_LIMIT}
-          placeholder={'例如：=AND(A1<>"",A1<=100)'}
+          placeholder={officeMessage(
+            messages,
+            'spreadsheet.dv.formula.placeholder',
+          )}
           autoCapitalize="none"
           spellCheck={false}
           value={value}
@@ -424,9 +545,7 @@ function SpreadsheetDataValidationCustomFormulaField({
       </Field>
       <p className="work-spreadsheet-data-validation-formula-note">
         <Sigma size={14} aria-hidden="true" />
-        <span>
-          支持常用 Excel 函数、单元格引用和区域引用；无法安全求值时会阻止输入。
-        </span>
+        <span>{officeMessage(messages, 'spreadsheet.dv.formula.note')}</span>
       </p>
     </div>
   );
@@ -434,6 +553,7 @@ function SpreadsheetDataValidationCustomFormulaField({
 
 function SpreadsheetDataValidationBoundaryFields({
   error,
+  messages,
   onTouched,
   onValueChange,
   type,
@@ -442,6 +562,7 @@ function SpreadsheetDataValidationBoundaryFields({
   value2,
 }: {
   error: string | null;
+  messages: OfficeMessageCatalog;
   onTouched: () => void;
   onValueChange: (value: Partial<SpreadsheetDataValidationDialogValue>) => void;
   type: Exclude<SpreadsheetDataValidationType, 'custom' | 'dropdown'>;
@@ -453,12 +574,15 @@ function SpreadsheetDataValidationBoundaryFields({
   const inputMode = type === 'date' ? 'text' : 'decimal';
   const firstLabel = needsSecond
     ? type === 'date'
-      ? '开始日期'
-      : '最小值'
+      ? officeMessage(messages, 'spreadsheet.dv.bound.startDate')
+      : officeMessage(messages, 'spreadsheet.dv.bound.min')
     : type === 'date'
-      ? '日期'
-      : '值';
-  const secondLabel = type === 'date' ? '结束日期' : '最大值';
+      ? officeMessage(messages, 'spreadsheet.dv.bound.date')
+      : officeMessage(messages, 'spreadsheet.dv.bound.value');
+  const secondLabel =
+    type === 'date'
+      ? officeMessage(messages, 'spreadsheet.dv.bound.endDate')
+      : officeMessage(messages, 'spreadsheet.dv.bound.max');
   return (
     <div
       className={
@@ -472,7 +596,7 @@ function SpreadsheetDataValidationBoundaryFields({
         required
         description={
           type === 'date'
-            ? '使用 YYYY-MM-DD、Excel 日期序号或 DATE(...)。'
+            ? officeMessage(messages, 'spreadsheet.dv.bound.dateDesc')
             : undefined
         }
       >
@@ -487,7 +611,7 @@ function SpreadsheetDataValidationBoundaryFields({
           }}
         />
       </Field>
-      {needsSecond && (
+      {needsSecond ? (
         <Field label={secondLabel} required>
           <input
             type="text"
@@ -500,12 +624,12 @@ function SpreadsheetDataValidationBoundaryFields({
             }}
           />
         </Field>
-      )}
-      {error && (
+      ) : null}
+      {error ? (
         <span className="work-spreadsheet-data-validation-inline-error">
           {error}
         </span>
-      )}
+      ) : null}
     </div>
   );
 }

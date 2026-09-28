@@ -6,6 +6,7 @@ use a3s_office::{
     NativeOfficeCollaborationPdfRect, NativeOfficeCollaborationPdfReviewDecision,
     NativeOfficeCollaborationPdfReviewTargetKind,
     NativeOfficeCollaborationPresentationContainerKind,
+    NativeOfficeCollaborationPresentationGroupMember,
     NativeOfficeCollaborationSpreadsheetCellChange,
 };
 use schemars::JsonSchema;
@@ -142,6 +143,14 @@ impl From<OfficeCollaborationPresentationContainerKind>
             OfficeCollaborationPresentationContainerKind::Layout => Self::Layout,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(in crate::office_mcp) struct OfficeCollaborationPresentationGroupMember {
+    element_id: String,
+    expected_group_ids: Vec<String>,
+    next_group_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize, JsonSchema)]
@@ -295,6 +304,58 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_text_id: String,
         expected_text: String,
     },
+    /// Insert one single-cell table row beside an observed row.
+    DocumentInsertTableRow {
+        anchor_row_id: String,
+        expected_row_text_id: String,
+        position: OfficeCollaborationParagraphPosition,
+        row_id: String,
+        row_text_id: String,
+        paragraph_id: String,
+        text_id: String,
+        text: String,
+    },
+    /// Delete one table row that is still a single plain paragraph.
+    DocumentDeleteTableRow {
+        row_id: String,
+        expected_row_text_id: String,
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+    },
+    /// Insert one list item beside the item whose first block is the observed paragraph.
+    DocumentInsertListItem {
+        anchor_paragraph_id: String,
+        expected_text_id: String,
+        position: OfficeCollaborationParagraphPosition,
+        paragraph_id: String,
+        text_id: String,
+        text: String,
+    },
+    /// Delete one list item that is still a single plain paragraph.
+    DocumentDeleteListItem {
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+    },
+    /// Insert one section beside an observed top-level section.
+    DocumentInsertSection {
+        anchor_section_id: String,
+        expected_paragraph_id: String,
+        expected_text_id: String,
+        position: OfficeCollaborationParagraphPosition,
+        section_id: String,
+        paragraph_id: String,
+        text_id: String,
+        text: String,
+    },
+    /// Delete one section that is still a single plain paragraph.
+    DocumentDeleteSection {
+        section_id: String,
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+    },
     /// Append one attributable comment and exact UTF-16 selection anchor.
     DocumentCommentCreate {
         comment_id: String,
@@ -378,6 +439,55 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_slice: String,
         insert: String,
     },
+    /// Insert rows at a 0-based index and rewrite formula references together.
+    SpreadsheetInsertRows {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Delete rows at a 0-based index and rewrite formula references together.
+    SpreadsheetDeleteRows {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Insert columns at a 0-based index and rewrite formula references together.
+    SpreadsheetInsertColumns {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Delete columns at a 0-based index and rewrite formula references together.
+    SpreadsheetDeleteColumns {
+        sheet_id: String,
+        at: u32,
+        count: u32,
+    },
+    /// Reorder rows inside one rectangle by a source-row permutation.
+    SpreadsheetSortRows {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        row_count: u32,
+        column_count: u32,
+        source_rows: Vec<u32>,
+        expected_cells: Vec<Option<JsonValue>>,
+    },
+    /// Create one browser-convergent Spreadsheet table record.
+    SpreadsheetCreateTable { sheet_id: String, table: JsonValue },
+    /// Replace one Spreadsheet table record after its observed JSON matches.
+    SpreadsheetUpdateTable {
+        sheet_id: String,
+        table_id: String,
+        expected_table: JsonValue,
+        next_table: JsonValue,
+    },
+    /// Remove one Spreadsheet table record after its observed JSON matches.
+    SpreadsheetDeleteTable {
+        sheet_id: String,
+        table_id: String,
+        expected_table: JsonValue,
+    },
     /// Create one scene element in a slide, master, or layout with a stable ID.
     PresentationCreateElement {
         container_kind: OfficeCollaborationPresentationContainerKind,
@@ -423,6 +533,25 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         element_id: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         index_utf16: Option<u32>,
+    },
+    /// Move one slide in the slide-order array. Shape records stay put.
+    PresentationMoveSlide {
+        slide_id: String,
+        expected_after_slide_id: Option<String>,
+        after_slide_id: Option<String>,
+    },
+    /// Replace every listed scene element's group path in one transaction.
+    PresentationSetGroup {
+        container_kind: OfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        members: Vec<OfficeCollaborationPresentationGroupMember>,
+    },
+    /// Replace one slide, master, or layout background field.
+    PresentationSetBackground {
+        container_kind: OfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        expected_background: Option<String>,
+        next_background: Option<String>,
     },
     /// Create one supported portable PDF annotation with a stable ID.
     PdfCreateAnnotation {
@@ -596,6 +725,92 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 expected_text_id,
                 expected_text,
             },
+            OfficeCollaborationMutation::DocumentInsertTableRow {
+                anchor_row_id,
+                expected_row_text_id,
+                position,
+                row_id,
+                row_text_id,
+                paragraph_id,
+                text_id,
+                text,
+            } => Self::DocumentInsertTableRow {
+                anchor_row_id,
+                expected_row_text_id,
+                position: position.into(),
+                row_id,
+                row_text_id,
+                paragraph_id,
+                text_id,
+                text,
+            },
+            OfficeCollaborationMutation::DocumentDeleteTableRow {
+                row_id,
+                expected_row_text_id,
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+            } => Self::DocumentDeleteTableRow {
+                row_id,
+                expected_row_text_id,
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+            },
+            OfficeCollaborationMutation::DocumentInsertListItem {
+                anchor_paragraph_id,
+                expected_text_id,
+                position,
+                paragraph_id,
+                text_id,
+                text,
+            } => Self::DocumentInsertListItem {
+                anchor_paragraph_id,
+                expected_text_id,
+                position: position.into(),
+                paragraph_id,
+                text_id,
+                text,
+            },
+            OfficeCollaborationMutation::DocumentDeleteListItem {
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+            } => Self::DocumentDeleteListItem {
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+            },
+            OfficeCollaborationMutation::DocumentInsertSection {
+                anchor_section_id,
+                expected_paragraph_id,
+                expected_text_id,
+                position,
+                section_id,
+                paragraph_id,
+                text_id,
+                text,
+            } => Self::DocumentInsertSection {
+                anchor_section_id,
+                expected_paragraph_id,
+                expected_text_id,
+                position: position.into(),
+                section_id,
+                paragraph_id,
+                text_id,
+                text,
+            },
+            OfficeCollaborationMutation::DocumentDeleteSection {
+                section_id,
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+            } => Self::DocumentDeleteSection {
+                section_id,
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+            },
             OfficeCollaborationMutation::DocumentCommentCreate {
                 comment_id,
                 paragraph_id,
@@ -725,6 +940,82 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 expected_slice,
                 insert,
             },
+            OfficeCollaborationMutation::SpreadsheetInsertRows {
+                sheet_id,
+                at,
+                count,
+            } => Self::SpreadsheetInsertRows {
+                sheet_id,
+                at,
+                count,
+            },
+            OfficeCollaborationMutation::SpreadsheetDeleteRows {
+                sheet_id,
+                at,
+                count,
+            } => Self::SpreadsheetDeleteRows {
+                sheet_id,
+                at,
+                count,
+            },
+            OfficeCollaborationMutation::SpreadsheetInsertColumns {
+                sheet_id,
+                at,
+                count,
+            } => Self::SpreadsheetInsertColumns {
+                sheet_id,
+                at,
+                count,
+            },
+            OfficeCollaborationMutation::SpreadsheetDeleteColumns {
+                sheet_id,
+                at,
+                count,
+            } => Self::SpreadsheetDeleteColumns {
+                sheet_id,
+                at,
+                count,
+            },
+            OfficeCollaborationMutation::SpreadsheetSortRows {
+                sheet_id,
+                row,
+                column,
+                row_count,
+                column_count,
+                source_rows,
+                expected_cells,
+            } => Self::SpreadsheetSortRows {
+                sheet_id,
+                row,
+                column,
+                row_count,
+                column_count,
+                source_rows,
+                expected_cells,
+            },
+            OfficeCollaborationMutation::SpreadsheetCreateTable { sheet_id, table } => {
+                Self::SpreadsheetCreateTable { sheet_id, table }
+            }
+            OfficeCollaborationMutation::SpreadsheetUpdateTable {
+                sheet_id,
+                table_id,
+                expected_table,
+                next_table,
+            } => Self::SpreadsheetUpdateTable {
+                sheet_id,
+                table_id,
+                expected_table,
+                next_table,
+            },
+            OfficeCollaborationMutation::SpreadsheetDeleteTable {
+                sheet_id,
+                table_id,
+                expected_table,
+            } => Self::SpreadsheetDeleteTable {
+                sheet_id,
+                table_id,
+                expected_table,
+            },
             OfficeCollaborationMutation::PresentationCreateElement {
                 container_kind,
                 container_id,
@@ -770,6 +1061,42 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 element_id,
                 expected_after_element_id,
                 after_element_id,
+            },
+            OfficeCollaborationMutation::PresentationMoveSlide {
+                slide_id,
+                expected_after_slide_id,
+                after_slide_id,
+            } => Self::PresentationMoveSlide {
+                slide_id,
+                expected_after_slide_id,
+                after_slide_id,
+            },
+            OfficeCollaborationMutation::PresentationSetGroup {
+                container_kind,
+                container_id,
+                members,
+            } => Self::PresentationSetGroup {
+                container_kind: container_kind.into(),
+                container_id,
+                members: members
+                    .into_iter()
+                    .map(|member| NativeOfficeCollaborationPresentationGroupMember {
+                        element_id: member.element_id,
+                        expected_group_ids: member.expected_group_ids,
+                        next_group_ids: member.next_group_ids,
+                    })
+                    .collect(),
+            },
+            OfficeCollaborationMutation::PresentationSetBackground {
+                container_kind,
+                container_id,
+                expected_background,
+                next_background,
+            } => Self::PresentationSetBackground {
+                container_kind: container_kind.into(),
+                container_id,
+                expected_background,
+                next_background,
             },
             OfficeCollaborationMutation::PresentationReplaceText {
                 search,

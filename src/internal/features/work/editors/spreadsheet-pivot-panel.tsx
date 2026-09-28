@@ -1,6 +1,7 @@
 import type { Selection } from '@fortune-sheet/core';
 import { Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   Button,
   CollectionState,
@@ -37,6 +38,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { useOfficeDraft } from './use-office-draft';
 
 interface SpreadsheetPivotPanelProps {
@@ -75,6 +77,7 @@ export function SpreadsheetPivotPanel({
   selection,
   onChange,
 }: SpreadsheetPivotPanelProps) {
+  const messages = useOfficeMessages();
   const items = useMemo(
     () =>
       content.sheets.flatMap((sheet) =>
@@ -133,7 +136,7 @@ export function SpreadsheetPivotPanel({
     const nextKey = pivotKey(item);
     if (nextKey === selectedKey) return;
     if (dirty) {
-      setError('当前透视表有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.pivot.error.unsaved'));
       return;
     }
     setSelectedKey(pivotKey(item));
@@ -142,11 +145,11 @@ export function SpreadsheetPivotPanel({
   };
   const addPivot = () => {
     if (dirty) {
-      setError('当前透视表有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.pivot.error.unsaved'));
       return;
     }
     if (!selection) {
-      setError('请先在源工作表中选择包含标题和数据的连续区域。');
+      setError(officeMessage(messages, 'spreadsheet.pivot.error.needSelection'));
       return;
     }
     const created = createSpreadsheetPivotFromSelection(
@@ -155,7 +158,7 @@ export function SpreadsheetPivotPanel({
       selection,
     );
     if (created.error || !created.ownerSheetId || !created.pivotId) {
-      setError(created.error ?? '无法创建数据透视表。');
+      setError(created.error ?? officeMessage(messages, 'spreadsheet.pivot.error.createFailed'));
       return;
     }
     onChange(created.content);
@@ -183,7 +186,7 @@ export function SpreadsheetPivotPanel({
     if (!draft) return;
     const name = draft.name.trim();
     if (!/^[\p{L}_][\p{L}\p{N}_.]*$/u.test(name) || name.length > 255) {
-      setError('透视表名称必须以字母、文字或下划线开头，且不能包含空格。');
+      setError(officeMessage(messages, 'spreadsheet.pivot.error.nameInvalid'));
       return;
     }
     if (
@@ -194,7 +197,7 @@ export function SpreadsheetPivotPanel({
             name.toLocaleLowerCase(),
       )
     ) {
-      setError('工作簿中已经存在同名数据透视表。');
+      setError(officeMessage(messages, 'spreadsheet.pivot.error.nameDuplicate'));
       return;
     }
     const saved: WorkSpreadsheetPivotTable = {
@@ -214,7 +217,10 @@ export function SpreadsheetPivotPanel({
           caption:
             value.caption?.trim() ||
             defaultPivotValueCaption(
-              fields[value.fieldIndex]?.name ?? `字段 ${value.fieldIndex + 1}`,
+              fields[value.fieldIndex]?.name ??
+                officeMessage(messages, 'spreadsheet.pivot.field.fallback', {
+                  n: String(value.fieldIndex + 1),
+                }),
               value.aggregation,
             ),
         }))
@@ -237,7 +243,7 @@ export function SpreadsheetPivotPanel({
       saved,
     );
     if (!validation.valid) {
-      setError(validation.message ?? '当前透视表设置无效。');
+      setError(validation.message ?? officeMessage(messages, 'spreadsheet.pivot.error.invalid'));
       return;
     }
     const refreshed = refreshSpreadsheetPivotTables(candidate);
@@ -281,7 +287,7 @@ export function SpreadsheetPivotPanel({
   };
   const refreshAll = () => {
     if (dirty) {
-      setError('当前透视表有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.pivot.error.unsaved'));
       return;
     }
     onChange(refreshSpreadsheetPivotTables(content));
@@ -299,11 +305,11 @@ export function SpreadsheetPivotPanel({
         cancelDraft();
       }}
     >
-      <legend className="sr-only">数据透视表编辑</legend>
-      <aside aria-label="工作簿数据透视表">
+      <legend className="sr-only">{officeMessage(messages, 'spreadsheet.pivot.legend')}</legend>
+      <aside aria-label={officeMessage(messages, 'spreadsheet.pivot.listAria')}>
         <Button className="create" tone="secondary" onClick={addPivot}>
           <Plus size={13} />
-          根据当前选区新建
+          {officeMessage(messages, 'spreadsheet.pivot.newFromSelection')}
         </Button>
         <Button
           className="refresh"
@@ -312,7 +318,7 @@ export function SpreadsheetPivotPanel({
           onClick={refreshAll}
         >
           <RefreshCw size={13} />
-          刷新全部
+          {officeMessage(messages, 'spreadsheet.pivot.refreshAll')}
         </Button>
         <div className="work-spreadsheet-pivot-list">
           {items.map((item) => (
@@ -334,7 +340,7 @@ export function SpreadsheetPivotPanel({
               className="work-office-collection-empty"
               role="status"
             >
-              还没有数据透视表。选择带标题的数据区域后创建。
+              {officeMessage(messages, 'spreadsheet.pivot.empty')}
             </CollectionState>
           )}
         </div>
@@ -348,9 +354,9 @@ export function SpreadsheetPivotPanel({
         >
           <div className="work-spreadsheet-pivot-fields">
             <div className="work-office-field">
-              <span>名称</span>
+              <span>{officeMessage(messages, 'spreadsheet.pivot.name')}</span>
               <OfficeTextField
-                aria-label="透视表名称"
+                aria-label={officeMessage(messages, 'spreadsheet.pivot.nameAria')}
                 value={draft.name}
                 maxLength={255}
                 onChange={(event) =>
@@ -359,9 +365,9 @@ export function SpreadsheetPivotPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>源工作表</span>
+              <span>{officeMessage(messages, 'spreadsheet.pivot.sourceSheet')}</span>
               <OfficeSelect
-                ariaLabel="透视表源工作表"
+                ariaLabel={officeMessage(messages, 'spreadsheet.pivot.sourceSheetAria')}
                 value={draft.sourceSheetId}
                 options={content.sheets.flatMap((sheet) =>
                   sheet.id ? [{ value: sheet.id, label: sheet.name }] : [],
@@ -372,9 +378,9 @@ export function SpreadsheetPivotPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>源区域</span>
+              <span>{officeMessage(messages, 'spreadsheet.pivot.sourceRange')}</span>
               <OfficeTextField
-                aria-label="透视表源区域"
+                aria-label={officeMessage(messages, 'spreadsheet.pivot.sourceRangeAria')}
                 value={draft.sourceReference}
                 placeholder="A1:D200"
                 onChange={(event) =>
@@ -383,9 +389,9 @@ export function SpreadsheetPivotPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>输出位置</span>
+              <span>{officeMessage(messages, 'spreadsheet.pivot.output')}</span>
               <OfficeTextField
-                aria-label="透视表输出位置"
+                aria-label={officeMessage(messages, 'spreadsheet.pivot.outputAria')}
                 value={draft.anchor}
                 placeholder="A1"
                 onChange={(event) =>
@@ -394,9 +400,9 @@ export function SpreadsheetPivotPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>样式</span>
+              <span>{officeMessage(messages, 'spreadsheet.pivot.style')}</span>
               <OfficeSelect
-                ariaLabel="透视表样式"
+                ariaLabel={officeMessage(messages, 'spreadsheet.pivot.styleAria')}
                 value={draft.styleName}
                 options={[...WORK_SPREADSHEET_PIVOT_STYLE_OPTIONS]}
                 onValueChange={(styleName) => setDraft({ ...draft, styleName })}
@@ -404,42 +410,42 @@ export function SpreadsheetPivotPanel({
             </div>
             <OfficeCheckbox
               className="check"
-              ariaLabel="在 Excel 中打开时刷新"
+              ariaLabel={officeMessage(messages, 'spreadsheet.pivot.refreshOnOpen')}
               checked={draft.refreshOnLoad}
               onCheckedChange={(refreshOnLoad) =>
                 setDraft({ ...draft, refreshOnLoad })
               }
             >
-              在 Excel 中打开时刷新
+              {officeMessage(messages, 'spreadsheet.pivot.refreshOnOpen')}
             </OfficeCheckbox>
             <OfficeCheckbox
               className="check"
-              ariaLabel="显示右侧总计列"
+              ariaLabel={officeMessage(messages, 'spreadsheet.pivot.showColGrand')}
               checked={draft.rowGrandTotals}
               onCheckedChange={(rowGrandTotals) =>
                 setDraft({ ...draft, rowGrandTotals })
               }
             >
-              显示右侧总计列
+              {officeMessage(messages, 'spreadsheet.pivot.showColGrand')}
             </OfficeCheckbox>
             <OfficeCheckbox
               className="check"
-              ariaLabel="显示底部总计行"
+              ariaLabel={officeMessage(messages, 'spreadsheet.pivot.showRowGrand')}
               checked={draft.columnGrandTotals}
               onCheckedChange={(columnGrandTotals) =>
                 setDraft({ ...draft, columnGrandTotals })
               }
             >
-              显示底部总计行
+              {officeMessage(messages, 'spreadsheet.pivot.showRowGrand')}
             </OfficeCheckbox>
           </div>
           <section
             className="work-spreadsheet-pivot-layout"
-            aria-label="透视表字段布局"
+            aria-label={officeMessage(messages, 'spreadsheet.pivot.layoutAria')}
           >
             <header>
-              <strong>字段布局</strong>
-              <span>选择每个字段的用途。</span>
+              <strong>{officeMessage(messages, 'spreadsheet.pivot.layoutTitle')}</strong>
+              <span>{officeMessage(messages, 'spreadsheet.pivot.layoutHint')}</span>
             </header>
             {fields.length ? (
               <div>
@@ -461,16 +467,18 @@ export function SpreadsheetPivotPanel({
                       key={field.index}
                     >
                       <strong>{field.name}</strong>
-                      <span>{field.numeric ? '数值' : '文本/分类'}</span>
+                      <span>{field.numeric
+                        ? officeMessage(messages, 'spreadsheet.pivot.field.numeric')
+                        : officeMessage(messages, 'spreadsheet.pivot.field.category')}</span>
                       <OfficeSelect
-                        ariaLabel={`${field.name} 字段区域`}
+                        ariaLabel={officeMessage(messages, 'spreadsheet.pivot.field.areaAria', { name: field.name })}
                         value={role}
                         options={[
-                          { value: 'unused', label: '未使用' },
-                          { value: 'row', label: '行' },
-                          { value: 'column', label: '列' },
-                          { value: 'filter', label: '筛选' },
-                          { value: 'value', label: '值' },
+                          { value: 'unused', label: officeMessage(messages, 'spreadsheet.pivot.area.unused') },
+                          { value: 'row', label: officeMessage(messages, 'spreadsheet.pivot.area.row') },
+                          { value: 'column', label: officeMessage(messages, 'spreadsheet.pivot.area.column') },
+                          { value: 'filter', label: officeMessage(messages, 'spreadsheet.pivot.area.filter') },
+                          { value: 'value', label: officeMessage(messages, 'spreadsheet.pivot.area.value') },
                         ]}
                         onValueChange={(nextRole) =>
                           setDraft(
@@ -487,7 +495,7 @@ export function SpreadsheetPivotPanel({
                       {role === 'value' && value ? (
                         <>
                           <OfficeSelect
-                            ariaLabel={`${field.name} 聚合方式`}
+                            ariaLabel={officeMessage(messages, 'spreadsheet.pivot.aggAria', { name: field.name })}
                             value={value.aggregation}
                             options={AGGREGATIONS.map((aggregation) => ({
                               value: aggregation,
@@ -504,7 +512,7 @@ export function SpreadsheetPivotPanel({
                             }
                           />
                           <OfficeTextField
-                            aria-label={`${field.name} 值标题`}
+                            aria-label={officeMessage(messages, 'spreadsheet.pivot.valueCaptionAria', { name: field.name })}
                             value={value.caption ?? ''}
                             placeholder={defaultPivotValueCaption(
                               field.name,
@@ -527,7 +535,7 @@ export function SpreadsheetPivotPanel({
                           >
                             <OfficeCheckbox
                               className="check"
-                              ariaLabel={`${field.name} 全部`}
+                              ariaLabel={officeMessage(messages, 'spreadsheet.pivot.filterAllAria', { name: field.name })}
                               checked={
                                 spreadsheetPivotReportFilterSelection(filter)
                                   .kind === 'all'
@@ -542,7 +550,7 @@ export function SpreadsheetPivotPanel({
                                 )
                               }
                             >
-                              （全部）
+                              {officeMessage(messages, 'spreadsheet.pivot.filterAll')}
                             </OfficeCheckbox>
                             {filterItems.map((item) => {
                               const selection =
@@ -581,7 +589,7 @@ export function SpreadsheetPivotPanel({
                               );
                             })}
                           </fieldset>
-                          <span className="filter-hint">切片器多选筛选</span>
+                          <span className="filter-hint">{officeMessage(messages, 'spreadsheet.pivot.filterHint')}</span>
                         </>
                       ) : (
                         <span className="placeholder">—</span>
@@ -591,13 +599,13 @@ export function SpreadsheetPivotPanel({
                 })}
               </div>
             ) : (
-              <p>输入有效的源工作表和连续区域后即可配置字段。</p>
+              <p>{officeMessage(messages, 'spreadsheet.pivot.configHint')}</p>
             )}
           </section>
           <div className="actions">
             <Button tone="danger" onClick={deletePivot}>
               <Trash2 size={13} />
-              删除
+              {officeMessage(messages, 'spreadsheet.pivot.delete')}
             </Button>
             {error && (
               <InlineNotice
@@ -609,10 +617,10 @@ export function SpreadsheetPivotPanel({
               </InlineNotice>
             )}
             <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
-              取消更改
+              {officeMessage(messages, 'spreadsheet.pivot.cancel')}
             </Button>
             <Button type="submit" tone="primary" disabled={!dirty}>
-              保存并刷新
+              {officeMessage(messages, 'spreadsheet.pivot.save')}
             </Button>
           </div>
         </form>
@@ -620,8 +628,8 @@ export function SpreadsheetPivotPanel({
         <StateView
           className="work-spreadsheet-pivot-empty"
           size="compact"
-          title="用当前选区创建数据透视表"
-          description="首行作为字段名，汇总结果将生成到新的工作表。"
+          title={officeMessage(messages, 'spreadsheet.pivot.createTitle')}
+          description={officeMessage(messages, 'spreadsheet.pivot.createDesc')}
         >
           {error && (
             <InlineNotice

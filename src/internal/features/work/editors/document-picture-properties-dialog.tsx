@@ -16,6 +16,8 @@ import {
   useState,
 } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   documentImageProperties,
   MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT,
@@ -43,77 +45,161 @@ import {
   OfficeSelect,
   OfficeTextArea,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { WorkOfficeRibbonButton } from './work-office-chrome';
 
 interface PictureDialogSource extends DocumentPicturePropertiesSource {
   position: number;
 }
 
-const layoutOptions = [
-  { value: 'inline', label: '嵌入文字', icon: Rows3 },
-  { value: 'square', label: '四周环绕', icon: TextWrap },
-  { value: 'tight', label: '紧密环绕', icon: TextWrap },
-  { value: 'through', label: '穿越环绕', icon: TextWrap },
-  { value: 'topBottom', label: '上下环绕', icon: Rows3 },
-  { value: 'none', label: '自由浮动', icon: TextWrap },
-] as const satisfies readonly {
-  value: WorkDocumentImageLayout;
-  label: string;
-  icon: typeof Rows3;
-}[];
+function layoutOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'inline' as const,
+      label: officeMessage(messages, 'document.picture.wrap.inline'),
+      icon: Rows3,
+    },
+    {
+      value: 'square' as const,
+      label: officeMessage(messages, 'document.picture.wrap.square'),
+      icon: TextWrap,
+    },
+    {
+      value: 'tight' as const,
+      label: officeMessage(messages, 'document.picture.wrap.tight'),
+      icon: TextWrap,
+    },
+    {
+      value: 'through' as const,
+      label: officeMessage(messages, 'document.picture.wrap.through'),
+      icon: TextWrap,
+    },
+    {
+      value: 'topBottom' as const,
+      label: officeMessage(messages, 'document.picture.wrap.topBottom'),
+      icon: Rows3,
+    },
+    {
+      value: 'none' as const,
+      label: officeMessage(messages, 'document.picture.wrap.none'),
+      icon: TextWrap,
+    },
+  ] as const satisfies readonly {
+    value: WorkDocumentImageLayout;
+    label: string;
+    icon: typeof Rows3;
+  }[];
+}
 
-const alignmentOptions = [
-  { value: 'left', label: '左对齐', icon: AlignLeft },
-  { value: 'center', label: '居中', icon: AlignCenter },
-  { value: 'right', label: '右对齐', icon: AlignRight },
-] as const satisfies readonly {
-  value: WorkDocumentImageAlignment;
-  label: string;
-  icon: typeof AlignLeft;
-}[];
+function alignmentOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'left' as const,
+      label: officeMessage(messages, 'document.picture.align.left'),
+      icon: AlignLeft,
+    },
+    {
+      value: 'center' as const,
+      label: officeMessage(messages, 'document.picture.align.center'),
+      icon: AlignCenter,
+    },
+    {
+      value: 'right' as const,
+      label: officeMessage(messages, 'document.picture.align.right'),
+      icon: AlignRight,
+    },
+  ] as const satisfies readonly {
+    value: WorkDocumentImageAlignment;
+    label: string;
+    icon: typeof AlignLeft;
+  }[];
+}
 
-const wrapSideOptions = [
-  { value: 'bothSides', label: '两侧' },
-  { value: 'left', label: '仅左侧' },
-  { value: 'right', label: '仅右侧' },
-  { value: 'largest', label: '较宽一侧' },
-] as const satisfies readonly {
-  value: WorkDocumentImageWrapSide;
-  label: string;
-}[];
+function wrapSideOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'bothSides' as const,
+      label: officeMessage(messages, 'document.picture.wrapSide.bothSides'),
+    },
+    {
+      value: 'left' as const,
+      label: officeMessage(messages, 'document.picture.wrapSide.left'),
+    },
+    {
+      value: 'right' as const,
+      label: officeMessage(messages, 'document.picture.wrapSide.right'),
+    },
+    {
+      value: 'largest' as const,
+      label: officeMessage(messages, 'document.picture.wrapSide.largest'),
+    },
+  ] as const satisfies readonly {
+    value: WorkDocumentImageWrapSide;
+    label: string;
+  }[];
+}
 
-const horizontalReferenceOptions = [
-  { value: 'column', label: '栏' },
-  { value: 'margin', label: '页边距' },
-  { value: 'page', label: '页面' },
-] as const satisfies readonly {
-  value: WorkDocumentImageHorizontalReference;
-  label: string;
-}[];
+function horizontalReferenceOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'column' as const,
+      label: officeMessage(messages, 'document.picture.href.column'),
+    },
+    {
+      value: 'margin' as const,
+      label: officeMessage(messages, 'document.picture.href.margin'),
+    },
+    {
+      value: 'page' as const,
+      label: officeMessage(messages, 'document.picture.href.page'),
+    },
+  ] as const satisfies readonly {
+    value: WorkDocumentImageHorizontalReference;
+    label: string;
+  }[];
+}
 
-const verticalReferenceOptions = [
-  { value: 'paragraph', label: '段落' },
-  { value: 'margin', label: '页边距' },
-  { value: 'page', label: '页面' },
-] as const satisfies readonly {
-  value: WorkDocumentImageVerticalReference;
-  label: string;
-}[];
+function verticalReferenceOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'paragraph' as const,
+      label: officeMessage(messages, 'document.picture.vref.paragraph'),
+    },
+    {
+      value: 'margin' as const,
+      label: officeMessage(messages, 'document.picture.href.margin'),
+    },
+    {
+      value: 'page' as const,
+      label: officeMessage(messages, 'document.picture.href.page'),
+    },
+  ] as const satisfies readonly {
+    value: WorkDocumentImageVerticalReference;
+    label: string;
+  }[];
+}
 
-const rotationOptions = [
-  { value: '0', label: '0°（原始）' },
-  { value: '90', label: '90°' },
-  { value: '180', label: '180°' },
-  { value: '270', label: '270°' },
-] as const;
+function rotationOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: '0',
+      label: officeMessage(messages, 'document.picture.transform.rotation0'),
+    },
+    { value: '90', label: '90°' },
+    { value: '180', label: '180°' },
+    { value: '270', label: '270°' },
+  ] as const;
+}
 
 export function DocumentPicturePropertiesControl({
   editor,
 }: {
   editor: Editor;
 }) {
+  const messages = useOfficeMessages();
   const [source, setSource] = useState<PictureDialogSource | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const title = officeMessage(messages, 'document.picture.title');
 
   const openDialog = (event: MouseEvent<HTMLButtonElement>) => {
     const position = selectedDocumentImagePosition(editor);
@@ -131,8 +217,8 @@ export function DocumentPicturePropertiesControl({
   return (
     <>
       <WorkOfficeRibbonButton
-        label="图片属性"
-        visibleLabel="图片属性"
+        label={title}
+        visibleLabel={title}
         disabled={!editor.isActive('image')}
         onClick={openDialog}
       >
@@ -161,19 +247,20 @@ function DocumentPicturePropertiesDialog({
   restoreFocusTarget: () => HTMLElement | null;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [initial] = useState(() =>
     createDocumentPicturePropertiesDraft(source),
   );
   const [draft, setDraft] = useState(initial);
   const formId = useId();
   const alternativeTextId = useId();
-  const errors = documentPicturePropertiesErrors(draft);
+  const errors = documentPicturePropertiesErrors(draft, messages);
   const invalid = hasDocumentPicturePropertiesErrors(errors);
 
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     if (invalid) return;
-    const changes = documentPicturePropertyChanges(initial, draft);
+    const changes = documentPicturePropertyChanges(initial, draft, messages);
     if (!changes) {
       onClose();
       return;
@@ -192,18 +279,18 @@ function DocumentPicturePropertiesDialog({
 
   return (
     <Dialog
-      title="图片属性"
-      description="调整当前图片的大小、排列方式和辅助说明。"
+      title={officeMessage(messages, 'document.picture.title')}
+      description={officeMessage(messages, 'document.picture.description')}
       className="work-document-picture-properties-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'document.picture.cancel')}
           </Button>
           <Button tone="primary" type="submit" form={formId} disabled={invalid}>
-            确定
+            {officeMessage(messages, 'document.picture.confirm')}
           </Button>
         </>
       }
@@ -235,19 +322,22 @@ function DocumentPicturePropertiesDialog({
           className="work-document-picture-properties-alt-text"
           htmlFor={alternativeTextId}
         >
-          <span>替代文字</span>
+          <span>{officeMessage(messages, 'document.picture.alt.label')}</span>
           <OfficeTextArea
             id={alternativeTextId}
-            aria-label="图片替代文字"
+            aria-label={officeMessage(messages, 'document.picture.alt.aria')}
             value={draft.alternativeText}
             maxLength={512}
-            placeholder="描述图片中的关键信息；装饰性图片可留空"
+            placeholder={officeMessage(
+              messages,
+              'document.picture.alt.placeholder',
+            )}
             onChange={(event) => {
               const alternativeText = event.currentTarget.value;
               setDraft((current) => ({ ...current, alternativeText }));
             }}
           />
-          <small>供屏幕阅读器使用，不会显示在正文中。</small>
+          <small>{officeMessage(messages, 'document.picture.alt.help')}</small>
         </label>
       </form>
     </Dialog>
@@ -265,14 +355,16 @@ function PictureSizeSection({
     React.SetStateAction<DocumentPicturePropertiesDraft>
   >;
 }) {
+  const messages = useOfficeMessages();
+  const cm = officeMessage(messages, 'document.picture.size.cm');
   return (
     <fieldset className="work-document-picture-properties-section size">
-      <legend>大小</legend>
+      <legend>{officeMessage(messages, 'document.picture.size.legend')}</legend>
       <PictureNumberRow
-        label="宽度"
-        ariaLabel="图片宽度（厘米）"
+        label={officeMessage(messages, 'document.picture.size.width')}
+        ariaLabel={officeMessage(messages, 'document.picture.size.widthAria')}
         value={draft.width}
-        unit="厘米"
+        unit={cm}
         min={0.01}
         max={55.87}
         step={0.1}
@@ -285,10 +377,10 @@ function PictureSizeSection({
       />
       {errors.width && <p role="alert">{errors.width}</p>}
       <PictureNumberRow
-        label="高度"
-        ariaLabel="图片高度（厘米）"
+        label={officeMessage(messages, 'document.picture.size.height')}
+        ariaLabel={officeMessage(messages, 'document.picture.size.heightAria')}
         value={draft.height}
-        unit="厘米"
+        unit={cm}
         min={0.01}
         max={55.87}
         step={0.1}
@@ -301,7 +393,7 @@ function PictureSizeSection({
       />
       {errors.height && <p role="alert">{errors.height}</p>}
       <OfficeCheckbox
-        ariaLabel="锁定纵横比"
+        ariaLabel={officeMessage(messages, 'document.picture.size.lockAspect')}
         checked={draft.lockAspectRatio}
         onCheckedChange={(locked) =>
           onDraftChange((current) =>
@@ -309,7 +401,7 @@ function PictureSizeSection({
           )
         }
       >
-        锁定纵横比
+        {officeMessage(messages, 'document.picture.size.lockAspect')}
       </OfficeCheckbox>
     </fieldset>
   );
@@ -324,12 +416,14 @@ function PictureLayoutSection({
     React.SetStateAction<DocumentPicturePropertiesDraft>
   >;
 }) {
-  const errors = documentPicturePropertiesErrors(draft);
+  const messages = useOfficeMessages();
+  const errors = documentPicturePropertiesErrors(draft, messages);
+  const mm = officeMessage(messages, 'document.picture.wrap.mm');
   return (
     <fieldset className="work-document-picture-properties-section layout">
-      <legend>文字环绕</legend>
+      <legend>{officeMessage(messages, 'document.picture.wrap.legend')}</legend>
       <div className="work-document-picture-properties-choice-grid">
-        {layoutOptions.map((option) => {
+        {layoutOptions(messages).map((option) => {
           const Icon = option.icon;
           return (
             <label key={option.value}>
@@ -354,11 +448,11 @@ function PictureLayoutSection({
         })}
       </div>
       <div className="work-document-picture-properties-wrap-side">
-        <span>环绕侧</span>
+        <span>{officeMessage(messages, 'document.picture.wrap.side')}</span>
         <OfficeSelect<WorkDocumentImageWrapSide>
-          ariaLabel="图片文字环绕侧"
+          ariaLabel={officeMessage(messages, 'document.picture.wrap.sideAria')}
           value={draft.wrapSide}
-          options={wrapSideOptions}
+          options={[...wrapSideOptions(messages)]}
           disabled={
             draft.layout === 'inline' ||
             draft.layout === 'topBottom' ||
@@ -370,10 +464,13 @@ function PictureLayoutSection({
         />
       </div>
       <PictureNumberRow
-        label="文字距离"
-        ariaLabel="图片与文字距离（毫米）"
+        label={officeMessage(messages, 'document.picture.wrap.distance')}
+        ariaLabel={officeMessage(
+          messages,
+          'document.picture.wrap.distanceAria',
+        )}
         value={draft.wrapDistance}
-        unit="毫米"
+        unit={mm}
         min={0}
         max={25}
         step={0.5}
@@ -399,11 +496,15 @@ function PictureAlignmentSection({
     React.SetStateAction<DocumentPicturePropertiesDraft>
   >;
 }) {
+  const messages = useOfficeMessages();
+  const mm = officeMessage(messages, 'document.picture.wrap.mm');
   return (
     <fieldset className="work-document-picture-properties-section position">
-      <legend>位置</legend>
+      <legend>
+        {officeMessage(messages, 'document.picture.position.legend')}
+      </legend>
       <div className="work-document-picture-properties-choice-grid">
-        {alignmentOptions.map((option) => {
+        {alignmentOptions(messages).map((option) => {
           const Icon = option.icon;
           return (
             <label key={option.value}>
@@ -428,21 +529,30 @@ function PictureAlignmentSection({
         })}
       </div>
       <OfficeCheckbox
-        ariaLabel="使用精确图片位置"
+        ariaLabel={officeMessage(
+          messages,
+          'document.picture.position.preciseAria',
+        )}
         checked={draft.precisePosition}
         disabled={draft.layout === 'inline'}
         onCheckedChange={(precisePosition) =>
           onDraftChange((current) => ({ ...current, precisePosition }))
         }
       >
-        使用精确位置
+        {officeMessage(messages, 'document.picture.position.precise')}
       </OfficeCheckbox>
       <div className="work-document-picture-properties-position-grid">
         <PictureNumberRow
-          label="水平偏移"
-          ariaLabel="图片水平偏移（毫米）"
+          label={officeMessage(
+            messages,
+            'document.picture.position.horizontal',
+          )}
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.position.horizontalAria',
+          )}
           value={draft.horizontalOffset}
-          unit="毫米"
+          unit={mm}
           min={-558.7}
           max={558.7}
           step={0.5}
@@ -453,19 +563,25 @@ function PictureAlignmentSection({
           }
         />
         <OfficeSelect<WorkDocumentImageHorizontalReference>
-          ariaLabel="水平相对于"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.position.horizontalRelativeAria',
+          )}
           value={draft.horizontalReference}
-          options={horizontalReferenceOptions}
+          options={[...horizontalReferenceOptions(messages)]}
           disabled={draft.layout === 'inline' || !draft.precisePosition}
           onValueChange={(horizontalReference) =>
             onDraftChange((current) => ({ ...current, horizontalReference }))
           }
         />
         <PictureNumberRow
-          label="垂直偏移"
-          ariaLabel="图片垂直偏移（毫米）"
+          label={officeMessage(messages, 'document.picture.position.vertical')}
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.position.verticalAria',
+          )}
           value={draft.verticalOffset}
-          unit="毫米"
+          unit={mm}
           min={-558.7}
           max={558.7}
           step={0.5}
@@ -476,9 +592,12 @@ function PictureAlignmentSection({
           }
         />
         <OfficeSelect<WorkDocumentImageVerticalReference>
-          ariaLabel="垂直相对于"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.position.verticalRelativeAria',
+          )}
           value={draft.verticalReference}
-          options={verticalReferenceOptions}
+          options={[...verticalReferenceOptions(messages)]}
           disabled={draft.layout === 'inline' || !draft.precisePosition}
           onValueChange={(verticalReference) =>
             onDraftChange((current) => ({ ...current, verticalReference }))
@@ -502,15 +621,18 @@ function PictureLayerSection({
     React.SetStateAction<DocumentPicturePropertiesDraft>
   >;
 }) {
+  const messages = useOfficeMessages();
   const disabled = draft.layout === 'inline';
   return (
     <fieldset className="work-document-picture-properties-section layer">
-      <legend>图层与锚点</legend>
+      <legend>
+        {officeMessage(messages, 'document.picture.layer.legend')}
+      </legend>
       <PictureNumberRow
-        label="层级顺序"
-        ariaLabel="图片绘图层级顺序"
+        label={officeMessage(messages, 'document.picture.layer.zOrder')}
+        ariaLabel={officeMessage(messages, 'document.picture.layer.zOrderAria')}
         value={draft.relativeHeight}
-        unit="序号"
+        unit={officeMessage(messages, 'document.picture.layer.zOrderUnit')}
         min={0}
         max={MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT}
         step={1}
@@ -523,44 +645,56 @@ function PictureLayerSection({
       {errors.relativeHeight && <p role="alert">{errors.relativeHeight}</p>}
       <div className="work-document-picture-properties-layer-options">
         <OfficeCheckbox
-          ariaLabel="图片衬于文字下方"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.layer.behindAria',
+          )}
           checked={draft.behindDocument}
           disabled={disabled}
           onCheckedChange={(behindDocument) =>
             onDraftChange((current) => ({ ...current, behindDocument }))
           }
         >
-          衬于文字下方
+          {officeMessage(messages, 'document.picture.layer.behind')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="允许图片重叠"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.layer.overlapAria',
+          )}
           checked={draft.allowOverlap}
           disabled={disabled}
           onCheckedChange={(allowOverlap) =>
             onDraftChange((current) => ({ ...current, allowOverlap }))
           }
         >
-          允许对象重叠
+          {officeMessage(messages, 'document.picture.layer.overlap')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="图片随表格单元格布局"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.layer.layoutInCellAria',
+          )}
           checked={draft.layoutInCell}
           disabled={disabled}
           onCheckedChange={(layoutInCell) =>
             onDraftChange((current) => ({ ...current, layoutInCell }))
           }
         >
-          随单元格布局
+          {officeMessage(messages, 'document.picture.layer.layoutInCell')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="锁定图片锚点"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.layer.lockAnchorAria',
+          )}
           checked={draft.lockAnchor}
           disabled={disabled}
           onCheckedChange={(lockAnchor) =>
             onDraftChange((current) => ({ ...current, lockAnchor }))
           }
         >
-          锁定锚点
+          {officeMessage(messages, 'document.picture.layer.lockAnchor')}
         </OfficeCheckbox>
       </div>
     </fieldset>
@@ -578,21 +712,36 @@ function PictureCropSection({
     React.SetStateAction<DocumentPicturePropertiesDraft>
   >;
 }) {
+  const messages = useOfficeMessages();
   const fields = [
-    { key: 'cropTop', label: '上方裁剪' },
-    { key: 'cropRight', label: '右侧裁剪' },
-    { key: 'cropBottom', label: '下方裁剪' },
-    { key: 'cropLeft', label: '左侧裁剪' },
-  ] as const;
+    {
+      key: 'cropTop' as const,
+      label: officeMessage(messages, 'document.picture.crop.top'),
+    },
+    {
+      key: 'cropRight' as const,
+      label: officeMessage(messages, 'document.picture.crop.right'),
+    },
+    {
+      key: 'cropBottom' as const,
+      label: officeMessage(messages, 'document.picture.crop.bottom'),
+    },
+    {
+      key: 'cropLeft' as const,
+      label: officeMessage(messages, 'document.picture.crop.left'),
+    },
+  ];
   return (
     <fieldset className="work-document-picture-properties-section crop">
-      <legend>裁剪</legend>
+      <legend>{officeMessage(messages, 'document.picture.crop.legend')}</legend>
       <div className="work-document-picture-properties-crop-grid">
         {fields.map((field) => (
           <PictureNumberRow
             key={field.key}
             label={field.label}
-            ariaLabel={`图片${field.label}（百分比）`}
+            ariaLabel={officeMessage(messages, 'document.picture.crop.aria', {
+              label: field.label,
+            })}
             value={draft[field.key]}
             unit="%"
             min={0}
@@ -622,15 +771,23 @@ function PictureTransformSection({
     React.SetStateAction<DocumentPicturePropertiesDraft>
   >;
 }) {
+  const messages = useOfficeMessages();
   return (
     <fieldset className="work-document-picture-properties-section transform">
-      <legend>变换</legend>
+      <legend>
+        {officeMessage(messages, 'document.picture.transform.legend')}
+      </legend>
       <div className="work-document-picture-properties-transform-row">
-        <span>旋转</span>
+        <span>
+          {officeMessage(messages, 'document.picture.transform.rotation')}
+        </span>
         <OfficeSelect
-          ariaLabel="图片旋转角度"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.transform.rotationAria',
+          )}
           value={String(draft.rotation)}
-          options={rotationOptions}
+          options={[...rotationOptions(messages)]}
           onValueChange={(value) =>
             onDraftChange((current) => ({
               ...current,
@@ -641,26 +798,32 @@ function PictureTransformSection({
       </div>
       <div className="work-document-picture-properties-transform-options">
         <OfficeCheckbox
-          ariaLabel="水平翻转图片"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.transform.flipHAria',
+          )}
           checked={draft.flipHorizontal}
           onCheckedChange={(flipHorizontal) =>
             onDraftChange((current) => ({ ...current, flipHorizontal }))
           }
         >
-          水平翻转
+          {officeMessage(messages, 'document.picture.transform.flipH')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="垂直翻转图片"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.transform.flipVAria',
+          )}
           checked={draft.flipVertical}
           onCheckedChange={(flipVertical) =>
             onDraftChange((current) => ({ ...current, flipVertical }))
           }
         >
-          垂直翻转
+          {officeMessage(messages, 'document.picture.transform.flipV')}
         </OfficeCheckbox>
       </div>
       <small className="work-document-picture-properties-transform-help">
-        旋转以 90° 为单位；每次确认作为一次可撤销操作保存。
+        {officeMessage(messages, 'document.picture.transform.help')}
       </small>
     </fieldset>
   );

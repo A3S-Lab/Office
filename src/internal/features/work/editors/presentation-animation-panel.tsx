@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   WORK_SLIDE_ANIMATION_MAX_DELAY_MS,
   WORK_SLIDE_ANIMATION_MAX_DURATION_MS,
@@ -13,6 +14,7 @@ import type {
   WorkSlideAnimationTrigger,
 } from '../work-types';
 import { OfficeNumberField, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -53,6 +55,7 @@ export function PresentationAnimationPanel({
     patch: Partial<WorkSlideAnimation>,
   ) => void;
 }) {
+  const messages = useOfficeMessages();
   const defaultClass = animations.entrance
     ? 'entrance'
     : animations.exit
@@ -70,36 +73,36 @@ export function PresentationAnimationPanel({
   const effectOptions =
     animationClass === 'entrance'
       ? [
-          { value: 'none', label: '无' },
-          { value: 'appear', label: '出现' },
-          { value: 'fade', label: '淡入' },
-          { value: 'fly-in', label: '飞入' },
-          { value: 'zoom', label: '缩放' },
+          { value: 'none', label: officeMessage(messages, 'presentation.animation.none') },
+          { value: 'appear', label: officeMessage(messages, 'presentation.animation.appear') },
+          { value: 'fade', label: officeMessage(messages, 'presentation.animation.fade') },
+          { value: 'fly-in', label: officeMessage(messages, 'presentation.animation.flyIn') },
+          { value: 'zoom', label: officeMessage(messages, 'presentation.animation.zoom') },
         ]
       : [
-          { value: 'none', label: '无' },
-          { value: 'disappear', label: '消失' },
-          { value: 'fade-out', label: '淡出' },
-          { value: 'fly-out', label: '飞出' },
-          { value: 'zoom-out', label: '缩小' },
+          { value: 'none', label: officeMessage(messages, 'presentation.animation.none') },
+          { value: 'disappear', label: officeMessage(messages, 'presentation.animation.disappear') },
+          { value: 'fade-out', label: officeMessage(messages, 'presentation.animation.fadeOut') },
+          { value: 'fly-out', label: officeMessage(messages, 'presentation.animation.flyOut') },
+          { value: 'zoom-out', label: officeMessage(messages, 'presentation.animation.zoomOut') },
         ];
   return (
     <>
-      <WorkOfficeRibbonGroup label="对象动画">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.animation.group')}>
         <fieldset
           className="work-presentation-animation-options"
           data-animation-class={animationClass}
         >
-          <legend className="sr-only">对象动画设置</legend>
+          <legend className="sr-only">{officeMessage(messages, 'presentation.animation.settingsAria')}</legend>
           <div className="work-office-field animation-class">
-            <span>类型</span>
+            <span>{officeMessage(messages, 'presentation.animation.type')}</span>
             <OfficeSelect
-              ariaLabel="对象动画类型"
+              ariaLabel={officeMessage(messages, 'presentation.animation.typeAria')}
               disabled={!editable}
               value={animationClass}
               options={[
-                { value: 'entrance', label: '进入', meta: '让对象出现' },
-                { value: 'exit', label: '退出', meta: '让对象消失' },
+                { value: 'entrance', label: officeMessage(messages, 'presentation.animation.entrance'), meta: officeMessage(messages, 'presentation.animation.entranceMeta') },
+                { value: 'exit', label: officeMessage(messages, 'presentation.animation.exit'), meta: officeMessage(messages, 'presentation.animation.exitMeta') },
               ]}
               onValueChange={(nextClass) =>
                 setSelection({ animationClass: nextClass, elementId })
@@ -107,9 +110,9 @@ export function PresentationAnimationPanel({
             />
           </div>
           <div className="work-office-field effect">
-            <span>效果</span>
+            <span>{officeMessage(messages, 'presentation.animation.effect')}</span>
             <OfficeSelect
-              ariaLabel="对象动画效果"
+              ariaLabel={officeMessage(messages, 'presentation.animation.effectAria')}
               disabled={!editable}
               value={animation?.effect ?? 'none'}
               options={effectOptions}
@@ -124,22 +127,22 @@ export function PresentationAnimationPanel({
             />
           </div>
           <div className="work-office-field trigger">
-            <span>开始</span>
+            <span>{officeMessage(messages, 'presentation.animation.start')}</span>
             <OfficeSelect
-              ariaLabel="对象动画触发方式"
+              ariaLabel={officeMessage(messages, 'presentation.animation.startAria')}
               disabled={!animation}
               value={animation?.trigger ?? 'on-click'}
               options={[
                 {
                   value: 'on-click',
-                  label: '单击时',
+                  label: officeMessage(messages, 'presentation.animation.onClick'),
                   disabled:
                     Boolean(animation) &&
                     !canUpdate(animationClass, { trigger: 'on-click' }),
                 },
                 {
                   value: 'with-previous',
-                  label: '与上一动画同时',
+                  label: officeMessage(messages, 'presentation.animation.withPrevious'),
                   disabled:
                     Boolean(animation) &&
                     !canUpdate(animationClass, {
@@ -148,7 +151,7 @@ export function PresentationAnimationPanel({
                 },
                 {
                   value: 'after-previous',
-                  label: '上一动画之后',
+                  label: officeMessage(messages, 'presentation.animation.afterPrevious'),
                   disabled:
                     Boolean(animation) &&
                     !canUpdate(animationClass, {
@@ -165,26 +168,26 @@ export function PresentationAnimationPanel({
           </div>
           {flyEffect && (
             <div className="work-office-field direction">
-              <span>方向</span>
+              <span>{officeMessage(messages, 'presentation.animation.direction')}</span>
               <OfficeSelect
-                ariaLabel="对象动画方向"
+                ariaLabel={officeMessage(messages, 'presentation.animation.directionAria')}
                 value={animation.direction ?? 'left'}
                 options={[
                   {
                     value: 'left',
-                    label: animationClass === 'entrance' ? '从左侧' : '向左侧',
+                    label: animationClass === 'entrance' ? officeMessage(messages, 'presentation.animation.fromLeft') : officeMessage(messages, 'presentation.animation.toLeft'),
                   },
                   {
                     value: 'right',
-                    label: animationClass === 'entrance' ? '从右侧' : '向右侧',
+                    label: animationClass === 'entrance' ? officeMessage(messages, 'presentation.animation.fromRight') : officeMessage(messages, 'presentation.animation.toRight'),
                   },
                   {
                     value: 'up',
-                    label: animationClass === 'entrance' ? '从上方' : '向上方',
+                    label: animationClass === 'entrance' ? officeMessage(messages, 'presentation.animation.fromTop') : officeMessage(messages, 'presentation.animation.toTop'),
                   },
                   {
                     value: 'down',
-                    label: animationClass === 'entrance' ? '从下方' : '向下方',
+                    label: animationClass === 'entrance' ? officeMessage(messages, 'presentation.animation.fromBottom') : officeMessage(messages, 'presentation.animation.toBottom'),
                   },
                 ]}
                 onValueChange={(direction) =>
@@ -197,13 +200,13 @@ export function PresentationAnimationPanel({
           )}
         </fieldset>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="动画计时">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.animation.timingGroup')}>
         <div className="work-presentation-animation-timing">
           <AnimationTimingField
             animationId={animation?.id}
-            ariaLabel="对象动画持续秒数"
+            ariaLabel={officeMessage(messages, 'presentation.animation.durationAria')}
             disabled={!animation}
-            label="持续"
+            label={officeMessage(messages, 'presentation.animation.duration')}
             maximumMs={WORK_SLIDE_ANIMATION_MAX_DURATION_MS}
             minimumMs={WORK_SLIDE_ANIMATION_MIN_DURATION_MS}
             valueMs={animation?.durationMs ?? 500}
@@ -215,9 +218,9 @@ export function PresentationAnimationPanel({
           />
           <AnimationTimingField
             animationId={animation?.id}
-            ariaLabel="对象动画延迟秒数"
+            ariaLabel={officeMessage(messages, 'presentation.animation.delayAria')}
             disabled={!animation}
-            label="延迟"
+            label={officeMessage(messages, 'presentation.animation.delay')}
             maximumMs={WORK_SLIDE_ANIMATION_MAX_DELAY_MS}
             minimumMs={0}
             valueMs={animation?.delayMs ?? 0}
@@ -229,28 +232,28 @@ export function PresentationAnimationPanel({
           />
         </div>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="动画顺序">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.animation.orderGroup')}>
         <WorkOfficeRibbonButton
-          label="提前对象动画"
-          visibleLabel="提前"
+          label={officeMessage(messages, 'presentation.animation.moveEarlier')}
+          visibleLabel={officeMessage(messages, 'presentation.animation.moveEarlierVisible')}
           disabled={!canMove(animationClass, -1)}
           onClick={() => onMove(animationClass, -1)}
         >
           <ArrowUp size={19} />
         </WorkOfficeRibbonButton>
         <WorkOfficeRibbonButton
-          label="推后对象动画"
-          visibleLabel="推后"
+          label={officeMessage(messages, 'presentation.animation.moveLater')}
+          visibleLabel={officeMessage(messages, 'presentation.animation.moveLaterVisible')}
           disabled={!canMove(animationClass, 1)}
           onClick={() => onMove(animationClass, 1)}
         >
           <ArrowDown size={19} />
         </WorkOfficeRibbonButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="动画预览">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.animation.previewGroup')}>
         <WorkOfficeRibbonButton
-          label="预览当前幻灯片动画"
-          visibleLabel="预览"
+          label={officeMessage(messages, 'presentation.animation.preview')}
+          visibleLabel={officeMessage(messages, 'presentation.animation.previewVisible')}
           disabled={!canPreview}
           onClick={onPreview}
         >

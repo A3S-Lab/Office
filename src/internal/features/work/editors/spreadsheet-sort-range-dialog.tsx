@@ -1,5 +1,7 @@
 import { type FormEvent, useId, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, Dialog } from '../../../design-system/primitives';
+import { useOfficeMessages } from './office-messages-context';
 import type {
   SpreadsheetSortRangeChoice,
   SpreadsheetSortRangeDialogSource,
@@ -16,28 +18,35 @@ export function SpreadsheetSortRangeDialog({
   onApply: (choice: SpreadsheetSortRangeChoice) => boolean;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [choice, setChoice] = useState<SpreadsheetSortRangeChoice>(() =>
     source.canSortExpandedRange ? 'expand' : 'selection',
   );
   const formId = useId();
   const ownedScope = source.ownedScope;
   const description = ownedScope
-    ? `${source.sheetName} 中选定单元格位于${
-        ownedScope.kind === 'table' ? '表格' : '筛选区域'
-      }中。`
-    : `${source.sheetName} 中选定区域旁边还有数据。`;
+    ? officeMessage(messages, 'spreadsheet.sort.range.descOwned', {
+        sheet: source.sheetName,
+        scope:
+          ownedScope.kind === 'table'
+            ? officeMessage(messages, 'spreadsheet.sort.range.scopeTable')
+            : officeMessage(messages, 'spreadsheet.sort.range.scopeFilter'),
+      })
+    : officeMessage(messages, 'spreadsheet.sort.range.descAdjacent', {
+        sheet: source.sheetName,
+      });
   const expandedTitle =
     ownedScope?.kind === 'table'
-      ? '对整个表格数据区域排序'
+      ? officeMessage(messages, 'spreadsheet.sort.range.expandTable')
       : ownedScope?.kind === 'auto-filter'
-        ? '对整个筛选数据区域排序'
-        : '扩展选定区域';
+        ? officeMessage(messages, 'spreadsheet.sort.range.expandFilter')
+        : officeMessage(messages, 'spreadsheet.sort.range.expandAdjacent');
   const expandedHint =
     ownedScope?.kind === 'table'
-      ? '表头与汇总行保持固定，筛选结果会在排序后重新计算。'
+      ? officeMessage(messages, 'spreadsheet.sort.range.hintTable')
       : ownedScope?.kind === 'auto-filter'
-        ? '筛选表头保持固定，筛选结果会在排序后重新计算。'
-        : '让相邻列随整行一起移动，避免数据关系错位。';
+        ? officeMessage(messages, 'spreadsheet.sort.range.hintFilter')
+        : officeMessage(messages, 'spreadsheet.sort.range.hintAdjacent');
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (onApply(choice)) onClose();
@@ -45,7 +54,7 @@ export function SpreadsheetSortRangeDialog({
 
   return (
     <Dialog
-      title="排序提醒"
+      title={officeMessage(messages, 'spreadsheet.sort.range.title')}
       description={description}
       className="work-spreadsheet-sort-range-dialog"
       restoreFocusTarget={restoreFocusTarget}
@@ -53,17 +62,17 @@ export function SpreadsheetSortRangeDialog({
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.sort.cancel')}
           </Button>
           <Button tone="primary" type="submit" form={formId}>
-            排序
+            {officeMessage(messages, 'spreadsheet.sort.range.sort')}
           </Button>
         </>
       }
     >
       <form id={formId} onSubmit={submit}>
         <fieldset className="work-spreadsheet-sort-range-options">
-          <legend>请选择排序范围</legend>
+          <legend>{officeMessage(messages, 'spreadsheet.sort.range.legend')}</legend>
           <label>
             <input
               type="radio"
@@ -89,8 +98,12 @@ export function SpreadsheetSortRangeDialog({
               onChange={() => setChoice('selection')}
             />
             <span>
-              <strong>以当前选定区域排序</strong>
-              <small>只移动当前矩形中的单元格。</small>
+              <strong>
+                {officeMessage(messages, 'spreadsheet.sort.range.selection')}
+              </strong>
+              <small>
+                {officeMessage(messages, 'spreadsheet.sort.range.selectionHint')}
+              </small>
               <code>{source.selectedRangeReference}</code>
             </span>
           </label>

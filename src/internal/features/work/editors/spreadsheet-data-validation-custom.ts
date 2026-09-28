@@ -1,3 +1,4 @@
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import {
   evaluateSpreadsheetLocalFormula,
   MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH,
@@ -50,7 +51,9 @@ export function evaluateSpreadsheetCustomValidation(
 ): SpreadsheetCustomValidationResult {
   const sheet = content.sheets.find((candidate) => candidate.id === sheetId);
   if (!sheet) {
-    return unsupportedCustomValidation('找不到自定义公式所在的工作表。');
+    return unsupportedCustomValidation(
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.custom.sheetMissing'),
+    );
   }
   const proposed = spreadsheetCustomValidationValue(value);
   const normalizedProposed = spreadsheetCustomValidationBlank(proposed)
@@ -61,13 +64,17 @@ export function evaluateSpreadsheetCustomValidation(
   }
   const formula = item.value1.trim().replace(/^=/, '').trim();
   if (!formula) {
-    return unsupportedCustomValidation('自定义公式为空。');
+    return unsupportedCustomValidation(
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.custom.empty'),
+    );
   }
   if (
     Array.from(formula).length >
     MAX_SPREADSHEET_CUSTOM_VALIDATION_FORMULA_LENGTH
   ) {
-    return unsupportedCustomValidation('自定义公式超过 255 个字符。');
+    return unsupportedCustomValidation(
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.custom.tooLong'),
+    );
   }
 
   const ranges = parseSpreadsheetCellRanges(item.rangeTxt);
@@ -88,7 +95,11 @@ export function evaluateSpreadsheetCustomValidation(
     return {
       supported: false,
       valid: false,
-      message: result.message ? `自定义${result.message}` : result.message,
+      message: result.message
+        ? officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.custom.prefixedDetail', {
+            detail: result.message,
+          })
+        : result.message,
     };
   }
   return {

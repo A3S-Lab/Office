@@ -1,4 +1,8 @@
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import {
   normalizePresentationChartLegendPosition,
   presentationChartShowsLegend,
 } from '../work-presentation-charts';
@@ -129,12 +133,20 @@ export function presentationChartLegendItems(
       color:
         seriesColor ??
         PRESENTATION_CHART_COLORS[index % PRESENTATION_CHART_COLORS.length],
-      label: chart.categories[index]?.trim() || `分类 ${index + 1}`,
+      label:
+        chart.categories[index]?.trim() ||
+        officeMessage(resolveOfficeMessages(), 'presentation.chart.categoryFallback', {
+          index: String(index + 1),
+        }),
     }));
   }
   return chart.series.map((series, index) => ({
     color: spreadsheetChartSeriesLegendColor(series, index),
-    label: series.name.trim() || `系列 ${index + 1}`,
+    label:
+      series.name.trim() ||
+      officeMessage(resolveOfficeMessages(), 'presentation.chart.seriesFallback', {
+        index: String(index + 1),
+      }),
   }));
 }
 

@@ -8,8 +8,44 @@ import {
   assertOfficeCollaborationPresencePairing,
   OfficeCollaborationPresenceProvider,
 } from './internal/features/work/editors/office-collaboration-presence-context';
+import {
+  OfficeEditorErrorBoundary,
+  type OfficeEditorDiagnostic,
+  type OfficeEditorHostError,
+  type OfficeEditorKind,
+} from './internal/features/work/editors/office-editor-error-boundary';
 import { OfficeEditorFocusHandoff } from './internal/features/work/editors/office-editor-focus-handoff';
+import { OfficeMessagesProvider } from './internal/features/work/editors/office-messages-context';
 import type { PdfViewerProps as InternalPdfViewerProps } from './internal/features/work/editors/pdf-viewer';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from './internal/i18n/office-locale';
+import type {
+  OfficeLocale,
+  OfficeMessageCatalog,
+  OfficeMessagesOverride,
+} from './internal/i18n/office-messages';
+
+export type {
+  OfficeEditorDiagnostic,
+  OfficeEditorHostError,
+  OfficeEditorHostErrorPhase,
+  OfficeEditorKind,
+} from './internal/features/work/editors/office-editor-error-boundary';
+export { OfficeEditorErrorBoundary } from './internal/features/work/editors/office-editor-error-boundary';
+export type {
+  OfficeLocale,
+  OfficeMessageCatalog,
+  OfficeMessageKey,
+  OfficeMessagesOverride,
+} from './internal/i18n/office-messages';
+export {
+  OFFICE_DEFAULT_LOCALE,
+  officeMessage,
+  resolveOfficeLocale,
+  resolveOfficeMessages,
+} from './internal/i18n/office-locale';
 
 export {
   PDF_EVIDENCE_COORDINATE_BASIS,
@@ -106,13 +142,6 @@ const LazyPresentationEditor = lazy(async () => ({
 const LazyPdfViewer = lazy(async () => ({
   default: (await loadPdfViewer()).PdfViewer,
 }));
-
-export type OfficeEditorKind =
-  | 'document'
-  | 'markdown'
-  | 'spreadsheet'
-  | 'presentation'
-  | 'pdf';
 
 const officeEditorLoaders: Record<OfficeEditorKind, () => Promise<unknown>> = {
   document: loadDocumentEditor,
@@ -248,12 +277,18 @@ function OfficeEditorLoader({
   children,
   collaboration,
   kind,
+  messages,
+  onDiagnostic,
+  onError,
   presence,
   title,
 }: {
   children: ReactNode;
   collaboration?: WorkOfficeCollaborationSession;
   kind: OfficeEditorKind;
+  messages: OfficeMessageCatalog;
+  onDiagnostic?: (diagnostic: OfficeEditorDiagnostic) => void;
+  onError?: (error: OfficeEditorHostError) => void;
   presence?: WorkOfficeCollaborationPresence;
   title: string;
 }) {
@@ -264,11 +299,21 @@ function OfficeEditorLoader({
   });
   return (
     <OfficeCollaborationPresenceProvider presence={presence}>
-      <OfficeEditorFocusHandoff>
-        <Suspense fallback={<WorkEditorLoadingState title={title} />}>
-          {children}
-        </Suspense>
-      </OfficeEditorFocusHandoff>
+      <OfficeMessagesProvider catalog={messages}>
+        <OfficeEditorFocusHandoff>
+          <OfficeEditorErrorBoundary
+            editor={kind}
+            messages={messages}
+            onDiagnostic={onDiagnostic}
+            onError={onError}
+            title={title}
+          >
+            <Suspense fallback={<WorkEditorLoadingState title={title} />}>
+              {children}
+            </Suspense>
+          </OfficeEditorErrorBoundary>
+        </OfficeEditorFocusHandoff>
+      </OfficeMessagesProvider>
     </OfficeCollaborationPresenceProvider>
   );
 }
@@ -278,13 +323,40 @@ interface OfficeCollaborationSurfaceProps {
   presence?: WorkOfficeCollaborationPresence;
 }
 
+interface OfficeEditorObservabilityProps {
+  /** Fires once per render/chunk failure caught by the host error boundary. */
+  onError?: (error: OfficeEditorHostError) => void;
+  /** Broader diagnostic sink for host observability (errors, later marks). */
+  onDiagnostic?: (diagnostic: OfficeEditorDiagnostic) => void;
+}
+
+interface OfficeEditorLocaleProps {
+  /** BCP 47 UI locale. Defaults to `zh-CN`; `en-US` is the first alternate. */
+  locale?: OfficeLocale | string;
+  /** Partial message override merged on top of the resolved locale catalog. */
+  messages?: OfficeMessagesOverride;
+}
+
+const editorLoadingMessageKey = {
+  document: 'editor.loading.document',
+  markdown: 'editor.loading.markdown',
+  spreadsheet: 'editor.loading.spreadsheet',
+  presentation: 'editor.loading.presentation',
+  pdf: 'editor.loading.pdf',
+} as const satisfies Record<
+  OfficeEditorKind,
+  import('./internal/i18n/office-messages').OfficeMessageKey
+>;
+
 export interface DocumentEditorProps
   extends Omit<
       InternalDocumentEditorProps,
       'defaultRibbonCollapsed' | 'layoutFonts' | 'preview'
     >,
     OfficeSurfaceProps,
-    OfficeCollaborationSurfaceProps {
+    OfficeCollaborationSurfaceProps,
+    OfficeEditorObservabilityProps,
+    OfficeEditorLocaleProps {
   preview?: boolean;
   defaultRibbonCollapsed?: boolean;
   layoutFonts?: readonly DocumentLayoutFont[];
@@ -295,19 +367,30 @@ export function DocumentEditor({
   defaultRibbonCollapsed = false,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
   layoutFonts = defaultDocumentLayoutFonts,
+  locale,
+  messages: messagesOverride,
+  onDiagnostic,
+  onError,
   presence,
   preview = false,
   style,
   theme,
   ...editorProps
 }: DocumentEditorProps) {
+  const messages = resolveOfficeMessages({
+    locale,
+    messages: messagesOverride,
+  });
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <OfficeEditorLoader
         collaboration={editorProps.collaboration}
         kind="document"
+        messages={messages}
+        onDiagnostic={onDiagnostic}
+        onError={onError}
         presence={presence}
-        title="正在打开文字编辑器"
+        title={officeMessage(messages, editorLoadingMessageKey.document)}
       >
         <LazyDocumentEditor
           {...editorProps}
@@ -324,25 +407,38 @@ export function DocumentEditor({
 export interface MarkdownEditorProps
   extends Omit<InternalMarkdownEditorProps, 'preview'>,
     OfficeSurfaceProps,
-    OfficeCollaborationSurfaceProps {
+    OfficeCollaborationSurfaceProps,
+    OfficeEditorObservabilityProps,
+    OfficeEditorLocaleProps {
   preview?: boolean;
 }
 
 export function MarkdownEditor({
   className,
+  locale,
+  messages: messagesOverride,
+  onDiagnostic,
+  onError,
   presence,
   preview = false,
   style,
   theme,
   ...editorProps
 }: MarkdownEditorProps) {
+  const messages = resolveOfficeMessages({
+    locale,
+    messages: messagesOverride,
+  });
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <OfficeEditorLoader
         collaboration={editorProps.collaboration}
         kind="markdown"
+        messages={messages}
+        onDiagnostic={onDiagnostic}
+        onError={onError}
         presence={presence}
-        title="正在打开 Markdown 编辑器"
+        title={officeMessage(messages, editorLoadingMessageKey.markdown)}
       >
         <LazyMarkdownEditor {...editorProps} preview={preview} />
       </OfficeEditorLoader>
@@ -353,26 +449,39 @@ export function MarkdownEditor({
 export interface SpreadsheetEditorProps
   extends Omit<InternalSpreadsheetEditorProps, 'preview'>,
     OfficeSurfaceProps,
-    OfficeCollaborationSurfaceProps {
+    OfficeCollaborationSurfaceProps,
+    OfficeEditorObservabilityProps,
+    OfficeEditorLocaleProps {
   preview?: boolean;
 }
 
 export function SpreadsheetEditor({
   className,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
+  locale,
+  messages: messagesOverride,
+  onDiagnostic,
+  onError,
   presence,
   preview = false,
   style,
   theme,
   ...editorProps
 }: SpreadsheetEditorProps) {
+  const messages = resolveOfficeMessages({
+    locale,
+    messages: messagesOverride,
+  });
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <OfficeEditorLoader
         collaboration={editorProps.collaboration}
         kind="spreadsheet"
+        messages={messages}
+        onDiagnostic={onDiagnostic}
+        onError={onError}
         presence={presence}
-        title="正在打开表格编辑器"
+        title={officeMessage(messages, editorLoadingMessageKey.spreadsheet)}
       >
         <LazySpreadsheetEditor
           {...editorProps}
@@ -387,26 +496,39 @@ export function SpreadsheetEditor({
 export interface PresentationEditorProps
   extends Omit<InternalPresentationEditorProps, 'preview'>,
     OfficeSurfaceProps,
-    OfficeCollaborationSurfaceProps {
+    OfficeCollaborationSurfaceProps,
+    OfficeEditorObservabilityProps,
+    OfficeEditorLocaleProps {
   preview?: boolean;
 }
 
 export function PresentationEditor({
   className,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
+  locale,
+  messages: messagesOverride,
+  onDiagnostic,
+  onError,
   presence,
   preview = false,
   style,
   theme,
   ...editorProps
 }: PresentationEditorProps) {
+  const messages = resolveOfficeMessages({
+    locale,
+    messages: messagesOverride,
+  });
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <OfficeEditorLoader
         collaboration={editorProps.collaboration}
         kind="presentation"
+        messages={messages}
+        onDiagnostic={onDiagnostic}
+        onError={onError}
         presence={presence}
-        title="正在打开演示编辑器"
+        title={officeMessage(messages, editorLoadingMessageKey.presentation)}
       >
         <LazyPresentationEditor
           {...editorProps}
@@ -421,23 +543,36 @@ export function PresentationEditor({
 export interface PdfViewerProps
   extends InternalPdfViewerProps,
     OfficeSurfaceProps,
-    OfficeCollaborationSurfaceProps {}
+    OfficeCollaborationSurfaceProps,
+    OfficeEditorObservabilityProps,
+    OfficeEditorLocaleProps {}
 
 export function PdfViewer({
   className,
+  locale,
+  messages: messagesOverride,
+  onDiagnostic,
+  onError,
   presence,
   style,
   theme,
   wasmUrl = defaultPdfiumWasmUrl,
   ...viewerProps
 }: PdfViewerProps) {
+  const messages = resolveOfficeMessages({
+    locale,
+    messages: messagesOverride,
+  });
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <OfficeEditorLoader
         collaboration={viewerProps.collaboration}
         kind="pdf"
+        messages={messages}
+        onDiagnostic={onDiagnostic}
+        onError={onError}
         presence={presence}
-        title="正在打开 PDF"
+        title={officeMessage(messages, editorLoadingMessageKey.pdf)}
       >
         <LazyPdfViewer {...viewerProps} wasmUrl={wasmUrl} />
       </OfficeEditorLoader>

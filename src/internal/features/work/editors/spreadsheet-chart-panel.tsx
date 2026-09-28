@@ -1,6 +1,7 @@
 import type { Selection } from '@fortune-sheet/core';
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   Button,
   CollectionState,
@@ -49,6 +50,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { normalizeRequiredOfficeNumber } from './office-number-normalization';
 import { SpreadsheetChartAxisEditor } from './spreadsheet-chart-axis-editor';
 import {
@@ -82,6 +84,7 @@ export function SpreadsheetChartPanel({
   selection,
   onChange,
 }: SpreadsheetChartPanelProps) {
+  const messages = useOfficeMessages();
   const items = useMemo(
     () =>
       content.sheets.flatMap((sheet) =>
@@ -129,7 +132,7 @@ export function SpreadsheetChartPanel({
     const nextKey = chartKey(item);
     if (nextKey === selectedKey) return;
     if (dirty) {
-      setError('当前图表有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.unsaved'));
       return;
     }
     const next = chartDraft(item);
@@ -140,7 +143,7 @@ export function SpreadsheetChartPanel({
   };
   const addChart = () => {
     if (dirty) {
-      setError('当前图表有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.unsaved'));
       return;
     }
     const sheet =
@@ -148,7 +151,7 @@ export function SpreadsheetChartPanel({
       content.sheets.find((candidate) => !candidate.hide) ??
       content.sheets[0];
     if (!sheet?.id) {
-      setError('当前工作簿没有可用于创建图表的工作表。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.noSheet'));
       return;
     }
     const fallbackSelection: Selection = {
@@ -161,7 +164,7 @@ export function SpreadsheetChartPanel({
       selection ?? fallbackSelection,
     );
     if (!chart) {
-      setError('请先选择一个包含图表数据的连续单元格区域。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.needSelection'));
       return;
     }
     const next = content.sheets.map((candidate) =>
@@ -187,11 +190,11 @@ export function SpreadsheetChartPanel({
       (sheet) => sheet.id === draft.sheetId,
     );
     if (!ownerSheet) {
-      setError('找不到图表所在的工作表。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.sheetMissing'));
       return;
     }
     if (!draft.name.trim()) {
-      setError('请输入图表对象名称。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.needName'));
       return;
     }
     if (
@@ -203,19 +206,19 @@ export function SpreadsheetChartPanel({
         draft.categoryReference,
       )
     ) {
-      setError('分类引用必须是当前工作簿中的连续 A1 单元格范围。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.categoryRange'));
       return;
     }
     if (!draft.series.length) {
-      setError('图表至少需要一个数据系列。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.needSeries'));
       return;
     }
     if (draft.type === 'pie' && draft.series.length > 1) {
-      setError('基础饼图只能使用一个数据系列，请先删除其他系列。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.pieOneSeries'));
       return;
     }
     if (draft.type === 'combination' && draft.series.length < 2) {
-      setError('组合图至少需要两个数据系列。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.combinationMinSeries'));
       return;
     }
     if (
@@ -225,7 +228,7 @@ export function SpreadsheetChartPanel({
         (draft.doughnutHoleSize ?? 0) < 10 ||
         (draft.doughnutHoleSize ?? 0) > 90)
     ) {
-      setError('圆环孔径必须在 10% 到 90% 之间。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.doughnutHole'));
       return;
     }
     if (
@@ -235,7 +238,7 @@ export function SpreadsheetChartPanel({
         draft.bubbleScale < 0 ||
         draft.bubbleScale > 300)
     ) {
-      setError('气泡缩放必须在 0% 到 300% 之间。');
+      setError(officeMessage(messages, 'spreadsheet.chart.error.bubbleScale'));
       return;
     }
     const supportsSeriesAnalysis =
@@ -268,7 +271,7 @@ export function SpreadsheetChartPanel({
           series.nameReference,
         )
       ) {
-        setError(`系列 ${index + 1} 的名称引用无效。`);
+        setError(officeMessage(messages, 'spreadsheet.chart.error.seriesNameRef', { n: String(index + 1) }));
         return;
       }
       if (
@@ -279,11 +282,11 @@ export function SpreadsheetChartPanel({
           series.valuesReference,
         )
       ) {
-        setError(`系列 ${index + 1} 的数值引用无效。`);
+        setError(officeMessage(messages, 'spreadsheet.chart.error.seriesValuesRef', { n: String(index + 1) }));
         return;
       }
       if (!series.valuesReference?.trim() && !series.values.length) {
-        setError(`系列 ${index + 1} 需要数值引用。`);
+        setError(officeMessage(messages, 'spreadsheet.chart.error.seriesValuesRequired', { n: String(index + 1) }));
         return;
       }
       if (workSpreadsheetChartUsesNumericXAxis(draft.type)) {
@@ -295,11 +298,11 @@ export function SpreadsheetChartPanel({
             series.xValuesReference,
           )
         ) {
-          setError(`系列 ${index + 1} 的 X 值引用无效。`);
+          setError(officeMessage(messages, 'spreadsheet.chart.error.seriesXRef', { n: String(index + 1) }));
           return;
         }
         if (!series.xValuesReference?.trim() && !series.xValues?.length) {
-          setError(`系列 ${index + 1} 需要 X 值引用。`);
+          setError(officeMessage(messages, 'spreadsheet.chart.error.seriesXRequired', { n: String(index + 1) }));
           return;
         }
       }
@@ -312,14 +315,14 @@ export function SpreadsheetChartPanel({
             series.bubbleSizesReference,
           )
         ) {
-          setError(`系列 ${index + 1} 的气泡大小引用无效。`);
+          setError(officeMessage(messages, 'spreadsheet.chart.error.seriesBubbleRef', { n: String(index + 1) }));
           return;
         }
         if (
           !series.bubbleSizesReference?.trim() &&
           !series.bubbleSizes?.length
         ) {
-          setError(`系列 ${index + 1} 需要气泡大小引用。`);
+          setError(officeMessage(messages, 'spreadsheet.chart.error.seriesBubbleRequired', { n: String(index + 1) }));
           return;
         }
       }
@@ -418,7 +421,7 @@ export function SpreadsheetChartPanel({
         } = series;
         return {
           ...categorySeries,
-          name: series.name.trim() || `系列 ${index + 1}`,
+          name: series.name.trim() || officeMessage(messages, 'spreadsheet.chart.seriesDefaultName', { n: String(index + 1) }),
           nameReference:
             series.nameReference?.trim().replace(/^=/, '') || undefined,
           valuesReference:
@@ -522,11 +525,11 @@ export function SpreadsheetChartPanel({
         cancelDraft();
       }}
     >
-      <legend className="sr-only">图表编辑</legend>
-      <aside aria-label="工作簿图表">
+      <legend className="sr-only">{officeMessage(messages, 'spreadsheet.chart.legend')}</legend>
+      <aside aria-label={officeMessage(messages, 'spreadsheet.chart.listAria')}>
         <Button className="create" tone="secondary" onClick={addChart}>
           <Plus size={13} />
-          根据当前选区新建
+          {officeMessage(messages, 'spreadsheet.chart.createFromSelection')}
         </Button>
         <div className="work-spreadsheet-chart-list">
           {items.map((item) => (
@@ -539,7 +542,7 @@ export function SpreadsheetChartPanel({
               <strong>{item.chart.title || item.chart.name}</strong>
               <span>
                 {item.sheetName} ·{' '}
-                {workSpreadsheetChartTypeLabel(item.chart.type)}
+                {workSpreadsheetChartTypeLabel(item.chart.type, messages)}
               </span>
             </button>
           ))}
@@ -548,7 +551,7 @@ export function SpreadsheetChartPanel({
               className="work-office-collection-empty"
               role="status"
             >
-              还没有图表。先选择带标题的数据区域，再创建图表。
+              {officeMessage(messages, 'spreadsheet.chart.emptyList')}
             </CollectionState>
           )}
         </div>
@@ -562,9 +565,9 @@ export function SpreadsheetChartPanel({
         >
           <div className="work-spreadsheet-chart-fields">
             <div className="work-office-field">
-              <span>对象名称</span>
+              <span>{officeMessage(messages, 'spreadsheet.chart.objectName')}</span>
               <OfficeTextField
-                aria-label="图表对象名称"
+                aria-label={officeMessage(messages, 'spreadsheet.chart.objectNameAria')}
                 value={draft.name}
                 maxLength={255}
                 onChange={(event) =>
@@ -573,21 +576,21 @@ export function SpreadsheetChartPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>图表类型</span>
+              <span>{officeMessage(messages, 'spreadsheet.chart.type')}</span>
               <OfficeSelect
-                ariaLabel="图表类型"
+                ariaLabel={officeMessage(messages, 'spreadsheet.chart.typeAria')}
                 value={draft.type}
                 options={[
-                  { value: 'column', label: '簇状柱形图' },
-                  { value: 'bar', label: '簇状条形图' },
-                  { value: 'line', label: '折线图' },
-                  { value: 'pie', label: '饼图' },
-                  { value: 'doughnut', label: '圆环图' },
-                  { value: 'area', label: '面积图' },
-                  { value: 'radar', label: '雷达图' },
-                  { value: 'scatter', label: '散点图' },
-                  { value: 'bubble', label: '气泡图' },
-                  { value: 'combination', label: '组合图' },
+                  { value: 'column', label: officeMessage(messages, 'spreadsheet.chart.type.column') },
+                  { value: 'bar', label: officeMessage(messages, 'spreadsheet.chart.type.bar') },
+                  { value: 'line', label: officeMessage(messages, 'spreadsheet.chart.type.line') },
+                  { value: 'pie', label: officeMessage(messages, 'spreadsheet.chart.type.pie') },
+                  { value: 'doughnut', label: officeMessage(messages, 'spreadsheet.chart.type.doughnut') },
+                  { value: 'area', label: officeMessage(messages, 'spreadsheet.chart.type.area') },
+                  { value: 'radar', label: officeMessage(messages, 'spreadsheet.chart.type.radar') },
+                  { value: 'scatter', label: officeMessage(messages, 'spreadsheet.chart.type.scatter') },
+                  { value: 'bubble', label: officeMessage(messages, 'spreadsheet.chart.type.bubble') },
+                  { value: 'combination', label: officeMessage(messages, 'spreadsheet.chart.type.combination') },
                 ]}
                 onValueChange={(nextType) => {
                   const type = nextType as WorkSpreadsheetChartType;
@@ -597,9 +600,9 @@ export function SpreadsheetChartPanel({
             </div>
             {draft.type === 'doughnut' && (
               <div className="work-office-field">
-                <span>圆环孔径（%）</span>
+                <span>{officeMessage(messages, 'spreadsheet.chart.doughnutHole')}</span>
                 <CommittedOfficeNumberField
-                  ariaLabel="圆环孔径（%）"
+                  ariaLabel={officeMessage(messages, 'spreadsheet.chart.doughnutHoleAria')}
                   min={10}
                   max={90}
                   step={1}
@@ -622,14 +625,14 @@ export function SpreadsheetChartPanel({
             )}
             {draft.type === 'radar' && (
               <div className="work-office-field">
-                <span>雷达图样式</span>
+                <span>{officeMessage(messages, 'spreadsheet.chart.radarStyle')}</span>
                 <OfficeSelect
-                  ariaLabel="雷达图样式"
+                  ariaLabel={officeMessage(messages, 'spreadsheet.chart.radarStyleAria')}
                   value={normalizeWorkSpreadsheetRadarStyle(draft.radarStyle)}
                   options={[
-                    { value: 'standard', label: '标准雷达图' },
-                    { value: 'marker', label: '带数据标记的雷达图' },
-                    { value: 'filled', label: '填充雷达图' },
+                    { value: 'standard', label: officeMessage(messages, 'spreadsheet.chart.radar.standard') },
+                    { value: 'marker', label: officeMessage(messages, 'spreadsheet.chart.radar.marker') },
+                    { value: 'filled', label: officeMessage(messages, 'spreadsheet.chart.radar.filled') },
                   ]}
                   onValueChange={(radarStyle) =>
                     setDraft({
@@ -642,18 +645,18 @@ export function SpreadsheetChartPanel({
             )}
             {draft.type === 'scatter' && (
               <div className="work-office-field">
-                <span>散点图样式</span>
+                <span>{officeMessage(messages, 'spreadsheet.chart.scatterStyle')}</span>
                 <OfficeSelect
-                  ariaLabel="散点图样式"
+                  ariaLabel={officeMessage(messages, 'spreadsheet.chart.scatterStyleAria')}
                   value={normalizeWorkSpreadsheetScatterStyle(
                     draft.scatterStyle,
                   )}
                   options={[
-                    { value: 'marker', label: '仅数据标记' },
-                    { value: 'line', label: '直线' },
-                    { value: 'lineMarker', label: '带数据标记的直线' },
-                    { value: 'smooth', label: '平滑线' },
-                    { value: 'smoothMarker', label: '带数据标记的平滑线' },
+                    { value: 'marker', label: officeMessage(messages, 'spreadsheet.chart.scatter.marker') },
+                    { value: 'line', label: officeMessage(messages, 'spreadsheet.chart.scatter.line') },
+                    { value: 'lineMarker', label: officeMessage(messages, 'spreadsheet.chart.scatter.lineMarker') },
+                    { value: 'smooth', label: officeMessage(messages, 'spreadsheet.chart.scatter.smooth') },
+                    { value: 'smoothMarker', label: officeMessage(messages, 'spreadsheet.chart.scatter.smoothMarker') },
                   ]}
                   onValueChange={(scatterStyle) =>
                     setDraft({
@@ -667,9 +670,9 @@ export function SpreadsheetChartPanel({
             {draft.type === 'bubble' && (
               <>
                 <div className="work-office-field">
-                  <span>气泡缩放（%）</span>
+                  <span>{officeMessage(messages, 'spreadsheet.chart.bubbleScale')}</span>
                   <CommittedOfficeNumberField
-                    ariaLabel="气泡缩放（%）"
+                    ariaLabel={officeMessage(messages, 'spreadsheet.chart.bubbleScaleAria')}
                     min={0}
                     max={300}
                     step={1}
@@ -687,15 +690,15 @@ export function SpreadsheetChartPanel({
                   />
                 </div>
                 <div className="work-office-field">
-                  <span>气泡大小表示</span>
+                  <span>{officeMessage(messages, 'spreadsheet.chart.bubbleSizeRepresents')}</span>
                   <OfficeSelect
-                    ariaLabel="气泡大小表示"
+                    ariaLabel={officeMessage(messages, 'spreadsheet.chart.bubbleSizeRepresentsAria')}
                     value={normalizeWorkSpreadsheetBubbleSizeRepresents(
                       draft.bubbleSizeRepresents,
                     )}
                     options={[
-                      { value: 'area', label: '面积' },
-                      { value: 'width', label: '宽度' },
+                      { value: 'area', label: officeMessage(messages, 'spreadsheet.chart.bubbleSize.area') },
+                      { value: 'width', label: officeMessage(messages, 'spreadsheet.chart.bubbleSize.width') },
                     ]}
                     onValueChange={(bubbleSizeRepresents) =>
                       setDraft({
@@ -708,20 +711,20 @@ export function SpreadsheetChartPanel({
                 </div>
                 <OfficeCheckbox
                   className="check"
-                  ariaLabel="显示负值气泡"
+                  ariaLabel={officeMessage(messages, 'spreadsheet.chart.showNegativeBubblesAria')}
                   checked={draft.showNegativeBubbles === true}
                   onCheckedChange={(showNegativeBubbles) =>
                     setDraft({ ...draft, showNegativeBubbles })
                   }
                 >
-                  显示负值气泡
+                  {officeMessage(messages, 'spreadsheet.chart.showNegativeBubbles')}
                 </OfficeCheckbox>
               </>
             )}
             <div className="work-office-field">
-              <span>图表标题</span>
+              <span>{officeMessage(messages, 'spreadsheet.chart.title')}</span>
               <OfficeTextField
-                aria-label="图表标题"
+                aria-label={officeMessage(messages, 'spreadsheet.chart.titleAria')}
                 value={draft.title ?? ''}
                 maxLength={255}
                 onChange={(event) =>
@@ -730,11 +733,11 @@ export function SpreadsheetChartPanel({
               />
             </div>
             <div className="work-office-field">
-              <span>标题引用（可选）</span>
+              <span>{officeMessage(messages, 'spreadsheet.chart.titleReference')}</span>
               <OfficeTextField
-                aria-label="图表标题引用"
+                aria-label={officeMessage(messages, 'spreadsheet.chart.titleReferenceAria')}
                 value={draft.titleReference ?? ''}
-                placeholder="'报告'!$B$1"
+                placeholder={officeMessage(messages, 'spreadsheet.chart.placeholder.titleRef')}
                 onChange={(event) =>
                   setDraft({ ...draft, titleReference: event.target.value })
                 }
@@ -758,11 +761,11 @@ export function SpreadsheetChartPanel({
             )}
             {!workSpreadsheetChartUsesNumericXAxis(draft.type) && (
               <div className="work-office-field reference">
-                <span>分类引用</span>
+                <span>{officeMessage(messages, 'spreadsheet.chart.categories')}</span>
                 <OfficeTextField
-                  aria-label="图表分类引用"
+                  aria-label={officeMessage(messages, 'spreadsheet.chart.categoriesAria')}
                   value={draft.categoryReference ?? ''}
-                  placeholder="'报告'!$A$2:$A$8"
+                  placeholder={officeMessage(messages, 'spreadsheet.chart.placeholder.categories')}
                   onChange={(event) =>
                     setDraft({
                       ...draft,
@@ -773,12 +776,12 @@ export function SpreadsheetChartPanel({
               </div>
             )}
             <div className="work-office-field alternative-text">
-              <span>替代文本</span>
+              <span>{officeMessage(messages, 'spreadsheet.chart.altText')}</span>
               <OfficeTextField
-                aria-label="图表替代文本"
+                aria-label={officeMessage(messages, 'spreadsheet.chart.altTextAria')}
                 value={draft.altText ?? ''}
                 maxLength={1_024}
-                placeholder="说明图表表达的关键数据或趋势"
+                placeholder={officeMessage(messages, 'spreadsheet.chart.altTextPlaceholder')}
                 onChange={(event) =>
                   setDraft({ ...draft, altText: event.target.value })
                 }
@@ -791,10 +794,10 @@ export function SpreadsheetChartPanel({
           </div>
           <section
             className="work-spreadsheet-chart-series"
-            aria-label="图表数据系列"
+            aria-label={officeMessage(messages, 'spreadsheet.chart.seriesAria')}
           >
             <header>
-              <strong>数据系列</strong>
+              <strong>{officeMessage(messages, 'spreadsheet.chart.seriesHeading')}</strong>
               <button
                 type="button"
                 onClick={() =>
@@ -808,13 +811,12 @@ export function SpreadsheetChartPanel({
                 }
               >
                 <Plus size={12} />
-                添加系列
+                {officeMessage(messages, 'spreadsheet.chart.addSeries')}
               </button>
             </header>
             {workSpreadsheetChartUsesNumericXAxis(draft.type) && (
               <p className="xy-note">
-                每个系列独立使用 X 与 Y；未设置 X
-                引用时使用当前缓存值或稳定序号。
+                {officeMessage(messages, 'spreadsheet.chart.xyNote')}
               </p>
             )}
             {draft.series.map((series, index) => (
@@ -825,9 +827,9 @@ export function SpreadsheetChartPanel({
                 key={`${draft.id}-series-${index}`}
               >
                 <div className="work-office-field series-name">
-                  <span>系列 {index + 1} 名称</span>
+                  <span>{officeMessage(messages, 'spreadsheet.chart.seriesName', { n: String(index + 1) })}</span>
                   <OfficeTextField
-                    aria-label={`系列 ${index + 1} 名称`}
+                    aria-label={officeMessage(messages, 'spreadsheet.chart.seriesNameAria', { n: String(index + 1) })}
                     value={series.name}
                     onChange={(event) =>
                       setDraft({
@@ -840,11 +842,11 @@ export function SpreadsheetChartPanel({
                   />
                 </div>
                 <div className="work-office-field name-reference">
-                  <span>名称引用</span>
+                  <span>{officeMessage(messages, 'spreadsheet.chart.nameReference')}</span>
                   <OfficeTextField
-                    aria-label={`系列 ${index + 1} 名称引用`}
+                    aria-label={officeMessage(messages, 'spreadsheet.chart.seriesNameRefAria', { n: String(index + 1) })}
                     value={series.nameReference ?? ''}
-                    placeholder="'报告'!$B$1"
+                    placeholder={officeMessage(messages, 'spreadsheet.chart.placeholder.seriesNameRef')}
                     onChange={(event) =>
                       setDraft({
                         ...draft,
@@ -857,11 +859,11 @@ export function SpreadsheetChartPanel({
                 </div>
                 {workSpreadsheetChartUsesNumericXAxis(draft.type) && (
                   <div className="work-office-field x-reference">
-                    <span>X 值引用</span>
+                    <span>{officeMessage(messages, 'spreadsheet.chart.xValues')}</span>
                     <OfficeTextField
-                      aria-label={`系列 ${index + 1} X 值引用`}
+                      aria-label={officeMessage(messages, 'spreadsheet.chart.seriesXAria', { n: String(index + 1) })}
                       value={series.xValuesReference ?? ''}
-                      placeholder="'报告'!$A$2:$A$8"
+                      placeholder={officeMessage(messages, 'spreadsheet.chart.placeholder.xValues')}
                       onChange={(event) =>
                         setDraft({
                           ...draft,
@@ -882,17 +884,19 @@ export function SpreadsheetChartPanel({
                 >
                   <span>
                     {workSpreadsheetChartUsesNumericXAxis(draft.type)
-                      ? 'Y 值引用'
-                      : '数值引用'}
+                      ? officeMessage(messages, 'spreadsheet.chart.yValues')
+                      : officeMessage(messages, 'spreadsheet.chart.values')}
                   </span>
                   <OfficeTextField
-                    aria-label={`系列 ${index + 1} ${
+                    aria-label={officeMessage(
+                      messages,
                       workSpreadsheetChartUsesNumericXAxis(draft.type)
-                        ? 'Y 值引用'
-                        : '数值引用'
-                    }`}
+                        ? 'spreadsheet.chart.seriesYAria'
+                        : 'spreadsheet.chart.seriesValuesAria',
+                      { n: String(index + 1) },
+                    )}
                     value={series.valuesReference ?? ''}
-                    placeholder="'报告'!$B$2:$B$8"
+                    placeholder={officeMessage(messages, 'spreadsheet.chart.placeholder.values')}
                     onChange={(event) =>
                       setDraft({
                         ...draft,
@@ -906,16 +910,16 @@ export function SpreadsheetChartPanel({
                 {draft.type === 'combination' && (
                   <>
                     <div className="work-office-field combination-chart-type">
-                      <span>系列图表类型</span>
+                      <span>{officeMessage(messages, 'spreadsheet.chart.seriesChartType')}</span>
                       <OfficeSelect
-                        ariaLabel={`系列 ${index + 1} 图表类型`}
+                        ariaLabel={officeMessage(messages, 'spreadsheet.chart.seriesChartTypeAria', { n: String(index + 1) })}
                         value={normalizeWorkSpreadsheetCombinationSeriesType(
                           series.chartType,
                         )}
                         options={[
-                          { value: 'column', label: '柱形图' },
-                          { value: 'line', label: '折线图' },
-                          { value: 'area', label: '面积图' },
+                          { value: 'column', label: officeMessage(messages, 'spreadsheet.chart.typeShort.column') },
+                          { value: 'line', label: officeMessage(messages, 'spreadsheet.chart.typeShort.line') },
+                          { value: 'area', label: officeMessage(messages, 'spreadsheet.chart.typeShort.area') },
                         ]}
                         onValueChange={(chartType) =>
                           setDraft({
@@ -929,15 +933,15 @@ export function SpreadsheetChartPanel({
                       />
                     </div>
                     <div className="work-office-field combination-axis-group">
-                      <span>坐标轴</span>
+                      <span>{officeMessage(messages, 'spreadsheet.chart.axis')}</span>
                       <OfficeSelect
-                        ariaLabel={`系列 ${index + 1} 坐标轴`}
+                        ariaLabel={officeMessage(messages, 'spreadsheet.chart.seriesAxisAria', { n: String(index + 1) })}
                         value={normalizeWorkSpreadsheetChartAxisGroup(
                           series.axisGroup,
                         )}
                         options={[
-                          { value: 'primary', label: '主坐标轴' },
-                          { value: 'secondary', label: '次坐标轴' },
+                          { value: 'primary', label: officeMessage(messages, 'spreadsheet.chart.axis.primary') },
+                          { value: 'secondary', label: officeMessage(messages, 'spreadsheet.chart.axis.secondary') },
                         ]}
                         onValueChange={(axisGroup) =>
                           setDraft({
@@ -954,11 +958,11 @@ export function SpreadsheetChartPanel({
                 )}
                 {draft.type === 'bubble' && (
                   <div className="work-office-field bubble-reference">
-                    <span>气泡大小引用</span>
+                    <span>{officeMessage(messages, 'spreadsheet.chart.bubbleSizes')}</span>
                     <OfficeTextField
-                      aria-label={`系列 ${index + 1} 气泡大小引用`}
+                      aria-label={officeMessage(messages, 'spreadsheet.chart.seriesBubbleAria', { n: String(index + 1) })}
                       value={series.bubbleSizesReference ?? ''}
-                      placeholder="'报告'!$C$2:$C$8"
+                      placeholder={officeMessage(messages, 'spreadsheet.chart.placeholder.bubbleSizes')}
                       onChange={(event) =>
                         setDraft({
                           ...draft,
@@ -973,7 +977,7 @@ export function SpreadsheetChartPanel({
                 <button
                   type="button"
                   className="remove-series"
-                  aria-label={`删除系列 ${index + 1}`}
+                  aria-label={officeMessage(messages, 'spreadsheet.chart.deleteSeriesAria', { n: String(index + 1) })}
                   disabled={draft.series.length <= 1}
                   onClick={() =>
                     setDraft({
@@ -1064,13 +1068,13 @@ export function SpreadsheetChartPanel({
             )}
             <Button tone="danger" onClick={deleteChart}>
               <Trash2 size={13} />
-              删除图表
+              {officeMessage(messages, 'spreadsheet.chart.delete')}
             </Button>
             <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
-              取消更改
+              {officeMessage(messages, 'spreadsheet.chart.cancel')}
             </Button>
             <Button type="submit" tone="primary" disabled={!dirty}>
-              保存图表
+              {officeMessage(messages, 'spreadsheet.chart.save')}
             </Button>
           </div>
         </form>
@@ -1078,8 +1082,8 @@ export function SpreadsheetChartPanel({
         <StateView
           className="work-spreadsheet-chart-empty"
           size="compact"
-          title="从选区创建图表"
-          description="先选择包含标题的数据区域，再新建图表。"
+          title={officeMessage(messages, 'spreadsheet.chart.emptyTitle')}
+          description={officeMessage(messages, 'spreadsheet.chart.emptyDescription')}
         >
           {error && (
             <InlineNotice

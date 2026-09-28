@@ -208,6 +208,69 @@ export function paintFrameCaretAfterLayout(input: {
   return paint;
 }
 
+export interface TextCaretBox {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Caret for one plain-text splice inside a box that layout already measured.
+ * The index is the frame's UTF-16 offset. A missing layout, a surrogate split,
+ * or an offset past the text paints nothing.
+ */
+export function paintTextCaretInBox(input: {
+  readonly align?: 'left' | 'center' | 'right';
+  readonly box: TextCaretBox;
+  readonly fontSize: number;
+  readonly followUpIndex?: number;
+  readonly indexUtf16: number;
+  readonly layoutSettled: boolean;
+  readonly measure: (slice: string) => number;
+  readonly text: string;
+  readonly verticalAlign?: 'top' | 'middle' | 'bottom';
+}): FrameCaretPaint | null {
+  void input.followUpIndex;
+  if (!input.layoutSettled) return null;
+  if (!isUtf16Boundary(input.text, input.indexUtf16)) return null;
+  if (
+    !Number.isFinite(input.box.width) ||
+    !Number.isFinite(input.box.height) ||
+    input.box.width <= 0 ||
+    input.box.height <= 0 ||
+    !Number.isFinite(input.fontSize) ||
+    input.fontSize <= 0
+  ) {
+    return null;
+  }
+  const prefixWidth = input.measure(input.text.slice(0, input.indexUtf16));
+  const textWidth = input.measure(input.text);
+  if (
+    !Number.isFinite(prefixWidth) ||
+    !Number.isFinite(textWidth) ||
+    prefixWidth < 0 ||
+    textWidth + 0.01 < prefixWidth
+  ) {
+    return null;
+  }
+  let inset = prefixWidth;
+  if (input.align === 'center') inset += (input.box.width - textWidth) / 2;
+  if (input.align === 'right') inset += input.box.width - textWidth;
+  if (inset < -0.01 || inset > input.box.width + 0.01) return null;
+  const height = Math.min(input.fontSize, input.box.height);
+  let topInset = 0;
+  if (input.verticalAlign === 'middle') topInset = (input.box.height - height) / 2;
+  if (input.verticalAlign === 'bottom') topInset = input.box.height - height;
+  return {
+    head: input.indexUtf16,
+    left: input.box.left + inset,
+    top: input.box.top + topInset,
+    width: 2,
+    height,
+  };
+}
+
 export function lineBoxForCaret(
   lines: readonly FrameCaretLineBox[],
   head: number,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, InlineNotice } from '../../../design-system/primitives';
 import {
   formatSpreadsheetColumnPageBreaks,
@@ -22,6 +23,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { SpreadsheetHeaderFooterFields } from './spreadsheet-header-footer-fields';
 import { useOfficeDraft } from './use-office-draft';
 
@@ -52,6 +54,7 @@ export function SpreadsheetPrintSettingsPanel({
   content: WorkSpreadsheetContent;
   onChange: (content: WorkSpreadsheetContent) => void;
 }) {
+  const messages = useOfficeMessages();
   const availableSheets = content.sheets.filter(
     (sheet): sheet is typeof sheet & { id: string } => Boolean(sheet.id),
   );
@@ -111,7 +114,7 @@ export function SpreadsheetPrintSettingsPanel({
   const changeSheet = (nextSheetId: string) => {
     if (nextSheetId === sheetId) return;
     if (dirty) {
-      setError('当前打印设置有未保存更改，请先保存或取消。');
+      setError(officeMessage(messages, 'spreadsheet.print.error.unsaved'));
       return;
     }
     setSheetId(nextSheetId);
@@ -140,27 +143,27 @@ export function SpreadsheetPrintSettingsPanel({
       ? parseSpreadsheetColumnPageBreaks(columnPageBreaks, maximumColumn)
       : [];
     if (reference.trim() && !normalized) {
-      setError('请输入有效的 A1 范围，例如 $A$1:$J$40。');
+      setError(officeMessage(messages, 'spreadsheet.print.error.invalidRange'));
       return;
     }
     if (titleRows.trim() && !normalizedRows) {
-      setError('重复标题行必须是整行范围，例如 $1:$2。');
+      setError(officeMessage(messages, 'spreadsheet.print.error.titleRows'));
       return;
     }
     if (titleColumns.trim() && !normalizedColumns) {
-      setError('重复标题列必须是整列范围，例如 $A:$C。');
+      setError(officeMessage(messages, 'spreadsheet.print.error.titleCols'));
       return;
     }
     if (!parsedRowPageBreaks) {
-      setError(`水平分页符必须是 2 到 ${maximumRow + 1} 之间的行号。`);
+      setError(officeMessage(messages, 'spreadsheet.print.error.hBreaks', { n: String(maximumRow + 1) }));
       return;
     }
     if (!parsedColumnPageBreaks) {
-      setError('垂直分页符必须是工作表范围内、从 B 开始的列标。');
+      setError(officeMessage(messages, 'spreadsheet.print.error.vBreaks'));
       return;
     }
     if (!validPageSetup(pageSetup)) {
-      setError('缩放、适合页数、页码或页边距超出有效范围。');
+      setError(officeMessage(messages, 'spreadsheet.print.error.outOfRange'));
       return;
     }
 
@@ -259,9 +262,9 @@ export function SpreadsheetPrintSettingsPanel({
       }}
     >
       <div className="work-office-field">
-        <span>工作表</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.sheet')}</span>
         <OfficeSelect
-          ariaLabel="打印设置工作表"
+          ariaLabel={officeMessage(messages, 'spreadsheet.print.sheetAria')}
           value={sheetId}
           options={availableSheets.map((sheet) => ({
             value: sheet.id,
@@ -271,56 +274,56 @@ export function SpreadsheetPrintSettingsPanel({
         />
       </div>
       <div className="work-office-field reference">
-        <span>打印范围</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.printArea')}</span>
         <OfficeTextField
-          aria-label="打印范围"
+          aria-label={officeMessage(messages, 'spreadsheet.print.printArea')}
           value={reference}
           placeholder="$A$1:$J$40"
           onChange={(event) => setReference(event.target.value)}
         />
       </div>
       <div className="work-office-field reference">
-        <span>重复标题行</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.titleRows')}</span>
         <OfficeTextField
-          aria-label="重复标题行"
+          aria-label={officeMessage(messages, 'spreadsheet.print.titleRows')}
           value={titleRows}
           placeholder="$1:$2"
           onChange={(event) => setTitleRows(event.target.value)}
         />
       </div>
       <div className="work-office-field reference">
-        <span>重复标题列</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.titleCols')}</span>
         <OfficeTextField
-          aria-label="重复标题列"
+          aria-label={officeMessage(messages, 'spreadsheet.print.titleCols')}
           value={titleColumns}
           placeholder="$A:$C"
           onChange={(event) => setTitleColumns(event.target.value)}
         />
       </div>
       <div className="work-office-field reference">
-        <span>手动水平分页符</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.hBreaks')}</span>
         <OfficeTextField
-          aria-label="手动水平分页符"
+          aria-label={officeMessage(messages, 'spreadsheet.print.hBreaks')}
           value={rowPageBreaks}
           placeholder="20, 35"
           onChange={(event) => setRowPageBreaks(event.target.value)}
         />
       </div>
       <div className="work-office-field reference">
-        <span>手动垂直分页符</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.vBreaks')}</span>
         <OfficeTextField
-          aria-label="手动垂直分页符"
+          aria-label={officeMessage(messages, 'spreadsheet.print.vBreaks')}
           value={columnPageBreaks}
           placeholder="E, K"
           onChange={(event) => setColumnPageBreaks(event.target.value)}
         />
       </div>
       <fieldset className="work-spreadsheet-page-setup-fields">
-        <legend>页面设置与缩放</legend>
+        <legend>{officeMessage(messages, 'spreadsheet.print.pageSetupLegend')}</legend>
         <div className="work-office-field">
-          <span>纸张大小</span>
+          <span>{officeMessage(messages, 'spreadsheet.print.paperSize')}</span>
           <OfficeSelect
-            ariaLabel="纸张大小"
+            ariaLabel={officeMessage(messages, 'spreadsheet.print.paperSize')}
             value={pageSetup.paperSize}
             options={[
               { value: 'a3', label: 'A3' },
@@ -340,13 +343,13 @@ export function SpreadsheetPrintSettingsPanel({
           />
         </div>
         <div className="work-office-field">
-          <span>页面方向</span>
+          <span>{officeMessage(messages, 'spreadsheet.print.orientation')}</span>
           <OfficeSelect
-            ariaLabel="页面方向"
+            ariaLabel={officeMessage(messages, 'spreadsheet.print.orientation')}
             value={pageSetup.orientation}
             options={[
-              { value: 'landscape', label: '横向' },
-              { value: 'portrait', label: '纵向' },
+              { value: 'landscape', label: officeMessage(messages, 'spreadsheet.print.landscape') },
+              { value: 'portrait', label: officeMessage(messages, 'spreadsheet.print.portrait') },
             ]}
             onValueChange={(orientation) =>
               setPageSetup({
@@ -358,13 +361,13 @@ export function SpreadsheetPrintSettingsPanel({
           />
         </div>
         <div className="work-office-field">
-          <span>缩放方式</span>
+          <span>{officeMessage(messages, 'spreadsheet.print.scalingMode')}</span>
           <OfficeSelect
-            ariaLabel="缩放方式"
+            ariaLabel={officeMessage(messages, 'spreadsheet.print.scalingMode')}
             value={pageSetup.fitToPage ? 'fit' : 'scale'}
             options={[
-              { value: 'scale', label: '按比例缩放' },
-              { value: 'fit', label: '适合指定页数' },
+              { value: 'scale', label: officeMessage(messages, 'spreadsheet.print.scaleBy') },
+              { value: 'fit', label: officeMessage(messages, 'spreadsheet.print.fitToPages') },
             ]}
             onValueChange={(mode) =>
               setPageSetup({ ...pageSetup, fitToPage: mode === 'fit' })
@@ -372,9 +375,9 @@ export function SpreadsheetPrintSettingsPanel({
           />
         </div>
         <div className="work-office-field">
-          <span>缩放比例（10–400%）</span>
+          <span>{officeMessage(messages, 'spreadsheet.print.scalePercent')}</span>
           <CommittedOfficeNumberField
-            ariaLabel="缩放比例"
+            ariaLabel={officeMessage(messages, 'spreadsheet.print.scalePercentAria')}
             min={10}
             max={400}
             disabled={pageSetup.fitToPage}
@@ -384,9 +387,9 @@ export function SpreadsheetPrintSettingsPanel({
           />
         </div>
         <div className="work-office-field">
-          <span>适合页宽（0 为自动）</span>
+          <span>{officeMessage(messages, 'spreadsheet.print.fitWidth')}</span>
           <CommittedOfficeNumberField
-            ariaLabel="适合页宽"
+            ariaLabel={officeMessage(messages, 'spreadsheet.print.fitWidthAria')}
             min={0}
             max={32767}
             disabled={!pageSetup.fitToPage}
@@ -398,9 +401,9 @@ export function SpreadsheetPrintSettingsPanel({
           />
         </div>
         <div className="work-office-field">
-          <span>适合页高（0 为自动）</span>
+          <span>{officeMessage(messages, 'spreadsheet.print.fitHeight')}</span>
           <CommittedOfficeNumberField
-            ariaLabel="适合页高"
+            ariaLabel={officeMessage(messages, 'spreadsheet.print.fitHeightAria')}
             min={0}
             max={32767}
             disabled={!pageSetup.fitToPage}
@@ -412,7 +415,7 @@ export function SpreadsheetPrintSettingsPanel({
           />
         </div>
         <PageMarginField
-          label="上边距（毫米）"
+          label={officeMessage(messages, 'spreadsheet.print.marginTop')}
           value={pageSetup.margins.top}
           onChange={(top) =>
             setPageSetup({
@@ -422,7 +425,7 @@ export function SpreadsheetPrintSettingsPanel({
           }
         />
         <PageMarginField
-          label="右边距（毫米）"
+          label={officeMessage(messages, 'spreadsheet.print.marginRight')}
           value={pageSetup.margins.right}
           onChange={(right) =>
             setPageSetup({
@@ -432,7 +435,7 @@ export function SpreadsheetPrintSettingsPanel({
           }
         />
         <PageMarginField
-          label="下边距（毫米）"
+          label={officeMessage(messages, 'spreadsheet.print.marginBottom')}
           value={pageSetup.margins.bottom}
           onChange={(bottom) =>
             setPageSetup({
@@ -442,7 +445,7 @@ export function SpreadsheetPrintSettingsPanel({
           }
         />
         <PageMarginField
-          label="左边距（毫米）"
+          label={officeMessage(messages, 'spreadsheet.print.marginLeft')}
           value={pageSetup.margins.left}
           onChange={(left) =>
             setPageSetup({
@@ -452,7 +455,7 @@ export function SpreadsheetPrintSettingsPanel({
           }
         />
         <PageMarginField
-          label="页眉边距（毫米）"
+          label={officeMessage(messages, 'spreadsheet.print.marginHeader')}
           value={pageSetup.margins.header}
           onChange={(header) =>
             setPageSetup({
@@ -462,7 +465,7 @@ export function SpreadsheetPrintSettingsPanel({
           }
         />
         <PageMarginField
-          label="页脚边距（毫米）"
+          label={officeMessage(messages, 'spreadsheet.print.marginFooter')}
           value={pageSetup.margins.footer}
           onChange={(footer) =>
             setPageSetup({
@@ -473,23 +476,23 @@ export function SpreadsheetPrintSettingsPanel({
         />
         <OfficeCheckbox
           className="toggle"
-          ariaLabel="水平居中"
+          ariaLabel={officeMessage(messages, 'spreadsheet.print.centerH')}
           checked={pageSetup.horizontalCentered}
           onCheckedChange={(horizontalCentered) =>
             setPageSetup({ ...pageSetup, horizontalCentered })
           }
         >
-          水平居中
+          {officeMessage(messages, 'spreadsheet.print.centerH')}
         </OfficeCheckbox>
         <OfficeCheckbox
           className="toggle"
-          ariaLabel="垂直居中"
+          ariaLabel={officeMessage(messages, 'spreadsheet.print.centerV')}
           checked={pageSetup.verticalCentered}
           onCheckedChange={(verticalCentered) =>
             setPageSetup({ ...pageSetup, verticalCentered })
           }
         >
-          垂直居中
+          {officeMessage(messages, 'spreadsheet.print.centerV')}
         </OfficeCheckbox>
       </fieldset>
       <SpreadsheetHeaderFooterFields
@@ -514,13 +517,13 @@ export function SpreadsheetPrintSettingsPanel({
           }
           onClick={clearSettings}
         >
-          清除
+          {officeMessage(messages, 'spreadsheet.print.clear')}
         </Button>
         <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
-          取消更改
+          {officeMessage(messages, 'spreadsheet.print.cancelChanges')}
         </Button>
         <Button type="submit" tone="primary" disabled={!sheetId || !dirty}>
-          保存打印设置
+          {officeMessage(messages, 'spreadsheet.print.save')}
         </Button>
       </div>
     </form>

@@ -1,5 +1,6 @@
 import { CopyCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { createWorkSlideTransition } from '../work-presentation-transition';
 import type {
   WorkSlideTransition,
@@ -12,6 +13,7 @@ import {
   OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -32,6 +34,7 @@ export function PresentationTransitionPanel({
   onChange: (transition: WorkSlideTransition | undefined) => void;
   onApplyToAll: (transition: WorkSlideTransition | undefined) => void;
 }) {
+  const messages = useOfficeMessages();
   const update = (patch: Partial<WorkSlideTransition>) => {
     if (transition) onChange({ ...transition, ...patch });
   };
@@ -92,22 +95,22 @@ export function PresentationTransitionPanel({
   };
   return (
     <>
-      <WorkOfficeRibbonGroup label="切换效果">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.transition.group')}>
         <fieldset className="work-presentation-transition-options">
-          <legend className="sr-only">幻灯片切换设置</legend>
+          <legend className="sr-only">{officeMessage(messages, 'presentation.transition.settingsAria')}</legend>
           <div className="work-office-field effect">
-            <span>效果</span>
+            <span>{officeMessage(messages, 'presentation.transition.effect')}</span>
             <OfficeSelect
-              ariaLabel="幻灯片切换效果"
+              ariaLabel={officeMessage(messages, 'presentation.transition.effectAria')}
               disabled={!editable}
               value={transition?.type ?? 'none'}
               options={[
-                { value: 'none', label: '无' },
-                { value: 'fade', label: '淡化' },
-                { value: 'push', label: '推进' },
-                { value: 'wipe', label: '擦除' },
-                { value: 'split', label: '分割' },
-                { value: 'cut', label: '切换' },
+                { value: 'none', label: officeMessage(messages, 'presentation.transition.none') },
+                { value: 'fade', label: officeMessage(messages, 'presentation.transition.fade') },
+                { value: 'push', label: officeMessage(messages, 'presentation.transition.push') },
+                { value: 'wipe', label: officeMessage(messages, 'presentation.transition.wipe') },
+                { value: 'split', label: officeMessage(messages, 'presentation.transition.split') },
+                { value: 'cut', label: officeMessage(messages, 'presentation.transition.cut') },
               ]}
               onValueChange={(type) => {
                 onChange(
@@ -123,16 +126,16 @@ export function PresentationTransitionPanel({
           </div>
           {(transition?.type === 'push' || transition?.type === 'wipe') && (
             <div className="work-office-field direction">
-              <span>方向</span>
+              <span>{officeMessage(messages, 'presentation.transition.direction')}</span>
               <OfficeSelect
-                ariaLabel="切换方向"
+                ariaLabel={officeMessage(messages, 'presentation.transition.directionAria')}
                 disabled={!editable}
                 value={transition.direction ?? 'left'}
                 options={[
-                  { value: 'left', label: '向左' },
-                  { value: 'right', label: '向右' },
-                  { value: 'up', label: '向上' },
-                  { value: 'down', label: '向下' },
+                  { value: 'left', label: officeMessage(messages, 'presentation.transition.left') },
+                  { value: 'right', label: officeMessage(messages, 'presentation.transition.right') },
+                  { value: 'up', label: officeMessage(messages, 'presentation.transition.up') },
+                  { value: 'down', label: officeMessage(messages, 'presentation.transition.down') },
                 ]}
                 onValueChange={(direction) =>
                   update({
@@ -145,14 +148,14 @@ export function PresentationTransitionPanel({
           {transition?.type === 'split' && (
             <>
               <div className="work-office-field direction">
-                <span>方向</span>
+                <span>{officeMessage(messages, 'presentation.transition.direction')}</span>
                 <OfficeSelect
-                  ariaLabel="切换方向"
+                  ariaLabel={officeMessage(messages, 'presentation.transition.directionAria')}
                   disabled={!editable}
                   value={transition.direction ?? 'out'}
                   options={[
-                    { value: 'out', label: '向外' },
-                    { value: 'in', label: '向内' },
+                    { value: 'out', label: officeMessage(messages, 'presentation.transition.out') },
+                    { value: 'in', label: officeMessage(messages, 'presentation.transition.in') },
                   ]}
                   onValueChange={(direction) =>
                     update({
@@ -162,14 +165,14 @@ export function PresentationTransitionPanel({
                 />
               </div>
               <div className="work-office-field orientation">
-                <span>分割方式</span>
+                <span>{officeMessage(messages, 'presentation.transition.splitMode')}</span>
                 <OfficeSelect
-                  ariaLabel="分割方式"
+                  ariaLabel={officeMessage(messages, 'presentation.transition.splitModeAria')}
                   disabled={!editable}
                   value={transition.orientation ?? 'horizontal'}
                   options={[
-                    { value: 'horizontal', label: '水平' },
-                    { value: 'vertical', label: '垂直' },
+                    { value: 'horizontal', label: officeMessage(messages, 'presentation.transition.horizontal') },
+                    { value: 'vertical', label: officeMessage(messages, 'presentation.transition.vertical') },
                   ]}
                   onValueChange={(orientation) =>
                     update({
@@ -181,15 +184,15 @@ export function PresentationTransitionPanel({
             </>
           )}
           <div className="work-office-field speed">
-            <span>速度</span>
+            <span>{officeMessage(messages, 'presentation.transition.speed')}</span>
             <OfficeSelect
-              ariaLabel="切换速度"
+              ariaLabel={officeMessage(messages, 'presentation.transition.speedAria')}
               disabled={!editable || !transition}
               value={transition?.speed ?? 'medium'}
               options={[
-                { value: 'fast', label: '快速' },
-                { value: 'medium', label: '中速' },
-                { value: 'slow', label: '慢速' },
+                { value: 'fast', label: officeMessage(messages, 'presentation.transition.fast') },
+                { value: 'medium', label: officeMessage(messages, 'presentation.transition.medium') },
+                { value: 'slow', label: officeMessage(messages, 'presentation.transition.slow') },
               ]}
               onValueChange={(speed) =>
                 update({ speed: speed as WorkSlideTransitionSpeed })
@@ -198,20 +201,20 @@ export function PresentationTransitionPanel({
           </div>
         </fieldset>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="换片方式">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.transition.advanceGroup')}>
         <div className="work-presentation-transition-timing">
           <OfficeCheckbox
             className="toggle"
-            ariaLabel="单击鼠标后换片"
+            ariaLabel={officeMessage(messages, 'presentation.transition.onClickAria')}
             disabled={!editable || !transition}
             checked={transition?.advanceOnClick ?? true}
             onCheckedChange={(advanceOnClick) => update({ advanceOnClick })}
           >
-            单击鼠标后
+            {officeMessage(messages, 'presentation.transition.onClick')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="toggle"
-            ariaLabel="自动换片"
+            ariaLabel={officeMessage(messages, 'presentation.transition.autoAria')}
             disabled={!editable || !transition}
             checked={transition?.advanceAfterMs !== undefined}
             onCheckedChange={(checked) => {
@@ -225,12 +228,12 @@ export function PresentationTransitionPanel({
               update({ advanceAfterMs });
             }}
           >
-            自动换片
+            {officeMessage(messages, 'presentation.transition.auto')}
           </OfficeCheckbox>
           <div className="work-office-field seconds">
-            <span>秒数</span>
+            <span>{officeMessage(messages, 'presentation.transition.seconds')}</span>
             <OfficeNumberField
-              ariaLabel="自动换片秒数"
+              ariaLabel={officeMessage(messages, 'presentation.transition.secondsAria')}
               min={0.25}
               max={3600}
               step={0.25}
@@ -255,10 +258,10 @@ export function PresentationTransitionPanel({
           </div>
         </div>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="应用">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.transition.applyGroup')}>
         <WorkOfficeRibbonButton
-          label="应用切换效果到全部幻灯片"
-          visibleLabel="应用到全部"
+          label={officeMessage(messages, 'presentation.transition.applyAll')}
+          visibleLabel={officeMessage(messages, 'presentation.transition.applyAllVisible')}
           disabled={!editable || !canApplyToAll(transitionWithAdvanceDraft)}
           onClick={applyToAll}
         >

@@ -37,6 +37,8 @@ import {
 } from './document-search-navigation';
 import { DocumentTaskPane } from './document-task-pane';
 import type { DocumentNavigationListHandle } from './document-navigation-window';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 type DocumentNavigationView = 'headings' | 'pages';
 
@@ -65,6 +67,7 @@ export function DocumentNavigationPanel({
   pageThumbnailSource?: WorkDocumentPageThumbnailSource;
   onClose: () => void | Promise<void>;
 }) {
+  const messages = useOfficeMessages();
   const tabsId = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const outlineNavigationRef = useRef<DocumentNavigationListHandle>(null);
@@ -201,15 +204,15 @@ export function DocumentNavigationPanel({
 
   return (
     <DocumentTaskPane
-      ariaLabel="文档导航"
+      ariaLabel={officeMessage(messages, 'document.nav.aria')}
       className="work-document-navigation-panel"
-      title="导航窗格"
-      description="浏览标题、页面或搜索正文"
-      closeLabel="关闭导航窗格"
+      title={officeMessage(messages, 'document.nav.title')}
+      description={officeMessage(messages, 'document.nav.description')}
+      closeLabel={officeMessage(messages, 'document.nav.close')}
       onClose={onClose}
     >
       <Tabs
-        ariaLabel="导航视图"
+        ariaLabel={officeMessage(messages, 'document.nav.viewAria')}
         className="work-document-navigation-tabs"
         value={navigationView}
         variant="line"
@@ -217,13 +220,13 @@ export function DocumentNavigationPanel({
         items={[
           {
             id: 'headings',
-            label: '标题',
+            label: officeMessage(messages, 'document.nav.view.headings'),
             tabId: `${tabsId}-headings-tab`,
             panelId: `${tabsId}-headings-panel`,
           },
           {
             id: 'pages',
-            label: '页面',
+            label: officeMessage(messages, 'document.nav.view.pages'),
             tabId: `${tabsId}-pages-tab`,
             panelId: `${tabsId}-pages-panel`,
           },
@@ -238,7 +241,11 @@ export function DocumentNavigationPanel({
           aria-labelledby={`${tabsId}-pages-tab`}
         >
           <div className="work-document-navigation-summary" aria-live="polite">
-            {pages.length ? `${pages.length} 页` : '正在生成页面'}
+            {pages.length
+              ? officeMessage(messages, 'document.nav.pagesCount', {
+                  count: String(pages.length),
+                })
+              : officeMessage(messages, 'document.nav.pagesLoading')}
           </div>
           <DocumentPageNavigation
             currentPage={currentPage}
@@ -259,8 +266,12 @@ export function DocumentNavigationPanel({
             <OfficeTextField
               ref={searchRef}
               type="search"
-              aria-label="搜索文档"
-              placeholder="搜索文档"
+              data-document-nav-search=""
+              aria-label={officeMessage(messages, 'document.nav.searchAria')}
+              placeholder={officeMessage(
+                messages,
+                'document.nav.searchPlaceholder',
+              )}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -281,9 +292,13 @@ export function DocumentNavigationPanel({
           <div className="work-document-navigation-summary" aria-live="polite">
             {normalizedQuery
               ? matches.length
-                ? `${matches.length} 个匹配`
-                : '没有匹配内容'
-              : `${outline.length} 个标题`}
+                ? officeMessage(messages, 'document.nav.matchCount', {
+                    count: String(matches.length),
+                  })
+                : officeMessage(messages, 'document.nav.noMatches')
+              : officeMessage(messages, 'document.nav.headingCount', {
+                  count: String(outline.length),
+                })}
           </div>
           {normalizedQuery ? (
             <DocumentSearchNavigation

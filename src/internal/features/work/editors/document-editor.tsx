@@ -148,12 +148,14 @@ import {
 } from './office-collaboration-presence-ui';
 import { OfficeFileInput, useOfficeDialog } from './office-controls';
 import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
+import { useOfficeMessages } from './office-messages-context';
 import {
   useOfficeTaskPaneEscape,
   useOfficeTaskPaneModal,
 } from './office-task-pane';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useDocumentComments } from './use-document-comments';
+import { officeMessage } from '../../../i18n/office-locale';
 import { useDocumentComparison } from './use-document-comparison';
 import { useDocumentInsertCommands } from './use-document-insert-commands';
 import { useDocumentLayoutFonts } from './use-document-layout-fonts';
@@ -216,12 +218,13 @@ type DocumentTaskPane =
 
 function createTrackedDocumentChange(
   _kind: WorkDocumentChangeKind,
-  actor?: WorkOfficeCollaborationSession['actor'],
+  actor: WorkOfficeCollaborationSession['actor'] | undefined,
+  fallbackAuthor: string,
 ) {
   return {
     id: createWorkId('change'),
     ...(actor ? { actorId: actor.id } : {}),
-    author: actor?.name ?? 'A3S Work 用户',
+    author: actor?.name ?? fallbackAuthor,
     date: new Date().toISOString(),
   };
 }
@@ -260,6 +263,7 @@ function CollaborativeDocumentEditor(
     collaboration: WorkOfficeCollaborationSession;
   },
 ) {
+  const messages = useOfficeMessages();
   const { collaboration, extensions = EMPTY_DOCUMENT_EXTENSIONS } = props;
   const collaborationRef = useRef(collaboration);
   const extensionsRef = useRef(extensions);
@@ -302,7 +306,11 @@ function CollaborativeDocumentEditor(
           getContent: () => bridge.current.getContent(),
           isTracking: () => bridge.current.isTracking(),
           createChange: (kind: WorkDocumentChangeKind) =>
-            createTrackedDocumentChange(kind, collaboration.actor),
+            createTrackedDocumentChange(
+              kind,
+              collaboration.actor,
+              officeMessage(messages, 'document.editor.collabAuthor'),
+            ),
           onContentChange: (content: WorkDocumentContent) =>
             bridge.current.onContentChange(content),
           onTrackingChange: (enabled: boolean) =>
@@ -320,10 +328,14 @@ function CollaborativeDocumentEditor(
         current.destroy();
       });
     };
-  }, [collaboration]);
+  }, [collaboration, messages]);
 
   if (!binding) {
-    return <WorkEditorLoadingState title="正在准备协作文档" />;
+    return (
+      <WorkEditorLoadingState
+        title={officeMessage(messages, 'document.editor.loadingCollab')}
+      />
+    );
   }
   return (
     <DocumentEditorSurface
@@ -346,7 +358,7 @@ function DocumentEditorSurface({
   extensions = EMPTY_DOCUMENT_EXTENSIONS,
   preview: requestedPreview,
   defaultRibbonCollapsed = false,
-  saveStatus = '已自动保存',
+  saveStatus: saveStatusProp,
   kernelWasmUrl,
   layoutFonts = EMPTY_DOCUMENT_LAYOUT_FONTS,
   fileActions,
@@ -359,6 +371,10 @@ function DocumentEditorSurface({
   onAgentRequest,
   onReviewConflict,
 }: DocumentEditorSurfaceProps) {
+  const messages = useOfficeMessages();
+  const saveStatus =
+    saveStatusProp ??
+    officeMessage(messages, 'document.editor.saveStatus.autoSaved');
   const commentOnly = collaboration?.mode === 'comment' && !requestedPreview;
   const suggestionOnly =
     collaboration?.mode === 'suggest' &&
@@ -503,7 +519,11 @@ function DocumentEditorSurface({
             getContent: () => contentRef.current,
             isTracking: () => trackChangesRef.current,
             createChange: (kind) =>
-              createTrackedDocumentChange(kind, collaboration?.actor),
+              createTrackedDocumentChange(
+                kind,
+                collaboration?.actor,
+                officeMessage(messages, 'document.editor.collabAuthor'),
+              ),
             onContentChange: (next) => {
               commitContentChange(next);
             },
@@ -515,7 +535,9 @@ function DocumentEditorSurface({
             },
             trustInitialIntegrityFeatures,
           })),
-        Placeholder.configure({ placeholder: '在这里开始输入…' }),
+        Placeholder.configure({
+          placeholder: officeMessage(messages, 'document.editor.placeholder'),
+        }),
         DocumentPagination,
       ],
       collaboration ? EMPTY_DOCUMENT_EXTENSIONS : extensions,
@@ -531,12 +553,14 @@ function DocumentEditorSurface({
     collaborationBinding,
     commitContentChange,
     extensions,
+    messages,
+    suggestionOnly,
     trustInitialIntegrityFeatures,
   ]);
   const editorProps = useMemo(
     () => ({
       attributes: {
-        'aria-label': '文档正文',
+        'aria-label': officeMessage(messages, 'document.editor.bodyAria'),
         'aria-multiline': 'true',
         'aria-readonly': commentOnly ? 'true' : 'false',
         role: 'textbox',
@@ -573,7 +597,7 @@ function DocumentEditorSurface({
         },
       },
     }),
-    [commentOnly, composition],
+    [commentOnly, composition, messages],
   );
   const publishDocumentUpdate = useCallback(
     (current: Editor, previousDocument: ProseMirrorNode) => {
@@ -992,7 +1016,7 @@ function DocumentEditorSurface({
             : citationsDraftFocusRef.current;
         const fallbackSelector =
           pane === 'comments'
-            ? '.work-document-comments-panel textarea[aria-label="批注内容"], .work-document-comments-panel textarea[aria-label^="回复批注 "]'
+            ? '.work-document-comments-panel textarea[data-document-comment-body], .work-document-comments-panel textarea[data-document-comment-reply]'
             : '.work-document-citations-panel input:not([type="hidden"]), .work-document-citations-panel textarea, .work-document-citations-panel [role="combobox"]';
         const target =
           (remembered?.isConnected ? remembered : null) ??
@@ -1017,9 +1041,15 @@ function DocumentEditorSurface({
         citationsDirty
       ) {
         const discard = await taskPaneDialog.confirm({
-          title: '放弃未保存的文献更改？',
-          description: '文献库中尚未保存的修改不会保留。',
-          confirmLabel: '放弃更改',
+          title: officeMessage(messages, 'document.citation.discardPane.title'),
+          description: officeMessage(
+            messages,
+            'document.citation.discardPane.description',
+          ),
+          confirmLabel: officeMessage(
+            messages,
+            'document.citation.discard.confirm',
+          ),
           confirmTone: 'danger',
         });
         if (!discard) {
@@ -1029,11 +1059,17 @@ function DocumentEditorSurface({
       }
       if (closeComments && commentsDirty) {
         const discard = await taskPaneDialog.confirm({
-          title: '放弃未完成的批注？',
-          description: documentComments.draft
-            ? '尚未添加的批注内容不会保留。'
-            : '尚未发送的回复不会保留。',
-          confirmLabel: '放弃内容',
+          title: officeMessage(messages, 'document.comment.discardDraft.title'),
+          description: officeMessage(
+            messages,
+            documentComments.draft
+              ? 'document.comment.discardDraft.descriptionComposer'
+              : 'document.comment.discardDraft.descriptionReply',
+          ),
+          confirmLabel: officeMessage(
+            messages,
+            'document.comment.discardDraft.confirm',
+          ),
           confirmTone: 'danger',
         });
         if (!discard) {
@@ -1057,6 +1093,7 @@ function DocumentEditorSurface({
       documentComments.closeDraft,
       documentComments.draft,
       documentComments.setOpen,
+      messages,
       restoreTaskPaneDraftFocus,
       taskPane,
       taskPaneDialog.confirm,
@@ -1149,17 +1186,18 @@ function DocumentEditorSurface({
       const pane = activeTaskPaneElement();
       if (documentComments.draft) {
         return (
-          pane?.querySelector<HTMLElement>('[aria-label="批注内容"]') ?? null
+          pane?.querySelector<HTMLElement>('[data-document-comment-body]') ??
+          null
         );
       }
       if (taskPane === 'find' || taskPane === 'replace') {
         return (
-          pane?.querySelector<HTMLElement>('[aria-label="查找内容"]') ?? null
+          pane?.querySelector<HTMLElement>('[data-document-find-query]') ?? null
         );
       }
       if (taskPane === 'navigation') {
         return (
-          pane?.querySelector<HTMLElement>('[aria-label="搜索文档"]') ?? null
+          pane?.querySelector<HTMLElement>('[data-document-nav-search]') ?? null
         );
       }
       return pane?.querySelector<HTMLElement>('.ds-icon-button.close') ?? null;
@@ -1407,7 +1445,11 @@ function DocumentEditorSurface({
   });
 
   if (!editor) {
-    return <WorkEditorLoadingState title="正在准备文字编辑器" />;
+    return (
+      <WorkEditorLoadingState
+        title={officeMessage(messages, 'document.editor.loading')}
+      />
+    );
   }
 
   const finalPageNumber =
@@ -1602,15 +1644,20 @@ function DocumentEditorSurface({
         <OfficeFileInput
           ref={imageInputRef}
           accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
-          aria-label="插入文档图片"
+          aria-label={officeMessage(messages, 'document.editor.insertImageAria')}
           onFileSelect={documentInsert.insertImage}
         />
       )}
       {preview ? (
         <WorkOfficePreviewBar
-          ariaLabel="文字预览工具"
-          label="只读预览"
-          detail={`${pageCount} 页`}
+          ariaLabel={officeMessage(
+            messages,
+            'document.editor.previewToolsAria',
+          )}
+          label={officeMessage(messages, 'document.editor.previewLabel')}
+          detail={officeMessage(messages, 'document.editor.previewDetail', {
+            count: String(pageCount),
+          })}
           fileActions={fileActions}
           className="work-document-ribbon"
         />
@@ -1915,7 +1962,11 @@ function DocumentEditorSurface({
                   data-document-page-bottom-margin-mode={
                     resolvedMargins.bottomMode
                   }
-                  aria-label={preview ? '文字预览' : '文字页面'}
+                  aria-label={
+                    preview
+                      ? officeMessage(messages, 'document.editor.previewAria')
+                      : officeMessage(messages, 'document.editor.pageAria')
+                  }
                   style={
                     {
                       padding: paginationGeometry
@@ -2012,7 +2063,10 @@ function DocumentEditorSurface({
                             key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-header`}
                             autoFocus
                             className="work-document-page-chrome-inline-editor"
-                            label="页内页眉"
+                            label={officeMessage(
+                              messages,
+                              'document.pageChrome.inline.header',
+                            )}
                             value={headerChrome.headerHtml}
                             showToolbar={false}
                             onChange={(headerHtml) =>
@@ -2034,7 +2088,10 @@ function DocumentEditorSurface({
                   <section
                     ref={editableSurfaceRef}
                     className={`work-document-editable ${viewMode}`}
-                    aria-label="文档内容编辑区域"
+                    aria-label={officeMessage(
+                      messages,
+                      'document.editor.contentAria',
+                    )}
                     onDoubleClick={() => {
                       if (canEditDocument && pageChromeEditing)
                         closePageChrome();
@@ -2051,9 +2108,7 @@ function DocumentEditorSurface({
                       editor={editor}
                       frameCaretHead={frameCaretHead}
                       kind="document"
-                      layoutSettled={
-                        viewMode !== 'page' || Boolean(pagination.pageCount)
-                      }
+                      layoutSettled={viewMode !== 'page' || Boolean(pagination.pageCount)}
                     />
                     {!preview && (canEditDocument || canCommentDocument) && (
                       <DocumentSelectionToolbar
@@ -2112,7 +2167,10 @@ function DocumentEditorSurface({
                               key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-footer`}
                               autoFocus
                               className="work-document-page-chrome-inline-editor"
-                              label="页内页脚"
+                              label={officeMessage(
+                                messages,
+                                'document.pageChrome.inline.footer',
+                              )}
                               value={footerChrome.footerHtml}
                               showToolbar={false}
                               onChange={(footerHtml) =>
@@ -2215,8 +2273,26 @@ function DocumentEditorSurface({
       </div>
       {preview ? (
         <WorkOfficeStatusBar className="work-document-footer">
-          <output aria-label="页数状态">{pageCount} 页</output>
-          <output aria-label="分节状态">{section?.count ?? 1} 节</output>
+          <output
+            aria-label={officeMessage(
+              messages,
+              'document.editor.pageCountAria',
+            )}
+          >
+            {officeMessage(messages, 'document.editor.pageCount', {
+              count: String(pageCount),
+            })}
+          </output>
+          <output
+            aria-label={officeMessage(
+              messages,
+              'document.editor.sectionCountAria',
+            )}
+          >
+            {officeMessage(messages, 'document.editor.sectionCount', {
+              count: String(section?.count ?? 1),
+            })}
+          </output>
         </WorkOfficeStatusBar>
       ) : (
         <DocumentStatusBar

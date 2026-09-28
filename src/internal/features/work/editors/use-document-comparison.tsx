@@ -6,17 +6,18 @@ import {
   type DocumentComparisonApplyResult,
   type DocumentComparisonMode,
 } from '../work-document-compare';
-import { importWorkDocumentFile } from '../work-document-file-io';
 import {
   documentModelForContent,
   resolveWorkDocumentEditorInput,
 } from '../work-document-model';
 import { normalizeDocumentHtml } from '../work-document-section';
+import { importWorkFile } from '../work-file-io';
 import { forgetWorkSourceBlob } from '../work-repository';
 import {
   DocumentCompareDialog,
   type DocumentCompareDialogRequest,
 } from './document-compare-dialog';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 interface DocumentComparisonDialogState {
   mode: DocumentComparisonMode;
@@ -30,6 +31,7 @@ export function useDocumentComparison({
   editor: Editor | null;
   onApplied: () => void;
 }) {
+  const messages = resolveOfficeMessages();
   const [dialog, setDialog] = useState<DocumentComparisonDialogState | null>(
     null,
   );
@@ -54,9 +56,9 @@ export function useDocumentComparison({
   ): Promise<DocumentComparisonApplyResult> => {
     const current = editorRef.current;
     if (!current || current.isDestroyed) return invalidComparisonResult();
-    const extension = comparisonFileExtension(request.file.name);
-    if (!extension) return invalidComparisonResult();
-    const artifact = await importWorkDocumentFile(request.file, extension);
+    if (!comparisonFileExtension(request.file.name))
+      return invalidComparisonResult();
+    const artifact = await importWorkFile(request.file);
     try {
       if (artifact.content.type !== 'document')
         return invalidComparisonResult();
@@ -89,7 +91,7 @@ export function useDocumentComparison({
       (result.summary.moves ?? 0);
     close();
     onApplied();
-    showToast(`已生成 ${count} 项可审阅修订`, 'success');
+    showToast(officeMessage(messages, 'document.compare.revisionsGenerated', { count: String(count) }), 'success');
   };
 
   return {

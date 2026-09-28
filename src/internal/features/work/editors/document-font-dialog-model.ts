@@ -1,5 +1,10 @@
 import type { Editor } from '@tiptap/core';
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import {
   DOCUMENT_CHARACTER_SCALE_DEFAULT_PERCENT,
   DOCUMENT_CHARACTER_SCALE_MAX_PERCENT,
   DOCUMENT_CHARACTER_SCALE_MIN_PERCENT,
@@ -353,7 +358,9 @@ export function documentFontDialogSource(
       typeof textStyle.fontSize === 'string' && textStyle.fontSize.trim()
         ? textStyle.fontSize
         : null,
-    previewText: selectedText.slice(0, 72) || 'A3S Office 字符格式',
+    previewText:
+      selectedText.slice(0, 72) ||
+      officeMessage(resolveOfficeMessages(), 'document.font.preview.sample'),
     selectedCharacters: selectedText.length,
   };
 }
@@ -414,36 +421,49 @@ export function createDocumentFontDialogDraft(
 
 export function documentFontDialogDraftError(
   draft: DocumentFontDialogDraft,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string | null {
-  const runBorderError = documentFontDialogRunBorderDraftError(draft);
+  const runBorderError = documentFontDialogRunBorderDraftError(draft, messages);
   if (runBorderError) return runBorderError;
-  const runShadingError = documentFontDialogRunShadingDraftError(draft);
+  const runShadingError = documentFontDialogRunShadingDraftError(
+    draft,
+    messages,
+  );
   if (runShadingError) return runShadingError;
   if (
     draft.characterScaleMode !== 'mixed' &&
     characterScalePercentFromDraft(draft) === null
   ) {
-    return `请输入 ${DOCUMENT_CHARACTER_SCALE_MIN_PERCENT} 至 ${DOCUMENT_CHARACTER_SCALE_MAX_PERCENT} 的整数缩放比例。`;
+    return officeMessage(messages, 'document.font.error.scale', {
+      min: String(DOCUMENT_CHARACTER_SCALE_MIN_PERCENT),
+      max: String(DOCUMENT_CHARACTER_SCALE_MAX_PERCENT),
+    });
   }
   if (
     draft.characterSpacingMode !== 'mixed' &&
     draft.characterSpacingMode !== 'normal' &&
     characterSpacingTwipsFromDraft(draft) === null
   ) {
-    return `请输入 0.05 至 ${DOCUMENT_CHARACTER_SPACING_MAX_TWIPS / 20} 磅的间距。`;
+    return officeMessage(messages, 'document.font.error.spacing', {
+      max: String(DOCUMENT_CHARACTER_SPACING_MAX_TWIPS / 20),
+    });
   }
   if (
     draft.characterPositionMode !== 'mixed' &&
     draft.characterPositionMode !== 'normal' &&
     characterPositionHalfPointsFromDraft(draft) === null
   ) {
-    return `请输入 0.5 至 ${DOCUMENT_CHARACTER_POSITION_MAX_HALF_POINTS / 2} 磅、以 0.5 磅递增的位置值。`;
+    return officeMessage(messages, 'document.font.error.position', {
+      max: String(DOCUMENT_CHARACTER_POSITION_MAX_HALF_POINTS / 2),
+    });
   }
   if (
     draft.kerningEnabled &&
     kerningThresholdHalfPointsFromDraft(draft) === null
   ) {
-    return `请输入 0 至 ${DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS / 2} 磅、以 0.5 磅递增的字距调整阈值。`;
+    return officeMessage(messages, 'document.font.error.kerning', {
+      max: String(DOCUMENT_KERNING_THRESHOLD_MAX_HALF_POINTS / 2),
+    });
   }
   return null;
 }

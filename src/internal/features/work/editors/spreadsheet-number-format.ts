@@ -1,4 +1,5 @@
-import type { Cell } from '@fortune-sheet/core';
+import { resolveOfficeMessages } from '../../../i18n/office-locale';
+import { type Cell, genarate, update } from '@fortune-sheet/core';
 
 export type SpreadsheetNumberFormatPreset =
   | 'general'
@@ -18,18 +19,34 @@ export type SpreadsheetNumberFormatChoice = Exclude<
   'custom'
 >;
 
+export const spreadsheetNumberFormatPresetIds = [
+  'general',
+  'number',
+  'currency',
+  'accounting',
+  'percent',
+  'date',
+  'time',
+  'scientific',
+  'fraction',
+  'text',
+  'custom',
+] as const satisfies readonly SpreadsheetNumberFormatPreset[];
+
+const spreadsheetNumberFormatMessages = resolveOfficeMessages();
+
 export const spreadsheetNumberFormatPresetLabels = {
-  general: '常规',
-  number: '数字',
-  currency: '货币',
-  accounting: '会计专用',
-  percent: '百分比',
-  date: '短日期',
-  time: '时间',
-  scientific: '科学计数',
-  fraction: '分数',
-  text: '文本',
-  custom: '自定义',
+  general: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.general'],
+  number: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.number'],
+  currency: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.currency'],
+  accounting: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.accounting'],
+  percent: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.percent'],
+  date: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.date'],
+  time: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.time'],
+  scientific: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.scientific'],
+  fraction: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.fraction'],
+  text: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.text'],
+  custom: spreadsheetNumberFormatMessages['spreadsheet.numberFormat.custom'],
 } as const satisfies Record<SpreadsheetNumberFormatPreset, string>;
 
 const spreadsheetNumberFormatCodes = {
@@ -71,6 +88,37 @@ export function spreadsheetNumberFormatCode(
   preset: SpreadsheetNumberFormatChoice,
 ): string {
   return spreadsheetNumberFormatCodes[preset];
+}
+
+const SPREADSHEET_NUMBER_FORMAT_SAMPLE_VALUE = 1234.56;
+
+export function spreadsheetNumberFormatPreview(
+  formatCode: string | undefined,
+  cell?: Cell | null,
+): string {
+  const code = normalizedSpreadsheetNumberFormat(formatCode);
+  const value = spreadsheetNumberFormatPreviewValue(cell);
+  try {
+    if (code.toLocaleLowerCase() !== 'general') {
+      const formatted = update(code, value);
+      if (formatted != null && String(formatted) !== '') return String(formatted);
+    }
+    if (typeof value === 'number') return String(genarate(value)?.[0] ?? value);
+    return String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function spreadsheetNumberFormatPreviewValue(
+  cell?: Cell | null,
+): string | number | boolean {
+  const raw = cell?.v;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if (typeof raw === 'boolean') return raw;
+  if (typeof raw === 'string' && raw !== '') return raw;
+  if (typeof cell?.m === 'string' && cell.m !== '') return cell.m;
+  return SPREADSHEET_NUMBER_FORMAT_SAMPLE_VALUE;
 }
 
 export function spreadsheetNumberFormatValue(

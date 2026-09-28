@@ -1,3 +1,4 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   presentationChartAxes,
   withPresentationChartAxes,
@@ -19,15 +20,15 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { normalizeOptionalOfficeNumber } from './office-number-normalization';
 
-const PRIMARY_AXES: Array<{
-  position: WorkSpreadsheetChartAxisPosition;
-  label: string;
-}> = [
-  { position: 'bottom', label: '横轴' },
-  { position: 'left', label: '纵轴' },
-];
+const PRIMARY_AXIS_POSITIONS = ['bottom', 'left'] as const;
+
+const AXIS_LABEL_KEYS = {
+  bottom: 'presentation.chart.axis.bottom',
+  left: 'presentation.chart.axis.left',
+} as const;
 
 export function PresentationChartAxisEditor({
   chart,
@@ -36,6 +37,7 @@ export function PresentationChartAxisEditor({
   chart: WorkSlideChart;
   onChange: (chart: WorkSlideChart) => void;
 }) {
+  const messages = useOfficeMessages();
   const axes = presentationChartAxes(chart);
   const updateAxis = (
     position: WorkSpreadsheetChartAxisPosition,
@@ -52,14 +54,15 @@ export function PresentationChartAxisEditor({
   return (
     <section
       className="work-spreadsheet-chart-axes work-presentation-chart-axes"
-      aria-label="演示图表坐标轴设置"
+      aria-label={officeMessage(messages, 'presentation.chart.axis.settingsAria')}
     >
       <header>
-        <strong>坐标轴</strong>
-        <span>标题、范围、刻度与标签</span>
+        <strong>{officeMessage(messages, 'presentation.chart.axis.title')}</strong>
+        <span>{officeMessage(messages, 'presentation.chart.axis.subtitle')}</span>
       </header>
       <div>
-        {PRIMARY_AXES.map(({ position, label }) => {
+        {PRIMARY_AXIS_POSITIONS.map((position) => {
+          const label = officeMessage(messages, AXIS_LABEL_KEYS[position]);
           const axis = axes?.[position];
           const valueAxis = workSpreadsheetChartAxisIsValueAxis(
             chart.type,
@@ -80,14 +83,14 @@ export function PresentationChartAxisEditor({
             );
           const sourceLinked =
             axis?.numberFormatSourceLinked ?? !axis?.numberFormat;
-          const ariaName = `演示图表${label}`;
+          const ariaName = officeMessage(messages, 'presentation.chart.axis.ariaPrefix', { axis: label });
           return (
             <fieldset key={position}>
               <legend>{label}</legend>
               <div className="work-office-field">
-                <span>标题</span>
+                <span>{officeMessage(messages, 'presentation.chart.axis.caption')}</span>
                 <OfficeTextField
-                  aria-label={`${ariaName}标题`}
+                  aria-label={officeMessage(messages, 'presentation.chart.axis.captionAria', { axis: ariaName })}
                   value={axis?.title ?? ''}
                   maxLength={255}
                   onChange={(event) =>
@@ -97,24 +100,24 @@ export function PresentationChartAxisEditor({
               </div>
               <OfficeCheckbox
                 className="axis-check"
-                ariaLabel={`${ariaName}逆序`}
+                ariaLabel={officeMessage(messages, 'presentation.chart.axis.reverseAria', { axis: ariaName })}
                 checked={axis?.reverseOrder === true}
                 onCheckedChange={(reverseOrder) =>
                   updateAxis(position, { reverseOrder })
                 }
               >
-                逆序
+                {officeMessage(messages, 'presentation.chart.axis.reverse')}
               </OfficeCheckbox>
               <div className="work-office-field">
-                <span>标签位置</span>
+                <span>{officeMessage(messages, 'presentation.chart.axis.labelPos')}</span>
                 <OfficeSelect
-                  ariaLabel={`${ariaName}标签位置`}
+                  ariaLabel={officeMessage(messages, 'presentation.chart.axis.labelPosAria', { axis: ariaName })}
                   value={labelPosition}
                   options={[
-                    { value: 'nextTo', label: '轴旁' },
-                    { value: 'high', label: '高位' },
-                    { value: 'low', label: '低位' },
-                    { value: 'none', label: '不显示' },
+                    { value: 'nextTo', label: officeMessage(messages, 'presentation.chart.axis.label.nextTo') },
+                    { value: 'high', label: officeMessage(messages, 'presentation.chart.axis.label.high') },
+                    { value: 'low', label: officeMessage(messages, 'presentation.chart.axis.label.low') },
+                    { value: 'none', label: officeMessage(messages, 'presentation.chart.axis.label.none') },
                   ]}
                   onValueChange={(value) =>
                     updateAxis(position, {
@@ -126,15 +129,15 @@ export function PresentationChartAxisEditor({
                 />
               </div>
               <div className="work-office-field">
-                <span>主要刻度线</span>
+                <span>{officeMessage(messages, 'presentation.chart.axis.majorTick')}</span>
                 <OfficeSelect
-                  ariaLabel={`${ariaName}主要刻度线`}
+                  ariaLabel={officeMessage(messages, 'presentation.chart.axis.majorTickAria', { axis: ariaName })}
                   value={axis?.majorTickMark ?? 'none'}
                   options={[
-                    { value: 'none', label: '无' },
-                    { value: 'inside', label: '向内' },
-                    { value: 'outside', label: '向外' },
-                    { value: 'cross', label: '交叉' },
+                    { value: 'none', label: officeMessage(messages, 'presentation.chart.axis.tick.none') },
+                    { value: 'inside', label: officeMessage(messages, 'presentation.chart.axis.tick.inside') },
+                    { value: 'outside', label: officeMessage(messages, 'presentation.chart.axis.tick.outside') },
+                    { value: 'cross', label: officeMessage(messages, 'presentation.chart.axis.tick.cross') },
                   ]}
                   onValueChange={(value) =>
                     updateAxis(position, {
@@ -147,14 +150,14 @@ export function PresentationChartAxisEditor({
               </div>
               {categoryAxis && (
                 <div className="work-office-field">
-                  <span>标签间隔</span>
+                  <span>{officeMessage(messages, 'presentation.chart.axis.labelInterval')}</span>
                   <CommittedOfficeNumberField
                     min={1}
                     max={31_999}
                     step={1}
-                    ariaLabel={`${ariaName}标签间隔`}
+                    ariaLabel={officeMessage(messages, 'presentation.chart.axis.labelIntervalAria', { axis: ariaName })}
                     value={axis?.labelInterval}
-                    placeholder="自动"
+                    placeholder={officeMessage(messages, 'presentation.chart.axis.auto')}
                     normalizeValue={(value) =>
                       normalizeOptionalOfficeNumber(value, {
                         integer: true,
@@ -173,12 +176,12 @@ export function PresentationChartAxisEditor({
               {valueAxis && (
                 <>
                   <div className="work-office-field">
-                    <span>最小值</span>
+                    <span>{officeMessage(messages, 'presentation.chart.axis.min')}</span>
                     <CommittedOfficeNumberField
                       step={0.1}
-                      ariaLabel={`${ariaName}最小值`}
+                      ariaLabel={officeMessage(messages, 'presentation.chart.axis.minAria', { axis: ariaName })}
                       value={axis?.minimum}
-                      placeholder="自动"
+                      placeholder={officeMessage(messages, 'presentation.chart.axis.auto')}
                       normalizeValue={(value) =>
                         normalizeOptionalOfficeNumber(value, {
                           isValid: (minimum) =>
@@ -192,12 +195,12 @@ export function PresentationChartAxisEditor({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>最大值</span>
+                    <span>{officeMessage(messages, 'presentation.chart.axis.max')}</span>
                     <CommittedOfficeNumberField
                       step={0.1}
-                      ariaLabel={`${ariaName}最大值`}
+                      ariaLabel={officeMessage(messages, 'presentation.chart.axis.maxAria', { axis: ariaName })}
                       value={axis?.maximum}
-                      placeholder="自动"
+                      placeholder={officeMessage(messages, 'presentation.chart.axis.auto')}
                       normalizeValue={(value) =>
                         normalizeOptionalOfficeNumber(value, {
                           isValid: (maximum) =>
@@ -211,13 +214,13 @@ export function PresentationChartAxisEditor({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>主单位</span>
+                    <span>{officeMessage(messages, 'presentation.chart.axis.majorUnit')}</span>
                     <CommittedOfficeNumberField
                       min={0}
                       step={0.1}
-                      ariaLabel={`${ariaName}主单位`}
+                      ariaLabel={officeMessage(messages, 'presentation.chart.axis.majorUnitAria', { axis: ariaName })}
                       value={axis?.majorUnit}
-                      placeholder="自动"
+                      placeholder={officeMessage(messages, 'presentation.chart.axis.auto')}
                       normalizeValue={(value) =>
                         normalizeOptionalOfficeNumber(value, {
                           isValid: (majorUnit) => majorUnit > 0,
@@ -229,12 +232,12 @@ export function PresentationChartAxisEditor({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>数字格式</span>
+                    <span>{officeMessage(messages, 'presentation.chart.axis.numberFormat')}</span>
                     <OfficeTextField
-                      aria-label={`${ariaName}数字格式`}
+                      aria-label={officeMessage(messages, 'presentation.chart.axis.numberFormatAria', { axis: ariaName })}
                       value={axis?.numberFormat ?? ''}
                       maxLength={255}
-                      placeholder="#,##0 或 0.0%"
+                      placeholder={officeMessage(messages, 'presentation.chart.axis.numberFormatPlaceholder')}
                       onChange={(event) => {
                         const numberFormat = event.target.value;
                         updateAxis(position, {
@@ -248,23 +251,23 @@ export function PresentationChartAxisEditor({
                   </div>
                   <OfficeCheckbox
                     className="axis-check"
-                    ariaLabel={`${ariaName}主要网格线`}
+                    ariaLabel={officeMessage(messages, 'presentation.chart.axis.majorGridAria', { axis: ariaName })}
                     checked={showMajorGridlines}
                     onCheckedChange={(showMajorGridlines) =>
                       updateAxis(position, { showMajorGridlines })
                     }
                   >
-                    主要网格线
+                    {officeMessage(messages, 'presentation.chart.axis.majorGrid')}
                   </OfficeCheckbox>
                   <OfficeCheckbox
                     className="axis-check"
-                    ariaLabel={`${ariaName}链接源数字格式`}
+                    ariaLabel={officeMessage(messages, 'presentation.chart.axis.linkNumberAria', { axis: ariaName })}
                     checked={sourceLinked}
                     onCheckedChange={(numberFormatSourceLinked) =>
                       updateAxis(position, { numberFormatSourceLinked })
                     }
                   >
-                    链接源格式
+                    {officeMessage(messages, 'presentation.chart.axis.linkNumber')}
                   </OfficeCheckbox>
                 </>
               )}

@@ -1,46 +1,70 @@
 import type { Editor } from '@tiptap/core';
 import { ChevronDown, Underline } from 'lucide-react';
-import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   documentUnderlineColor,
   documentUnderlineStyle,
   type WorkDocumentUnderlineStyle,
 } from '../work-document-underline';
 import { getDocumentCommandDefinition } from './document-command-catalog';
+import { documentCommandLabel } from './document-command-i18n';
 import { OfficeColorPicker } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 
-const underlineOptions = [
-  { value: 'none', label: '无下划线' },
-  { value: 'single', label: '单下划线', command: 'underline' },
-  { value: 'words', label: '仅字下划线', command: 'wordsUnderline' },
-  { value: 'double', label: '双下划线', command: 'doubleUnderline' },
-  { value: 'thick', label: '粗下划线' },
-  { value: 'dotted', label: '点线' },
-  { value: 'dottedHeavy', label: '粗点线' },
-  { value: 'dash', label: '短划线' },
-  { value: 'dashedHeavy', label: '粗短划线' },
-  { value: 'dashLong', label: '长划线' },
-  { value: 'dashLongHeavy', label: '粗长划线' },
-  { value: 'dotDash', label: '点划线' },
-  { value: 'dashDotHeavy', label: '粗点划线' },
-  { value: 'dotDotDash', label: '双点划线' },
-  { value: 'dashDotDotHeavy', label: '粗双点划线' },
-  { value: 'wave', label: '波浪线' },
-  { value: 'wavyHeavy', label: '粗波浪线' },
-  { value: 'wavyDouble', label: '双波浪线' },
+const underlineOptionDefs = [
+  { value: 'none', messageKey: 'document.underline.none' },
+  {
+    value: 'single',
+    messageKey: 'document.underline.single',
+    command: 'underline',
+  },
+  {
+    value: 'words',
+    messageKey: 'document.underline.words',
+    command: 'wordsUnderline',
+  },
+  {
+    value: 'double',
+    messageKey: 'document.underline.double',
+    command: 'doubleUnderline',
+  },
+  { value: 'thick', messageKey: 'document.underline.thick' },
+  { value: 'dotted', messageKey: 'document.underline.dotted' },
+  { value: 'dottedHeavy', messageKey: 'document.underline.dottedHeavy' },
+  { value: 'dash', messageKey: 'document.underline.dash' },
+  { value: 'dashedHeavy', messageKey: 'document.underline.dashedHeavy' },
+  { value: 'dashLong', messageKey: 'document.underline.dashLong' },
+  { value: 'dashLongHeavy', messageKey: 'document.underline.dashLongHeavy' },
+  { value: 'dotDash', messageKey: 'document.underline.dotDash' },
+  { value: 'dashDotHeavy', messageKey: 'document.underline.dashDotHeavy' },
+  { value: 'dotDotDash', messageKey: 'document.underline.dotDotDash' },
+  {
+    value: 'dashDotDotHeavy',
+    messageKey: 'document.underline.dashDotDotHeavy',
+  },
+  { value: 'wave', messageKey: 'document.underline.wave' },
+  { value: 'wavyHeavy', messageKey: 'document.underline.wavyHeavy' },
+  { value: 'wavyDouble', messageKey: 'document.underline.wavyDouble' },
 ] as const satisfies readonly {
   value: WorkDocumentUnderlineStyle;
-  label: string;
+  messageKey: keyof OfficeMessageCatalog;
   command?: 'doubleUnderline' | 'underline' | 'wordsUnderline';
 }[];
 
 export function DocumentUnderlineRibbon({
   editor,
-  label = '下划线',
-  menuLabel = '下划线样式',
-  colorLabel = '下划线颜色',
+  label,
+  menuLabel,
+  colorLabel,
   showColor = true,
   className = '',
 }: {
@@ -51,6 +75,18 @@ export function DocumentUnderlineRibbon({
   showColor?: boolean;
   className?: string;
 }) {
+  const messages = useOfficeMessages();
+  const resolvedLabel = label ?? documentCommandLabel('underline', messages);
+  const resolvedMenuLabel = menuLabel ?? messages['document.underline.menu'];
+  const resolvedColorLabel = colorLabel ?? messages['document.underline.color'];
+  const underlineOptions = useMemo(
+    () =>
+      underlineOptionDefs.map((option) => ({
+        ...option,
+        label: messages[option.messageKey],
+      })),
+    [messages],
+  );
   const subscribe = useCallback(
     (notify: () => void) => {
       if (editor.isDestroyed) return () => undefined;
@@ -78,8 +114,10 @@ export function DocumentUnderlineRibbon({
       className={`work-document-underline-control${className ? ` ${className}` : ''}`}
     >
       <Popover
-        label={`更多${label}`}
-        panelLabel={menuLabel}
+        label={officeMessage(messages, 'document.underline.more', {
+          label: resolvedLabel,
+        })}
+        panelLabel={resolvedMenuLabel}
         panelRole="menu"
         portal
         placement="bottom-end"
@@ -92,10 +130,14 @@ export function DocumentUnderlineRibbon({
             <button
               type="button"
               className={`work-document-underline-primary${active ? ' active' : ''}`}
-              aria-label={label}
+              aria-label={resolvedLabel}
               aria-keyshortcuts={shortcut?.aria}
               aria-pressed={active}
-              title={`${label}（${currentLabel}；${shortcut?.label ?? ''}）`}
+              title={officeMessage(messages, 'document.underline.title', {
+                label: resolvedLabel,
+                current: currentLabel,
+                shortcut: shortcut?.label ?? '',
+              })}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
                 // Keep ribbon focus (e.g. disclosure) — chain().focus() steals
@@ -109,7 +151,9 @@ export function DocumentUnderlineRibbon({
               {...triggerProps}
               type="button"
               className={`work-document-underline-disclosure${open ? ' active' : ''}`}
-              title={`更多${label}`}
+              title={officeMessage(messages, 'document.underline.more', {
+                label: resolvedLabel,
+              })}
               onMouseDown={(event) => event.preventDefault()}
             >
               <ChevronDown size={11} aria-hidden="true" />
@@ -120,7 +164,7 @@ export function DocumentUnderlineRibbon({
         {(close) =>
           underlineOptions.map((option) => {
             const optionShortcut =
-              'command' in option
+              'command' in option && option.command
                 ? getDocumentCommandDefinition(option.command).shortcut
                 : undefined;
             return (
@@ -133,8 +177,6 @@ export function DocumentUnderlineRibbon({
                 aria-checked={style === option.value}
                 aria-keyshortcuts={optionShortcut?.aria}
                 onClick={() => {
-                  // Keep ribbon focus on the disclosure via Popover restore.
-                  // chain().focus() steals into the editor and breaks L2 loops.
                   editor.commands.setDocumentUnderline(option.value);
                   close();
                 }}
@@ -151,11 +193,11 @@ export function DocumentUnderlineRibbon({
         <OfficeColorPicker
           compact
           className="work-document-underline-color"
-          ariaLabel={colorLabel}
+          ariaLabel={resolvedColorLabel}
           value={color}
           resetAction={{
             kind: 'automatic',
-            label: '自动颜色',
+            label: messages['document.color.automatic'],
             onSelect: () => editor.commands.setDocumentUnderlineColor(null),
           }}
           onValueChange={(value) =>

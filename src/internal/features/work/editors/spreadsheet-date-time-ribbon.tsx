@@ -1,6 +1,8 @@
 import { CalendarClock, CalendarDays, Clock } from 'lucide-react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
@@ -24,6 +26,7 @@ export function SpreadsheetDateTimeMenu({
   can: SpreadsheetDateTimeCanCommands;
   commands: SpreadsheetDateTimeCommands;
 }) {
+  const messages = useOfficeMessages();
   const items = [
     {
       definition: spreadsheetCommandCatalog.insertCurrentDate,
@@ -46,8 +49,8 @@ export function SpreadsheetDateTimeMenu({
 
   return (
     <Popover
-      label="日期和时间"
-      panelLabel="插入日期和时间"
+      label={officeMessage(messages, 'spreadsheet.dateTime.label')}
+      panelLabel={officeMessage(messages, 'spreadsheet.dateTime.options')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-menu-root"
@@ -59,10 +62,10 @@ export function SpreadsheetDateTimeMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger work-spreadsheet-date-time-trigger${open ? ' active' : ''}`}
-          title="插入当前日期或时间（Ctrl+; / Ctrl+Shift+;）"
+          title={officeMessage(messages, 'spreadsheet.dateTime.title')}
         >
           <CalendarClock size={19} />
-          <span>日期和时间</span>
+          <span>{officeMessage(messages, 'spreadsheet.dateTime.label')}</span>
         </button>
       )}
     >

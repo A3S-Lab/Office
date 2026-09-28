@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import { showToast } from '../../../state/app-state';
 import {
   clonePresentationElementsAndAnimationsForPaste,
@@ -45,6 +46,7 @@ export function usePresentationClipboard({
   onSelectSlide: (id: string) => void;
   onSelectElements: (ids: readonly string[]) => void;
 }) {
+  const messages = resolveOfficeMessages();
   const selectedElement = selectedElements.at(-1) ?? null;
   const copySelection = useCallback((): boolean => {
     if (selectedElements.length) {
@@ -54,15 +56,15 @@ export function usePresentationClipboard({
       );
       showToast(
         selectedElements.length > 1
-          ? `已复制 ${selectedElements.length} 个对象`
-          : '已复制演示元素',
+          ? officeMessage(messages, 'presentation.clipboard.copiedObjects', { count: String(selectedElements.length) })
+          : officeMessage(messages, 'presentation.clipboard.copiedElement'),
         'success',
       );
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) return false;
     copyPresentationSlide(selectedSlide);
-    showToast('已复制幻灯片', 'success');
+    showToast(officeMessage(messages, 'presentation.clipboard.copiedSlide'), 'success');
     return true;
   }, [mode, selectedElements, selectedSlide]);
 
@@ -91,15 +93,15 @@ export function usePresentationClipboard({
       if (!deleteSelectedElement()) return false;
       showToast(
         selectedElements.length > 1
-          ? `已剪切 ${selectedElements.length} 个对象`
-          : '已剪切演示元素',
+          ? officeMessage(messages, 'presentation.clipboard.cutObjects', { count: String(selectedElements.length) })
+          : officeMessage(messages, 'presentation.clipboard.cutElement'),
         'success',
       );
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) return false;
     if (content.slides.length === 1) {
-      showToast('演示文稿至少需要保留一张幻灯片。', 'info');
+      showToast(officeMessage(messages, 'presentation.clipboard.keepOneSlide'), 'info');
       return true;
     }
     copyPresentationSlide(selectedSlide);
@@ -112,7 +114,7 @@ export function usePresentationClipboard({
     onChange({ ...content, slides });
     onSelectSlide(slides[Math.min(index, slides.length - 1)].id);
     onSelectElements([]);
-    showToast('已剪切幻灯片', 'success');
+    showToast(officeMessage(messages, 'presentation.clipboard.cutSlide'), 'success');
     return true;
   }, [
     content,
@@ -128,7 +130,7 @@ export function usePresentationClipboard({
   const pasteSelection = useCallback((): boolean => {
     const clipboard = takePresentationClipboard();
     if (!clipboard) {
-      showToast('没有可粘贴的演示内容。', 'info');
+      showToast(officeMessage(messages, 'presentation.clipboard.empty'), 'info');
       return true;
     }
     if (clipboard.payload.kind === 'elements') {
@@ -142,7 +144,7 @@ export function usePresentationClipboard({
         mode === 'slide' &&
         !canAppendSlideAnimations(content, targetId, pasted.animations)
       ) {
-        showToast('对象动画数量已达到每张幻灯片 256 条的上限。', 'info');
+        showToast(officeMessage(messages, 'presentation.clipboard.animationLimit'), 'info');
         return true;
       }
       const next = updateTargetElements(
@@ -158,14 +160,14 @@ export function usePresentationClipboard({
       onSelectElements(pasted.elements.map((element) => element.id));
       showToast(
         pasted.elements.length > 1
-          ? `已粘贴 ${pasted.elements.length} 个对象`
-          : '已粘贴演示元素',
+          ? officeMessage(messages, 'presentation.clipboard.pastedObjects', { count: String(pasted.elements.length) })
+          : officeMessage(messages, 'presentation.clipboard.pastedElement'),
         'success',
       );
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) {
-      showToast('请返回幻灯片编辑后粘贴整张幻灯片。', 'info');
+      showToast(officeMessage(messages, 'presentation.clipboard.pasteSlideNeedsSlideMode'), 'info');
       return true;
     }
     const pasted = clonePresentationSlideForPaste(
@@ -180,7 +182,7 @@ export function usePresentationClipboard({
     onChange({ ...content, slides });
     onSelectSlide(pasted.id);
     onSelectElements([]);
-    showToast('已粘贴幻灯片', 'success');
+    showToast(officeMessage(messages, 'presentation.clipboard.pastedSlide'), 'success');
     return true;
   }, [
     content,
@@ -203,7 +205,7 @@ export function usePresentationClipboard({
         mode === 'slide' &&
         !canAppendSlideAnimations(content, targetId, copies.animations)
       ) {
-        showToast('对象动画数量已达到每张幻灯片 256 条的上限。', 'info');
+        showToast(officeMessage(messages, 'presentation.clipboard.animationLimit'), 'info');
         return true;
       }
       const next = updateTargetElements(
@@ -219,8 +221,8 @@ export function usePresentationClipboard({
       onSelectElements(copies.elements.map((element) => element.id));
       showToast(
         copies.elements.length > 1
-          ? `已复制 ${copies.elements.length} 个对象`
-          : '已复制演示元素',
+          ? officeMessage(messages, 'presentation.clipboard.copiedObjects', { count: String(copies.elements.length) })
+          : officeMessage(messages, 'presentation.clipboard.copiedElement'),
         'success',
       );
       return true;
@@ -238,7 +240,7 @@ export function usePresentationClipboard({
     onChange({ ...content, slides });
     onSelectSlide(copy.id);
     onSelectElements([]);
-    showToast('已复制幻灯片', 'success');
+    showToast(officeMessage(messages, 'presentation.clipboard.copiedSlide'), 'success');
     return true;
   }, [
     content,

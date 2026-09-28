@@ -15,23 +15,24 @@ import {
   assertWorkOfficePresentationRecordClaims,
 } from './office-presentation-collaboration-claims';
 import {
-  invalidWorkOfficePresentationShared as invalidSharedPresentation,
-  validateSharedWorkOfficePresentationContent,
-} from './office-presentation-collaboration-validation';
-import {
   nestedPresentationArray as nestedArray,
   nestedPresentationMap as nestedMap,
+  type WorkOfficePresentationRecord as PresentationRecord,
   patchPresentationElements as patchElements,
   patchPresentationIdRecords as patchIdRecords,
   patchPresentationOrder as patchOrder,
+  presentationOrderPermutationIsStale,
   PRESENTATION_RECORD_COMMENT_ORDER as RECORD_COMMENT_ORDER,
   PRESENTATION_RECORD_COMMENTS as RECORD_COMMENTS,
   PRESENTATION_RECORD_COMMENTS_PRESENT as RECORD_COMMENTS_PRESENT,
   PRESENTATION_RECORD_ELEMENT_ORDER as RECORD_ELEMENT_ORDER,
   PRESENTATION_RECORD_ELEMENTS as RECORD_ELEMENTS,
   readPresentationCollection as readCollection,
-  type WorkOfficePresentationRecord as PresentationRecord,
 } from './office-presentation-collaboration-records';
+import {
+  invalidWorkOfficePresentationShared as invalidSharedPresentation,
+  validateSharedWorkOfficePresentationContent,
+} from './office-presentation-collaboration-validation';
 
 export { validateWorkOfficePresentationContent } from './office-presentation-collaboration-validation';
 
@@ -323,11 +324,11 @@ function patchCollection<T extends PresentationRecord>({
     if (!(record instanceof Y.Map)) invalidSharedPresentation(label);
     patchRecord(record as Y.Map<unknown>, before, value, label);
   }
-  patchOrder(
-    order,
-    previous.map((value) => value.id),
-    next.map((value) => value.id),
-  );
+  const previousIds = previous.map((value) => value.id);
+  const nextIds = next.map((value) => value.id);
+  if (!presentationOrderPermutationIsStale(order, previousIds, nextIds)) {
+    patchOrder(order, previousIds, nextIds);
+  }
 }
 
 function patchRecord<T extends PresentationRecord>(
@@ -352,7 +353,13 @@ function patchRecord<T extends PresentationRecord>(
   ]);
   keys.delete('elements');
   keys.delete('comments');
+  const staleBackgroundKeys = staleBackgroundFrame(
+    record,
+    previousRecord,
+    nextRecord,
+  );
   for (const key of keys) {
+    if (staleBackgroundKeys.has(key)) continue;
     if (previous && jsonEqual(previousRecord?.[key], nextRecord[key])) continue;
     if (nextRecord[key] === undefined) record.delete(key);
     else record.set(key, cloneJsonValue(nextRecord[key]));
@@ -391,6 +398,25 @@ function patchRecord<T extends PresentationRecord>(
       );
     }
   }
+}
+
+const BACKGROUND_FRAME_FIELDS = ['background', 'useLayoutBackground'] as const;
+
+function staleBackgroundFrame(
+  record: Y.Map<unknown>,
+  previous: Record<string, unknown> | undefined,
+  next: Record<string, unknown>,
+): Set<string> {
+  if (!previous) return new Set();
+  const changed = BACKGROUND_FRAME_FIELDS.filter(
+    (key) => !jsonEqual(previous[key], next[key]),
+  );
+  if (changed.length === 0) return new Set();
+  const stale = changed.some(
+    (key) =>
+      !jsonEqual(previous[key], record.has(key) ? record.get(key) : undefined),
+  );
+  return stale ? new Set(changed) : new Set();
 }
 
 function optionalSharedNumber(

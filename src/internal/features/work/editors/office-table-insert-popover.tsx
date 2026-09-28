@@ -1,4 +1,6 @@
 import { Minus, Plus, Table2 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
 import type { OfficeTableDimensions } from './office-table-dimensions';
@@ -23,6 +25,7 @@ export function OfficeTableInsertPopover({
   label: string;
   onInsert: (dimensions: OfficeTableDimensions) => void;
 }) {
+  const messages = useOfficeMessages();
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<TablePickerPosition>({
     row: 1,
@@ -105,7 +108,7 @@ export function OfficeTableInsertPopover({
   return (
     <Popover
       label={label}
-      panelLabel="选择表格大小"
+      panelLabel={officeMessage(messages, 'office.table.panel')}
       panelRole="dialog"
       portal
       open={open}
@@ -137,25 +140,25 @@ export function OfficeTableInsertPopover({
           >
             <TableDimensionField
               inputRef={compactRowInputRef}
-              label="行数"
+              label={officeMessage(messages, 'office.table.rows')}
               maximum={TABLE_PICKER_ROWS}
               value={position.row}
               onChange={(value) => updateDimension('row', value)}
             />
             <TableDimensionField
-              label="列数"
+              label={officeMessage(messages, 'office.table.columns')}
               maximum={TABLE_PICKER_COLUMNS}
               value={position.column}
               onChange={(value) => updateDimension('column', value)}
             />
             <button type="submit" className="work-office-table-picker-submit">
-              插入 {position.row} × {position.column} 表格
+              {officeMessage(messages, 'office.table.insert', { rows: String(position.row), cols: String(position.column) })}
             </button>
           </form>
         ) : (
           <>
             <fieldset className="work-office-table-picker-grid">
-              <legend className="sr-only">选择表格行列</legend>
+              <legend className="sr-only">{officeMessage(messages, 'office.table.gridLegend')}</legend>
               {Array.from(
                 { length: TABLE_PICKER_ROWS * TABLE_PICKER_COLUMNS },
                 (_, index) => {
@@ -176,7 +179,7 @@ export function OfficeTableInsertPopover({
                         cellRefs.current[index] = element;
                       }}
                       type="button"
-                      aria-label={`${current.row} 行 ${current.column} 列`}
+                      aria-label={officeMessage(messages, 'office.table.cellAria', { rows: String(current.row), cols: String(current.column) })}
                       aria-pressed={selected}
                       data-highlighted={highlighted ? 'true' : undefined}
                       tabIndex={selected ? 0 : -1}
@@ -195,7 +198,7 @@ export function OfficeTableInsertPopover({
               className="work-office-table-picker-size"
               aria-live="polite"
             >
-              {position.row} × {position.column} 表格
+              {officeMessage(messages, 'office.table.sizeLabel', { rows: String(position.row), cols: String(position.column) })}
             </output>
           </>
         )
@@ -217,6 +220,7 @@ function TableDimensionField({
   value: number;
   onChange: (value: number) => void;
 }) {
+  const messages = useOfficeMessages();
   const [baseline, setBaseline] = useState(value);
   const dirty = value !== baseline;
 
@@ -226,7 +230,7 @@ function TableDimensionField({
       <div className="work-office-table-picker-stepper">
         <button
           type="button"
-          aria-label={`减少${label}`}
+          aria-label={officeMessage(messages, 'office.table.decrease', { label })}
           disabled={value <= 1}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => onChange(value - 1)}
@@ -256,7 +260,7 @@ function TableDimensionField({
         />
         <button
           type="button"
-          aria-label={`增加${label}`}
+          aria-label={officeMessage(messages, 'office.table.increase', { label })}
           disabled={value >= maximum}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => onChange(value + 1)}

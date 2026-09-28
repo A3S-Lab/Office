@@ -128,12 +128,8 @@ suite "office-word-wps-daily-loop" {
             visible = css(".work-document-editable table")
         }
 
-        click "select-comment-anchor" {
+        double_click "select-comment-anchor" {
             target = css(".work-document-editable .ProseMirror p[style*='text-align: center'] strong")
-        }
-
-        press "extend-anchor-selection" {
-            key = "Control+a"
         }
 
         click "open-review-tab" {

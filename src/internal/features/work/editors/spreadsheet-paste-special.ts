@@ -1,3 +1,7 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { normalizeSheetProtectionAuthority } from '../work-spreadsheet-protection';
 import type {
   WorkSpreadsheetContent,
@@ -73,19 +77,26 @@ export function spreadsheetPasteSpecialValidationError(
   content: WorkSpreadsheetContent,
   request: SpreadsheetPasteSpecialRequest,
 ): string | null {
+  const catalog = resolveOfficeMessages();
   const { snapshot, options } = request;
   if (!validSpreadsheetClipboardSnapshot(snapshot)) {
-    return '剪贴板内容无效或超过 50,000 个单元格。';
+    return officeMessage(
+      catalog,
+      'spreadsheet.pasteSpecial.error.invalidClipboard',
+    );
   }
   if (!spreadsheetPasteSpecialModeAvailable(snapshot, options.content)) {
-    return '当前剪贴板不包含此粘贴方式需要的格式信息。';
+    return officeMessage(catalog, 'spreadsheet.pasteSpecial.error.missingRich');
   }
   if (
-    !spreadsheetPasteOperationOptions.some(
+    !spreadsheetPasteOperationOptions(catalog).some(
       (option) => option.value === options.operation,
     )
   ) {
-    return '粘贴运算无效。';
+    return officeMessage(
+      catalog,
+      'spreadsheet.pasteSpecial.error.invalidOperation',
+    );
   }
 
   const targetSelection = normalizeSpreadsheetCellRange(
@@ -94,11 +105,15 @@ export function spreadsheetPasteSpecialValidationError(
   const plan = targetSelection
     ? planSpreadsheetPaste(snapshot, targetSelection, options.transpose)
     : null;
-  if (!plan) return '粘贴区域超出了工作表边界。';
+  if (!plan) {
+    return officeMessage(catalog, 'spreadsheet.pasteSpecial.error.outOfBounds');
+  }
   const sheet = content.sheets.find(
     (candidate) => candidate.id === request.targetSheetId,
   );
-  if (!sheet) return '目标工作表不存在。';
+  if (!sheet) {
+    return officeMessage(catalog, 'spreadsheet.pasteSpecial.error.sheetMissing');
+  }
 
   if (options.content === 'column-widths') {
     if (
@@ -107,7 +122,10 @@ export function spreadsheetPasteSpecialValidationError(
       options.transpose ||
       !snapshot.columnWidths?.length
     ) {
-      return '列宽粘贴不能与运算、跳过空白或转置组合。';
+      return officeMessage(
+        catalog,
+        'spreadsheet.pasteSpecial.error.columnWidthCombo',
+      );
     }
     const authority = normalizeSheetProtectionAuthority(
       sheet.config?.authority,
@@ -116,35 +134,50 @@ export function spreadsheetPasteSpecialValidationError(
       (authority.sheet === 1 && authority.formatColumns !== 1) ||
       columnsContainReadOnlyState(sheet, plan.targetRange)
     ) {
-      return '目标列受保护或为只读状态，无法粘贴列宽。';
+      return officeMessage(
+        catalog,
+        'spreadsheet.pasteSpecial.error.columnWidthProtected',
+      );
     }
     return null;
   }
 
   if (sheet.isPivotTable || sheet.pivotTable || sheet.pivotTables?.length) {
-    return '数据透视表区域不支持选择性粘贴。';
+    return officeMessage(catalog, 'spreadsheet.pasteSpecial.error.pivot');
   }
   if (!canMutateSpreadsheetCellRange(sheet, plan.targetRange)) {
-    return '目标区域包含合并单元格、保护或只读单元格，无法粘贴。';
+    return officeMessage(
+      catalog,
+      'spreadsheet.pasteSpecial.error.blockedTarget',
+    );
   }
   if (
     snapshot.containsUnsupportedFormulaState &&
     pasteContentCopiesFormulas(options.content)
   ) {
-    return '当前选区包含不支持移动的数组、共享或外部公式。';
+    return officeMessage(
+      catalog,
+      'spreadsheet.pasteSpecial.error.unsupportedFormula',
+    );
   }
   if (
     snapshot.merges.length > 0 &&
     options.skipBlanks &&
     pasteContentCopiesMerges(options.content)
   ) {
-    return '包含合并单元格时不能同时跳过空白。';
+    return officeMessage(
+      catalog,
+      'spreadsheet.pasteSpecial.error.skipBlanksMerged',
+    );
   }
   if (
     options.operation !== 'none' &&
     !spreadsheetPasteContentSupportsOperation(options.content)
   ) {
-    return '所选粘贴内容不能执行运算。';
+    return officeMessage(
+      catalog,
+      'spreadsheet.pasteSpecial.error.operationNotAllowed',
+    );
   }
   if (options.operation !== 'none') {
     const operationError = spreadsheetPasteOperationError(
@@ -324,9 +357,18 @@ function spreadsheetPasteOperationError(
         continue;
       }
       const sourceValue = numericSpreadsheetCellValue(source.cell);
-      if (sourceValue === null) return '运算只能应用于数值单元格。';
+      const catalog = resolveOfficeMessages();
+      if (sourceValue === null) {
+        return officeMessage(
+          catalog,
+          'spreadsheet.pasteSpecial.error.nonNumericSource',
+        );
+      }
       if (options.operation === 'divide' && sourceValue === 0) {
-        return '除数不能为 0。';
+        return officeMessage(
+          catalog,
+          'spreadsheet.pasteSpecial.error.divideByZero',
+        );
       }
       const destination = cellAt(row, column);
       if (
@@ -336,7 +378,10 @@ function spreadsheetPasteOperationError(
           destination.f ||
           destination.m !== undefined)
       ) {
-        return '目标区域包含不能参与运算的非数值单元格。';
+        return officeMessage(
+          catalog,
+          'spreadsheet.pasteSpecial.error.nonNumericTarget',
+        );
       }
     }
   }

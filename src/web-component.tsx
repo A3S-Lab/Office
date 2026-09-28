@@ -21,7 +21,11 @@ import {
   DocumentEditor,
   type DocumentLayoutFont,
   MarkdownEditor,
+  type OfficeEditorDiagnostic,
+  type OfficeEditorHostError,
   type OfficeFileAction,
+  type OfficeLocale,
+  type OfficeMessagesOverride,
   type PdfEvidenceOverlay,
   type PdfEvidenceRegion,
   PdfViewer,
@@ -35,8 +39,51 @@ const HTMLElementBase =
     : HTMLElement;
 
 abstract class A3SOfficeElement extends HTMLElementBase {
+  #messages: OfficeMessagesOverride | undefined;
+  #onDiagnostic: ((diagnostic: OfficeEditorDiagnostic) => void) | undefined;
+  #onError: ((error: OfficeEditorHostError) => void) | undefined;
   #presence: OfficeCollaborationPresence | undefined;
   #root: Root | null = null;
+
+  get locale(): string | undefined {
+    return this.getAttribute('locale') ?? undefined;
+  }
+
+  set locale(value: string | undefined) {
+    if (value === undefined) this.removeAttribute('locale');
+    else this.setAttribute('locale', value);
+  }
+
+  get messages(): OfficeMessagesOverride | undefined {
+    return this.#messages;
+  }
+
+  set messages(value: OfficeMessagesOverride | undefined) {
+    this.#messages = value;
+    this.requestRender();
+  }
+
+  get onDiagnostic():
+    | ((diagnostic: OfficeEditorDiagnostic) => void)
+    | undefined {
+    return this.#onDiagnostic;
+  }
+
+  set onDiagnostic(
+    value: ((diagnostic: OfficeEditorDiagnostic) => void) | undefined,
+  ) {
+    this.#onDiagnostic = value;
+    this.requestRender();
+  }
+
+  get onError(): ((error: OfficeEditorHostError) => void) | undefined {
+    return this.#onError;
+  }
+
+  set onError(value: ((error: OfficeEditorHostError) => void) | undefined) {
+    this.#onError = value;
+    this.requestRender();
+  }
 
   get presence(): OfficeCollaborationPresence | undefined {
     return this.#presence;
@@ -62,6 +109,26 @@ abstract class A3SOfficeElement extends HTMLElementBase {
 
   protected requestRender() {
     this.renderReactTree();
+  }
+
+  protected hostLocaleProps(): {
+    locale?: OfficeLocale | string;
+    messages?: OfficeMessagesOverride;
+    onDiagnostic: (diagnostic: OfficeEditorDiagnostic) => void;
+    onError: (error: OfficeEditorHostError) => void;
+  } {
+    return {
+      locale: this.locale,
+      messages: this.#messages,
+      onDiagnostic: (diagnostic) => {
+        this.#onDiagnostic?.(diagnostic);
+        dispatchDetail(this, 'diagnostic', diagnostic);
+      },
+      onError: (error) => {
+        this.#onError?.(error);
+        dispatchDetail(this, 'error', error);
+      },
+    };
   }
 
   protected abstract editorNode(): ReactNode;
@@ -175,6 +242,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     return [
       'artifact-id',
       'kernel-wasm-url',
+      'locale',
       'preview',
       'save-status',
       'theme',
@@ -254,6 +322,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
       preview: this.preview,
       saveStatus: this.saveStatus,
       theme: this.theme,
+      ...this.hostLocaleProps(),
     });
   }
 }
@@ -264,7 +333,7 @@ export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownCo
   #getSelectionMenuItems: GetMarkdownSelectionMenuItems | undefined;
 
   static get observedAttributes() {
-    return ['preview', 'save-status', 'theme'];
+    return ['locale', 'preview', 'save-status', 'theme'];
   }
 
   get collaboration(): OfficeCollaborationSession | undefined {
@@ -307,6 +376,7 @@ export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownCo
       preview: this.preview,
       saveStatus: this.saveStatus,
       theme: this.theme,
+      ...this.hostLocaleProps(),
     });
   }
 }
@@ -316,7 +386,7 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
   #sortCustomListStore: SpreadsheetSortCustomListStore | undefined;
 
   static get observedAttributes() {
-    return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
+    return ['kernel-wasm-url', 'locale', 'preview', 'save-status', 'theme'];
   }
 
   get kernelWasmUrl(): string | undefined {
@@ -360,6 +430,7 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
       saveStatus: this.saveStatus,
       sortCustomListStore: this.sortCustomListStore,
       theme: this.theme,
+      ...this.hostLocaleProps(),
     });
   }
 }
@@ -368,7 +439,7 @@ export class A3SPresentationEditorElement extends A3SContentEditorElement<Presen
   #collaboration: OfficeCollaborationSession | undefined;
 
   static get observedAttributes() {
-    return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
+    return ['kernel-wasm-url', 'locale', 'preview', 'save-status', 'theme'];
   }
 
   get kernelWasmUrl(): string | undefined {
@@ -404,6 +475,7 @@ export class A3SPresentationEditorElement extends A3SContentEditorElement<Presen
       preview: this.preview,
       saveStatus: this.saveStatus,
       theme: this.theme,
+      ...this.hostLocaleProps(),
     });
   }
 }
@@ -425,6 +497,7 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
   static get observedAttributes() {
     return [
       'file-name',
+      'locale',
       'save-label',
       'selected-evidence-region-id',
       'source-key',
@@ -551,6 +624,7 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
       theme: this.theme,
       wasmUrl: this.getAttribute('wasm-url') ?? undefined,
       worker: this.worker,
+      ...this.hostLocaleProps(),
     });
   }
 }

@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { CollectionState } from '../../../design-system/primitives';
 import {
   type WorkSpreadsheetChartType,
@@ -8,6 +9,7 @@ import {
   type WorkSpreadsheetErrorBarValueType,
   workSpreadsheetChartUsesNumericXAxis,
 } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import {
   CommittedOfficeNumberField,
   CommittedOfficeTextField,
@@ -32,6 +34,7 @@ export function SpreadsheetErrorBarEditor({
   onChange,
   customInput = 'references',
 }: SpreadsheetErrorBarEditorProps) {
+  const messages = useOfficeMessages();
   const replaceErrorBars = (
     index: number,
     change: Partial<WorkSpreadsheetErrorBars>,
@@ -53,24 +56,36 @@ export function SpreadsheetErrorBarEditor({
   return (
     <section
       className="work-spreadsheet-error-bars"
-      aria-label={`系列 ${seriesNumber} 误差线`}
+      aria-label={officeMessage(messages, 'spreadsheet.chart.errorBar.sectionAria', {
+        n: String(seriesNumber),
+      })}
     >
       <header>
-        <strong>误差线</strong>
+        <strong>
+          {officeMessage(messages, 'spreadsheet.chart.errorBar.title')}
+        </strong>
         <div>
-          {workSpreadsheetChartUsesNumericXAxis(chartType) && (
+          {workSpreadsheetChartUsesNumericXAxis(chartType) ? (
             <button
               type="button"
-              aria-label={`添加系列 ${seriesNumber} X 误差线`}
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.chart.errorBar.addXAria',
+                { n: String(seriesNumber) },
+              )}
               disabled={hasDirection('x')}
               onClick={() => addErrorBars('x')}
             >
               <Plus size={11} />X
             </button>
-          )}
+          ) : null}
           <button
             type="button"
-            aria-label={`添加系列 ${seriesNumber} Y 误差线`}
+            aria-label={officeMessage(
+              messages,
+              'spreadsheet.chart.errorBar.addYAria',
+              { n: String(seriesNumber) },
+            )}
             disabled={hasDirection('y')}
             onClick={() => addErrorBars('y')}
           >
@@ -78,26 +93,39 @@ export function SpreadsheetErrorBarEditor({
           </button>
         </div>
       </header>
-      {!errorBars.length && (
+      {!errorBars.length ? (
         <CollectionState
           className="work-spreadsheet-error-bars-empty"
           role="status"
         >
-          添加固定值、百分比、统计或自定义范围误差线。
+          {officeMessage(messages, 'spreadsheet.chart.errorBar.empty')}
         </CollectionState>
-      )}
+      ) : null}
       {errorBars.map((item, index) => {
         const errorBarNumber = index + 1;
-        const labelPrefix = `系列 ${seriesNumber} 误差线 ${errorBarNumber}`;
+        const labelPrefix = officeMessage(
+          messages,
+          'spreadsheet.chart.errorBar.itemPrefix',
+          { n: String(seriesNumber), index: String(errorBarNumber) },
+        );
         return (
           <fieldset key={`${seriesNumber}-${errorBarNumber}`}>
             <legend>
-              {item.direction.toUpperCase()} 误差线 {errorBarNumber}
+              {officeMessage(messages, 'spreadsheet.chart.errorBar.itemLegend', {
+                direction: item.direction.toUpperCase(),
+                index: String(errorBarNumber),
+              })}
             </legend>
             <div className="work-office-field">
-              <span>方向</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.errorBar.direction')}
+              </span>
               <OfficeSelect
-                ariaLabel={`${labelPrefix} 方向`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.errorBar.directionAria',
+                  { prefix: labelPrefix },
+                )}
                 value={item.direction}
                 options={[
                   ...(workSpreadsheetChartUsesNumericXAxis(chartType)
@@ -113,14 +141,38 @@ export function SpreadsheetErrorBarEditor({
               />
             </div>
             <div className="work-office-field">
-              <span>误差类型</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.errorBar.barType')}
+              </span>
               <OfficeSelect
-                ariaLabel={`${labelPrefix} 误差类型`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.errorBar.barTypeAria',
+                  { prefix: labelPrefix },
+                )}
                 value={item.barType}
                 options={[
-                  { value: 'both', label: '双向' },
-                  { value: 'plus', label: '正向' },
-                  { value: 'minus', label: '负向' },
+                  {
+                    value: 'both',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.barType.both',
+                    ),
+                  },
+                  {
+                    value: 'plus',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.barType.plus',
+                    ),
+                  },
+                  {
+                    value: 'minus',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.barType.minus',
+                    ),
+                  },
                 ]}
                 onValueChange={(barType) =>
                   replaceErrorBars(index, {
@@ -130,16 +182,52 @@ export function SpreadsheetErrorBarEditor({
               />
             </div>
             <div className="work-office-field">
-              <span>计算方式</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.errorBar.valueType')}
+              </span>
               <OfficeSelect
-                ariaLabel={`${labelPrefix} 计算方式`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.errorBar.valueTypeAria',
+                  { prefix: labelPrefix },
+                )}
                 value={item.valueType}
                 options={[
-                  { value: 'fixedValue', label: '固定值' },
-                  { value: 'percentage', label: '百分比' },
-                  { value: 'standardDeviation', label: '标准差' },
-                  { value: 'standardError', label: '标准误差' },
-                  { value: 'custom', label: '自定义范围' },
+                  {
+                    value: 'fixedValue',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.valueType.fixedValue',
+                    ),
+                  },
+                  {
+                    value: 'percentage',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.valueType.percentage',
+                    ),
+                  },
+                  {
+                    value: 'standardDeviation',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.valueType.standardDeviation',
+                    ),
+                  },
+                  {
+                    value: 'standardError',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.valueType.standardError',
+                    ),
+                  },
+                  {
+                    value: 'custom',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.valueType.customRange',
+                    ),
+                  },
                 ]}
                 onValueChange={(valueType) =>
                   replaceErrorBars(
@@ -152,15 +240,27 @@ export function SpreadsheetErrorBarEditor({
                 }
               />
             </div>
-            {(item.valueType === 'fixedValue' ||
-              item.valueType === 'percentage' ||
-              item.valueType === 'standardDeviation') && (
+            {item.valueType === 'fixedValue' ||
+            item.valueType === 'percentage' ||
+            item.valueType === 'standardDeviation' ? (
               <div className="work-office-field">
                 <span>
-                  {item.valueType === 'percentage' ? '百分比（%）' : '数值'}
+                  {item.valueType === 'percentage'
+                    ? officeMessage(
+                        messages,
+                        'spreadsheet.chart.errorBar.percentLabel',
+                      )
+                    : officeMessage(
+                        messages,
+                        'spreadsheet.chart.errorBar.valueLabel',
+                      )}
                 </span>
                 <CommittedOfficeNumberField
-                  ariaLabel={`${labelPrefix} 数值`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.valueAria',
+                    { prefix: labelPrefix },
+                  )}
                   min={0}
                   step={0.1}
                   value={
@@ -172,103 +272,166 @@ export function SpreadsheetErrorBarEditor({
                   onValueCommit={(value) => replaceErrorBars(index, { value })}
                 />
               </div>
-            )}
+            ) : null}
             {item.valueType === 'custom' &&
-              item.barType !== 'minus' &&
-              customInput === 'references' && (
-                <div className="work-office-field error-reference">
-                  <span>正误差引用</span>
-                  <OfficeTextField
-                    aria-label={`${labelPrefix} 正误差引用`}
-                    value={item.plusReference ?? ''}
-                    placeholder="'报告'!$C$2:$C$8"
-                    onChange={(event) =>
-                      replaceErrorBars(index, {
-                        plusReference: event.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            {item.valueType === 'custom' &&
-              item.barType !== 'plus' &&
-              customInput === 'references' && (
-                <div className="work-office-field error-reference">
-                  <span>负误差引用</span>
-                  <OfficeTextField
-                    aria-label={`${labelPrefix} 负误差引用`}
-                    value={item.minusReference ?? ''}
-                    placeholder="'报告'!$D$2:$D$8"
-                    onChange={(event) =>
-                      replaceErrorBars(index, {
-                        minusReference: event.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            {item.valueType === 'custom' &&
-              item.barType !== 'minus' &&
-              customInput === 'values' && (
-                <div className="work-office-field error-reference">
-                  <span>正误差值</span>
-                  <CustomErrorValuesInput
-                    label={`${labelPrefix} 正误差值`}
-                    id={`work-error-values-${seriesNumber}-${errorBarNumber}-plus`}
-                    values={item.plusValues}
-                    reference={item.plusReference}
-                    onCommit={(plusValues) =>
-                      replaceErrorBars(index, {
-                        plusValues,
-                        plusReference: undefined,
-                      })
-                    }
-                  />
-                  {item.plusReference && (
-                    <small title={item.plusReference}>
-                      已保留导入引用：{item.plusReference}
-                    </small>
+            item.barType !== 'minus' &&
+            customInput === 'references' ? (
+              <div className="work-office-field error-reference">
+                <span>
+                  {officeMessage(messages, 'spreadsheet.chart.errorBar.plusRef')}
+                </span>
+                <OfficeTextField
+                  aria-label={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.plusRefAria',
+                    { prefix: labelPrefix },
                   )}
-                </div>
-              )}
-            {item.valueType === 'custom' &&
-              item.barType !== 'plus' &&
-              customInput === 'values' && (
-                <div className="work-office-field error-reference">
-                  <span>负误差值</span>
-                  <CustomErrorValuesInput
-                    label={`${labelPrefix} 负误差值`}
-                    id={`work-error-values-${seriesNumber}-${errorBarNumber}-minus`}
-                    values={item.minusValues}
-                    reference={item.minusReference}
-                    onCommit={(minusValues) =>
-                      replaceErrorBars(index, {
-                        minusValues,
-                        minusReference: undefined,
-                      })
-                    }
-                  />
-                  {item.minusReference && (
-                    <small title={item.minusReference}>
-                      已保留导入引用：{item.minusReference}
-                    </small>
+                  value={item.plusReference ?? ''}
+                  placeholder={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.refPlaceholder',
                   )}
-                </div>
-              )}
+                  onChange={(event) =>
+                    replaceErrorBars(index, {
+                      plusReference: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            ) : null}
+            {item.valueType === 'custom' &&
+            item.barType !== 'plus' &&
+            customInput === 'references' ? (
+              <div className="work-office-field error-reference">
+                <span>
+                  {officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.minusRef',
+                  )}
+                </span>
+                <OfficeTextField
+                  aria-label={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.minusRefAria',
+                    { prefix: labelPrefix },
+                  )}
+                  value={item.minusReference ?? ''}
+                  placeholder={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.minusRefPlaceholder',
+                  )}
+                  onChange={(event) =>
+                    replaceErrorBars(index, {
+                      minusReference: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            ) : null}
+            {item.valueType === 'custom' &&
+            item.barType !== 'minus' &&
+            customInput === 'values' ? (
+              <div className="work-office-field error-reference">
+                <span>
+                  {officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.plusValue',
+                  )}
+                </span>
+                <CustomErrorValuesInput
+                  label={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.plusValueAria',
+                    { prefix: labelPrefix },
+                  )}
+                  id={`work-error-values-${seriesNumber}-${errorBarNumber}-plus`}
+                  values={item.plusValues}
+                  reference={item.plusReference}
+                  keptRefPlaceholder={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.keptRefPlaceholder',
+                  )}
+                  onCommit={(plusValues) =>
+                    replaceErrorBars(index, {
+                      plusValues,
+                      plusReference: undefined,
+                    })
+                  }
+                />
+                {item.plusReference ? (
+                  <small title={item.plusReference}>
+                    {officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.keptPlusRef',
+                      { ref: item.plusReference },
+                    )}
+                  </small>
+                ) : null}
+              </div>
+            ) : null}
+            {item.valueType === 'custom' &&
+            item.barType !== 'plus' &&
+            customInput === 'values' ? (
+              <div className="work-office-field error-reference">
+                <span>
+                  {officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.minusValue',
+                  )}
+                </span>
+                <CustomErrorValuesInput
+                  label={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.minusValueAria',
+                    { prefix: labelPrefix },
+                  )}
+                  id={`work-error-values-${seriesNumber}-${errorBarNumber}-minus`}
+                  values={item.minusValues}
+                  reference={item.minusReference}
+                  keptRefPlaceholder={officeMessage(
+                    messages,
+                    'spreadsheet.chart.errorBar.keptRefPlaceholder',
+                  )}
+                  onCommit={(minusValues) =>
+                    replaceErrorBars(index, {
+                      minusValues,
+                      minusReference: undefined,
+                    })
+                  }
+                />
+                {item.minusReference ? (
+                  <small title={item.minusReference}>
+                    {officeMessage(
+                      messages,
+                      'spreadsheet.chart.errorBar.keptMinusRef',
+                      { ref: item.minusReference },
+                    )}
+                  </small>
+                ) : null}
+              </div>
+            ) : null}
             <OfficeCheckbox
               className="check"
-              ariaLabel={`${labelPrefix} 显示端帽`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.errorBar.endCapsAria',
+                { prefix: labelPrefix },
+              )}
               checked={item.showEndCaps !== false}
               onCheckedChange={(showEndCaps) =>
                 replaceErrorBars(index, { showEndCaps })
               }
             >
-              显示端帽
+              {officeMessage(messages, 'spreadsheet.chart.errorBar.endCaps')}
             </OfficeCheckbox>
             <button
               type="button"
               className="remove-error-bars"
-              aria-label={`删除${labelPrefix}`}
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.chart.errorBar.deleteAria',
+                { prefix: labelPrefix },
+              )}
               onClick={() =>
                 onChange(
                   errorBars.filter((_, candidate) => candidate !== index),
@@ -301,12 +464,14 @@ function CustomErrorValuesInput({
   id,
   values,
   reference,
+  keptRefPlaceholder,
   onCommit,
 }: {
   label: string;
   id: string;
   values: number[] | undefined;
   reference: string | undefined;
+  keptRefPlaceholder: string;
   onCommit: (values: number[] | undefined) => void;
 }) {
   return (
@@ -316,7 +481,7 @@ function CustomErrorValuesInput({
       value={values}
       formatValue={(items) => items?.join(', ') ?? ''}
       parseValue={parseCustomValues}
-      placeholder={reference ? '已保留导入引用；输入数值可替换' : '1, 2, 1.5'}
+      placeholder={reference ? keptRefPlaceholder : '1, 2, 1.5'}
       onValueCommit={onCommit}
     />
   );

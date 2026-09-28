@@ -16,6 +16,11 @@ import type {
   DocumentTableSizingState,
 } from '../work-document-table-sizing';
 import type { DocumentTableColumnWidthType } from '../work-document-table-column-widths';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 
 export const PIXELS_PER_CENTIMETER = 96 / 2.54;
 
@@ -131,25 +136,29 @@ export function createDocumentTablePropertiesDraft(
 
 export function documentTablePropertiesErrors(
   draft: DocumentTablePropertiesDraft,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): DocumentTablePropertiesErrors {
   const cellMargins: DocumentTablePropertiesErrors['cellMargins'] = {};
   if (!draft.cell.useTableMargins) {
     for (const side of marginSides) {
       if (!validNumber(draft.cell.margins[side], 0, 5)) {
-        cellMargins[side] = '请输入 0 到 5 之间的厘米数。';
+        cellMargins[side] = officeMessage(
+          messages,
+          'document.tableProps.error.cm0to5',
+        );
       }
     }
   }
   return {
-    tableWidth: tableWidthError(draft),
-    tableIndent: tableIndentError(draft),
+    tableWidth: tableWidthError(draft, messages),
+    tableIndent: tableIndentError(draft, messages),
     rowHeight: draft.row.heightEnabled
-      ? dimensionError(draft.row.height)
+      ? dimensionError(draft.row.height, messages)
       : null,
     columnWidth:
       draft.column.widthType === 'percent'
-        ? percentageError(draft.column.width)
-        : dimensionError(draft.column.width),
+        ? percentageError(draft.column.width, messages)
+        : dimensionError(draft.column.width, messages),
     cellMargins,
   };
 }
@@ -386,31 +395,47 @@ function marginDrafts(
   };
 }
 
-function tableWidthError(draft: DocumentTablePropertiesDraft): string | null {
+function tableWidthError(
+  draft: DocumentTablePropertiesDraft,
+  messages: OfficeMessageCatalog,
+): string | null {
   if (draft.table.widthType === 'auto') return null;
   if (draft.table.widthType === 'percent') {
     return validNumber(draft.table.width, 1, 100)
       ? null
-      : '请输入 1 到 100 之间的百分比。';
+      : officeMessage(messages, 'document.tableProps.error.percent1to100');
   }
   return validNumber(draft.table.width, 0.5, 30)
     ? null
-    : '请输入 0.5 到 30 之间的厘米数。';
+    : officeMessage(messages, 'document.tableProps.error.cm05to30');
 }
 
-function tableIndentError(draft: DocumentTablePropertiesDraft): string | null {
+function tableIndentError(
+  draft: DocumentTablePropertiesDraft,
+  messages: OfficeMessageCatalog,
+): string | null {
   if (draft.table.alignment !== 'left') return null;
   return validNumber(draft.table.indent, 0, 30)
     ? null
-    : '请输入 0 到 30 之间的厘米数。';
+    : officeMessage(messages, 'document.tableProps.error.cm0to30');
 }
 
-function dimensionError(value: string): string | null {
-  return validNumber(value, 0.5, 30) ? null : '请输入 0.5 到 30 之间的厘米数。';
+function dimensionError(
+  value: string,
+  messages: OfficeMessageCatalog,
+): string | null {
+  return validNumber(value, 0.5, 30)
+    ? null
+    : officeMessage(messages, 'document.tableProps.error.cm05to30');
 }
 
-function percentageError(value: string): string | null {
-  return validNumber(value, 1, 100) ? null : '请输入 1 到 100 之间的百分比。';
+function percentageError(
+  value: string,
+  messages: OfficeMessageCatalog,
+): string | null {
+  return validNumber(value, 1, 100)
+    ? null
+    : officeMessage(messages, 'document.tableProps.error.percent1to100');
 }
 
 function validNumber(value: string, minimum: number, maximum: number): boolean {

@@ -6,6 +6,11 @@ import FontFamily from '@tiptap/extension-text-style/font-family';
 import FontSize from '@tiptap/extension-text-style/font-size';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkSlideElement, WorkSlideTextRun } from '../work-types';
@@ -34,6 +39,7 @@ export function PresentationTextEditor({
   onExitEditing,
   onSelectionChange,
 }: PresentationTextEditorProps) {
+  const messages = useOfficeMessages();
   const elementRef = useRef(element);
   const onChangeRef = useRef(onChange);
   const onEditorChangeRef = useRef(onEditorChange);
@@ -64,7 +70,8 @@ export function PresentationTextEditor({
   const extensions = useMemo(
     () =>
       createPresentationTextEditorExtensions(
-        element.placeholder?.prompt ?? '输入文字',
+        element.placeholder?.prompt ??
+          officeMessage(messages, 'presentation.text.placeholder'),
       ),
     [element.placeholder?.prompt],
   );
@@ -83,7 +90,7 @@ export function PresentationTextEditor({
     content: initialContentRef.current,
     editorProps: {
       attributes: {
-        'aria-label': '幻灯片文本',
+        'aria-label': officeMessage(messages, 'presentation.text.aria'),
         'aria-multiline': 'true',
         'data-presentation-text-engine': 'tiptap',
         'data-slide-editor': 'true',
@@ -195,7 +202,10 @@ export function presentationFocusOwnerIsUnchanged(
 }
 
 export function createPresentationTextEditorExtensions(
-  placeholder = '输入文字',
+  placeholder = officeMessage(
+    resolveOfficeMessages(),
+    'presentation.text.placeholder',
+  ),
 ): Extensions {
   return [
     StarterKit.configure({

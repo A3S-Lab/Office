@@ -4,6 +4,7 @@ import {
   ThumbnailPlugin,
 } from '@embedpdf/react-pdf-viewer';
 import { PdfErrorCode, type PdfErrorReason, type Task } from '@embedpdf/models';
+import { officeMessage } from '../../../i18n/office-locale';
 import { X } from 'lucide-react';
 import {
   useEffect,
@@ -13,6 +14,7 @@ import {
   useState,
   type RefObject,
 } from 'react';
+import { useOfficeMessages } from './office-messages-context';
 
 const PDF_THUMBNAIL_ITEM_HEIGHT = 190;
 const PDF_THUMBNAIL_WINDOW_THRESHOLD = 48;
@@ -51,6 +53,7 @@ export function PdfThumbnailRail({
   onCloseMobileNavigation,
   onSelectPage,
 }: PdfThumbnailRailProps) {
+  const messages = useOfficeMessages();
   const viewportRef = useRef<HTMLElement>(null);
   const pendingKeyboardFocusPageRef = useRef<number | null>(null);
   const [anchorIndex, setAnchorIndex] = useState(() =>
@@ -159,7 +162,7 @@ export function PdfThumbnailRail({
       {...modalAttributes}
       id={mobileNavigationId}
       className="work-pdf-thumbnail-rail"
-      aria-label="PDF 页面"
+      aria-label={officeMessage(messages, 'pdf.thumbnails.aria')}
       data-pdf-page-count={totalPages}
       data-pdf-thumbnail-mounted-count={pages.length}
       data-pdf-thumbnail-window-end={range.end}
@@ -168,11 +171,11 @@ export function PdfThumbnailRail({
       data-pdf-thumbnail-windowed={range.windowed ? 'true' : 'false'}
     >
       <header className="work-pdf-thumbnail-header">
-        <strong>页面</strong>
+        <strong>{officeMessage(messages, 'pdf.thumbnails.title')}</strong>
         <button
           ref={mobileCloseButtonRef}
           type="button"
-          aria-label="关闭 PDF 页面导航"
+          aria-label={officeMessage(messages, 'pdf.thumbnails.close')}
           onClick={onCloseMobileNavigation}
         >
           <X size={16} />
@@ -181,7 +184,7 @@ export function PdfThumbnailRail({
       <nav
         ref={viewportRef}
         className="work-pdf-thumbnail-viewport"
-        aria-label="PDF 页面缩略图"
+        aria-label={officeMessage(messages, 'pdf.thumbnails.listAria')}
         onScroll={(event) => {
           setAnchorIndex(
             Math.floor(event.currentTarget.scrollTop / itemHeight),
@@ -263,13 +266,14 @@ function PdfPageThumbnail({
   onSelectPage: (page: number) => void;
   onSelectPageFromKeyboard: (page: number) => void;
 }) {
+  const messages = useOfficeMessages();
   const { sourceUrl, state } = usePdfThumbnailSource(registry, page);
   return (
     <button
       type="button"
       className={current ? 'active' : undefined}
       aria-current={current ? 'page' : undefined}
-      aria-label={`第 ${page} 页`}
+      aria-label={officeMessage(messages, 'pdf.thumbnails.pageAria', { page: String(page) })}
       data-pdf-page-thumbnail
       data-pdf-page-index={page - 1}
       onClick={() => onSelectPage(page)}

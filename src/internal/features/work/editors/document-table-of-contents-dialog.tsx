@@ -1,4 +1,6 @@
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type {
   WorkDocumentTableOfContentsLeader,
   WorkDocumentTableOfContentsOptions,
@@ -8,6 +10,7 @@ import {
   OfficeSelect,
   type OfficeSelectOption,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentTableOfContentsDialogProps {
   editing: boolean;
@@ -26,35 +29,43 @@ export function DocumentTableOfContentsDialog({
   onOptionsChange,
   onSubmit,
 }: DocumentTableOfContentsDialogProps) {
+  const messages = useOfficeMessages();
   const updateOptions = (update: Partial<WorkDocumentTableOfContentsOptions>) =>
     onOptionsChange({ ...options, ...update });
+  const levelOptions = tableOfContentsLevelOptions(messages);
 
   return (
     <Dialog
-      title={editing ? '自定义目录' : '插入目录'}
-      description="从文档标题生成可更新目录，并保留原生 DOCX 目录域。"
+      title={officeMessage(
+        messages,
+        editing ? 'document.toc.title.edit' : 'document.toc.title.insert',
+      )}
+      description={officeMessage(messages, 'document.toc.description')}
       className="work-document-table-of-contents-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onCancel}
       footer={
         <>
           <Button tone="quiet" onClick={onCancel}>
-            取消
+            {officeMessage(messages, 'document.toc.cancel')}
           </Button>
           <Button tone="primary" onClick={onSubmit}>
-            {editing ? '应用' : '插入目录'}
+            {officeMessage(
+              messages,
+              editing ? 'document.toc.apply' : 'document.toc.insert',
+            )}
           </Button>
         </>
       }
     >
       <div className="work-document-table-of-contents-dialog-grid">
         <div className="work-document-table-of-contents-dialog-field">
-          <span>起始标题级别</span>
+          <span>{officeMessage(messages, 'document.toc.startLevel')}</span>
           <OfficeSelect
             initialFocus
-            ariaLabel="起始标题级别"
+            ariaLabel={officeMessage(messages, 'document.toc.startLevelAria')}
             value={String(options.minLevel)}
-            options={tableOfContentsLevelOptions}
+            options={levelOptions}
             onValueChange={(value) => {
               const minLevel = Number(value);
               updateOptions({
@@ -65,11 +76,11 @@ export function DocumentTableOfContentsDialog({
           />
         </div>
         <div className="work-document-table-of-contents-dialog-field">
-          <span>结束标题级别</span>
+          <span>{officeMessage(messages, 'document.toc.endLevel')}</span>
           <OfficeSelect
-            ariaLabel="结束标题级别"
+            ariaLabel={officeMessage(messages, 'document.toc.endLevelAria')}
             value={String(options.maxLevel)}
-            options={tableOfContentsLevelOptions.map((option) => ({
+            options={levelOptions.map((option) => ({
               ...option,
               disabled: Number(option.value) < options.minLevel,
             }))}
@@ -81,14 +92,14 @@ export function DocumentTableOfContentsDialog({
       </div>
       <div className="work-document-table-of-contents-dialog-options">
         <OfficeCheckbox
-          ariaLabel="目录项使用超链接"
+          ariaLabel={officeMessage(messages, 'document.toc.hyperlinksAria')}
           checked={options.hyperlinks}
           onCheckedChange={(hyperlinks) => updateOptions({ hyperlinks })}
         >
-          目录项使用超链接
+          {officeMessage(messages, 'document.toc.hyperlinks')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="显示页码"
+          ariaLabel={officeMessage(messages, 'document.toc.showPagesAria')}
           checked={options.showPageNumbers}
           onCheckedChange={(showPageNumbers) =>
             updateOptions({
@@ -98,44 +109,48 @@ export function DocumentTableOfContentsDialog({
             })
           }
         >
-          显示页码
+          {officeMessage(messages, 'document.toc.showPages')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="页码右对齐"
+          ariaLabel={officeMessage(messages, 'document.toc.rightAlignAria')}
           checked={options.rightAlignPageNumbers}
           disabled={!options.showPageNumbers}
           onCheckedChange={(rightAlignPageNumbers) =>
             updateOptions({ rightAlignPageNumbers })
           }
         >
-          页码右对齐
+          {officeMessage(messages, 'document.toc.rightAlign')}
         </OfficeCheckbox>
       </div>
       <div className="work-document-table-of-contents-dialog-leader">
-        <span>前导符</span>
+        <span>{officeMessage(messages, 'document.toc.leader')}</span>
         <OfficeSelect<WorkDocumentTableOfContentsLeader>
-          ariaLabel="目录前导符"
+          ariaLabel={officeMessage(messages, 'document.toc.leaderAria')}
           value={options.leader}
-          options={tableOfContentsLeaderOptions}
+          options={tableOfContentsLeaderOptions(messages)}
           disabled={!options.showPageNumbers || !options.rightAlignPageNumbers}
           onValueChange={(leader) => updateOptions({ leader })}
         />
       </div>
       <fieldset
         className="work-document-table-of-contents-dialog-preview"
-        aria-label="目录预览"
+        aria-label={officeMessage(messages, 'document.toc.previewAria')}
         data-toc-leader={options.leader}
         data-toc-right-align-page-numbers={String(
           options.rightAlignPageNumbers,
         )}
       >
-        <legend>目录</legend>
+        <legend>
+          {officeMessage(messages, 'document.toc.preview.legend')}
+        </legend>
         <span>
-          项目概述 <i aria-hidden="true" />
+          {officeMessage(messages, 'document.toc.preview.item1')}{' '}
+          <i aria-hidden="true" />
           {options.showPageNumbers ? '1' : ''}
         </span>
         <span className="nested">
-          实施计划 <i aria-hidden="true" />
+          {officeMessage(messages, 'document.toc.preview.item2')}{' '}
+          <i aria-hidden="true" />
           {options.showPageNumbers ? '3' : ''}
         </span>
       </fieldset>
@@ -143,14 +158,36 @@ export function DocumentTableOfContentsDialog({
   );
 }
 
-const tableOfContentsLevelOptions = Array.from({ length: 9 }, (_, index) => ({
-  value: String(index + 1),
-  label: `标题 ${index + 1}`,
-})) satisfies readonly OfficeSelectOption[];
+function tableOfContentsLevelOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption[] {
+  return Array.from({ length: 9 }, (_, index) => ({
+    value: String(index + 1),
+    label: officeMessage(messages, 'document.toc.headingLevel', {
+      n: String(index + 1),
+    }),
+  }));
+}
 
-const tableOfContentsLeaderOptions = [
-  { value: 'dot', label: '点线（……）' },
-  { value: 'dash', label: '短横线（----）' },
-  { value: 'underline', label: '下划线（____）' },
-  { value: 'none', label: '无' },
-] as const satisfies readonly OfficeSelectOption<WorkDocumentTableOfContentsLeader>[];
+function tableOfContentsLeaderOptions(
+  messages: OfficeMessageCatalog,
+): readonly OfficeSelectOption<WorkDocumentTableOfContentsLeader>[] {
+  return [
+    {
+      value: 'dot',
+      label: officeMessage(messages, 'document.toc.leader.dot'),
+    },
+    {
+      value: 'dash',
+      label: officeMessage(messages, 'document.toc.leader.dash'),
+    },
+    {
+      value: 'underline',
+      label: officeMessage(messages, 'document.toc.leader.underline'),
+    },
+    {
+      value: 'none',
+      label: officeMessage(messages, 'document.toc.leader.none'),
+    },
+  ];
+}

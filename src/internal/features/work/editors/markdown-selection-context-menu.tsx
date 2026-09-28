@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { officeMessage } from '../../../i18n/office-locale';
 import type {
   WorkMarkdownSelectionAction,
   WorkMarkdownSelectionContext,
@@ -7,6 +8,7 @@ import type {
 } from '../work-markdown-selection-menu';
 import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import { customSelectionMenuItems } from './document-editor-support';
+import { useOfficeMessages } from './office-messages-context';
 import { createWorkMarkdownVisualSelectionAction } from '../work-markdown-selection-menu';
 
 export interface MarkdownSelectionMenuState {
@@ -29,6 +31,7 @@ export function MarkdownSelectionContextMenu({
   ) => WorkMarkdownSelectionAction;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const createAction = (): {
     context: WorkMarkdownSelectionContext;
     dispose(): void;
@@ -39,7 +42,7 @@ export function MarkdownSelectionContextMenu({
 
   return (
     <WorkspaceContextMenu
-      label="选中文本操作"
+      label={officeMessage(messages, 'markdown.selection.menu')}
       x={menu.x}
       y={menu.y}
       items={customSelectionMenuItems(menu.items, createAction)}

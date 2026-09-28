@@ -7,6 +7,10 @@ import type {
   WorkSpreadsheetNamedRange,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type { SpreadsheetCellRange } from './spreadsheet-cell-range';
 import { spreadsheetSheetBounds } from './spreadsheet-keyboard-navigation';
 
@@ -235,15 +239,34 @@ function spreadsheetGoToSuccess(
 function spreadsheetGoToError(
   code: SpreadsheetGoToErrorCode,
 ): SpreadsheetGoToResolution {
+  const catalog = resolveOfficeMessages();
   const messages: Record<SpreadsheetGoToErrorCode, string> = {
-    'ambiguous-name': '同一作用域中存在多个同名区域，无法确定定位目标。',
-    empty: '请输入单元格、连续区域或已定义名称。',
-    'hidden-sheet': '不能定位到隐藏工作表。',
-    'invalid-reference': '请输入有效的 A1 单元格、连续区域或已定义名称。',
-    'multiple-ranges': '一次只能定位到一个连续区域。',
-    'out-of-bounds': '引用超出了目标工作表的有效边界。',
-    'sheet-not-found': '找不到引用的工作表。',
-    'unsupported-name': '该名称不是可定位的连续单元格区域。',
+    'ambiguous-name': officeMessage(
+      catalog,
+      'spreadsheet.goTo.error.ambiguousName',
+    ),
+    empty: officeMessage(catalog, 'spreadsheet.goTo.error.empty'),
+    'hidden-sheet': officeMessage(catalog, 'spreadsheet.goTo.error.hiddenSheet'),
+    'invalid-reference': officeMessage(
+      catalog,
+      'spreadsheet.goTo.error.invalidReference',
+    ),
+    'multiple-ranges': officeMessage(
+      catalog,
+      'spreadsheet.goTo.error.multipleRanges',
+    ),
+    'out-of-bounds': officeMessage(
+      catalog,
+      'spreadsheet.goTo.error.outOfBounds',
+    ),
+    'sheet-not-found': officeMessage(
+      catalog,
+      'spreadsheet.goTo.error.sheetNotFound',
+    ),
+    'unsupported-name': officeMessage(
+      catalog,
+      'spreadsheet.goTo.error.unsupportedName',
+    ),
   };
   return { ok: false, code, message: messages[code] };
 }

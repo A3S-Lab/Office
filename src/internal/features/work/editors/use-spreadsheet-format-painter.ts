@@ -15,6 +15,7 @@ import {
   spreadsheetFormatPainterCellCount,
   spreadsheetFormatPainterTargetRange,
 } from './spreadsheet-format-painter';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 export type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 
@@ -48,6 +49,7 @@ export function useSpreadsheetFormatPainter({
   sourceSheetId,
   workbook,
 }: UseSpreadsheetFormatPainterOptions): SpreadsheetFormatPainterController {
+  const messages = resolveOfficeMessages();
   const contentRef = useRef(content);
   const editableRef = useRef(editable);
   const onErrorRef = useRef(onError);
@@ -88,7 +90,9 @@ export function useSpreadsheetFormatPainter({
         spreadsheetFormatPainterMaximumCells
       ) {
         onErrorRef.current(
-          `格式刷一次最多复制 ${spreadsheetFormatPainterMaximumCells.toLocaleString()} 个单元格，请缩小源区域后重试。`,
+          officeMessage(messages, 'spreadsheet.formatPainter.sourceTooLarge', {
+            count: spreadsheetFormatPainterMaximumCells.toLocaleString(),
+          }),
         );
         return false;
       }
@@ -102,14 +106,14 @@ export function useSpreadsheetFormatPainter({
           !pattern ||
           !spreadsheetFormatPatternMatchesRange(pattern, source.range)
         ) {
-          onErrorRef.current('无法读取完整的源格式，请重新选择后重试。');
+          onErrorRef.current(officeMessage(messages, 'spreadsheet.formatPainter.sourceIncomplete'));
           return false;
         }
         sessionRef.current = { mode: nextMode, pattern };
         setMode(nextMode);
         return true;
       } catch {
-        onErrorRef.current('无法读取源格式，请重新选择后重试。');
+        onErrorRef.current(officeMessage(messages, 'spreadsheet.formatPainter.sourceFailed'));
         return false;
       }
     },
@@ -143,7 +147,9 @@ export function useSpreadsheetFormatPainter({
         spreadsheetFormatPainterMaximumCells
       ) {
         onErrorRef.current(
-          `格式刷一次最多应用到 ${spreadsheetFormatPainterMaximumCells.toLocaleString()} 个单元格，请缩小目标区域后重试。`,
+          officeMessage(messages, 'spreadsheet.formatPainter.targetTooLarge', {
+            count: spreadsheetFormatPainterMaximumCells.toLocaleString(),
+          }),
         );
         return false;
       }
@@ -167,7 +173,7 @@ export function useSpreadsheetFormatPainter({
         );
       } catch {
         session.lastAppliedTargetKey = undefined;
-        onErrorRef.current('无法应用格式，请缩小目标区域或重试。');
+        onErrorRef.current(officeMessage(messages, 'spreadsheet.formatPainter.applyFailed'));
         return false;
       }
       if (session.mode === 'once') clearSession();

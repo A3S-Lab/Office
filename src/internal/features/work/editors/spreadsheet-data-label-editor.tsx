@@ -1,9 +1,11 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   normalizeWorkSpreadsheetDataLabelPosition,
   type WorkSpreadsheetChartType,
   type WorkSpreadsheetDataLabelPosition,
   type WorkSpreadsheetDataLabels,
 } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import {
   OfficeCheckbox,
   OfficeSelect,
@@ -23,7 +25,12 @@ export function SpreadsheetDataLabelEditor({
   value,
   onChange,
 }: SpreadsheetDataLabelEditorProps) {
-  const labelPrefix = `系列 ${seriesNumber} 数据标签`;
+  const messages = useOfficeMessages();
+  const labelPrefix = officeMessage(
+    messages,
+    'spreadsheet.chart.dataLabel.prefix',
+    { n: String(seriesNumber) },
+  );
   const change = (update: Partial<WorkSpreadsheetDataLabels>) =>
     onChange({ ...value, ...update });
 
@@ -31,75 +38,163 @@ export function SpreadsheetDataLabelEditor({
     <section className="work-spreadsheet-data-labels" aria-label={labelPrefix}>
       <OfficeCheckbox
         className="check enable-data-labels"
-        ariaLabel={`系列 ${seriesNumber} 显示数据标签`}
+        ariaLabel={officeMessage(messages, 'spreadsheet.chart.dataLabel.showAria', {
+          n: String(seriesNumber),
+        })}
         checked={Boolean(value)}
         onCheckedChange={(checked) =>
           onChange(checked ? { showValue: true } : undefined)
         }
       >
-        显示数据标签
+        {officeMessage(messages, 'spreadsheet.chart.dataLabel.show')}
       </OfficeCheckbox>
-      {value && (
+      {value ? (
         <div>
           <OfficeCheckbox
             className="check"
-            ariaLabel={`${labelPrefix}显示数值`}
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.chart.dataLabel.showValueAria',
+              { prefix: labelPrefix },
+            )}
             checked={value.showValue === true}
             onCheckedChange={(showValue) => change({ showValue })}
           >
-            数值
+            {officeMessage(messages, 'spreadsheet.chart.dataLabel.showValue')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="check"
-            ariaLabel={`${labelPrefix}显示分类名称`}
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.chart.dataLabel.showCategoryAria',
+              { prefix: labelPrefix },
+            )}
             checked={value.showCategoryName === true}
             onCheckedChange={(showCategoryName) => change({ showCategoryName })}
           >
-            分类名称
+            {officeMessage(messages, 'spreadsheet.chart.dataLabel.showCategory')}
           </OfficeCheckbox>
           <OfficeCheckbox
             className="check"
-            ariaLabel={`${labelPrefix}显示系列名称`}
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.chart.dataLabel.showSeriesAria',
+              { prefix: labelPrefix },
+            )}
             checked={value.showSeriesName === true}
             onCheckedChange={(showSeriesName) => change({ showSeriesName })}
           >
-            系列名称
+            {officeMessage(messages, 'spreadsheet.chart.dataLabel.showSeries')}
           </OfficeCheckbox>
-          {(chartType === 'pie' || chartType === 'doughnut') && (
+          {chartType === 'pie' || chartType === 'doughnut' ? (
             <OfficeCheckbox
               className="check"
-              ariaLabel={`${labelPrefix}显示百分比`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.dataLabel.showPercentAria',
+                { prefix: labelPrefix },
+              )}
               checked={value.showPercentage === true}
               onCheckedChange={(showPercentage) => change({ showPercentage })}
             >
-              百分比
+              {officeMessage(
+                messages,
+                'spreadsheet.chart.dataLabel.showPercent',
+              )}
             </OfficeCheckbox>
-          )}
-          {chartType === 'bubble' && (
+          ) : null}
+          {chartType === 'bubble' ? (
             <OfficeCheckbox
               className="check"
-              ariaLabel={`${labelPrefix}显示气泡大小`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.dataLabel.showBubbleAria',
+                { prefix: labelPrefix },
+              )}
               checked={value.showBubbleSize === true}
               onCheckedChange={(showBubbleSize) => change({ showBubbleSize })}
             >
-              气泡大小
+              {officeMessage(
+                messages,
+                'spreadsheet.chart.dataLabel.showBubble',
+              )}
             </OfficeCheckbox>
-          )}
+          ) : null}
           <div className="work-office-field data-label-position">
-            <span>位置</span>
+            <span>
+              {officeMessage(messages, 'spreadsheet.chart.dataLabel.position')}
+            </span>
             <OfficeSelect
-              ariaLabel={`${labelPrefix}位置`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.dataLabel.positionAria',
+                { prefix: labelPrefix },
+              )}
               value={normalizeWorkSpreadsheetDataLabelPosition(value.position)}
               options={[
-                { value: 'bestFit', label: '最佳匹配' },
-                { value: 'center', label: '居中' },
-                { value: 'insideBase', label: '内侧基部' },
-                { value: 'insideEnd', label: '内侧末端' },
-                { value: 'outsideEnd', label: '外侧末端' },
-                { value: 'left', label: '左侧' },
-                { value: 'right', label: '右侧' },
-                { value: 'above', label: '上方' },
-                { value: 'below', label: '下方' },
+                {
+                  value: 'bestFit',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.bestFit',
+                  ),
+                },
+                {
+                  value: 'center',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.center',
+                  ),
+                },
+                {
+                  value: 'insideBase',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.insideBase',
+                  ),
+                },
+                {
+                  value: 'insideEnd',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.insideEnd',
+                  ),
+                },
+                {
+                  value: 'outsideEnd',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.outsideEnd',
+                  ),
+                },
+                {
+                  value: 'left',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.left',
+                  ),
+                },
+                {
+                  value: 'right',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.right',
+                  ),
+                },
+                {
+                  value: 'above',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.above',
+                  ),
+                },
+                {
+                  value: 'below',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.dataLabel.position.below',
+                  ),
+                },
               ]}
               onValueChange={(position) =>
                 change({
@@ -109,16 +204,22 @@ export function SpreadsheetDataLabelEditor({
             />
           </div>
           <div className="work-office-field data-label-separator">
-            <span>分隔符</span>
+            <span>
+              {officeMessage(messages, 'spreadsheet.chart.dataLabel.separator')}
+            </span>
             <OfficeTextField
-              aria-label={`${labelPrefix}分隔符`}
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.chart.dataLabel.separatorAria',
+                { prefix: labelPrefix },
+              )}
               value={value.separator ?? ', '}
               maxLength={64}
               onChange={(event) => change({ separator: event.target.value })}
             />
           </div>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

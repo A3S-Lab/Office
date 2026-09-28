@@ -1,6 +1,8 @@
 import { Cloud, Grid2X2, PanelsTopLeft } from 'lucide-react';
-import { presentationCommentCount } from './presentation-comments-panel';
+import { officeMessage } from '../../../i18n/office-locale';
 import type { WorkPresentationContent, WorkSlide } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
+import { presentationCommentCount } from './presentation-comments-panel';
 import {
   WorkOfficeStatusBar,
   WorkOfficeZoomControls,
@@ -23,6 +25,7 @@ export function PresentationStatusBar({
   onViewModeChange: (mode: 'normal' | 'sorter') => void;
   onZoomChange: (zoom: number) => void;
 }) {
+  const messages = useOfficeMessages();
   const slideNumber =
     content.slides.findIndex((slide) => slide.id === selectedSlide.id) + 1;
 
@@ -33,8 +36,14 @@ export function PresentationStatusBar({
         <>
           <button
             type="button"
-            aria-label="普通演示视图"
-            title="普通演示视图"
+            aria-label={officeMessage(
+              messages,
+              'presentation.status.normalViewAria',
+            )}
+            title={officeMessage(
+              messages,
+              'presentation.status.normalViewTitle',
+            )}
             aria-pressed={viewMode === 'normal'}
             onClick={() => onViewModeChange('normal')}
           >
@@ -42,8 +51,14 @@ export function PresentationStatusBar({
           </button>
           <button
             type="button"
-            aria-label="幻灯片浏览视图"
-            title="幻灯片浏览视图"
+            aria-label={officeMessage(
+              messages,
+              'presentation.status.sorterViewAria',
+            )}
+            title={officeMessage(
+              messages,
+              'presentation.status.sorterViewTitle',
+            )}
             aria-pressed={viewMode === 'sorter'}
             onClick={() => onViewModeChange('sorter')}
           >
@@ -52,34 +67,59 @@ export function PresentationStatusBar({
           <span className="work-office-status-divider" />
           <WorkOfficeZoomControls
             zoom={zoom}
-            decreaseLabel="缩小演示文稿"
-            increaseLabel="放大演示文稿"
-            outputLabel="演示缩放比例"
-            sliderLabel="演示缩放"
+            decreaseLabel={officeMessage(
+              messages,
+              'presentation.status.zoomOut',
+            )}
+            increaseLabel={officeMessage(
+              messages,
+              'presentation.status.zoomIn',
+            )}
+            outputLabel={officeMessage(
+              messages,
+              'presentation.status.zoomOutput',
+            )}
+            sliderLabel={officeMessage(
+              messages,
+              'presentation.status.zoomSlider',
+            )}
             onChange={onZoomChange}
           />
         </>
       }
     >
       <output
-        aria-label="幻灯片状态"
+        aria-label={officeMessage(messages, 'presentation.status.slideAria')}
         className="work-presentation-status-primary"
       >
-        幻灯片 {slideNumber} / {content.slides.length}
+        {officeMessage(messages, 'presentation.status.slideProgress', {
+          current: String(slideNumber),
+          total: String(content.slides.length),
+        })}
       </output>
       <output
-        aria-label="演示备注状态"
+        aria-label={officeMessage(messages, 'presentation.status.notesAria')}
         className="work-presentation-status-secondary"
       >
-        {selectedSlide.notes?.trim() ? '已添加演讲者备注' : '无演讲者备注'}
+        {selectedSlide.notes?.trim()
+          ? officeMessage(messages, 'presentation.status.notesPresent')
+          : officeMessage(messages, 'presentation.status.notesAbsent')}
       </output>
       <output
-        aria-label="演示批注状态"
+        aria-label={officeMessage(
+          messages,
+          'presentation.status.commentsAria',
+        )}
         className="work-presentation-status-secondary"
       >
-        批注：{presentationCommentCount(content.slides)}
+        {officeMessage(messages, 'presentation.status.commentsCount', {
+          count: String(presentationCommentCount(content.slides)),
+        })}
       </output>
-      <output aria-label="演示保存状态" className="work-office-save-status">
+      <output
+        aria-label={officeMessage(messages, 'presentation.status.saveAria')}
+        className="work-office-save-status"
+      >
         <Cloud size={12} />
         {saveStatus}
       </output>

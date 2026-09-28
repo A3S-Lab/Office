@@ -1,3 +1,4 @@
+import { sanitizeDocumentHtml } from './work-document-html-sanitizer';
 import { documentContentLayoutProperties } from './work-document-section';
 import {
   downloadBlob,
@@ -277,7 +278,9 @@ export async function importWorkDocumentFile(
     ? new TextDecoder().decode(context.bytes)
     : await file.text();
   html =
-    extension === 'html' || extension === 'htm' ? source : textToHtml(source);
+    extension === 'html' || extension === 'htm'
+      ? sanitizeDocumentHtml(source)
+      : textToHtml(source);
   const artifact = createWorkArtifact('blank-document');
   artifact.title = fileNameWithoutExtension(file.name);
   artifact.content = await withStructuredDocumentModel({

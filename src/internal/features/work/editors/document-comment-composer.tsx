@@ -8,7 +8,9 @@ import {
   useState,
 } from 'react';
 import { Button } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { OfficeTextArea } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentCommentDraft {
   id: string;
@@ -28,9 +30,12 @@ export const DocumentCommentComposer = forwardRef<
     onSubmit: (text: string) => string | null;
   }
 >(function DocumentCommentComposer(
-  { author = '我', draft, top, onCancel, onDirtyChange, onSubmit },
+  { author, draft, top, onCancel, onDirtyChange, onSubmit },
   forwardedRef,
 ) {
+  const messages = useOfficeMessages();
+  const resolvedAuthor =
+    author ?? officeMessage(messages, 'document.comment.defaultAuthor');
   const titleId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState('');
@@ -84,21 +89,33 @@ export const DocumentCommentComposer = forwardRef<
       onKeyDown={handleKeyDown}
     >
       <header>
-        <span className="work-document-comment-avatar" title={author}>
-          {commentAuthorInitials(author)}
+        <span className="work-document-comment-avatar" title={resolvedAuthor}>
+          {commentAuthorInitials(
+            resolvedAuthor,
+            officeMessage(messages, 'document.comment.authorInitialFallback'),
+          )}
         </span>
         <span className="work-document-comment-composer-heading">
-          <strong id={titleId}>添加批注</strong>
+          <strong id={titleId}>
+            {officeMessage(messages, 'document.comment.composer.title')}
+          </strong>
           <span title={draft.anchorText}>
-            {author} · {draft.anchorText}
+            {resolvedAuthor} · {draft.anchorText}
           </span>
         </span>
       </header>
       <OfficeTextArea
         ref={inputRef}
-        aria-label="批注内容"
+        data-document-comment-body=""
+        aria-label={officeMessage(
+          messages,
+          'document.comment.composer.bodyAria',
+        )}
         value={text}
-        placeholder="输入批注…"
+        placeholder={officeMessage(
+          messages,
+          'document.comment.composer.placeholder',
+        )}
         onChange={(event) => {
           setText(event.target.value);
           if (error) setError(null);
@@ -107,7 +124,7 @@ export const DocumentCommentComposer = forwardRef<
       {error && <p role="alert">{error}</p>}
       <footer>
         <Button size="compact" tone="quiet" onClick={onCancel}>
-          取消
+          {officeMessage(messages, 'document.comment.composer.cancel')}
         </Button>
         <Button
           size="compact"
@@ -116,16 +133,16 @@ export const DocumentCommentComposer = forwardRef<
           onClick={submit}
         >
           <MessageSquarePlus size={13} />
-          添加批注
+          {officeMessage(messages, 'document.comment.composer.submit')}
         </Button>
       </footer>
     </article>
   );
 });
 
-function commentAuthorInitials(author: string): string {
+function commentAuthorInitials(author: string, fallback: string): string {
   const words = author.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return '审';
+  if (!words.length) return fallback;
   if (words.length === 1) return Array.from(words[0]).slice(0, 1).join('');
   return words
     .slice(0, 2)

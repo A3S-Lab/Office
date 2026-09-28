@@ -1,4 +1,6 @@
 import type { Image } from '@fortune-sheet/core';
+import type { OfficeMessageCatalog } from '../../i18n/office-messages';
+import { officeMessage, resolveOfficeMessages } from '../../i18n/office-locale';
 import type { WorkSpreadsheetChartLayout } from './work-spreadsheet-chart-layout';
 import type { WorkSpreadsheetImageTransform } from './work-xlsx-image-transform';
 
@@ -217,10 +219,15 @@ export function normalizeWorkSpreadsheetChartAxisGroup(
 
 export function workSpreadsheetCombinationSeriesTypeLabel(
   type: WorkSpreadsheetCombinationSeriesType,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (type === 'line') return '折线图';
-  if (type === 'area') return '面积图';
-  return '柱形图';
+  if (type === 'line') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.line');
+  }
+  if (type === 'area') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.area');
+  }
+  return officeMessage(messages, 'spreadsheet.chart.typeShort.column');
 }
 
 export function workSpreadsheetChartSupportsTrendlines(
@@ -293,20 +300,49 @@ export function normalizeWorkSpreadsheetErrorBars(
 
 export function workSpreadsheetErrorBarValueTypeLabel(
   type: WorkSpreadsheetErrorBarValueType,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (type === 'percentage') return '百分比';
-  if (type === 'standardDeviation') return '标准差';
-  if (type === 'standardError') return '标准误差';
-  if (type === 'custom') return '自定义';
-  return '固定值';
+  if (type === 'percentage') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.errorBar.valueType.percentage',
+    );
+  }
+  if (type === 'standardDeviation') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.errorBar.valueType.standardDeviation',
+    );
+  }
+  if (type === 'standardError') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.errorBar.valueType.standardError',
+    );
+  }
+  if (type === 'custom') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.errorBar.valueType.custom',
+    );
+  }
+  return officeMessage(
+    messages,
+    'spreadsheet.chart.errorBar.valueType.fixedValue',
+  );
 }
 
 export function workSpreadsheetErrorBarTypeLabel(
   type: WorkSpreadsheetErrorBarType,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (type === 'plus') return '正向';
-  if (type === 'minus') return '负向';
-  return '双向';
+  if (type === 'plus') {
+    return officeMessage(messages, 'spreadsheet.chart.errorBar.barType.plus');
+  }
+  if (type === 'minus') {
+    return officeMessage(messages, 'spreadsheet.chart.errorBar.barType.minus');
+  }
+  return officeMessage(messages, 'spreadsheet.chart.errorBar.barType.both');
 }
 
 function normalizedErrorBarAmount(value: number): number {
@@ -358,16 +394,48 @@ export function normalizeWorkSpreadsheetDataLabels(
 
 export function workSpreadsheetDataLabelPositionLabel(
   position: WorkSpreadsheetDataLabelPosition,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (position === 'center') return '居中';
-  if (position === 'insideBase') return '内侧基部';
-  if (position === 'insideEnd') return '内侧末端';
-  if (position === 'outsideEnd') return '外侧末端';
-  if (position === 'left') return '左侧';
-  if (position === 'right') return '右侧';
-  if (position === 'above') return '上方';
-  if (position === 'below') return '下方';
-  return '最佳匹配';
+  if (position === 'center') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.dataLabel.position.center',
+    );
+  }
+  if (position === 'insideBase') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.dataLabel.position.insideBase',
+    );
+  }
+  if (position === 'insideEnd') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.dataLabel.position.insideEnd',
+    );
+  }
+  if (position === 'outsideEnd') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.dataLabel.position.outsideEnd',
+    );
+  }
+  if (position === 'left') {
+    return officeMessage(messages, 'spreadsheet.chart.dataLabel.position.left');
+  }
+  if (position === 'right') {
+    return officeMessage(messages, 'spreadsheet.chart.dataLabel.position.right');
+  }
+  if (position === 'above') {
+    return officeMessage(messages, 'spreadsheet.chart.dataLabel.position.above');
+  }
+  if (position === 'below') {
+    return officeMessage(messages, 'spreadsheet.chart.dataLabel.position.below');
+  }
+  return officeMessage(
+    messages,
+    'spreadsheet.chart.dataLabel.position.bestFit',
+  );
 }
 
 export function normalizeWorkSpreadsheetTrendlineType(
@@ -410,13 +478,27 @@ export function normalizeWorkSpreadsheetTrendline(
 
 export function workSpreadsheetTrendlineTypeLabel(
   type: WorkSpreadsheetTrendlineType,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (type === 'exponential') return '指数';
-  if (type === 'logarithmic') return '对数';
-  if (type === 'polynomial') return '多项式';
-  if (type === 'power') return '幂';
-  if (type === 'movingAverage') return '移动平均';
-  return '线性';
+  if (type === 'exponential') {
+    return officeMessage(messages, 'spreadsheet.chart.trendline.type.exponential');
+  }
+  if (type === 'logarithmic') {
+    return officeMessage(messages, 'spreadsheet.chart.trendline.type.logarithmic');
+  }
+  if (type === 'polynomial') {
+    return officeMessage(messages, 'spreadsheet.chart.trendline.type.polynomial');
+  }
+  if (type === 'power') {
+    return officeMessage(messages, 'spreadsheet.chart.trendline.type.power');
+  }
+  if (type === 'movingAverage') {
+    return officeMessage(
+      messages,
+      'spreadsheet.chart.trendline.type.movingAverage',
+    );
+  }
+  return officeMessage(messages, 'spreadsheet.chart.trendline.type.linear');
 }
 
 function normalizedInteger(
@@ -437,17 +519,36 @@ function normalizedNonNegativeNumber(value: unknown): number {
 
 export function workSpreadsheetChartTypeLabel(
   type: WorkSpreadsheetChartType,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (type === 'bar') return '条形图';
-  if (type === 'line') return '折线图';
-  if (type === 'pie') return '饼图';
-  if (type === 'doughnut') return '圆环图';
-  if (type === 'area') return '面积图';
-  if (type === 'radar') return '雷达图';
-  if (type === 'scatter') return '散点图';
-  if (type === 'bubble') return '气泡图';
-  if (type === 'combination') return '组合图';
-  return '柱形图';
+  if (type === 'bar') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.bar');
+  }
+  if (type === 'line') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.line');
+  }
+  if (type === 'pie') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.pie');
+  }
+  if (type === 'doughnut') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.doughnut');
+  }
+  if (type === 'area') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.area');
+  }
+  if (type === 'radar') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.radar');
+  }
+  if (type === 'scatter') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.scatter');
+  }
+  if (type === 'bubble') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.bubble');
+  }
+  if (type === 'combination') {
+    return officeMessage(messages, 'spreadsheet.chart.typeShort.combination');
+  }
+  return officeMessage(messages, 'spreadsheet.chart.typeShort.column');
 }
 
 export interface WorkSpreadsheetChartSeries {

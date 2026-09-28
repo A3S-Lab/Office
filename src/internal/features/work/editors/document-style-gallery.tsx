@@ -1,62 +1,91 @@
 import type { Editor } from '@tiptap/core';
-import { type KeyboardEvent, useId, useRef } from 'react';
+import { type KeyboardEvent, useId, useMemo, useRef } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { getDocumentCommandDefinition } from './document-command-catalog';
+import { documentCommandLabel } from './document-command-i18n';
 import { OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
-const documentParagraphStyles = [
-  {
-    value: 'paragraph',
-    label: '正文',
-    level: null,
-    shortcut: getDocumentCommandDefinition('normalStyle').shortcut,
-  },
-  {
-    value: 'h1',
-    label: '标题 1',
-    level: 1,
-    shortcut: getDocumentCommandDefinition('heading1').shortcut,
-  },
-  {
-    value: 'h2',
-    label: '标题 2',
-    level: 2,
-    shortcut: getDocumentCommandDefinition('heading2').shortcut,
-  },
-  {
-    value: 'h3',
-    label: '标题 3',
-    level: 3,
-    shortcut: getDocumentCommandDefinition('heading3').shortcut,
-  },
-  {
-    value: 'h4',
-    label: '标题 4',
-    level: 4,
-    shortcut: undefined,
-  },
-  {
-    value: 'h5',
-    label: '标题 5',
-    level: 5,
-    shortcut: undefined,
-  },
-  {
-    value: 'h6',
-    label: '标题 6',
-    level: 6,
-    shortcut: undefined,
-  },
-] as const;
+type DocumentParagraphStyleValue =
+  | 'paragraph'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'h5'
+  | 'h6';
 
-const documentParagraphStyleAriaKeyShortcuts = documentParagraphStyles
-  .map((style) => style.shortcut?.aria)
-  .filter((value): value is string => Boolean(value))
-  .join(' ');
+type DocumentParagraphStyle = {
+  value: DocumentParagraphStyleValue;
+  label: string;
+  level: 1 | 2 | 3 | 4 | 5 | 6 | null;
+  shortcut: ReturnType<typeof getDocumentCommandDefinition>['shortcut'];
+};
 
-type DocumentParagraphStyle = (typeof documentParagraphStyles)[number];
-type DocumentParagraphStyleValue = DocumentParagraphStyle['value'];
+function buildDocumentParagraphStyles(
+  messages: OfficeMessageCatalog,
+): DocumentParagraphStyle[] {
+  return [
+    {
+      value: 'paragraph',
+      label: documentCommandLabel('normalStyle', messages),
+      level: null,
+      shortcut: getDocumentCommandDefinition('normalStyle').shortcut,
+    },
+    {
+      value: 'h1',
+      label: documentCommandLabel('heading1', messages),
+      level: 1,
+      shortcut: getDocumentCommandDefinition('heading1').shortcut,
+    },
+    {
+      value: 'h2',
+      label: documentCommandLabel('heading2', messages),
+      level: 2,
+      shortcut: getDocumentCommandDefinition('heading2').shortcut,
+    },
+    {
+      value: 'h3',
+      label: documentCommandLabel('heading3', messages),
+      level: 3,
+      shortcut: getDocumentCommandDefinition('heading3').shortcut,
+    },
+    {
+      value: 'h4',
+      label: messages['document.style.heading4'],
+      level: 4,
+      shortcut: undefined,
+    },
+    {
+      value: 'h5',
+      label: messages['document.style.heading5'],
+      level: 5,
+      shortcut: undefined,
+    },
+    {
+      value: 'h6',
+      label: messages['document.style.heading6'],
+      level: 6,
+      shortcut: undefined,
+    },
+  ];
+}
 
 export function DocumentStyleGallery({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
+  const styles = useMemo(
+    () => buildDocumentParagraphStyles(messages),
+    [messages],
+  );
+  const styleAriaKeyShortcuts = useMemo(
+    () =>
+      styles
+        .map((style) => style.shortcut?.aria)
+        .filter((value): value is string => Boolean(value))
+        .join(' '),
+    [styles],
+  );
   const groupName = useId();
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const activeStyle = documentParagraphStyleValue(editor);
@@ -66,10 +95,8 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
     nextIndex: number,
   ) => {
     event.preventDefault();
-    const normalizedIndex =
-      (nextIndex + documentParagraphStyles.length) %
-      documentParagraphStyles.length;
-    const style = documentParagraphStyles[normalizedIndex];
+    const normalizedIndex = (nextIndex + styles.length) % styles.length;
+    const style = styles[normalizedIndex];
     if (!style) return;
     applyDocumentParagraphStyle(editor, style);
     inputsRef.current[normalizedIndex]?.focus({ preventScroll: true });
@@ -80,9 +107,9 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
       <div
         className="work-document-style-gallery"
         role="radiogroup"
-        aria-label="段落样式库"
+        aria-label={messages['document.style.gallery']}
       >
-        {documentParagraphStyles.map((style, index) => {
+        {styles.map((style, index) => {
           const active = style.value === activeStyle;
           return (
             <label
@@ -91,7 +118,10 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
               data-document-style={style.value}
               title={
                 style.shortcut
-                  ? `${style.label}（${style.shortcut.label}）`
+                  ? officeMessage(messages, 'document.command.withShortcut', {
+                      label: style.label,
+                      shortcut: style.shortcut.label,
+                    })
                   : style.label
               }
             >
@@ -101,7 +131,9 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
                 }}
                 type="radio"
                 name={groupName}
-                aria-label={`应用样式：${style.label}`}
+                aria-label={officeMessage(messages, 'document.style.apply', {
+                  label: style.label,
+                })}
                 aria-keyshortcuts={style.shortcut?.aria}
                 checked={active}
                 tabIndex={active ? 0 : -1}
@@ -117,7 +149,7 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
                   } else if (event.key === 'Home') {
                     moveSelection(event, 0);
                   } else if (event.key === 'End') {
-                    moveSelection(event, documentParagraphStyles.length - 1);
+                    moveSelection(event, styles.length - 1);
                   }
                 }}
               />
@@ -127,18 +159,16 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
         })}
       </div>
       <OfficeSelect
-        ariaLabel="段落样式"
-        ariaKeyShortcuts={documentParagraphStyleAriaKeyShortcuts}
+        ariaLabel={messages['document.style.select']}
+        ariaKeyShortcuts={styleAriaKeyShortcuts}
         className="work-document-style-select"
         value={activeStyle}
-        options={documentParagraphStyles.map((style) => ({
+        options={styles.map((style) => ({
           ...style,
           meta: style.shortcut?.label,
         }))}
         onValueChange={(value) => {
-          const style = documentParagraphStyles.find(
-            (candidate) => candidate.value === value,
-          );
+          const style = styles.find((candidate) => candidate.value === value);
           if (style) applyDocumentParagraphStyle(editor, style);
         }}
       />

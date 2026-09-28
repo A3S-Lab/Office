@@ -1,25 +1,38 @@
 import { ChevronDown, Underline } from 'lucide-react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   type SpreadsheetUnderlineStyle,
   spreadsheetUnderlineCellValue,
   spreadsheetUnderlineStyle,
 } from '../work-spreadsheet-underline';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
 
-const underlineOptions = [
-  { value: 'none', label: '无下划线' },
-  { value: 'single', label: '单下划线' },
-  { value: 'double', label: '双下划线' },
-  { value: 'singleAccounting', label: '单会计用下划线' },
-  { value: 'doubleAccounting', label: '双会计用下划线' },
+const UNDERLINE_OPTION_SPECS = [
+  { value: 'none', labelKey: 'spreadsheet.underline.none' },
+  { value: 'single', labelKey: 'spreadsheet.underline.single' },
+  { value: 'double', labelKey: 'spreadsheet.underline.double' },
+  {
+    value: 'singleAccounting',
+    labelKey: 'spreadsheet.underline.singleAccounting',
+  },
+  {
+    value: 'doubleAccounting',
+    labelKey: 'spreadsheet.underline.doubleAccounting',
+  },
 ] as const satisfies readonly {
-  label: string;
+  labelKey:
+    | 'spreadsheet.underline.none'
+    | 'spreadsheet.underline.single'
+    | 'spreadsheet.underline.double'
+    | 'spreadsheet.underline.singleAccounting'
+    | 'spreadsheet.underline.doubleAccounting';
   value: SpreadsheetUnderlineStyle;
 }[];
 
@@ -32,6 +45,11 @@ export function SpreadsheetUnderlineRibbon({
   commands: SpreadsheetEditorCommands;
   value: unknown;
 }) {
+  const messages = useOfficeMessages();
+  const underlineOptions = UNDERLINE_OPTION_SPECS.map((spec) => ({
+    value: spec.value,
+    label: officeMessage(messages, spec.labelKey),
+  }));
   const style = spreadsheetUnderlineStyle(value);
   const active = style !== 'none';
   const definition = spreadsheetCommandCatalog.underline;
@@ -45,8 +63,8 @@ export function SpreadsheetUnderlineRibbon({
 
   return (
     <Popover
-      label="更多下划线"
-      panelLabel="下划线样式"
+      label={officeMessage(messages, 'spreadsheet.underline.more')}
+      panelLabel={officeMessage(messages, 'spreadsheet.underline.styles')}
       panelRole="menu"
       portal
       placement="bottom-end"
@@ -63,7 +81,15 @@ export function SpreadsheetUnderlineRibbon({
             aria-label={definition.label}
             aria-keyshortcuts={definition.shortcut.aria}
             aria-pressed={active}
-            title={`${definition.label}（${currentLabel}；${definition.shortcut.label}）`}
+            title={officeMessage(
+              messages,
+              'spreadsheet.underline.titleWithStyle',
+              {
+                label: definition.label,
+                style: currentLabel,
+                shortcut: definition.shortcut.label,
+              },
+            )}
             disabled={!can.toggleCellFormat('un')}
             onClick={() => commands.toggleCellFormat('un')}
           >
@@ -72,7 +98,7 @@ export function SpreadsheetUnderlineRibbon({
           <button
             {...triggerProps}
             className={`work-spreadsheet-underline-disclosure${open ? ' active' : ''}`}
-            title="更多下划线"
+            title={officeMessage(messages, 'spreadsheet.underline.more')}
           >
             <ChevronDown size={12} aria-hidden="true" />
           </button>

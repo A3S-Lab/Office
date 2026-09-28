@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@rstest/core';
 import {
   adjustSpreadsheetNumberFormat,
+  spreadsheetNumberFormatPreview,
   spreadsheetNumberFormatValue,
   spreadsheetNumberFormatCode,
   spreadsheetNumberFormatPreset,
@@ -72,6 +73,25 @@ describe('spreadsheet number formatting', () => {
       fa: '# ?/?',
       t: 'n',
     });
+  });
+
+  test('previews the active cell with the draft format code', () => {
+    expect(spreadsheetNumberFormatPreview('#,##0.00', { v: 1234.5 })).toBe(
+      '1,234.50',
+    );
+    expect(spreadsheetNumberFormatPreview('0.00%', { v: 0.125 })).toBe(
+      '12.50%',
+    );
+    expect(spreadsheetNumberFormatPreview('yyyy-MM-dd', { v: 45_292 })).toBe(
+      '2024-01-01',
+    );
+    expect(spreadsheetNumberFormatPreview('@', { v: 1234.56 })).toBe(
+      '1234.56',
+    );
+    expect(spreadsheetNumberFormatPreview('#,##0.00', { v: 'hello' })).toBe(
+      'hello',
+    );
+    expect(spreadsheetNumberFormatPreview('#,##0.00', null)).toBe('1,234.56');
   });
 
   test('adjusts decimals without dropping grouping, currency, or percent', () => {

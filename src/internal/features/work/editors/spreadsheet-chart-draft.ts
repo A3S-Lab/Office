@@ -18,6 +18,10 @@ import {
   workSpreadsheetChartSupportsErrorBars,
   workSpreadsheetChartUsesNumericXAxis,
 } from '../work-types';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 
 export interface ChartListItem {
   sheetId: string;
@@ -169,8 +173,11 @@ export function newChartSeries(
   type: WorkSpreadsheetChartType,
   index: number,
 ): WorkSpreadsheetChartSeries {
+  const catalog = resolveOfficeMessages();
   return {
-    name: `系列 ${index + 1}`,
+    name: officeMessage(catalog, 'spreadsheet.chartDraft.seriesName', {
+      index: String(index + 1),
+    }),
     values: [],
     valuesReference: '',
     ...(workSpreadsheetChartUsesNumericXAxis(type)
@@ -213,15 +220,25 @@ export function validateSeriesErrorBars(
 ): string | null {
   const directions = new Set<string>();
   for (const [errorBarIndex, errorBars] of (series.errorBars ?? []).entries()) {
-    const prefix = `系列 ${seriesIndex + 1} 的误差线 ${errorBarIndex + 1}`;
+    const catalog = resolveOfficeMessages();
+    const prefix = officeMessage(catalog, 'spreadsheet.chartDraft.errorBar.prefix', {
+      series: String(seriesIndex + 1),
+      errorBar: String(errorBarIndex + 1),
+    });
     if (
       !workSpreadsheetChartUsesNumericXAxis(chartType) &&
       errorBars.direction === 'x'
     ) {
-      return `${prefix}不能在当前图表类型中使用 X 方向。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.errorBar.xNotAllowed', {
+        prefix,
+      });
     }
     if (directions.has(errorBars.direction)) {
-      return `系列 ${seriesIndex + 1} 的误差线方向不能重复。`;
+      return officeMessage(
+        catalog,
+        'spreadsheet.chartDraft.errorBar.duplicateDirection',
+        { series: String(seriesIndex + 1) },
+      );
     }
     directions.add(errorBars.direction);
 
@@ -233,7 +250,9 @@ export function validateSeriesErrorBars(
         !Number.isFinite(errorBars.value) ||
         errorBars.value < 0)
     ) {
-      return `${prefix}的数值必须是非负有效数字。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.errorBar.nonNegative', {
+        prefix,
+      });
     }
     if (errorBars.valueType !== 'custom') continue;
 
@@ -243,7 +262,7 @@ export function validateSeriesErrorBars(
         ownerSheet,
         errorBars.plusReference,
         errorBars.plusValues,
-        `${prefix}的正误差`,
+        officeMessage(catalog, 'spreadsheet.chartDraft.errorBar.plus', { prefix }),
       );
       if (issue) return issue;
     }
@@ -253,7 +272,7 @@ export function validateSeriesErrorBars(
         ownerSheet,
         errorBars.minusReference,
         errorBars.minusValues,
-        `${prefix}的负误差`,
+        officeMessage(catalog, 'spreadsheet.chartDraft.errorBar.minus', { prefix }),
       );
       if (issue) return issue;
     }
@@ -267,41 +286,54 @@ export function validateChartAxes(
   axes: WorkSpreadsheetChart['axes'],
   hasSecondaryAxes: boolean,
 ): string | null {
+  const catalog = resolveOfficeMessages();
   const entries = [
-    ['横坐标轴', axes?.bottom],
-    ['纵坐标轴', axes?.left],
+    [officeMessage(catalog, 'spreadsheet.chartDraft.axis.bottom'), axes?.bottom],
+    [officeMessage(catalog, 'spreadsheet.chartDraft.axis.left'), axes?.left],
     ...(hasSecondaryAxes
       ? ([
-          ['次横坐标轴', axes?.top],
-          ['次纵坐标轴', axes?.right],
+          [officeMessage(catalog, 'spreadsheet.chartDraft.axis.top'), axes?.top],
+          [officeMessage(catalog, 'spreadsheet.chartDraft.axis.right'), axes?.right],
         ] as const)
       : []),
   ] as const;
   for (const [label, axis] of entries) {
     if ((axis?.title?.length ?? 0) > 255)
-      return `${label}标题不能超过 255 个字符。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.axis.titleTooLong', {
+        label,
+      });
     if (
       axis?.titleReference?.trim() &&
       !parseSpreadsheetChartReference(content, ownerSheet, axis.titleReference)
     ) {
-      return `${label}标题引用无效。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.axis.titleRefInvalid', {
+        label,
+      });
     }
     if (axis?.minimum !== undefined && !Number.isFinite(axis.minimum))
-      return `${label}最小值无效。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.axis.minInvalid', {
+        label,
+      });
     if (axis?.maximum !== undefined && !Number.isFinite(axis.maximum))
-      return `${label}最大值无效。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.axis.maxInvalid', {
+        label,
+      });
     if (
       axis?.minimum !== undefined &&
       axis.maximum !== undefined &&
       axis.minimum >= axis.maximum
     ) {
-      return `${label}最小值必须小于最大值。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.axis.minGteMax', {
+        label,
+      });
     }
     if (
       axis?.majorUnit !== undefined &&
       (!Number.isFinite(axis.majorUnit) || axis.majorUnit <= 0)
     ) {
-      return `${label}主单位必须大于 0。`;
+      return officeMessage(catalog, 'spreadsheet.chartDraft.axis.majorUnitInvalid', {
+        label,
+      });
     }
     if (
       axis?.labelInterval !== undefined &&
@@ -309,10 +341,18 @@ export function validateChartAxes(
         axis.labelInterval < 1 ||
         axis.labelInterval > 31_999)
     ) {
-      return `${label}标签间隔必须是 1 到 31999 之间的整数。`;
+      return officeMessage(
+        catalog,
+        'spreadsheet.chartDraft.axis.labelIntervalInvalid',
+        { label },
+      );
     }
     if ((axis?.numberFormat?.length ?? 0) > 255)
-      return `${label}数字格式不能超过 255 个字符。`;
+      return officeMessage(
+        catalog,
+        'spreadsheet.chartDraft.axis.numberFormatTooLong',
+        { label },
+      );
   }
   return null;
 }
@@ -327,10 +367,19 @@ function validateCustomErrorBarSource(
   if (reference?.trim()) {
     return parseSpreadsheetChartReference(content, ownerSheet, reference)
       ? null
-      : `${label}引用无效。`;
+      : officeMessage(resolveOfficeMessages(), 'spreadsheet.chartDraft.refInvalid', {
+          label,
+        });
   }
-  if (!values?.length) return `${label}需要有效的单元格引用。`;
+  if (!values?.length)
+    return officeMessage(
+      resolveOfficeMessages(),
+      'spreadsheet.chartDraft.refRequired',
+      { label },
+    );
   return values.every((value) => Number.isFinite(value) && value >= 0)
     ? null
-    : `${label}缓存包含无效数值。`;
+    : officeMessage(resolveOfficeMessages(), 'spreadsheet.chartDraft.cacheInvalid', {
+        label,
+      });
 }

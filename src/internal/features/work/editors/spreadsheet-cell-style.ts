@@ -1,4 +1,9 @@
 import type { Cell } from '@fortune-sheet/core';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { cloneSparseMatrix } from '../spreadsheet-sparse';
 import type {
   WorkSpreadsheetContent,
@@ -42,6 +47,10 @@ export const spreadsheetCellStylePresetIds = [
 export type SpreadsheetCellStyleChoice =
   (typeof spreadsheetCellStylePresetIds)[number];
 export type SpreadsheetCellStylePreset = SpreadsheetCellStyleChoice | 'custom';
+export type SpreadsheetCellStyleGroup =
+  | 'common'
+  | 'dataAndModel'
+  | 'titlesAndTotals';
 
 export const MAX_SPREADSHEET_CELL_STYLE_CELLS = 10_000;
 
@@ -68,7 +77,7 @@ export interface SpreadsheetCellStylePreview {
 export interface SpreadsheetCellStyleDefinition {
   id: SpreadsheetCellStyleChoice;
   label: string;
-  group: '常用' | '数据和模型' | '标题和汇总';
+  group: SpreadsheetCellStyleGroup;
   description: string;
   format: SpreadsheetCellStyleFormat;
   borders?: readonly SpreadsheetCellBorderFormat[];
@@ -88,18 +97,17 @@ const normalFormat: SpreadsheetCellStyleFormat = {
 
 const style = (
   id: SpreadsheetCellStyleChoice,
-  label: string,
-  group: SpreadsheetCellStyleDefinition['group'],
-  description: string,
+  group: SpreadsheetCellStyleGroup,
   format: Partial<SpreadsheetCellStyleFormat>,
-  borders?: readonly SpreadsheetCellBorderFormat[],
+  borders: readonly SpreadsheetCellBorderFormat[] | undefined,
+  catalog: OfficeMessageCatalog,
 ): SpreadsheetCellStyleDefinition => {
   const completeFormat = { ...normalFormat, ...format };
   return {
     id,
-    label,
+    label: officeMessage(catalog, `spreadsheet.cellStyle.${id}`),
     group,
-    description,
+    description: officeMessage(catalog, `spreadsheet.cellStyle.${id}.desc`),
     format: completeFormat,
     borders,
     preview: {
@@ -128,149 +136,155 @@ const edgeBorder = (
   { target, color, style: styleName },
 ];
 
-export const spreadsheetCellStyleDefinitions = [
-  style('normal', '常规', '常用', '恢复默认字体、颜色和无边框外观。', {}),
-  style('good', '好', '常用', '突出正向结果或已完成状态。', {
-    bg: '#c6efce',
-    fc: '#006100',
-  }),
-  style('bad', '差', '常用', '突出错误、失败或超限状态。', {
-    bg: '#ffc7ce',
-    fc: '#9c0006',
-  }),
-  style('neutral', '适中', '常用', '突出需要关注但尚未定性的状态。', {
-    bg: '#ffeb9c',
-    fc: '#9c5700',
-  }),
-  style(
-    'calculation',
-    '计算',
-    '数据和模型',
-    '标记模型中的计算单元格。',
-    {
-      bl: 1,
-      fc: '#fa7d00',
-    },
-    edgeBorder('bottom', '#7f7f7f', 'thin'),
-  ),
-  style(
-    'checkCell',
-    '检查单元格',
-    '数据和模型',
-    '标记需要人工复核的值。',
-    {
-      bg: '#a5a5a5',
-      bl: 1,
-      fc: '#ffffff',
-    },
-    allBorder('#7f7f7f'),
-  ),
-  style(
-    'explanatoryText',
-    '解释性文本',
-    '数据和模型',
-    '为模型补充低强调度的说明。',
-    { fc: '#7f7f7f', it: 1 },
-  ),
-  style(
-    'input',
-    '输入',
-    '数据和模型',
-    '标记允许用户录入的单元格。',
-    {
-      bg: '#ffffcc',
-      fc: '#3f3f76',
-    },
-    allBorder('#7f8fa6'),
-  ),
-  style(
-    'linkedCell',
-    '链接单元格',
-    '数据和模型',
-    '标记来自其他位置的链接值。',
-    {
-      fc: '#0563c1',
-      un: 1,
-    },
-  ),
-  style('note', '注释', '数据和模型', '标记工作表中的说明或备注。', {
-    bg: '#ffffcc',
-    fc: '#3f3f3f',
-  }),
-  style(
-    'output',
-    '输出',
-    '数据和模型',
-    '标记模型输出或最终结果。',
-    {
-      bg: '#f2f2f2',
-      bl: 1,
-      fc: '#3f3f3f',
-    },
-    allBorder('#7f8fa6'),
-  ),
-  style('warningText', '警告文本', '数据和模型', '用高对比文字提示风险。', {
-    bl: 1,
-    fc: '#c00000',
-  }),
-  style(
-    'heading1',
-    '标题 1',
-    '标题和汇总',
-    '用于工作表的一级标题。',
-    {
-      bl: 1,
-      fc: '#1f4e78',
-      fs: 15,
-    },
-    edgeBorder('bottom', '#5b9bd5', 'thick'),
-  ),
-  style(
-    'heading2',
-    '标题 2',
-    '标题和汇总',
-    '用于工作表的二级标题。',
-    {
-      bl: 1,
-      fc: '#1f4e78',
-      fs: 13,
-    },
-    edgeBorder('bottom', '#5b9bd5', 'medium'),
-  ),
-  style('heading3', '标题 3', '标题和汇总', '用于工作表的三级标题。', {
-    bl: 1,
-    fc: '#1f4e78',
-    fs: 11,
-  }),
-  style('heading4', '标题 4', '标题和汇总', '用于工作表的四级标题。', {
-    bl: 1,
-    fc: '#1f4e78',
-    fs: 11,
-    it: 1,
-  }),
-  style(
-    'total',
-    '总计',
-    '标题和汇总',
-    '强调汇总行或最终合计。',
-    {
-      bl: 1,
-    },
-    edgeBorder('top', '#172033', 'medium'),
-  ),
-] as const satisfies readonly SpreadsheetCellStyleDefinition[];
+const CELL_STYLE_SPECS = [
+  { id: 'normal', group: 'common', format: {}, borders: undefined },
+  {
+    id: 'good',
+    group: 'common',
+    format: { bg: '#c6efce', fc: '#006100' },
+    borders: undefined,
+  },
+  {
+    id: 'bad',
+    group: 'common',
+    format: { bg: '#ffc7ce', fc: '#9c0006' },
+    borders: undefined,
+  },
+  {
+    id: 'neutral',
+    group: 'common',
+    format: { bg: '#ffeb9c', fc: '#9c5700' },
+    borders: undefined,
+  },
+  {
+    id: 'calculation',
+    group: 'dataAndModel',
+    format: { bl: 1, fc: '#fa7d00' },
+    borders: edgeBorder('bottom', '#7f7f7f', 'thin'),
+  },
+  {
+    id: 'checkCell',
+    group: 'dataAndModel',
+    format: { bg: '#a5a5a5', bl: 1, fc: '#ffffff' },
+    borders: allBorder('#7f7f7f'),
+  },
+  {
+    id: 'explanatoryText',
+    group: 'dataAndModel',
+    format: { fc: '#7f7f7f', it: 1 },
+    borders: undefined,
+  },
+  {
+    id: 'input',
+    group: 'dataAndModel',
+    format: { bg: '#ffffcc', fc: '#3f3f76' },
+    borders: allBorder('#7f8fa6'),
+  },
+  {
+    id: 'linkedCell',
+    group: 'dataAndModel',
+    format: { fc: '#0563c1', un: 1 },
+    borders: undefined,
+  },
+  {
+    id: 'note',
+    group: 'dataAndModel',
+    format: { bg: '#ffffcc', fc: '#3f3f3f' },
+    borders: undefined,
+  },
+  {
+    id: 'output',
+    group: 'dataAndModel',
+    format: { bg: '#f2f2f2', bl: 1, fc: '#3f3f3f' },
+    borders: allBorder('#7f8fa6'),
+  },
+  {
+    id: 'warningText',
+    group: 'dataAndModel',
+    format: { bl: 1, fc: '#c00000' },
+    borders: undefined,
+  },
+  {
+    id: 'heading1',
+    group: 'titlesAndTotals',
+    format: { bl: 1, fc: '#1f4e78', fs: 15 },
+    borders: edgeBorder('bottom', '#5b9bd5', 'thick'),
+  },
+  {
+    id: 'heading2',
+    group: 'titlesAndTotals',
+    format: { bl: 1, fc: '#1f4e78', fs: 13 },
+    borders: edgeBorder('bottom', '#5b9bd5', 'medium'),
+  },
+  {
+    id: 'heading3',
+    group: 'titlesAndTotals',
+    format: { bl: 1, fc: '#1f4e78', fs: 11 },
+    borders: undefined,
+  },
+  {
+    id: 'heading4',
+    group: 'titlesAndTotals',
+    format: { bl: 1, fc: '#1f4e78', fs: 11, it: 1 },
+    borders: undefined,
+  },
+  {
+    id: 'total',
+    group: 'titlesAndTotals',
+    format: { bl: 1 },
+    borders: edgeBorder('top', '#172033', 'medium'),
+  },
+] as const satisfies readonly {
+  id: SpreadsheetCellStyleChoice;
+  group: SpreadsheetCellStyleGroup;
+  format: Partial<SpreadsheetCellStyleFormat>;
+  borders: readonly SpreadsheetCellBorderFormat[] | undefined;
+}[];
 
-const definitionById = new Map(
-  spreadsheetCellStyleDefinitions.map((definition) => [
-    definition.id,
-    definition,
-  ]),
-);
+let cachedDefinitions: readonly SpreadsheetCellStyleDefinition[] | null = null;
+let cachedDefinitionsLocale: string | null = null;
+
+export function spreadsheetCellStyleDefinitions(
+  catalog: OfficeMessageCatalog = resolveOfficeMessages(),
+): readonly SpreadsheetCellStyleDefinition[] {
+  const localeKey = officeMessage(catalog, 'spreadsheet.cellStyle.normal');
+  if (cachedDefinitions && cachedDefinitionsLocale === localeKey) {
+    return cachedDefinitions;
+  }
+  cachedDefinitionsLocale = localeKey;
+  cachedDefinitions = Object.freeze(
+    CELL_STYLE_SPECS.map((spec) =>
+      style(spec.id, spec.group, spec.format, spec.borders, catalog),
+    ),
+  );
+  return cachedDefinitions;
+}
+
+export const spreadsheetCellStyleGroups = [
+  'common',
+  'dataAndModel',
+  'titlesAndTotals',
+] as const satisfies readonly SpreadsheetCellStyleGroup[];
+
+export function spreadsheetCellStyleGroupLabel(
+  group: SpreadsheetCellStyleGroup,
+  catalog: OfficeMessageCatalog = resolveOfficeMessages(),
+): string {
+  return officeMessage(catalog, `spreadsheet.cellStyle.group.${group}`);
+}
+
+const definitionById = () =>
+  new Map(
+    spreadsheetCellStyleDefinitions().map((definition) => [
+      definition.id,
+      definition,
+    ]),
+  );
 
 export function spreadsheetCellStyleDefinition(
   preset: SpreadsheetCellStyleChoice,
 ): SpreadsheetCellStyleDefinition {
-  const definition = definitionById.get(preset);
+  const definition = definitionById().get(preset);
   if (!definition) throw new Error(`Unknown spreadsheet cell style: ${preset}`);
   return definition;
 }
@@ -281,7 +295,7 @@ export function spreadsheetCellStylePreset(
 ): SpreadsheetCellStylePreset {
   const format = normalizedCellStyleFormat(cell);
   return (
-    spreadsheetCellStyleDefinitions.find(
+    spreadsheetCellStyleDefinitions().find(
       (definition) =>
         sameCellStyleFormat(format, definition.format) &&
         (borders
@@ -299,7 +313,7 @@ export function canApplySpreadsheetCellStyle(
 ): boolean {
   const normalizedRange = normalizeSpreadsheetCellRange(range);
   return Boolean(
-    definitionById.has(preset) &&
+    definitionById().has(preset) &&
       normalizedRange &&
       spreadsheetCellRangeArea(normalizedRange) <=
         MAX_SPREADSHEET_CELL_STYLE_CELLS &&
@@ -318,7 +332,7 @@ export function applySpreadsheetCellStyle(
   preset: SpreadsheetCellStyleChoice,
 ): WorkSpreadsheetContent | null {
   const normalizedRange = normalizeSpreadsheetCellRange(range);
-  const definition = definitionById.get(preset);
+  const definition = definitionById().get(preset);
   const sheetIndex = content.sheets.findIndex((sheet) => sheet.id === sheetId);
   const sheet = content.sheets[sheetIndex];
   if (

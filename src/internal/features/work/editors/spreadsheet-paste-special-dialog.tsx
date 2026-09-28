@@ -1,6 +1,8 @@
 import { type FormEvent, useId, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { OfficeCheckbox } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   spreadsheetPasteContentOptions,
   spreadsheetPasteOperationOptions,
@@ -23,6 +25,7 @@ export function SpreadsheetPasteSpecialDialog({
   onClose: () => void;
   onValidate: (options: SpreadsheetPasteSpecialOptions) => string | null;
 }) {
+  const messages = useOfficeMessages();
   const [options, setOptions] = useState<SpreadsheetPasteSpecialOptions>({
     content: 'all',
     operation: 'none',
@@ -31,9 +34,20 @@ export function SpreadsheetPasteSpecialDialog({
   });
   const formId = useId();
   const validationError = onValidate(options);
+  const contentOptions = spreadsheetPasteContentOptions(messages);
+  const operationOptions = spreadsheetPasteOperationOptions(messages);
   const sourceKind =
-    source.snapshot.kind === 'rich' ? 'A3S 富剪贴板' : '纯文本';
-  const sourceSize = `${source.snapshot.rowCount} 行 × ${source.snapshot.columnCount} 列`;
+    source.snapshot.kind === 'rich'
+      ? officeMessage(messages, 'spreadsheet.pasteSpecial.richClipboard')
+      : officeMessage(messages, 'spreadsheet.pasteSpecial.plainText');
+  const sourceSize = officeMessage(
+    messages,
+    'spreadsheet.pasteSpecial.sourceSize',
+    {
+      rows: String(source.snapshot.rowCount),
+      columns: String(source.snapshot.columnCount),
+    },
+  );
 
   const selectContent = (content: SpreadsheetPasteContent) => {
     setOptions((current) => ({
@@ -53,15 +67,18 @@ export function SpreadsheetPasteSpecialDialog({
 
   return (
     <Dialog
-      title="选择性粘贴"
-      description="精确选择要保留的单元格内容、格式和粘贴运算。"
+      title={officeMessage(messages, 'spreadsheet.pasteSpecial.title')}
+      description={officeMessage(
+        messages,
+        'spreadsheet.pasteSpecial.description',
+      )}
       className="work-spreadsheet-paste-special-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.pasteSpecial.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -69,23 +86,28 @@ export function SpreadsheetPasteSpecialDialog({
             form={formId}
             disabled={Boolean(validationError)}
           >
-            粘贴
+            {officeMessage(messages, 'spreadsheet.pasteSpecial.paste')}
           </Button>
         </>
       }
     >
       <section
         className="work-spreadsheet-paste-special-source"
-        aria-label="剪贴板摘要"
+        aria-label={officeMessage(
+          messages,
+          'spreadsheet.pasteSpecial.summaryAria',
+        )}
       >
         <span>{sourceKind}</span>
         <strong>{sourceSize}</strong>
       </section>
       <form id={formId} onSubmit={submit}>
         <fieldset className="work-spreadsheet-paste-special-modes">
-          <legend>粘贴内容</legend>
+          <legend>
+            {officeMessage(messages, 'spreadsheet.pasteSpecial.contentLegend')}
+          </legend>
           <div>
-            {spreadsheetPasteContentOptions.map((option) => {
+            {contentOptions.map((option) => {
               const available = spreadsheetPasteSpecialModeAvailable(
                 source.snapshot,
                 option.value,
@@ -105,7 +127,14 @@ export function SpreadsheetPasteSpecialDialog({
                   />
                   <span aria-hidden="true" />
                   <span>{option.label}</span>
-                  {!available && <small>仅限同一编辑器复制</small>}
+                  {!available && (
+                    <small>
+                      {officeMessage(
+                        messages,
+                        'spreadsheet.pasteSpecial.richOnly',
+                      )}
+                    </small>
+                  )}
                 </label>
               );
             })}
@@ -113,9 +142,14 @@ export function SpreadsheetPasteSpecialDialog({
         </fieldset>
 
         <fieldset className="work-spreadsheet-paste-special-operations">
-          <legend>运算</legend>
+          <legend>
+            {officeMessage(
+              messages,
+              'spreadsheet.pasteSpecial.operationLegend',
+            )}
+          </legend>
           <div>
-            {spreadsheetPasteOperationOptions.map((operation) => (
+            {operationOptions.map((operation) => (
               <label
                 key={operation.value}
                 className={
@@ -146,24 +180,30 @@ export function SpreadsheetPasteSpecialDialog({
 
         <div className="work-spreadsheet-paste-special-options">
           <OfficeCheckbox
-            ariaLabel="跳过空白单元格"
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.pasteSpecial.skipBlanksAria',
+            )}
             checked={options.skipBlanks}
             disabled={options.content === 'column-widths'}
             onCheckedChange={(skipBlanks) =>
               setOptions((current) => ({ ...current, skipBlanks }))
             }
           >
-            跳过空白单元格
+            {officeMessage(messages, 'spreadsheet.pasteSpecial.skipBlanks')}
           </OfficeCheckbox>
           <OfficeCheckbox
-            ariaLabel="转置行列"
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.pasteSpecial.transposeAria',
+            )}
             checked={options.transpose}
             disabled={options.content === 'column-widths'}
             onCheckedChange={(transpose) =>
               setOptions((current) => ({ ...current, transpose }))
             }
           >
-            转置
+            {officeMessage(messages, 'spreadsheet.pasteSpecial.transpose')}
           </OfficeCheckbox>
         </div>
 

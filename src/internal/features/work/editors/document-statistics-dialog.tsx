@@ -1,5 +1,18 @@
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageKey } from '../../../i18n/office-messages';
 import type { DocumentTextStatistics } from './document-editor-support';
+import { useOfficeMessages } from './office-messages-context';
+
+const STATISTIC_ROWS = [
+  ['document.statistics.pages', 'pageCount'],
+  ['document.statistics.words', 'wordCount'],
+  ['document.statistics.charsNoSpaces', 'characterCountWithoutSpaces'],
+  ['document.statistics.charsWithSpaces', 'characterCountWithSpaces'],
+  ['document.statistics.paragraphs', 'paragraphCount'],
+] as const satisfies ReadonlyArray<
+  readonly [OfficeMessageKey, keyof DocumentTextStatistics | 'pageCount']
+>;
 
 export function DocumentStatisticsDialog({
   pageCount,
@@ -12,35 +25,39 @@ export function DocumentStatisticsDialog({
   statistics: DocumentTextStatistics;
   onClose: () => void;
 }) {
-  const rows = [
-    ['页数', pageCount],
-    ['字数', statistics.wordCount],
-    ['字符数（不计空格）', statistics.characterCountWithoutSpaces],
-    ['字符数（计空格）', statistics.characterCountWithSpaces],
-    ['段落数', statistics.paragraphCount],
-  ] as const;
+  const messages = useOfficeMessages();
+  const values = {
+    pageCount,
+    ...statistics,
+  };
 
   return (
     <Dialog
-      title="字数统计"
-      description="当前文档的文本统计。"
+      title={officeMessage(messages, 'document.statistics.title')}
+      description={officeMessage(messages, 'document.statistics.description')}
       className="work-document-statistics-dialog"
       focusKey="document-statistics"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
       footer={
         <Button tone="primary" onClick={onClose}>
-          确定
+          {officeMessage(messages, 'document.statistics.confirm')}
         </Button>
       }
     >
-      <dl className="work-document-statistics" aria-label="字数统计详情">
-        {rows.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
+      <dl
+        className="work-document-statistics"
+        aria-label={officeMessage(messages, 'document.statistics.detailsAria')}
+      >
+        {STATISTIC_ROWS.map(([key, field]) => {
+          const label = officeMessage(messages, key);
+          return (
+            <div key={key}>
+              <dt>{label}</dt>
+              <dd>{values[field]}</dd>
+            </div>
+          );
+        })}
       </dl>
     </Dialog>
   );

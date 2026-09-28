@@ -14,7 +14,12 @@ import {
   restoreSpreadsheetRichTextCellRuns,
   sameSpreadsheetRichTextCellText,
 } from '../work-xlsx-rich-text-edit';
-import { officeFontFamilies } from './office-font-families';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
+import {
+  officeFontFamilies,
+  officeFontFamilyGroupLabel,
+  officeFontFamilyLocalizedLabel,
+} from './office-font-families';
 import type { OfficeSelectOption } from './office-select';
 import {
   materializeSpreadsheetDependentListsForFortune,
@@ -184,15 +189,17 @@ export function spreadsheetFontSizeOptions(
 export function spreadsheetFontFamilyOptions(
   current: string | undefined,
 ): OfficeSelectOption[] {
-  const options: OfficeSelectOption[] = officeFontFamilies.map(
-    ({ cssFamily, group, label, name }) => ({
-      value: name,
-      group,
+  const messages = resolveOfficeMessages();
+  const options: OfficeSelectOption[] = officeFontFamilies.map((family) => {
+    const label = officeFontFamilyLocalizedLabel(family, messages);
+    return {
+      value: family.name,
+      group: officeFontFamilyGroupLabel(family.group, messages),
       label,
-      previewStyle: { fontFamily: cssFamily },
-      searchText: `${name} ${label}`,
-    }),
-  );
+      previewStyle: { fontFamily: family.cssFamily },
+      searchText: `${family.name} ${label}`,
+    };
+  });
   const normalizedCurrent = current?.trim();
   if (
     normalizedCurrent &&
@@ -200,7 +207,7 @@ export function spreadsheetFontFamilyOptions(
   ) {
     options.push({
       value: normalizedCurrent,
-      group: '文档字体',
+      group: officeMessage(messages, 'document.font.familyGroup.document'),
       label: normalizedCurrent,
       previewStyle: { fontFamily: normalizedCurrent },
       searchText: normalizedCurrent,
@@ -700,6 +707,33 @@ export function isSpreadsheetCellEditorTarget(
   return (
     target instanceof Element &&
     Boolean(target.closest('.fortune-fx-input, .luckysheet-cell-input'))
+  );
+}
+
+/**
+ * Fortune's global Escape handler parks focus in the hidden cell editor
+ * (`#luckysheet-rich-text-editor`, z-index -1) even when no cell edit is
+ * active. Arrow keys then fail because that node is contenteditable. Restore
+ * grid focus after Escape from the overlay, filter chrome, or a parked
+ * editor; leave modal dialogs and open filter menus alone so their invoker
+ * restore still wins.
+ */
+export function shouldRestoreSpreadsheetGridFocusAfterEscape(
+  target: EventTarget | null,
+): boolean {
+  if (!(target instanceof Element)) return false;
+  if (
+    target.closest(
+      '[role="dialog"][aria-modal="true"], .fortune-filter-menu, .work-spreadsheet-auto-filter-dialog',
+    )
+  ) {
+    return false;
+  }
+  if (isSpreadsheetCellEditorTarget(target)) return true;
+  return Boolean(
+    target.closest(
+      '.fortune-sheet-overlay, .fortune-cell-area, .luckysheet-filter-options',
+    ),
   );
 }
 

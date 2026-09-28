@@ -1,4 +1,6 @@
 import { Plus, X } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import { type CSSProperties, type RefObject, useMemo } from 'react';
 import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
 import type { WorkPresentationDesignContent } from '../work-presentation-layouts';
@@ -133,6 +135,7 @@ export function PresentationThumbnailRail({
       />
     </>
   );
+  const messages = useOfficeMessages();
   const mobileModalAttributes = mobileNavigationModal
     ? ({ role: 'dialog', 'aria-modal': true } as const)
     : {};
@@ -142,7 +145,7 @@ export function PresentationThumbnailRail({
       <section
         ref={viewportRef}
         className="work-presentation-sorter"
-        aria-label="幻灯片浏览视图"
+        aria-label={officeMessage(messages, 'presentation.thumb.sorterAria')}
         data-slide-count={content.slides.length}
         data-slide-window-end={thumbnailWindow.end}
         data-slide-window-start={thumbnailWindow.start}
@@ -169,18 +172,18 @@ export function PresentationThumbnailRail({
       ref={viewportRef}
       id={mobileNavigationId}
       className="work-slide-strip"
-      aria-label="幻灯片"
+      aria-label={officeMessage(messages, 'presentation.thumb.railAria')}
       data-slide-count={content.slides.length}
       data-slide-window-end={thumbnailWindow.end}
       data-slide-window-start={thumbnailWindow.start}
       data-slide-windowed={thumbnailWindow.windowed ? 'true' : 'false'}
     >
       <header className="work-slide-strip-header">
-        <strong>幻灯片</strong>
+        <strong>{officeMessage(messages, 'presentation.thumb.railTitle')}</strong>
         <button
           ref={mobileCloseButtonRef}
           type="button"
-          aria-label="关闭幻灯片导航"
+          aria-label={officeMessage(messages, 'presentation.thumb.closeNav')}
           onClick={onCloseMobileNavigation}
         >
           <X size={16} />
@@ -191,7 +194,7 @@ export function PresentationThumbnailRail({
       </div>
       <button type="button" className="work-slide-add" onClick={onAddSlide}>
         <Plus size={15} />
-        添加幻灯片
+        {officeMessage(messages, 'presentation.thumb.addSlide')}
       </button>
     </aside>
   );

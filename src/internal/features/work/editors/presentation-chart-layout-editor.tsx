@@ -1,3 +1,4 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   normalizePresentationChartLegendPosition,
   presentationChartShowsLegend,
@@ -24,6 +25,7 @@ import {
   OfficeCheckbox,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export function PresentationChartLayoutEditor({
   chart,
@@ -32,6 +34,7 @@ export function PresentationChartLayoutEditor({
   chart: WorkSlideChart;
   onChange: (chart: WorkSlideChart) => void;
 }) {
+  const messages = useOfficeMessages();
   const showLegend = presentationChartShowsLegend(chart);
   const grouping = normalizeWorkSpreadsheetChartGrouping(
     chart.grouping,
@@ -42,39 +45,39 @@ export function PresentationChartLayoutEditor({
   return (
     <section
       className="work-presentation-chart-layout"
-      aria-label="演示图表图例与绘图区设置"
+      aria-label={officeMessage(messages, 'presentation.chart.layout.settingsAria')}
     >
       <header>
-        <strong>图例与绘图区</strong>
-        <span>位置、堆积、间距与线条布局</span>
+        <strong>{officeMessage(messages, 'presentation.chart.layout.title')}</strong>
+        <span>{officeMessage(messages, 'presentation.chart.layout.subtitle')}</span>
       </header>
       <div>
         <div className="check">
-          <span>图例</span>
+          <span>{officeMessage(messages, 'presentation.chart.layout.legend')}</span>
           <OfficeCheckbox
             className="work-presentation-chart-check-control"
-            ariaLabel="显示演示图表图例"
+            ariaLabel={officeMessage(messages, 'presentation.chart.layout.showLegendAria')}
             checked={showLegend}
             onCheckedChange={(showLegend) => change({ showLegend })}
           >
-            显示
+            {officeMessage(messages, 'presentation.chart.layout.show')}
           </OfficeCheckbox>
         </div>
         {showLegend && (
           <>
             <div className="work-office-field">
-              <span>图例位置</span>
+              <span>{officeMessage(messages, 'presentation.chart.layout.legendPos')}</span>
               <OfficeSelect
-                ariaLabel="演示图表图例位置"
+                ariaLabel={officeMessage(messages, 'presentation.chart.layout.legendPosAria')}
                 value={normalizePresentationChartLegendPosition(
                   chart.legendPosition,
                 )}
                 options={[
-                  { value: 'right', label: '右侧' },
-                  { value: 'left', label: '左侧' },
-                  { value: 'top', label: '顶部' },
-                  { value: 'bottom', label: '底部' },
-                  { value: 'topRight', label: '右上角' },
+                  { value: 'right', label: officeMessage(messages, 'presentation.chart.legend.right') },
+                  { value: 'left', label: officeMessage(messages, 'presentation.chart.legend.left') },
+                  { value: 'top', label: officeMessage(messages, 'presentation.chart.legend.top') },
+                  { value: 'bottom', label: officeMessage(messages, 'presentation.chart.legend.bottom') },
+                  { value: 'topRight', label: officeMessage(messages, 'presentation.chart.legend.topRight') },
                 ]}
                 onValueChange={(legendPosition) =>
                   change({
@@ -85,33 +88,33 @@ export function PresentationChartLayoutEditor({
               />
             </div>
             <div className="check">
-              <span>图例布局</span>
+              <span>{officeMessage(messages, 'presentation.chart.layout.legendLayout')}</span>
               <OfficeCheckbox
                 className="work-presentation-chart-check-control"
-                ariaLabel="演示图表图例叠加在绘图区"
+                ariaLabel={officeMessage(messages, 'presentation.chart.layout.overlayAria')}
                 checked={normalizeWorkSpreadsheetChartLegendOverlay(
                   chart.legendOverlay,
                 )}
                 onCheckedChange={(legendOverlay) => change({ legendOverlay })}
               >
-                叠加绘图区
+                {officeMessage(messages, 'presentation.chart.layout.overlay')}
               </OfficeCheckbox>
             </div>
           </>
         )}
         {workSpreadsheetChartSupportsGrouping(chart.type) && (
           <div className="work-office-field">
-            <span>分组方式</span>
+            <span>{officeMessage(messages, 'presentation.chart.layout.grouping')}</span>
             <OfficeSelect
-              ariaLabel="演示图表分组方式"
+              ariaLabel={officeMessage(messages, 'presentation.chart.layout.groupingAria')}
               value={grouping}
               options={[
                 ...(workSpreadsheetChartSupportsBarSpacing(chart.type)
-                  ? [{ value: 'clustered', label: '簇状' } as const]
+                  ? [{ value: 'clustered', label: officeMessage(messages, 'presentation.chart.layout.grouping.clustered') } as const]
                   : []),
-                { value: 'standard', label: '标准' },
-                { value: 'stacked', label: '堆积' },
-                { value: 'percentStacked', label: '百分比堆积' },
+                { value: 'standard', label: officeMessage(messages, 'presentation.chart.layout.grouping.standard') },
+                { value: 'stacked', label: officeMessage(messages, 'presentation.chart.layout.grouping.stacked') },
+                { value: 'percentStacked', label: officeMessage(messages, 'presentation.chart.layout.grouping.percentStacked') },
               ]}
               onValueChange={(value) => {
                 const nextGrouping = value as WorkSpreadsheetChartGrouping;
@@ -147,9 +150,9 @@ export function PresentationChartLayoutEditor({
         {workSpreadsheetChartSupportsBarSpacing(chart.type) && (
           <>
             <div className="work-office-field">
-              <span>分类间距（%）</span>
+              <span>{officeMessage(messages, 'presentation.chart.layout.gapWidth')}</span>
               <CommittedOfficeNumberField
-                ariaLabel="演示图表分类间距（%）"
+                ariaLabel={officeMessage(messages, 'presentation.chart.layout.gapWidthAria')}
                 min={0}
                 max={500}
                 step={1}
@@ -161,9 +164,9 @@ export function PresentationChartLayoutEditor({
               />
             </div>
             <div className="work-office-field">
-              <span>系列重叠（%）</span>
+              <span>{officeMessage(messages, 'presentation.chart.layout.overlap')}</span>
               <CommittedOfficeNumberField
-                ariaLabel="演示图表系列重叠（%）"
+                ariaLabel={officeMessage(messages, 'presentation.chart.layout.overlapAria')}
                 min={-100}
                 max={100}
                 step={1}
@@ -181,23 +184,23 @@ export function PresentationChartLayoutEditor({
         )}
         {workSpreadsheetChartSupportsSmoothLines(chart.type) && (
           <div className="check">
-            <span>折线</span>
+            <span>{officeMessage(messages, 'presentation.chart.layout.line')}</span>
             <OfficeCheckbox
               className="work-presentation-chart-check-control"
-              ariaLabel="演示图表使用平滑线"
+              ariaLabel={officeMessage(messages, 'presentation.chart.layout.smoothAria')}
               checked={normalizeWorkSpreadsheetChartSmoothLines(
                 chart.smoothLines,
               )}
               onCheckedChange={(smoothLines) => change({ smoothLines })}
             >
-              使用平滑线
+              {officeMessage(messages, 'presentation.chart.layout.smooth')}
             </OfficeCheckbox>
           </div>
         )}
       </div>
       {workSpreadsheetChartGroupingIsStacked(grouping) && (
         <p>
-          正值与负值会分别累计；切换到堆积布局时会移除不适用的趋势线和误差线。
+          {officeMessage(messages, 'presentation.chart.layout.stackNote')}
         </p>
       )}
     </section>

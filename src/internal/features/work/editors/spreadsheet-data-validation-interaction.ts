@@ -2,6 +2,7 @@ import type {
   WorkSpreadsheetDataValidationErrorStyle,
   WorkSpreadsheetDataValidationItem,
 } from '../work-types';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 export type SpreadsheetDataValidationInteraction = 'notice' | 'confirm';
 
@@ -39,13 +40,14 @@ export function spreadsheetDataValidationDialogTitle(
 ): string {
   const customTitle = item.errorTitle?.trim();
   if (customTitle) return customTitle;
+  const messages = resolveOfficeMessages();
   switch (spreadsheetDataValidationErrorStyle(item)) {
     case 'warning':
-      return '数据验证警告';
+      return officeMessage(messages, 'spreadsheet.dv.alert.warningTitle');
     case 'information':
-      return '数据验证提示';
+      return officeMessage(messages, 'spreadsheet.dv.alert.infoTitle');
     default:
-      return '数据验证错误';
+      return officeMessage(messages, 'spreadsheet.dv.alert.errorTitle');
   }
 }
 
@@ -54,23 +56,49 @@ export function spreadsheetDataValidationDialogDescription(
   value: unknown,
   item?: SpreadsheetDataValidationMessageSource,
 ): string {
+  const catalog = resolveOfficeMessages();
   const customTitle = item?.errorTitle?.trim();
   const customMessage = item?.errorMessage?.trim();
   let message = customMessage || failureText.trim();
   if (customTitle && message.startsWith(`${customTitle}\n`)) {
     message = message.slice(customTitle.length + 1).trim();
   }
-  message ||= '当前输入不符合此单元格的数据验证规则。';
+  message ||= officeMessage(catalog, 'spreadsheet.dv.alert.defaultMessage');
   const valueText = spreadsheetDataValidationValueText(value);
-  return valueText ? `${message}\n\n当前输入：${valueText}` : message;
+  if (!valueText) return message;
+  const currentInput = officeMessage(
+    catalog,
+    'spreadsheet.dv.alert.currentInput',
+    { value: valueText },
+  );
+  return `${message}\n\n${currentInput}`;
 }
 
 export function spreadsheetDataValidationConfirmLabels(
   style: WorkSpreadsheetDataValidationErrorStyle,
 ): { cancelLabel: string; confirmLabel: string } {
+  const messages = resolveOfficeMessages();
   return style === 'warning'
-    ? { cancelLabel: '取消', confirmLabel: '继续输入' }
-    : { cancelLabel: '返回修改', confirmLabel: '保留输入' };
+    ? {
+        cancelLabel: officeMessage(
+          messages,
+          'spreadsheet.dv.alert.cancelContinue',
+        ),
+        confirmLabel: officeMessage(
+          messages,
+          'spreadsheet.dv.alert.confirmContinue',
+        ),
+      }
+    : {
+        cancelLabel: officeMessage(
+          messages,
+          'spreadsheet.dv.alert.cancelRevise',
+        ),
+        confirmLabel: officeMessage(
+          messages,
+          'spreadsheet.dv.alert.confirmKeep',
+        ),
+      };
 }
 
 export function spreadsheetDataValidationValueText(value: unknown): string {

@@ -11,6 +11,7 @@ import {
 import {
   NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
   NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
+  NATIVE_SPREADSHEET_CREATE_TABLE_BASE64,
   NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
   NATIVE_SPREADSHEET_SET_CELL_BASE64,
 } from './fixtures/native-spreadsheet-cell-updates';
@@ -1171,6 +1172,38 @@ test('applies native Spreadsheet cell updates in Yjs across reordered delivery',
     ({ id }) => id === 'sheet-sparse',
   );
   expect(sparseSheet?.celldata).toEqual([]);
+});
+
+test('reads a native table record from the shared replica', () => {
+  const document = new Y.Doc();
+  Y.applyUpdate(document, decodeBase64(BROWSER_SPREADSHEET_FIXTURE_BASE64));
+  const before = readOfficeSpreadsheetCollaboration(
+    spreadsheetSession('fixture-spreadsheet', document),
+  );
+  const dataSheet = before.sheets.find(({ id }) => id === 'sheet-data');
+  const kept = dataSheet?.data?.[1]?.[0];
+  Y.applyUpdate(document, decodeBase64(NATIVE_SPREADSHEET_CREATE_TABLE_BASE64));
+  const current = readOfficeSpreadsheetCollaboration(
+    spreadsheetSession('fixture-spreadsheet', document),
+  );
+  const sheet = current.sheets.find(({ id }) => id === 'sheet-data');
+  expect(sheet?.tables).toEqual([
+    {
+      id: 'table-sales',
+      name: 'Sales',
+      range: { row: [0, 2], column: [0, 1] },
+      columns: [{ name: 'Column0' }, { name: 'Column1' }],
+      filters: [],
+      headerRow: true,
+      totalsRow: false,
+      style: { family: 'none' },
+      showFirstColumn: false,
+      showLastColumn: false,
+      showRowStripes: false,
+      showColumnStripes: false,
+    },
+  ]);
+  expect(sheet?.data?.[1]?.[0]).toEqual(kept);
 });
 
 function fixtureWithoutTransientViewState() {

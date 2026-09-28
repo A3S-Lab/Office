@@ -1,12 +1,18 @@
 import { FileCheck2, FileUp, GitCompareArrows } from 'lucide-react';
 import { type FormEvent, useId, useRef, useState } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type {
+  OfficeMessageCatalog,
+  OfficeMessageKey,
+} from '../../../i18n/office-messages';
 import type {
   DocumentComparisonApplyResult,
   DocumentComparisonDiagnostic,
   DocumentComparisonMode,
 } from '../work-document-compare';
 import { OfficeFileInput, OfficeTextField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentCompareDialogRequest {
   author: string;
@@ -24,6 +30,36 @@ export interface DocumentCompareDialogProps {
   ) => Promise<DocumentComparisonApplyResult>;
 }
 
+const DIAGNOSTIC_MESSAGE_KEYS = {
+  'changed-complex-structure':
+    'document.compare.diagnostic.changed-complex-structure',
+  'combine-baseline-mismatch':
+    'document.compare.diagnostic.combine-baseline-mismatch',
+  'combine-resolution-invalid':
+    'document.compare.diagnostic.combine-resolution-invalid',
+  'combine-structural-revisions':
+    'document.compare.diagnostic.combine-structural-revisions',
+  'combine-without-revisions':
+    'document.compare.diagnostic.combine-without-revisions',
+  'comparison-limit-exceeded':
+    'document.compare.diagnostic.comparison-limit-exceeded',
+  'current-revisions-present':
+    'document.compare.diagnostic.current-revisions-present',
+  'empty-structural-change':
+    'document.compare.diagnostic.empty-structural-change',
+  'invalid-revised-content':
+    'document.compare.diagnostic.invalid-revised-content',
+  'revised-revisions-present':
+    'document.compare.diagnostic.revised-revisions-present',
+  'section-layout-mismatch':
+    'document.compare.diagnostic.section-layout-mismatch',
+  'unsupported-inline-review-state':
+    'document.compare.diagnostic.unsupported-inline-review-state',
+} as const satisfies Record<
+  DocumentComparisonDiagnostic['code'],
+  OfficeMessageKey
+>;
+
 export function DocumentCompareDialog({
   initialMode,
   restoreFocusTarget,
@@ -31,9 +67,14 @@ export function DocumentCompareDialog({
   onClose,
   onSubmit,
 }: DocumentCompareDialogProps) {
+  const messages = useOfficeMessages();
+  const defaultAuthor = officeMessage(
+    messages,
+    'document.compare.author.default',
+  );
   const [mode, setMode] = useState(initialMode);
   const [file, setFile] = useState<File | null>(null);
-  const [author, setAuthor] = useState('审阅者');
+  const [author, setAuthor] = useState(defaultAuthor);
   const [authorTouched, setAuthorTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<DocumentComparisonApplyResult | null>(
@@ -74,13 +115,15 @@ export function DocumentCompareDialog({
   const selectFile = (next: File) => {
     setFile(next);
     setResult(null);
-    if (!authorTouched) setAuthor(fileStem(next.name) || '审阅者');
+    if (!authorTouched) {
+      setAuthor(fileStem(next.name) || defaultAuthor);
+    }
   };
 
   return (
     <Dialog
-      title="比较与合并文档"
-      description="把另一版本转换为可逐项接受或拒绝的 Writer 修订。"
+      title={officeMessage(messages, 'document.compare.title')}
+      description={officeMessage(messages, 'document.compare.description')}
       className="work-document-compare-dialog"
       closeDisabled={busy}
       restoreFocusTarget={restoreFocusTarget}
@@ -88,7 +131,7 @@ export function DocumentCompareDialog({
       footer={
         <>
           <Button tone="quiet" disabled={busy} onClick={onClose}>
-            取消
+            {officeMessage(messages, 'document.compare.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -97,17 +140,22 @@ export function DocumentCompareDialog({
             disabled={!file || busy || (mode === 'compare' && !author.trim())}
           >
             {busy
-              ? '正在处理…'
-              : mode === 'compare'
-                ? '生成比较结果'
-                : '合并修订'}
+              ? officeMessage(messages, 'document.compare.busy')
+              : officeMessage(
+                  messages,
+                  mode === 'compare'
+                    ? 'document.compare.submit.compare'
+                    : 'document.compare.submit.combine',
+                )}
           </Button>
         </>
       }
     >
       <form id={formId} onSubmit={submit}>
         <fieldset className="work-document-compare-mode">
-          <legend>处理方式</legend>
+          <legend>
+            {officeMessage(messages, 'document.compare.mode.legend')}
+          </legend>
           <label>
             <input
               type="radio"
@@ -121,8 +169,12 @@ export function DocumentCompareDialog({
             />
             <span>
               <GitCompareArrows size={18} aria-hidden="true" />
-              <strong>比较</strong>
-              <small>当前文档作为原稿，导入文件作为修订稿。</small>
+              <strong>
+                {officeMessage(messages, 'document.compare.mode.compare')}
+              </strong>
+              <small>
+                {officeMessage(messages, 'document.compare.mode.compareHint')}
+              </small>
             </span>
           </label>
           <label>
@@ -138,8 +190,12 @@ export function DocumentCompareDialog({
             />
             <span>
               <FileCheck2 size={18} aria-hidden="true" />
-              <strong>合并</strong>
-              <small>导入带修订的审阅副本，并核验其原始基线。</small>
+              <strong>
+                {officeMessage(messages, 'document.compare.mode.combine')}
+              </strong>
+              <small>
+                {officeMessage(messages, 'document.compare.mode.combineHint')}
+              </small>
             </span>
           </label>
         </fieldset>
@@ -147,9 +203,12 @@ export function DocumentCompareDialog({
         <OfficeFileInput
           ref={fileInputRef}
           accept=".docx,.html,.htm,.txt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,text/plain"
-          aria-label={
-            mode === 'compare' ? '选择修订版本文件' : '选择审阅副本文件'
-          }
+          aria-label={officeMessage(
+            messages,
+            mode === 'compare'
+              ? 'document.compare.file.aria.compare'
+              : 'document.compare.file.aria.combine',
+          )}
           disabled={busy}
           onFileSelect={selectFile}
         />
@@ -164,22 +223,32 @@ export function DocumentCompareDialog({
           <span>
             <strong>
               {file?.name ??
-                (mode === 'compare' ? '选择修订版本' : '选择带修订的审阅副本')}
+                officeMessage(
+                  messages,
+                  mode === 'compare'
+                    ? 'document.compare.file.pick.compare'
+                    : 'document.compare.file.pick.combine',
+                )}
             </strong>
             <small>
               {file
-                ? `${fileTypeLabel(file.name)} · ${formatFileSize(file.size)}`
-                : '支持 DOCX、HTML 和 TXT；当前文档不会在预检失败时改变。'}
+                ? `${fileTypeLabel(messages, file.name)} · ${formatFileSize(file.size)}`
+                : officeMessage(messages, 'document.compare.file.hint')}
             </small>
           </span>
         </button>
 
         {mode === 'compare' && (
           <label className="work-document-compare-author" htmlFor={authorId}>
-            <span>修订者名称</span>
+            <span>
+              {officeMessage(messages, 'document.compare.author.label')}
+            </span>
             <OfficeTextField
               id={authorId}
-              aria-label="比较结果修订者名称"
+              aria-label={officeMessage(
+                messages,
+                'document.compare.author.aria',
+              )}
               value={author}
               disabled={busy}
               maxLength={256}
@@ -188,23 +257,27 @@ export function DocumentCompareDialog({
                 setAuthor(event.currentTarget.value);
               }}
             />
-            <small>该名称会显示在生成的插入、删除、移动与格式修订中。</small>
+            <small>
+              {officeMessage(messages, 'document.compare.author.hint')}
+            </small>
           </label>
         )}
 
         <ComparisonBoundary mode={mode} />
         {result?.status === 'unchanged' && (
           <p className="work-document-compare-status" role="status">
-            两份文档在支持的比较范围内完全一致，没有生成修订。
+            {officeMessage(messages, 'document.compare.unchanged')}
           </p>
         )}
         {result?.status === 'unsupported' && (
           <div className="work-document-compare-errors" role="alert">
-            <strong>无法安全处理这份文档</strong>
+            <strong>
+              {officeMessage(messages, 'document.compare.unsupported.title')}
+            </strong>
             <ul>
               {result.diagnostics.map((diagnostic, index) => (
                 <li key={`${diagnostic.code}-${index}`}>
-                  {comparisonDiagnosticText(diagnostic)}
+                  {comparisonDiagnosticText(messages, diagnostic)}
                 </li>
               ))}
             </ul>
@@ -216,55 +289,60 @@ export function DocumentCompareDialog({
 }
 
 function ComparisonBoundary({ mode }: { mode: DocumentComparisonMode }) {
+  const messages = useOfficeMessages();
   return (
     <div className="work-document-compare-boundary">
-      <strong>{mode === 'compare' ? '确定性比较边界' : '安全合并边界'}</strong>
+      <strong>
+        {officeMessage(
+          messages,
+          mode === 'compare'
+            ? 'document.compare.boundary.compareTitle'
+            : 'document.compare.boundary.combineTitle',
+        )}
+      </strong>
       <p>
-        {mode === 'compare'
-          ? '支持同一分节布局中的段落、标题、文字、格式差异，以及同一段内可安全识别的文本移动；复杂对象或节布局变化会明确停止。'
-          : '审阅副本必须包含修订，且拒绝全部修订后与当前文档一致；现有修订须先处理。'}
+        {officeMessage(
+          messages,
+          mode === 'compare'
+            ? 'document.compare.boundary.compareBody'
+            : 'document.compare.boundary.combineBody',
+        )}
       </p>
     </div>
   );
 }
 
 function comparisonDiagnosticText(
+  messages: OfficeMessageCatalog,
   diagnostic: DocumentComparisonDiagnostic,
 ): string {
   const location =
     diagnostic.section === undefined
       ? ''
-      : `（第 ${diagnostic.section + 1} 节${
+      : officeMessage(
+          messages,
           diagnostic.block === undefined
-            ? ''
-            : `，差异块 ${diagnostic.block + 1}`
-        }）`;
-  const messages: Record<DocumentComparisonDiagnostic['code'], string> = {
-    'changed-complex-structure':
-      '检测到表格、图片、列表或其他复杂结构变化，未降级为纯文字。',
-    'combine-baseline-mismatch': '审阅副本的原始基线与当前文档不一致。',
-    'combine-resolution-invalid': '审阅副本包含损坏或无法拒绝的格式修订。',
-    'combine-structural-revisions':
-      '审阅副本改变了段落树；当前合并路径只接受行内和格式修订。',
-    'combine-without-revisions': '审阅副本中没有可合并的修订。',
-    'comparison-limit-exceeded': '文档超过本地有界比较限制。',
-    'current-revisions-present': '当前文档仍有未处理修订，请先接受或拒绝。',
-    'empty-structural-change': '空段落的结构变化无法承载可审阅文字修订。',
-    'invalid-revised-content': '文件无法转换为当前 Writer 文档模型。',
-    'revised-revisions-present': '修订稿已经包含修订，请改用“合并”。',
-    'section-layout-mismatch': '分节数量或页面布局不一致。',
-    'unsupported-inline-review-state':
-      '导入内容包含无法安全迁移的批注或审阅状态。',
-  };
-  return `${messages[diagnostic.code]}${location}`;
+            ? 'document.compare.diagnostic.location.section'
+            : 'document.compare.diagnostic.location.sectionBlock',
+          {
+            section: String(diagnostic.section + 1),
+            ...(diagnostic.block === undefined
+              ? {}
+              : { block: String(diagnostic.block + 1) }),
+          },
+        );
+  return `${officeMessage(messages, DIAGNOSTIC_MESSAGE_KEYS[diagnostic.code])}${location}`;
 }
 
 function fileStem(name: string): string {
   return name.replace(/\.[^.]+$/, '').trim();
 }
 
-function fileTypeLabel(name: string): string {
-  return name.split('.').at(-1)?.toLocaleUpperCase() || '文件';
+function fileTypeLabel(messages: OfficeMessageCatalog, name: string): string {
+  return (
+    name.split('.').at(-1)?.toLocaleUpperCase() ||
+    officeMessage(messages, 'document.compare.file.fallbackType')
+  );
 }
 
 function formatFileSize(bytes: number): string {

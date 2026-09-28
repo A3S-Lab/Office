@@ -1,5 +1,9 @@
 import type { Cell } from '@fortune-sheet/core';
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import {
   editableSpreadsheetFormula,
   formulaHasExternalReference,
   spreadsheetFormulaFunctions,
@@ -80,26 +84,29 @@ const OOXML_TOTALS_FUNCTIONS: Readonly<
   varP: 'varp',
 };
 
-const TOTALS_FUNCTION_LABELS: Readonly<
-  Record<WorkSpreadsheetTableTotalsFunction, string>
+const TOTALS_FUNCTION_LABEL_KEYS: Readonly<
+  Record<WorkSpreadsheetTableTotalsFunction, `spreadsheet.table.totals.fn.${WorkSpreadsheetTableTotalsFunction}`>
 > = {
-  sum: '求和',
-  average: '平均值',
-  count: '计数',
-  countNums: '数值计数',
-  max: '最大值',
-  min: '最小值',
-  stdDev: '标准差',
-  stdDevP: '总体标准差',
-  var: '方差',
-  varP: '总体方差',
-  custom: '自定义',
+  sum: 'spreadsheet.table.totals.fn.sum',
+  average: 'spreadsheet.table.totals.fn.average',
+  count: 'spreadsheet.table.totals.fn.count',
+  countNums: 'spreadsheet.table.totals.fn.countNums',
+  max: 'spreadsheet.table.totals.fn.max',
+  min: 'spreadsheet.table.totals.fn.min',
+  stdDev: 'spreadsheet.table.totals.fn.stdDev',
+  stdDevP: 'spreadsheet.table.totals.fn.stdDevP',
+  var: 'spreadsheet.table.totals.fn.var',
+  varP: 'spreadsheet.table.totals.fn.varP',
+  custom: 'spreadsheet.table.totals.fn.custom',
 };
 
 export function spreadsheetTableTotalsFunctionLabel(
   value: WorkSpreadsheetTableTotalsFunction | undefined,
 ): string {
-  return value ? TOTALS_FUNCTION_LABELS[value] : '不汇总';
+  const catalog = resolveOfficeMessages();
+  return value
+    ? officeMessage(catalog, TOTALS_FUNCTION_LABEL_KEYS[value])
+    : officeMessage(catalog, 'spreadsheet.table.totals.none');
 }
 
 export function normalizeSpreadsheetTableTotalsFunction(

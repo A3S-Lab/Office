@@ -15,6 +15,7 @@ import {
   validateSpreadsheetHyperlinkRequest,
 } from './spreadsheet-hyperlink';
 import { SpreadsheetHyperlinkDialog } from './spreadsheet-hyperlink-dialog';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 export interface SpreadsheetHyperlinkSelectionState {
   sheetId: string;
@@ -38,6 +39,7 @@ export function useSpreadsheetHyperlink({
   preview: boolean;
   selectionState: SpreadsheetHyperlinkSelectionState | null;
 }) {
+  const messages = resolveOfficeMessages();
   const [source, setSource] = useState<SpreadsheetHyperlinkDialogSource | null>(
     null,
   );
@@ -152,7 +154,7 @@ export function useSpreadsheetHyperlink({
                 contentRef.current,
                 source,
                 value,
-                '无法应用超链接。',
+                officeMessage(messages, 'spreadsheet.hyperlink.applyFailed'),
               ),
               'error',
             );
@@ -173,7 +175,7 @@ export function useSpreadsheetHyperlink({
           } finally {
             applyingRef.current = false;
           }
-          if (!handled) showToast('无法移除超链接。', 'error');
+          if (!handled) showToast(officeMessage(messages, 'spreadsheet.hyperlink.removeFailed'), 'error');
           return handled;
         }}
         onValidate={(value) =>

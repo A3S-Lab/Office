@@ -1,4 +1,6 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import type { EffectiveSpreadsheetPageSetup } from '../work-spreadsheet-page-setup';
+import { useOfficeMessages } from './office-messages-context';
 import {
   CommittedOfficeNumberField,
   OfficeCheckbox,
@@ -13,6 +15,7 @@ export function SpreadsheetHeaderFooterFields({
   pageSetup: EffectiveSpreadsheetPageSetup;
   onChange: (pageSetup: EffectiveSpreadsheetPageSetup) => void;
 }) {
+  const messages = useOfficeMessages();
   const updateSection = (
     area: 'header' | 'footer',
     section: 'left' | 'center' | 'right',
@@ -25,41 +28,43 @@ export function SpreadsheetHeaderFooterFields({
   };
   return (
     <fieldset className="work-spreadsheet-header-footer-fields">
-      <legend>页眉、页脚与页码</legend>
+      <legend>{officeMessage(messages, 'spreadsheet.print.hf.legend')}</legend>
       <TemplateField
-        label="页眉左侧"
+        label={officeMessage(messages, 'spreadsheet.print.hf.headerLeft')}
         value={pageSetup.header.left}
         onChange={(value) => updateSection('header', 'left', value)}
       />
       <TemplateField
-        label="页眉中间"
+        label={officeMessage(messages, 'spreadsheet.print.hf.headerCenter')}
         value={pageSetup.header.center}
         onChange={(value) => updateSection('header', 'center', value)}
       />
       <TemplateField
-        label="页眉右侧"
+        label={officeMessage(messages, 'spreadsheet.print.hf.headerRight')}
         value={pageSetup.header.right}
+        showPagePlaceholder
         onChange={(value) => updateSection('header', 'right', value)}
       />
       <TemplateField
-        label="页脚左侧"
+        label={officeMessage(messages, 'spreadsheet.print.hf.footerLeft')}
         value={pageSetup.footer.left}
         onChange={(value) => updateSection('footer', 'left', value)}
       />
       <TemplateField
-        label="页脚中间"
+        label={officeMessage(messages, 'spreadsheet.print.hf.footerCenter')}
         value={pageSetup.footer.center}
         onChange={(value) => updateSection('footer', 'center', value)}
       />
       <TemplateField
-        label="页脚右侧"
+        label={officeMessage(messages, 'spreadsheet.print.hf.footerRight')}
         value={pageSetup.footer.right}
+        showPagePlaceholder
         onChange={(value) => updateSection('footer', 'right', value)}
       />
       <div className="work-office-field">
-        <span>起始页码</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.hf.pageStart')}</span>
         <CommittedOfficeNumberField
-          ariaLabel="起始页码"
+          ariaLabel={officeMessage(messages, 'spreadsheet.print.hf.pageStart')}
           min={1}
           max={32767}
           value={pageSetup.pageNumberStart}
@@ -70,13 +75,25 @@ export function SpreadsheetHeaderFooterFields({
         />
       </div>
       <div className="work-office-field">
-        <span>打印页顺序</span>
+        <span>{officeMessage(messages, 'spreadsheet.print.hf.pageOrder')}</span>
         <OfficeSelect
-          ariaLabel="打印页顺序"
+          ariaLabel={officeMessage(messages, 'spreadsheet.print.hf.pageOrder')}
           value={pageSetup.pageOrder}
           options={[
-            { value: 'overThenDown', label: '先向右，再向下' },
-            { value: 'downThenOver', label: '先向下，再向右' },
+            {
+              value: 'overThenDown',
+              label: officeMessage(
+                messages,
+                'spreadsheet.print.hf.overThenDown',
+              ),
+            },
+            {
+              value: 'downThenOver',
+              label: officeMessage(
+                messages,
+                'spreadsheet.print.hf.downThenOver',
+              ),
+            },
           ]}
           onValueChange={(pageOrder) =>
             onChange({
@@ -89,27 +106,26 @@ export function SpreadsheetHeaderFooterFields({
       </div>
       <OfficeCheckbox
         className="toggle"
-        ariaLabel="页眉页脚随文档缩放"
+        ariaLabel={officeMessage(messages, 'spreadsheet.print.hf.scaleWithDoc')}
         checked={pageSetup.scaleWithDocument}
         onCheckedChange={(scaleWithDocument) =>
           onChange({ ...pageSetup, scaleWithDocument })
         }
       >
-        页眉页脚随文档缩放
+        {officeMessage(messages, 'spreadsheet.print.hf.scaleWithDoc')}
       </OfficeCheckbox>
       <OfficeCheckbox
         className="toggle"
-        ariaLabel="页眉页脚与页边距对齐"
+        ariaLabel={officeMessage(messages, 'spreadsheet.print.hf.alignMargins')}
         checked={pageSetup.alignWithMargins}
         onCheckedChange={(alignWithMargins) =>
           onChange({ ...pageSetup, alignWithMargins })
         }
       >
-        页眉页脚与页边距对齐
+        {officeMessage(messages, 'spreadsheet.print.hf.alignMargins')}
       </OfficeCheckbox>
       <p className="tokens">
-        可用字段：{'{page}'}、{'{pages}'}、{'{sheet}'}、{'{file}'}、{'{path}'}、
-        {'{date}'}、{'{time}'}
+        {officeMessage(messages, 'spreadsheet.print.hf.tokens')}
       </p>
     </fieldset>
   );
@@ -126,10 +142,12 @@ function normalizeStartingPageNumber(value: string): number | null {
 function TemplateField({
   label,
   value,
+  showPagePlaceholder = false,
   onChange,
 }: {
   label: string;
   value: string;
+  showPagePlaceholder?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
@@ -138,7 +156,9 @@ function TemplateField({
       <OfficeTextField
         aria-label={label}
         value={value}
-        placeholder={label.includes('右侧') ? 'Page {page} of {pages}' : ''}
+        placeholder={
+          showPagePlaceholder ? 'Page {page} of {pages}' : ''
+        }
         onChange={(event) => onChange(event.target.value)}
       />
     </div>

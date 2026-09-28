@@ -7,8 +7,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { type FormEvent, useId, useMemo, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, Dialog } from '../../../design-system/primitives';
 import { OfficeCheckbox, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   MAX_SPREADSHEET_SORT_KEYS,
   type SpreadsheetSortDialogSource,
@@ -68,6 +70,7 @@ export function SpreadsheetSortDialog({
   ) => readonly SpreadsheetSortCustomList[] | undefined;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [value, setValue] = useState<SpreadsheetSortDialogValue>(() => ({
     hasHeader: source.value.hasHeader,
     keys: source.value.keys.map(cloneSpreadsheetSortKey),
@@ -177,7 +180,9 @@ export function SpreadsheetSortDialog({
           current
             ? {
                 ...current,
-                error: `当前编辑器最多保留 ${MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS} 个自定义序列。`,
+                error: officeMessage(messages, 'spreadsheet.sort.customListLimit', {
+                  n: String(MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS),
+                }),
               }
             : current,
         );
@@ -268,7 +273,7 @@ export function SpreadsheetSortDialog({
   return (
     <>
       <Dialog
-        title="自定义排序"
+        title={officeMessage(messages, 'spreadsheet.sort.title')}
         description={`${source.sheetName}!${source.rangeReference}`}
         className="work-spreadsheet-sort-dialog"
         restoreFocusTarget={restoreFocusTarget}
@@ -276,10 +281,10 @@ export function SpreadsheetSortDialog({
         footer={
           <>
             <Button tone="quiet" onClick={onClose}>
-              取消
+              {officeMessage(messages, 'spreadsheet.sort.cancel')}
             </Button>
             <Button tone="primary" type="submit" form={formId}>
-              确定
+              {officeMessage(messages, 'spreadsheet.sort.ok')}
             </Button>
           </>
         }
@@ -301,7 +306,7 @@ export function SpreadsheetSortDialog({
                 }}
               >
                 <ListPlus size={15} aria-hidden="true" />
-                添加条件
+                {officeMessage(messages, 'spreadsheet.sort.addLevel')}
               </Button>
               <Button
                 ref={optionsButtonRef}
@@ -310,22 +315,22 @@ export function SpreadsheetSortDialog({
                 onClick={() => setOptionsOpen(true)}
               >
                 <Settings2 size={15} aria-hidden="true" />
-                选项…
+                {officeMessage(messages, 'spreadsheet.sort.options')}
               </Button>
               <Button
                 ref={customListManagerButtonRef}
                 tone="quiet"
                 type="button"
-                aria-label="管理自定义序列"
-                title="管理自定义序列"
+                aria-label={officeMessage(messages, 'spreadsheet.sort.manageListsAria')}
+                title={officeMessage(messages, 'spreadsheet.sort.manageListsAria')}
                 onClick={() => setCustomListManagerOpen(true)}
               >
                 <ListOrdered size={15} aria-hidden="true" />
-                自定义序列…
+                {officeMessage(messages, 'spreadsheet.sort.customLists')}
               </Button>
             </div>
             <OfficeCheckbox
-              ariaLabel="数据包含标题"
+              ariaLabel={officeMessage(messages, 'spreadsheet.sort.hasHeader')}
               checked={value.hasHeader}
               disabled={
                 structuralScope || value.orientation === 'left-to-right'
@@ -354,7 +359,7 @@ export function SpreadsheetSortDialog({
                 }));
               }}
             >
-              数据包含标题
+              {officeMessage(messages, 'spreadsheet.sort.hasHeader')}
             </OfficeCheckbox>
           </div>
 
@@ -367,16 +372,30 @@ export function SpreadsheetSortDialog({
                   key={`${index}:${key.index}`}
                 >
                   <legend>
-                    {index === 0 ? '主要关键字' : `次要关键字 ${index}`}
+                    {index === 0
+                      ? officeMessage(messages, 'spreadsheet.sort.primaryKey')
+                      : officeMessage(messages, 'spreadsheet.sort.secondaryKey', {
+                          n: String(index),
+                        })}
                   </legend>
                   <div className="work-office-field">
                     <span>
-                      {value.orientation === 'top-to-bottom' ? '列' : '行'}
+                      {value.orientation === 'top-to-bottom'
+                        ? officeMessage(messages, 'spreadsheet.sort.column')
+                        : officeMessage(messages, 'spreadsheet.sort.row')}
                     </span>
                     <OfficeSelect
-                      ariaLabel={`排序条件 ${level} ${
-                        value.orientation === 'top-to-bottom' ? '列' : '行'
-                      }`}
+                      ariaLabel={officeMessage(
+                        messages,
+                        'spreadsheet.sort.levelAxisAria',
+                        {
+                          level: String(level),
+                          axis:
+                            value.orientation === 'top-to-bottom'
+                              ? officeMessage(messages, 'spreadsheet.sort.column')
+                              : officeMessage(messages, 'spreadsheet.sort.row'),
+                        },
+                      )}
                       value={String(key.index)}
                       options={fields.map((field) => ({
                         value: String(field.index),
@@ -417,8 +436,8 @@ export function SpreadsheetSortDialog({
                     <Button
                       tone="quiet"
                       type="button"
-                      aria-label={`上移条件 ${level}`}
-                      title="提高排序优先级"
+                      aria-label={officeMessage(messages, 'spreadsheet.sort.moveUpAria', { level: String(level) })}
+                      title={officeMessage(messages, 'spreadsheet.sort.moveUpTitle')}
                       disabled={index === 0}
                       onClick={() => moveKey(index, -1)}
                     >
@@ -427,8 +446,8 @@ export function SpreadsheetSortDialog({
                     <Button
                       tone="quiet"
                       type="button"
-                      aria-label={`下移条件 ${level}`}
-                      title="降低排序优先级"
+                      aria-label={officeMessage(messages, 'spreadsheet.sort.moveDownAria', { level: String(level) })}
+                      title={officeMessage(messages, 'spreadsheet.sort.moveDownTitle')}
                       disabled={index === value.keys.length - 1}
                       onClick={() => moveKey(index, 1)}
                     >
@@ -437,8 +456,8 @@ export function SpreadsheetSortDialog({
                     <Button
                       tone="quiet"
                       type="button"
-                      aria-label={`删除条件 ${level}`}
-                      title="删除排序条件"
+                      aria-label={officeMessage(messages, 'spreadsheet.sort.deleteLevelAria', { level: String(level) })}
+                      title={officeMessage(messages, 'spreadsheet.sort.deleteLevelTitle')}
                       disabled={value.keys.length === 1}
                       onClick={() => {
                         setCustomListDraft(null);
@@ -476,7 +495,7 @@ export function SpreadsheetSortDialog({
                           beginCustomListEdit(index, key.customList)
                         }
                       >
-                        编辑序列
+                        {officeMessage(messages, 'spreadsheet.sort.editList')}
                       </Button>
                     </div>
                   ) : null}
@@ -486,10 +505,10 @@ export function SpreadsheetSortDialog({
           </div>
           <p className="work-spreadsheet-sort-note">
             {source.scope?.kind === 'auto-filter'
-              ? '当前范围由 AutoFilter 拥有：筛选表头保持固定，仅按列移动完整数据行；排序后会按原条件重新计算筛选结果并保留手动隐藏行。'
+              ? officeMessage(messages, 'spreadsheet.sort.hint.autoFilter')
               : source.scope?.kind === 'table'
-                ? '当前范围由表格拥有：表头与汇总行保持固定，仅按列移动完整表格数据行；排序后会按原条件重新计算表格筛选结果并保留手动隐藏行。'
-                : '可按值、自定义序列、有效颜色或条件格式图标排序。文本值可按拼音或笔画比较，并可区分大小写；数字文本按字符顺序排列。按列排序移动整行；按行排序移动整列且不保留标题列。空白始终置于末尾，配置本地序列存储后新建序列可跨工作簿复用，否则仅保留于本次会话；每次排序作为一个可撤销操作提交。'}
+                ? officeMessage(messages, 'spreadsheet.sort.hint.table')
+                : officeMessage(messages, 'spreadsheet.sort.hint.default')}
           </p>
         </form>
       </Dialog>

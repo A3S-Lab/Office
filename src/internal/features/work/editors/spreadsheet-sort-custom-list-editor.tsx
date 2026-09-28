@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button } from '../../../design-system/primitives';
+import { useOfficeMessages } from './office-messages-context';
 
 export function SpreadsheetSortCustomListEditor({
   error,
@@ -16,23 +18,26 @@ export function SpreadsheetSortCustomListEditor({
   onChange: (text: string) => void;
   onUse: () => void;
 }) {
+  const messages = useOfficeMessages();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => textareaRef.current?.focus(), []);
 
   return (
     <div className="work-spreadsheet-sort-custom-list-editor">
       <label>
-        <span>自定义序列（每行一个项目）</span>
+        <span>{officeMessage(messages, 'spreadsheet.sort.listEditor.label')}</span>
         <textarea
           ref={textareaRef}
-          aria-label={`排序条件 ${level} 自定义序列`}
+          aria-label={officeMessage(messages, 'spreadsheet.sort.listEditor.aria', {
+            level: String(level),
+          })}
           aria-invalid={error ? true : undefined}
           rows={5}
           value={text}
           onChange={(event) => onChange(event.currentTarget.value)}
         />
       </label>
-      <p>每行、英文逗号或中文逗号可分隔一个项目。</p>
+      <p>{officeMessage(messages, 'spreadsheet.sort.listEditor.hint')}</p>
       {error ? (
         <p className="work-spreadsheet-sort-custom-list-error" role="alert">
           {error}
@@ -40,10 +45,10 @@ export function SpreadsheetSortCustomListEditor({
       ) : null}
       <div className="work-spreadsheet-sort-custom-list-actions">
         <Button tone="primary" type="button" onClick={onUse}>
-          使用序列
+          {officeMessage(messages, 'spreadsheet.sort.listEditor.use')}
         </Button>
         <Button tone="quiet" type="button" onClick={onCancel}>
-          取消编辑
+          {officeMessage(messages, 'spreadsheet.sort.listEditor.cancelEdit')}
         </Button>
       </div>
     </div>

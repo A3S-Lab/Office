@@ -1,5 +1,7 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 export function OfficeNumberField({
   ariaLabel,
@@ -30,6 +32,7 @@ export function OfficeNumberField({
   escapeConsumer?: boolean;
   validationInvalid?: boolean;
 }) {
+  const messages = useOfficeMessages();
   const commitInProgressRef = useRef(false);
   const numericValue = value === '' ? null : Number(value);
   const invalid =
@@ -97,7 +100,9 @@ export function OfficeNumberField({
       <span className="work-office-number-steppers">
         <button
           type="button"
-          aria-label={`增加${ariaLabel}`}
+          aria-label={officeMessage(messages, 'office.number.increase', {
+            label: ariaLabel,
+          })}
           disabled={disabled}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => changeBy(1)}
@@ -106,7 +111,9 @@ export function OfficeNumberField({
         </button>
         <button
           type="button"
-          aria-label={`减少${ariaLabel}`}
+          aria-label={officeMessage(messages, 'office.number.decrease', {
+            label: ariaLabel,
+          })}
           disabled={disabled}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => changeBy(-1)}

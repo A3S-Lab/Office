@@ -1,11 +1,17 @@
 import { CheckCheck, Cloud, FileText, Globe2 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { getDocumentCommandDefinition } from './document-command-catalog';
+import {
+  documentCommandLabel,
+  documentCommandTitleWithShortcut,
+} from './document-command-i18n';
 import type { DocumentViewMode } from './document-toolbar';
 import {
   clampDocumentZoom,
   MAX_DOCUMENT_ZOOM,
   MIN_DOCUMENT_ZOOM,
 } from './document-zoom';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeStatusBar,
   WorkOfficeZoomControls,
@@ -46,20 +52,27 @@ export function DocumentStatusBar({
   onViewModeChange,
   onZoomChange,
 }: DocumentStatusBarProps) {
+  const messages = useOfficeMessages();
   const wordCountCommand = getDocumentCommandDefinition('wordCount');
+  const proofingLabel = officeMessage(
+    messages,
+    spellcheckEnabled
+      ? 'document.status.proofing.on'
+      : 'document.status.proofing.off',
+  );
 
   return (
     <WorkOfficeStatusBar
-      ariaLabel="文档状态栏"
-      controlsLabel="文档视图与缩放"
+      ariaLabel={officeMessage(messages, 'document.status.aria')}
+      controlsLabel={officeMessage(messages, 'document.status.controlsAria')}
       className="work-document-footer"
       controls={
         <>
           <button
             type="button"
             data-document-status-control="view-mode"
-            aria-label="页面视图"
-            title="页面视图"
+            aria-label={officeMessage(messages, 'document.status.pageView')}
+            title={officeMessage(messages, 'document.status.pageView')}
             aria-pressed={viewMode === 'page'}
             onClick={() => onViewModeChange('page')}
           >
@@ -68,8 +81,8 @@ export function DocumentStatusBar({
           <button
             type="button"
             data-document-status-control="view-mode"
-            aria-label="网页视图"
-            title="网页视图"
+            aria-label={officeMessage(messages, 'document.status.webView')}
+            title={officeMessage(messages, 'document.status.webView')}
             aria-pressed={viewMode === 'web'}
             onClick={() => onViewModeChange('web')}
           >
@@ -84,46 +97,68 @@ export function DocumentStatusBar({
             minimum={MIN_DOCUMENT_ZOOM}
             maximum={MAX_DOCUMENT_ZOOM}
             step={5}
-            decreaseLabel="缩小文档"
-            increaseLabel="放大文档"
-            outputLabel="文档缩放比例"
-            sliderLabel="文档缩放"
+            decreaseLabel={officeMessage(messages, 'document.status.zoomOut')}
+            increaseLabel={officeMessage(messages, 'document.status.zoomIn')}
+            outputLabel={officeMessage(messages, 'document.status.zoomOutput')}
+            sliderLabel={officeMessage(messages, 'document.status.zoomSlider')}
             onChange={(value) => onZoomChange(clampDocumentZoom(value))}
           />
         </>
       }
     >
-      <output aria-label="页码状态" data-document-status-item="page">
-        第 {currentPage} 页，共 {pageCount} 页
+      <output
+        aria-label={officeMessage(messages, 'document.status.pageAria')}
+        data-document-status-item="page"
+      >
+        {officeMessage(messages, 'document.status.page', {
+          current: String(currentPage),
+          total: String(pageCount),
+        })}
       </output>
-      <output aria-label="分节状态" data-document-status-item="section">
-        第 {sectionIndex + 1} 节，共 {sectionCount} 节
+      <output
+        aria-label={officeMessage(messages, 'document.status.sectionAria')}
+        data-document-status-item="section"
+      >
+        {officeMessage(messages, 'document.status.section', {
+          current: String(sectionIndex + 1),
+          total: String(sectionCount),
+        })}
       </output>
       <button
         type="button"
         className="work-office-status-text-button"
         data-document-status-item="word-count"
-        aria-label={`字数统计：${wordCount}`}
+        aria-label={officeMessage(messages, 'document.status.wordCountAria', {
+          count: String(wordCount),
+        })}
         aria-keyshortcuts={wordCountCommand.shortcut?.aria}
-        title={`${wordCountCommand.label}（${wordCountCommand.shortcut?.label}）`}
+        title={documentCommandTitleWithShortcut('wordCount', messages)}
         onClick={onOpenWordCount}
       >
-        字数：{wordCount}
+        {officeMessage(messages, 'document.status.words', {
+          count: String(wordCount),
+        })}
       </button>
       <button
         type="button"
         data-document-status-item="spellcheck"
-        aria-label={`校对：${spellcheckEnabled ? '已开启' : '已关闭'}`}
-        title={`校对：${spellcheckEnabled ? '已开启' : '已关闭'}`}
+        aria-label={proofingLabel}
+        title={proofingLabel}
         aria-pressed={spellcheckEnabled}
         onClick={() => onSpellcheckChange(!spellcheckEnabled)}
       >
         <CheckCheck size={12} />
       </button>
-      <output aria-label="引用状态">
-        {bibliographyCount} 条文献 · {citationCount} 处引文
+      <output aria-label={officeMessage(messages, 'document.status.citationAria')}>
+        {officeMessage(messages, 'document.status.citation', {
+          bibliography: String(bibliographyCount),
+          citations: String(citationCount),
+        })}
       </output>
-      <output aria-label="文档保存状态" className="work-office-save-status">
+      <output
+        aria-label={officeMessage(messages, 'document.status.saveAria')}
+        className="work-office-save-status"
+      >
         <Cloud size={12} />
         {saveStatus}
       </output>

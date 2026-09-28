@@ -1,4 +1,6 @@
 import type { Cell, CellMatrix } from '@fortune-sheet/core';
+import { officeMessage, resolveOfficeMessages } from '../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../i18n/office-messages';
 import {
   displaySpreadsheetPivotReportFilterSelection,
   displaySpreadsheetPivotValue,
@@ -162,7 +164,11 @@ export function buildSpreadsheetPivotOutput(
       ),
     ),
     ...(pivot.rowGrandTotals && pivot.columnFields.length
-      ? pivot.values.map((value) => `总计 · ${valueCaption(value, fields)}`)
+      ? pivot.values.map((value) =>
+          officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.totalValue', {
+            caption: valueCaption(value, fields),
+          }),
+        )
       : []),
   ];
   const output: CellMatrix = [headers.map((value) => pivotHeaderCell(value))];
@@ -382,7 +388,10 @@ function valueCaption(
   return (
     value.caption?.trim() ||
     defaultPivotValueCaption(
-      fields[value.fieldIndex]?.name ?? `字段 ${value.fieldIndex + 1}`,
+      fields[value.fieldIndex]?.name ??
+        officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.field.fallback', {
+          n: String(value.fieldIndex + 1),
+        }),
       value.aggregation,
     )
   );
@@ -391,24 +400,49 @@ function valueCaption(
 export function defaultPivotValueCaption(
   fieldName: string,
   aggregation: WorkSpreadsheetPivotAggregation,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  return `${fieldName}（${spreadsheetPivotAggregationLabel(aggregation)}）`;
+  return officeMessage(messages, 'spreadsheet.pivot.valueCaption', {
+    field: fieldName,
+    aggregation: spreadsheetPivotAggregationLabel(aggregation, messages),
+  });
 }
 
 export function spreadsheetPivotAggregationLabel(
   aggregation: WorkSpreadsheetPivotAggregation,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (aggregation === 'count') return '计数';
-  if (aggregation === 'counta') return '非空计数';
-  if (aggregation === 'average') return '平均值';
-  if (aggregation === 'max') return '最大值';
-  if (aggregation === 'min') return '最小值';
-  if (aggregation === 'product') return '乘积';
-  if (aggregation === 'stdDev') return '样本标准差';
-  if (aggregation === 'stdDevP') return '总体标准差';
-  if (aggregation === 'var') return '样本方差';
-  if (aggregation === 'varP') return '总体方差';
-  return '求和';
+  if (aggregation === 'count') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.count');
+  }
+  if (aggregation === 'counta') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.counta');
+  }
+  if (aggregation === 'average') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.average');
+  }
+  if (aggregation === 'max') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.max');
+  }
+  if (aggregation === 'min') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.min');
+  }
+  if (aggregation === 'product') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.product');
+  }
+  if (aggregation === 'stdDev') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.stdDev');
+  }
+  if (aggregation === 'stdDevP') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.stdDevP');
+  }
+  if (aggregation === 'var') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.var');
+  }
+  if (aggregation === 'varP') {
+    return officeMessage(messages, 'spreadsheet.pivot.agg.varP');
+  }
+  return officeMessage(messages, 'spreadsheet.pivot.agg.sum');
 }
 
 function pivotHeaderCell(value: string): Cell {
@@ -446,9 +480,10 @@ function pivotValueCell(value: number | null, total: boolean): Cell | null {
 }
 
 function pivotTotalLabelCell(): Cell {
+  const label = officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.total');
   return {
-    v: '总计',
-    m: '总计',
+    v: label,
+    m: label,
     bl: 1,
     bg: '#f3f7f5',
   };

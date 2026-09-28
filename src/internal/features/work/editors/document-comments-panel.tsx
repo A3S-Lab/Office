@@ -23,6 +23,7 @@ import {
   CollectionState,
   IconButton,
 } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   documentCommentDraftRange,
   type WorkDocumentCommentRange,
@@ -40,6 +41,7 @@ import {
   useDocumentCommentWindow,
 } from './document-comment-window';
 import { OfficeTextArea, useOfficeDialog } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { useOfficeTaskPaneModal } from './office-task-pane';
 
 interface CommentTrackItem {
@@ -77,7 +79,7 @@ export function DocumentCommentsPanel({
   comments,
   canDelete = canDeleteAnyComment,
   draft,
-  draftAuthor = '我',
+  draftAuthor,
   surfaceRef,
   onReply,
   onToggleResolved,
@@ -127,6 +129,9 @@ export function DocumentCommentsPanel({
   const windowFrameRef = useRef(0);
   const cardResizeObserverRef = useRef<ResizeObserver | null>(null);
   const officeDialog = useOfficeDialog();
+  const messages = useOfficeMessages();
+  const resolvedDraftAuthor =
+    draftAuthor ?? officeMessage(messages, 'document.comment.defaultAuthor');
   const modal = useOfficeTaskPaneModal();
   const modalAttributes = modal
     ? ({ role: 'dialog', 'aria-modal': true } as const)
@@ -214,17 +219,24 @@ export function DocumentCommentsPanel({
   const cancelDraft = async () => {
     if (draftDirty) {
       const confirmed = await officeDialog.confirm({
-        title: '放弃未完成的批注？',
-        description: '未添加的批注不会保留。',
-        confirmLabel: '放弃内容',
+        title: officeMessage(messages, 'document.comment.discardDraft.title'),
+        description: officeMessage(
+          messages,
+          'document.comment.discardDraft.description',
+        ),
+        confirmLabel: officeMessage(
+          messages,
+          'document.comment.discardDraft.confirm',
+        ),
         confirmTone: 'danger',
         restoreFocusTarget: () => {
           const draftCard = draft
             ? cardRefs.current.get(`draft:${draft.id}`)
             : null;
           return (
-            draftCard?.querySelector<HTMLElement>('[aria-label="批注内容"]') ??
-            editor.view.dom
+            draftCard?.querySelector<HTMLElement>(
+              '[data-document-comment-body]',
+            ) ?? editor.view.dom
           );
         },
       });
@@ -243,11 +255,17 @@ export function DocumentCommentsPanel({
     if (!canDelete(commentId)) return;
     const replyDirty = Boolean(drafts[commentId]?.trim());
     const confirmed = await officeDialog.confirm({
-      title: '删除批注？',
-      description: replyDirty
-        ? '批注、已有回复和未发送的回复都将删除。'
-        : '批注及其回复将被删除。',
-      confirmLabel: '删除',
+      title: officeMessage(messages, 'document.comment.deleteConfirm.title'),
+      description: officeMessage(
+        messages,
+        replyDirty
+          ? 'document.comment.deleteConfirm.descriptionWithDraft'
+          : 'document.comment.deleteConfirm.description',
+      ),
+      confirmLabel: officeMessage(
+        messages,
+        'document.comment.deleteConfirm.confirm',
+      ),
       confirmTone: 'danger',
       restoreFocusTarget: replyDirty
         ? () =>
@@ -739,28 +757,37 @@ export function DocumentCommentsPanel({
         {...modalAttributes}
         ref={panelRef}
         className="work-document-comments-panel"
-        aria-label="批注审阅"
+        aria-label={officeMessage(messages, 'document.comment.panelAria')}
         onKeyDown={handlePanelKeyDown}
       >
         <header>
           <div>
-            <strong>批注</strong>
+            <strong>
+              {officeMessage(messages, 'document.comment.panelTitle')}
+            </strong>
             <span>
               {draft
-                ? '正在添加批注'
+                ? officeMessage(messages, 'document.comment.adding')
                 : comments.length
-                  ? `${unresolved} 条待处理 · 共 ${comments.length} 条`
-                  : '没有批注'}
+                  ? officeMessage(messages, 'document.comment.summary', {
+                      unresolved: String(unresolved),
+                      total: String(comments.length),
+                    })
+                  : officeMessage(messages, 'document.comment.empty')}
             </span>
           </div>
-          <IconButton className="close" label="关闭批注审阅" onClick={onClose}>
+          <IconButton
+            className="close"
+            label={officeMessage(messages, 'document.comment.closeAria')}
+            onClick={onClose}
+          >
             <X size={14} />
           </IconButton>
         </header>
         <ol
           ref={trackRef}
           className="work-document-comment-track"
-          aria-label="文档批注"
+          aria-label={officeMessage(messages, 'document.comment.listAria')}
           data-document-comment-count={comments.length}
           data-document-comment-mounted-count={
             commentWindow.mountedIndices.length
@@ -777,7 +804,7 @@ export function DocumentCommentsPanel({
           {draft && (
             <li className="work-document-comment-draft-item" key={draft.id}>
               <DocumentCommentComposer
-                author={draftAuthor}
+                author={resolvedDraftAuthor}
                 ref={(element) => {
                   attachCommentCard(`draft:${draft.id}`, element);
                 }}
@@ -794,6 +821,7 @@ export function DocumentCommentsPanel({
             if (!comment) return null;
             const item = layoutItemsById.get(comment.id);
             const active = effectiveActiveCommentId === comment.id;
+            const n = String(index + 1);
             return (
               <li
                 aria-posinset={index + 1}
@@ -820,7 +848,13 @@ export function DocumentCommentsPanel({
                   }}
                   type="button"
                   className="work-document-comment-anchor"
-                  aria-label={`${comment.detached ? '查看已脱离正文的' : '定位'}批注 ${index + 1}`}
+                  aria-label={officeMessage(
+                    messages,
+                    comment.detached
+                      ? 'document.comment.anchorDetachedAria'
+                      : 'document.comment.anchorAria',
+                    { n },
+                  )}
                   aria-current={active ? 'location' : undefined}
                   tabIndex={commentWindow.rovingIndex === index ? 0 : -1}
                   onKeyDown={(event) =>
@@ -835,7 +869,13 @@ export function DocumentCommentsPanel({
                   }}
                 >
                   <span className="work-document-comment-avatar">
-                    {commentAuthorInitials(comment.author)}
+                    {commentAuthorInitials(
+                      comment.author,
+                      officeMessage(
+                        messages,
+                        'document.comment.authorInitialFallback',
+                      ),
+                    )}
                   </span>
                   <span className="work-document-comment-meta">
                     <strong>{comment.author}</strong>
@@ -847,10 +887,14 @@ export function DocumentCommentsPanel({
                     {comment.detached ? (
                       <>
                         <Unlink2 size={10} aria-hidden="true" />
-                        原文锚点已删除
+                        {officeMessage(
+                          messages,
+                          'document.comment.detachedAnchor',
+                        )}
                       </>
                     ) : (
-                      comment.anchorText.trim() || '（空白字符）'
+                      comment.anchorText.trim() ||
+                      officeMessage(messages, 'document.comment.blankAnchor')
                     )}
                   </span>
                 </button>
@@ -870,9 +914,17 @@ export function DocumentCommentsPanel({
                 </section>
                 <div className="work-document-comment-reply">
                   <OfficeTextArea
-                    aria-label={`回复批注 ${index + 1}`}
+                    data-document-comment-reply=""
+                    aria-label={officeMessage(
+                      messages,
+                      'document.comment.replyAria',
+                      { n },
+                    )}
                     value={drafts[comment.id] ?? ''}
-                    placeholder="回复此批注…"
+                    placeholder={officeMessage(
+                      messages,
+                      'document.comment.replyPlaceholder',
+                    )}
                     onChange={(event) =>
                       setDrafts((current) => ({
                         ...current,
@@ -892,19 +944,29 @@ export function DocumentCommentsPanel({
                   <Button
                     size="compact"
                     tone="primary"
-                    aria-label={`发送回复 ${index + 1}`}
+                    aria-label={officeMessage(
+                      messages,
+                      'document.comment.sendReplyAria',
+                      { n },
+                    )}
                     disabled={!drafts[comment.id]?.trim()}
                     onClick={() => submitReply(comment.id)}
                   >
                     <MessageSquareReply size={13} />
-                    回复
+                    {officeMessage(messages, 'document.comment.reply')}
                   </Button>
                 </div>
                 <footer>
                   <Button
                     size="compact"
                     tone="quiet"
-                    aria-label={`${comment.resolved ? '重新打开' : '解决'}批注 ${index + 1}`}
+                    aria-label={officeMessage(
+                      messages,
+                      comment.resolved
+                        ? 'document.comment.reopenAria'
+                        : 'document.comment.resolveAria',
+                      { n },
+                    )}
                     onClick={() => onToggleResolved(comment.id)}
                   >
                     {comment.resolved ? (
@@ -912,22 +974,32 @@ export function DocumentCommentsPanel({
                     ) : (
                       <CheckCircle2 size={13} />
                     )}
-                    {comment.resolved ? '重新打开' : '解决'}
+                    {officeMessage(
+                      messages,
+                      comment.resolved
+                        ? 'document.comment.reopen'
+                        : 'document.comment.resolve',
+                    )}
                   </Button>
                   <Button
                     size="compact"
                     tone="danger"
-                    aria-label={`删除批注 ${index + 1}`}
+                    aria-label={officeMessage(
+                      messages,
+                      'document.comment.deleteAria',
+                      { n },
+                    )}
                     disabled={!canDelete(comment.id)}
-                    title={
+                    title={officeMessage(
+                      messages,
                       canDelete(comment.id)
-                        ? '删除批注'
-                        : '批注模式只能删除自己创建的批注'
-                    }
+                        ? 'document.comment.deleteTitle'
+                        : 'document.comment.deleteOwnOnlyTitle',
+                    )}
                     onClick={() => void deleteComment(comment.id, index)}
                   >
                     <Trash2 size={13} />
-                    删除
+                    {officeMessage(messages, 'document.comment.delete')}
                   </Button>
                 </footer>
               </li>
@@ -939,7 +1011,7 @@ export function DocumentCommentsPanel({
                 className="work-document-comments-empty"
                 role="status"
               >
-                选择文字并添加批注。
+                {officeMessage(messages, 'document.comment.emptyHint')}
               </CollectionState>
             </li>
           )}
@@ -1126,9 +1198,9 @@ function estimatedWrappedLines(
   );
 }
 
-function commentAuthorInitials(author: string): string {
+function commentAuthorInitials(author: string, fallback: string): string {
   const words = author.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return '审';
+  if (!words.length) return fallback;
   if (words.length === 1) return Array.from(words[0]).slice(0, 1).join('');
   return words
     .slice(0, 2)

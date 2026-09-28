@@ -1,3 +1,4 @@
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import type { Cell } from '@fortune-sheet/core';
 import type {
   WorkSpreadsheetContent,
@@ -63,34 +64,54 @@ export function normalizeSpreadsheetDependentListFormula(
   value: string,
 ): SpreadsheetDependentListFormulaResult {
   const source = value.trim();
-  if (!source) return { ok: false, message: '动态下拉来源不能为空。' };
+  if (!source) {
+    return {
+      ok: false,
+      message: officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.list.empty'),
+    };
+  }
   if (
     Array.from(source).length > MAX_SPREADSHEET_DEPENDENT_LIST_FORMULA_LENGTH
   ) {
-    return { ok: false, message: '动态下拉公式超过 255 个字符。' };
+    return {
+      ok: false,
+      message: officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.list.tooLong'),
+    };
   }
   if (/[\u0000-\u001f\u007f]/u.test(source) || /[\[\]]/u.test(source)) {
-    return { ok: false, message: '动态下拉公式只能引用当前工作簿。' };
+    return {
+      ok: false,
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.localWorkbookOnly',
+      ),
+    };
   }
   const body = source.replace(/^=/, '').trim();
   const argument = indirectArgument(body);
   if (argument === null) {
     return {
       ok: false,
-      message: '动态下拉公式仅支持 =INDIRECT(单元格或文本拼接)。',
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.indirectOnly',
+      ),
     };
   }
   const terms = splitConcatenation(argument);
   if (!terms || terms.length === 0 || terms.length > 16) {
     return {
       ok: false,
-      message: '动态下拉公式的拼接项数量超出本地安全边界。',
+      message: officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.list.termLimit'),
     };
   }
   if (!terms.every((term) => isDependentListTerm(term))) {
     return {
       ok: false,
-      message: '动态下拉公式只能拼接文本和单元格引用。',
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.textOrCellOnly',
+      ),
     };
   }
   return {
@@ -120,17 +141,35 @@ export function resolveSpreadsheetDependentListReference(
   const body = normalized.formula.slice(1);
   const argument = indirectArgument(body);
   if (argument === null) {
-    return { ok: false, message: '动态下拉公式括号不完整。' };
+    return {
+      ok: false,
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.unbalancedParens',
+      ),
+    };
   }
   const terms = splitConcatenation(argument);
   if (!terms) {
-    return { ok: false, message: '动态下拉公式拼接项无效。' };
+    return {
+      ok: false,
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.invalidTerms',
+      ),
+    };
   }
   let referenceText = '';
   for (const term of terms) {
     const parsed = parseDependentListTerm(term.trim());
     if (!parsed) {
-      return { ok: false, message: '动态下拉公式包含不支持的表达式。' };
+      return {
+          ok: false,
+          message: officeMessage(
+            resolveOfficeMessages(),
+            'spreadsheet.dv.list.unsupportedExpr',
+          ),
+        };
     }
     if (parsed.kind === 'text') {
       referenceText += parsed.value;
@@ -158,7 +197,11 @@ export function resolveSpreadsheetDependentListReference(
   if (!target.ok) {
     return {
       ok: false,
-      message: `动态下拉来源无法解析：${target.message}`,
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.resolveFailed',
+        { detail: target.message ?? '' },
+      ),
     };
   }
   const area = spreadsheetCellRangeArea(target.target.range);
@@ -166,12 +209,20 @@ export function resolveSpreadsheetDependentListReference(
     target.target.range.row[0] !== target.target.range.row[1] &&
     target.target.range.column[0] !== target.target.range.column[1]
   ) {
-    return { ok: false, message: '动态下拉来源只能是一行或一列连续区域。' };
+    return {
+      ok: false,
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.oneRowOrColumn',
+      ),
+    };
   }
   if (area > MAX_SPREADSHEET_DEPENDENT_LIST_REFERENCE_CELLS) {
     return {
       ok: false,
-      message: `动态下拉来源最多读取 ${MAX_SPREADSHEET_DEPENDENT_LIST_REFERENCE_CELLS.toLocaleString('en-US')} 个单元格。`,
+      message: officeMessage(resolveOfficeMessages(), 'spreadsheet.dv.list.cellLimit', {
+        n: MAX_SPREADSHEET_DEPENDENT_LIST_REFERENCE_CELLS.toLocaleString('en-US'),
+      }),
     };
   }
   return {
@@ -513,7 +564,13 @@ function resolveDependentListCell(
       )
     : fallback;
   if (!sheet)
-    return { ok: false, message: '动态下拉公式引用了不存在的工作表。' };
+    return {
+      ok: false,
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.missingSheet',
+      ),
+    };
   const resolvedRow = term.absoluteRow
     ? term.row
     : row + (term.row - anchorRow);
@@ -526,7 +583,13 @@ function resolveDependentListCell(
     resolvedRow >= 1_048_576 ||
     resolvedColumn >= 16_384
   ) {
-    return { ok: false, message: '动态下拉公式引用超出了工作表边界。' };
+    return {
+      ok: false,
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.outOfBounds',
+      ),
+    };
   }
   const cell = spreadsheetDependentListCellAt(
     sheet,
@@ -537,7 +600,10 @@ function resolveDependentListCell(
   if (typeof cell.f === 'string' && cell.f && cell.v === undefined) {
     return {
       ok: false,
-      message: '动态下拉公式引用了尚未计算的公式单元格。',
+      message: officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.dv.list.unevaluatedFormula',
+      ),
     };
   }
   const displayed = cell.m ?? cell.v;

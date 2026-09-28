@@ -1,3 +1,4 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   normalizeWorkSpreadsheetChartGapWidth,
   normalizeWorkSpreadsheetChartGrouping,
@@ -14,6 +15,7 @@ import {
   workSpreadsheetChartSupportsSmoothLines,
 } from '../work-spreadsheet-chart-layout';
 import type { WorkSpreadsheetChartType } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import {
   CommittedOfficeNumberField,
   OfficeCheckbox,
@@ -35,6 +37,7 @@ export function SpreadsheetChartLayoutEditor({
   chart,
   onChange,
 }: SpreadsheetChartLayoutEditorProps) {
+  const messages = useOfficeMessages();
   const grouping = normalizeWorkSpreadsheetChartGrouping(
     chart.grouping,
     chart.type,
@@ -42,36 +45,78 @@ export function SpreadsheetChartLayoutEditor({
   return (
     <section
       className="work-spreadsheet-chart-layout"
-      aria-label="图表图例与绘图区设置"
+      aria-label={officeMessage(messages, 'spreadsheet.chart.layout.settingsAria')}
     >
       <header>
-        <strong>图例与绘图区</strong>
-        <span>位置、堆积与系列间距</span>
+        <strong>
+          {officeMessage(messages, 'spreadsheet.chart.layout.title')}
+        </strong>
+        <span>
+          {officeMessage(messages, 'spreadsheet.chart.layout.subtitle')}
+        </span>
       </header>
       <div>
         <OfficeCheckbox
           className="check"
-          ariaLabel="显示图表图例"
+          ariaLabel={officeMessage(
+            messages,
+            'spreadsheet.chart.layout.showLegendAria',
+          )}
           checked={chart.showLegend}
           onCheckedChange={(showLegend) => onChange({ showLegend })}
         >
-          显示图例
+          {officeMessage(messages, 'spreadsheet.chart.layout.showLegend')}
         </OfficeCheckbox>
-        {chart.showLegend && (
+        {chart.showLegend ? (
           <>
             <div className="work-office-field">
-              <span>图例位置</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.layout.legendPos')}
+              </span>
               <OfficeSelect
-                ariaLabel="图例位置"
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.layout.legendPosAria',
+                )}
                 value={normalizeWorkSpreadsheetChartLegendPosition(
                   chart.legendPosition,
                 )}
                 options={[
-                  { value: 'right', label: '右侧' },
-                  { value: 'left', label: '左侧' },
-                  { value: 'top', label: '顶部' },
-                  { value: 'bottom', label: '底部' },
-                  { value: 'topRight', label: '右上角' },
+                  {
+                    value: 'right',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.layout.legend.right',
+                    ),
+                  },
+                  {
+                    value: 'left',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.layout.legend.left',
+                    ),
+                  },
+                  {
+                    value: 'top',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.layout.legend.top',
+                    ),
+                  },
+                  {
+                    value: 'bottom',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.layout.legend.bottom',
+                    ),
+                  },
+                  {
+                    value: 'topRight',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.layout.legend.topRight',
+                    ),
+                  },
                 ]}
                 onValueChange={(legendPosition) =>
                   onChange({
@@ -83,29 +128,63 @@ export function SpreadsheetChartLayoutEditor({
             </div>
             <OfficeCheckbox
               className="check"
-              ariaLabel="图例叠加在绘图区"
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.layout.overlayAria',
+              )}
               checked={normalizeWorkSpreadsheetChartLegendOverlay(
                 chart.legendOverlay,
               )}
               onCheckedChange={(legendOverlay) => onChange({ legendOverlay })}
             >
-              叠加在绘图区
+              {officeMessage(messages, 'spreadsheet.chart.layout.overlay')}
             </OfficeCheckbox>
           </>
-        )}
-        {workSpreadsheetChartSupportsGrouping(chart.type) && (
+        ) : null}
+        {workSpreadsheetChartSupportsGrouping(chart.type) ? (
           <div className="work-office-field">
-            <span>分组方式</span>
+            <span>
+              {officeMessage(messages, 'spreadsheet.chart.layout.grouping')}
+            </span>
             <OfficeSelect
-              ariaLabel="图表分组方式"
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.layout.groupingAria',
+              )}
               value={grouping}
               options={[
                 ...(workSpreadsheetChartSupportsBarSpacing(chart.type)
-                  ? [{ value: 'clustered', label: '簇状' } as const]
+                  ? [
+                      {
+                        value: 'clustered',
+                        label: officeMessage(
+                          messages,
+                          'spreadsheet.chart.layout.grouping.clustered',
+                        ),
+                      } as const,
+                    ]
                   : []),
-                { value: 'standard', label: '标准' },
-                { value: 'stacked', label: '堆积' },
-                { value: 'percentStacked', label: '百分比堆积' },
+                {
+                  value: 'standard',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.layout.grouping.standard',
+                  ),
+                },
+                {
+                  value: 'stacked',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.layout.grouping.stacked',
+                  ),
+                },
+                {
+                  value: 'percentStacked',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.layout.grouping.percentStacked',
+                  ),
+                },
               ]}
               onValueChange={(value) => {
                 const nextGrouping = value as WorkSpreadsheetChartGrouping;
@@ -137,13 +216,18 @@ export function SpreadsheetChartLayoutEditor({
               }}
             />
           </div>
-        )}
-        {workSpreadsheetChartSupportsBarSpacing(chart.type) && (
+        ) : null}
+        {workSpreadsheetChartSupportsBarSpacing(chart.type) ? (
           <>
             <div className="work-office-field">
-              <span>分类间距（%）</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.layout.gapWidth')}
+              </span>
               <CommittedOfficeNumberField
-                ariaLabel="分类间距（%）"
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.layout.gapWidth',
+                )}
                 min={0}
                 max={500}
                 step={1}
@@ -159,9 +243,14 @@ export function SpreadsheetChartLayoutEditor({
               />
             </div>
             <div className="work-office-field">
-              <span>系列重叠（%）</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.layout.overlap')}
+              </span>
               <CommittedOfficeNumberField
-                ariaLabel="系列重叠（%）"
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.layout.overlap',
+                )}
                 min={-100}
                 max={100}
                 step={1}
@@ -180,25 +269,26 @@ export function SpreadsheetChartLayoutEditor({
               />
             </div>
           </>
-        )}
-        {workSpreadsheetChartSupportsSmoothLines(chart.type) && (
+        ) : null}
+        {workSpreadsheetChartSupportsSmoothLines(chart.type) ? (
           <OfficeCheckbox
             className="check"
-            ariaLabel="使用平滑线"
+            ariaLabel={officeMessage(
+              messages,
+              'spreadsheet.chart.layout.smoothAria',
+            )}
             checked={normalizeWorkSpreadsheetChartSmoothLines(
               chart.smoothLines,
             )}
             onCheckedChange={(smoothLines) => onChange({ smoothLines })}
           >
-            使用平滑线
+            {officeMessage(messages, 'spreadsheet.chart.layout.smooth')}
           </OfficeCheckbox>
-        )}
+        ) : null}
       </div>
-      {workSpreadsheetChartGroupingIsStacked(grouping) && (
-        <p>
-          堆积布局按正值和负值分别累计；保存时会移除不适用于堆积语义的趋势线与误差线。
-        </p>
-      )}
+      {workSpreadsheetChartGroupingIsStacked(grouping) ? (
+        <p>{officeMessage(messages, 'spreadsheet.chart.layout.stackNote')}</p>
+      ) : null}
     </section>
   );
 }

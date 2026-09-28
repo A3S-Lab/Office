@@ -333,6 +333,203 @@ test('authors a native pattern and blocks crossed path geometry', () => {
   expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
 });
 
+test('keeps existing border edges when the line-style pen changes', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={borderedSource()}
+      openIntent={{ tab: 'border' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '边框线条样式' }));
+  expect(screen.getByRole('option', { name: '双点划线' })).toBeTruthy();
+  expect(screen.getByRole('option', { name: '中等点划线' })).toBeTruthy();
+  expect(screen.getByRole('option', { name: '中等双点划线' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('option', { name: '粗实线' }));
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '下框线' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+
+  expect(patches).toEqual([
+    {
+      borders: [
+        { target: 'top', color: '#112233', style: 'thin' },
+        { target: 'bottom', color: '#112233', style: 'thick' },
+      ],
+    },
+  ]);
+});
+
+test('previews dash-dot borders separately from dashed borders', () => {
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={borderedSource()}
+      openIntent={{ tab: 'border' }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onClose={() => undefined}
+    />,
+  );
+
+  const preview = screen.getByRole('img', { name: '边框预览' });
+  expect(preview.querySelector('.top')).toHaveAttribute(
+    'data-border-style',
+    'thin',
+  );
+  fireEvent.click(screen.getByRole('combobox', { name: '边框线条样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '点划线' }));
+  fireEvent.click(screen.getByRole('button', { name: '下框线' }));
+  expect(preview.querySelector('.top')).toHaveAttribute(
+    'data-border-style',
+    'thin',
+  );
+  expect(preview.querySelector('.bottom')).toHaveAttribute(
+    'data-border-style',
+    'dash-dot',
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '边框线条样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '双点划线' }));
+  fireEvent.click(screen.getByRole('button', { name: '左框线' }));
+  expect(preview.querySelector('.left')).toHaveAttribute(
+    'data-border-style',
+    'dash-dot-dot',
+  );
+  expect(preview.querySelector('.bottom')).toHaveAttribute(
+    'data-border-style',
+    'dash-dot',
+  );
+});
+
+test('labels a mixed font color instead of the active cell color', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={mixedFontColorSource()}
+      openIntent={{ tab: 'font' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  const color = screen.getByRole('button', { name: '单元格文字颜色' });
+  expect(color).toHaveTextContent('混合');
+  expect(color).not.toHaveTextContent('#FF0000');
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+  fireEvent.click(color);
+  fireEvent.click(screen.getByRole('option', { name: '颜色 #6d9eeb' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+
+  expect(patches).toEqual([{ fontColor: '#6d9eeb' }]);
+});
+
+test('leaves mixed fill modes unselected until one mode is chosen', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={mixedSource()}
+      openIntent={{ tab: 'fill' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  const modes = screen.getByRole('radiogroup', { name: '填充类型' });
+  for (const name of ['无填充', '纯色', '图案', '渐变']) {
+    expect(within(modes).getByRole('radio', { name })).not.toBeChecked();
+  }
+  expect(screen.getByText('选区包含多种填充；只有选择新的填充类型或参数后才会统一应用。')).toBeTruthy();
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+  fireEvent.click(within(modes).getByRole('radio', { name: '纯色' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+
+  expect(patches).toEqual([
+    { fill: { kind: 'solid', color: '#fff2cc' } },
+  ]);
+});
+
+test('previews accounting underlines as full-width lines', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={underlineSource(3)}
+      openIntent={{ tab: 'font' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  const preview = screen.getByText('A3S Office 字体预览');
+  expect(preview).toHaveAttribute('data-underline-style', 'singleAccounting');
+  fireEvent.click(screen.getByRole('combobox', { name: '下划线样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '双会计用下划线' }));
+  expect(preview).toHaveAttribute('data-underline-style', 'doubleAccounting');
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  expect(patches).toEqual([{ underline: 'doubleAccounting' }]);
+});
+
+test('leaves mixed text rotation blank until an angle is entered', () => {
+  const patches: SpreadsheetCellFormatPatch[] = [];
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={mixedRotationSource()}
+      openIntent={{ tab: 'alignment' }}
+      restoreFocusTarget={() => null}
+      onApply={(patch) => {
+        patches.push(patch);
+        return true;
+      }}
+      onClose={() => undefined}
+    />,
+  );
+
+  const rotation = screen.getByRole('textbox', { name: '文字旋转角度' });
+  expect(rotation).toHaveValue('');
+  expect(rotation).toHaveAttribute('placeholder', '混合');
+  expect(screen.getByRole('button', { name: '应用' })).toBeDisabled();
+  fireEvent.change(rotation, { target: { value: '30' } });
+  fireEvent.click(screen.getByRole('button', { name: '应用' }));
+  expect(patches).toEqual([{ rotation: 30 }]);
+});
+
+test('does not preview one underline style for a mixed selection', () => {
+  render(
+    <SpreadsheetFormatCellsDialog
+      source={mixedUnderlineSource()}
+      openIntent={{ tab: 'font' }}
+      restoreFocusTarget={() => null}
+      onApply={() => true}
+      onClose={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('combobox', { name: '下划线样式' })).toHaveTextContent(
+    '混合',
+  );
+  expect(screen.getByText('A3S Office 字体预览')).not.toHaveAttribute(
+    'data-underline-style',
+  );
+});
+
 function FormatCellsHarness({
   source,
 }: {
@@ -393,6 +590,131 @@ function mixedSource(): SpreadsheetFormatCellsDialogSource {
     content,
     'sheet-1',
     { row: [0, 0], column: [0, 1] },
+    content.sheets[0]?.data ?? [],
+    { row: 0, column: 0 },
+  );
+  if (!source) throw new Error('Expected a Format Cells source.');
+  return source;
+}
+
+function underlineSource(underline: number): SpreadsheetFormatCellsDialogSource {
+  const content = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        data: [[{ v: 'A', un: underline }]],
+      },
+    ],
+  } satisfies WorkSpreadsheetContent;
+  const source = createSpreadsheetFormatCellsDialogSource(
+    content,
+    'sheet-1',
+    { row: [0, 0], column: [0, 0] },
+    content.sheets[0]?.data ?? [],
+    { row: 0, column: 0 },
+  );
+  if (!source) throw new Error('Expected a Format Cells source.');
+  return source;
+}
+
+function mixedRotationSource(): SpreadsheetFormatCellsDialogSource {
+  const content = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        data: [
+          [{ v: 'A', rt: 0 }, { v: 'B', rt: 45 }],
+        ],
+      },
+    ],
+  } satisfies WorkSpreadsheetContent;
+  const source = createSpreadsheetFormatCellsDialogSource(
+    content,
+    'sheet-1',
+    { row: [0, 0], column: [0, 1] },
+    content.sheets[0]?.data ?? [],
+    { row: 0, column: 0 },
+  );
+  if (!source) throw new Error('Expected a Format Cells source.');
+  return source;
+}
+
+function mixedUnderlineSource(): SpreadsheetFormatCellsDialogSource {
+  const content = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        data: [
+          [{ v: 'A', un: 1 }, { v: 'B', un: 2 }],
+        ],
+      },
+    ],
+  } satisfies WorkSpreadsheetContent;
+  const source = createSpreadsheetFormatCellsDialogSource(
+    content,
+    'sheet-1',
+    { row: [0, 0], column: [0, 1] },
+    content.sheets[0]?.data ?? [],
+    { row: 0, column: 0 },
+  );
+  if (!source) throw new Error('Expected a Format Cells source.');
+  return source;
+}
+
+function mixedFontColorSource(): SpreadsheetFormatCellsDialogSource {
+  const content = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        data: [[{ v: 'A', fc: '#ff0000' }, { v: 'B', fc: '#0000ff' }]],
+      },
+    ],
+  } satisfies WorkSpreadsheetContent;
+  const source = createSpreadsheetFormatCellsDialogSource(
+    content,
+    'sheet-1',
+    { row: [0, 0], column: [0, 1] },
+    content.sheets[0]?.data ?? [],
+    { row: 0, column: 0 },
+  );
+  if (!source) throw new Error('Expected a Format Cells source.');
+  return source;
+}
+
+function borderedSource(): SpreadsheetFormatCellsDialogSource {
+  const content = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        config: {
+          borderInfo: [
+            {
+              rangeType: 'range',
+              borderType: 'border-top',
+              color: '#112233',
+              style: '1',
+              range: [{ row: [0, 0], column: [0, 0] }],
+            },
+          ],
+        },
+        data: [[{ v: 1 }]],
+      },
+    ],
+  } satisfies WorkSpreadsheetContent;
+  const source = createSpreadsheetFormatCellsDialogSource(
+    content,
+    'sheet-1',
+    { row: [0, 0], column: [0, 0] },
     content.sheets[0]?.data ?? [],
     { row: 0, column: 0 },
   );

@@ -1,4 +1,8 @@
 import { indexToColumnChar, type Selection } from '@fortune-sheet/core';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
@@ -31,14 +35,26 @@ export function spreadsheetFreezePaneForSelection(
 export function spreadsheetFreezePanesSelectionLabel(
   selection: Selection,
 ): string {
+  const catalog = resolveOfficeMessages();
   const boundary = spreadsheetFreezePaneForSelection(selection);
-  if (!boundary) return '冻结至当前单元格';
+  if (!boundary) {
+    return officeMessage(catalog, 'spreadsheet.freeze.toCurrentCell');
+  }
   const { rows, columns } = spreadsheetFreezePaneBoundary(boundary);
   if (rows && columns) {
-    return `冻结至第 ${rows} 行、${indexToColumnChar(columns - 1)} 列`;
+    return officeMessage(catalog, 'spreadsheet.freeze.toRowAndColumn', {
+      rows: String(rows),
+      column: indexToColumnChar(columns - 1),
+    });
   }
-  if (rows) return `冻结至第 ${rows} 行`;
-  return `冻结至 ${indexToColumnChar(columns - 1)} 列`;
+  if (rows) {
+    return officeMessage(catalog, 'spreadsheet.freeze.toRow', {
+      rows: String(rows),
+    });
+  }
+  return officeMessage(catalog, 'spreadsheet.freeze.toColumn', {
+    column: indexToColumnChar(columns - 1),
+  });
 }
 
 export function spreadsheetFreezePaneBoundary(
@@ -67,10 +83,24 @@ export function spreadsheetFreezePaneBoundary(
 export function spreadsheetFreezePanesStatus(
   frozen: WorkSpreadsheetSheet['frozen'],
 ): string {
+  const catalog = resolveOfficeMessages();
   const { rows, columns } = spreadsheetFreezePaneBoundary(frozen);
-  if (rows && columns) return `已冻结前 ${rows} 行和前 ${columns} 列。`;
-  if (rows) return `已冻结前 ${rows} 行。`;
-  if (columns) return `已冻结前 ${columns} 列。`;
+  if (rows && columns) {
+    return officeMessage(catalog, 'spreadsheet.freeze.statusRowsAndColumns', {
+      rows: String(rows),
+      columns: String(columns),
+    });
+  }
+  if (rows) {
+    return officeMessage(catalog, 'spreadsheet.freeze.statusRows', {
+      rows: String(rows),
+    });
+  }
+  if (columns) {
+    return officeMessage(catalog, 'spreadsheet.freeze.statusColumns', {
+      columns: String(columns),
+    });
+  }
   return '';
 }
 

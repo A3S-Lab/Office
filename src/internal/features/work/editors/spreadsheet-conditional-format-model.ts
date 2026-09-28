@@ -1,3 +1,4 @@
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import type { Sheet } from '@fortune-sheet/core';
 import {
   isSpreadsheetConditionalComparisonOperator,
@@ -9,6 +10,7 @@ import {
   defaultSpreadsheetConditionalIconThresholds,
   normalizeSpreadsheetConditionalIconSetFormat,
   SPREADSHEET_CONDITIONAL_ICON_SETS,
+  spreadsheetConditionalIconSetLabel,
   type SpreadsheetConditionalIconSetName,
   type SpreadsheetConditionalIconThreshold,
 } from '../work-spreadsheet-conditional-icons';
@@ -38,24 +40,40 @@ export interface SpreadsheetConditionalThresholdDraft {
   gte: boolean;
 }
 
-const COMPARISON_LABELS: Record<
+const COMPARISON_LABEL_KEYS = {
+  greaterThan: 'spreadsheet.cf.op.greaterThan',
+  greaterThanOrEqual: 'spreadsheet.cf.op.greaterThanOrEqual',
+  lessThan: 'spreadsheet.cf.op.lessThan',
+  lessThanOrEqual: 'spreadsheet.cf.op.lessThanOrEqual',
+  equal: 'spreadsheet.cf.op.equal',
+  notEqual: 'spreadsheet.cf.op.notEqual',
+  between: 'spreadsheet.cf.op.between',
+  notBetween: 'spreadsheet.cf.op.notBetween',
+} as const satisfies Record<
   SpreadsheetConditionalComparisonOperator,
-  string
-> = {
-  greaterThan: '大于',
-  greaterThanOrEqual: '大于或等于',
-  lessThan: '小于',
-  lessThanOrEqual: '小于或等于',
-  equal: '等于',
-  notEqual: '不等于',
-  between: '介于',
-  notBetween: '不介于',
-};
+  Parameters<typeof officeMessage>[1]
+>;
 
+export function spreadsheetConditionalComparisonLabel(
+  name: SpreadsheetConditionalComparisonOperator,
+): string {
+  return officeMessage(resolveOfficeMessages(), COMPARISON_LABEL_KEYS[name]);
+}
+
+export function spreadsheetConditionalComparisons() {
+  return SPREADSHEET_CONDITIONAL_COMPARISON_OPERATORS.map((name) => ({
+    name,
+    label: spreadsheetConditionalComparisonLabel(name),
+  }));
+}
+
+/** @deprecated Prefer spreadsheetConditionalComparisons() for locale-aware labels. */
 export const SPREADSHEET_CONDITIONAL_COMPARISONS =
   SPREADSHEET_CONDITIONAL_COMPARISON_OPERATORS.map((name) => ({
     name,
-    label: COMPARISON_LABELS[name],
+    get label() {
+      return spreadsheetConditionalComparisonLabel(name);
+    },
   }));
 
 export interface ConditionalRuleDraft {
@@ -128,20 +146,39 @@ const TOOLBAR_CONDITIONAL_RULE_NAMES = [
 type ToolbarConditionalRuleName =
   (typeof TOOLBAR_CONDITIONAL_RULE_NAMES)[number];
 
+const TOOLBAR_CONDITIONAL_RULE_LABEL_KEYS = {
+  textContains: 'spreadsheet.cf.toolbar.textContains',
+  duplicateValue: 'spreadsheet.cf.toolbar.duplicateValue',
+  top10: 'spreadsheet.cf.toolbar.top10',
+  top10_percent: 'spreadsheet.cf.toolbar.top10Percent',
+  last10: 'spreadsheet.cf.toolbar.last10',
+  last10_percent: 'spreadsheet.cf.toolbar.last10Percent',
+  aboveAverage: 'spreadsheet.cf.toolbar.aboveAverage',
+  belowAverage: 'spreadsheet.cf.toolbar.belowAverage',
+  formula: 'spreadsheet.cf.toolbar.formula',
+} as const satisfies Record<
+  ToolbarConditionalRuleName,
+  Parameters<typeof officeMessage>[1]
+>;
+
+function toolbarConditionalRuleLabel(name: ToolbarConditionalRuleName): string {
+  return officeMessage(
+    resolveOfficeMessages(),
+    TOOLBAR_CONDITIONAL_RULE_LABEL_KEYS[name],
+  );
+}
+
 const TOOLBAR_CONDITIONAL_RULE_LABELS: Record<
   ToolbarConditionalRuleName,
   string
-> = {
-  textContains: '包含文本',
-  duplicateValue: '重复值',
-  top10: '前几项',
-  top10_percent: '前百分比',
-  last10: '后几项',
-  last10_percent: '后百分比',
-  aboveAverage: '高于平均值',
-  belowAverage: '低于平均值',
-  formula: '公式',
-};
+> = new Proxy({} as Record<ToolbarConditionalRuleName, string>, {
+  get(_target, prop: string) {
+    if (prop in TOOLBAR_CONDITIONAL_RULE_LABEL_KEYS) {
+      return toolbarConditionalRuleLabel(prop as ToolbarConditionalRuleName);
+    }
+    return undefined;
+  },
+});
 
 export function managedConditionalFormatCount(
   content: WorkSpreadsheetContent,
@@ -358,7 +395,7 @@ export function buildConditionalRule(
 ): ConditionalRuleBuildResult {
   const cellrange = parseSpreadsheetCellRanges(draft.reference);
   if (!cellrange) {
-    return { error: '请输入有效的单元格范围，例如 A2:A20 或 A2:A20,C2:C20。' };
+    return { error: officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.range') };
   }
   let rule: FortuneConditionalFormatRule;
   if (draft.type === 'toolbarRule') {
@@ -366,7 +403,7 @@ export function buildConditionalRule(
       !draft.preservedRule ||
       !isToolbarConditionalRule(draft.preservedRule)
     ) {
-      return { error: '当前工具栏条件格式规则已失效，请重新选择规则。' };
+      return { error: officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.toolbarStale') };
     }
     rule = { ...draft.preservedRule, cellrange };
     delete rule.stopIfTrue;
@@ -381,7 +418,7 @@ export function buildConditionalRule(
       (needsUpperValue && !upperValue) ||
       (!draft.comparisonUseTextColor && !draft.comparisonUseCellColor)
     ) {
-      return { error: '请输入完整的比较值，并至少启用一种文字或填充颜色。' };
+      return { error: officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.comparisonIncomplete') };
     }
     rule = {
       type: 'default',
@@ -400,16 +437,16 @@ export function buildConditionalRule(
     };
   } else if (draft.type === 'formula') {
     const formula = draft.formula.trim();
-    if (!formula) return { error: '请输入条件格式公式。' };
+    if (!formula) return { error: officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.formulaRequired') };
     const formulaSource = formula.replace(/^=/, '').trim();
-    if (!formulaSource) return { error: '请输入条件格式公式，例如 =A2>0。' };
+    if (!formulaSource) return { error: officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.formulaExample') };
     if (
       Array.from(formulaSource).length > MAX_SPREADSHEET_LOCAL_FORMULA_LENGTH
     ) {
-      return { error: '条件格式公式不能超过 255 个字符。' };
+      return { error: officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.formulaTooLong') };
     }
     if (!draft.formulaUseTextColor && !draft.formulaUseCellColor) {
-      return { error: '至少启用一种文字或填充颜色。' };
+      return { error: officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.needColor') };
     }
     rule = {
       type: 'default',
@@ -438,7 +475,7 @@ export function buildConditionalRule(
     ) {
       return {
         error:
-          '数据条阈值和长度必须有效；长度必须介于 0 与 100 之间，且最短长度不能超过最长长度。',
+          officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.dataBar'),
       };
     }
     rule = {
@@ -457,7 +494,7 @@ export function buildConditionalRule(
     if (!thresholds) {
       return {
         error:
-          '图标阈值必须是有效数字；百分比和百分位阈值必须介于 0 与 100 之间。',
+          officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.icons'),
       };
     }
     rule = {
@@ -476,7 +513,7 @@ export function buildConditionalRule(
     if (!thresholds) {
       return {
         error:
-          '色阶阈值必须是有效数字；百分比和百分位阈值必须介于 0 与 100 之间。',
+          officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.error.scale'),
       };
     }
     const defaultThresholds = defaultSpreadsheetColorScaleThresholds(
@@ -508,7 +545,8 @@ export function conditionalRuleLabel(
     return (
       SPREADSHEET_CONDITIONAL_COMPARISONS.find(
         (comparison) => comparison.name === rule.conditionName,
-      )?.label ?? '单元格比较'
+      )?.label ??
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.type.cellComparison')
     );
   }
   if (
@@ -517,34 +555,55 @@ export function conditionalRuleLabel(
   ) {
     if (rule.conditionName === 'duplicateValue') {
       return String(rule.conditionValue?.[0] ?? '0') === '1'
-        ? '唯一值'
-        : '重复值';
+        ? officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.toolbar.uniqueValue')
+        : officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.toolbar.duplicateValue');
     }
     const rank = String(rule.conditionValue?.[0] ?? '10');
-    if (rule.conditionName === 'top10') return `前 ${rank} 项`;
-    if (rule.conditionName === 'top10_percent') return `前 ${rank}%`;
-    if (rule.conditionName === 'last10') return `后 ${rank} 项`;
-    if (rule.conditionName === 'last10_percent') return `后 ${rank}%`;
+    if (rule.conditionName === 'top10') {
+      return officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.toolbar.topN', {
+        n: rank,
+      });
+    }
+    if (rule.conditionName === 'top10_percent') {
+      return officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.cf.toolbar.topNPercent',
+        { n: rank },
+      );
+    }
+    if (rule.conditionName === 'last10') {
+      return officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.toolbar.lastN', {
+        n: rank,
+      });
+    }
+    if (rule.conditionName === 'last10_percent') {
+      return officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.cf.toolbar.lastNPercent',
+        { n: rank },
+      );
+    }
     return TOOLBAR_CONDITIONAL_RULE_LABELS[rule.conditionName];
   }
-  if (rule.type === 'dataBar') return '数据条';
+  if (rule.type === 'dataBar') return officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.type.dataBar');
   if (rule.type === 'icons') {
     const format = normalizeSpreadsheetConditionalIconSetFormat(rule.format);
-    return (
-      SPREADSHEET_CONDITIONAL_ICON_SETS.find(
-        (iconSet) => iconSet.name === format?.iconSet,
-      )?.label ?? '图标集'
+    const iconSet = SPREADSHEET_CONDITIONAL_ICON_SETS.find(
+      (candidate) => candidate.name === format?.iconSet,
     );
+    return iconSet
+      ? spreadsheetConditionalIconSetLabel(iconSet.name)
+      : officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.type.icons');
   }
   return Array.isArray(rule.format) && rule.format.length >= 3
-    ? '三色阶'
-    : '双色阶';
+    ? officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.scale.three')
+    : officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.scale.two');
 }
 
 export function conditionalToolbarRuleSummary(
   rule: FortuneConditionalFormatRule | null,
 ): string {
-  if (!rule || !isToolbarConditionalRule(rule)) return '工具栏条件格式';
+  if (!rule || !isToolbarConditionalRule(rule)) return officeMessage(resolveOfficeMessages(), 'spreadsheet.cf.toolbar.generic');
   const label = conditionalRuleLabel(rule);
   const value = String(rule.conditionValue?.[0] ?? '');
   if (rule.conditionName === 'textContains')

@@ -18,6 +18,7 @@ import {
   updateSlide,
 } from './presentation-editor-operations';
 import type { PresentationDesignMode } from './presentation-editor-types';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 export interface PresentationDesignCommands {
   addPlaceholder: (type: 'body' | 'title') => void;
@@ -66,6 +67,7 @@ export function usePresentationDesignCommands({
   selectedMaster: WorkPresentationMaster | undefined;
   selectedSlide: WorkSlide;
 }): PresentationDesignCommands {
+  const messages = resolveOfficeMessages();
   const updateLayout = useCallback(
     (
       layoutId: string,
@@ -202,7 +204,7 @@ export function usePresentationDesignCommands({
         ? {
             ...structuredCopy(selectedLayout),
             id,
-            name: `${selectedLayout.name} 副本`,
+            name: officeMessage(messages, 'presentation.design.layoutCopySuffix', { name: selectedLayout.name }),
             elements: remapPresentationGroupPaths(selectedLayout.elements).map(
               (element) => ({
                 ...structuredCopy(element),
@@ -212,7 +214,7 @@ export function usePresentationDesignCommands({
           }
         : {
             id,
-            name: `自定义布局 ${(designContent.layouts?.length ?? 0) + 1}`,
+            name: officeMessage(messages, 'presentation.design.customLayoutName', { n: String((designContent.layouts?.length ?? 0) + 1) }),
             masterId: selectedMaster.id,
             elements: [],
           };
@@ -272,7 +274,9 @@ export function usePresentationDesignCommands({
       const count = activeElements.filter(
         (element) => element.placeholder?.type === type,
       ).length;
-      const prompt = type === 'title' ? '单击添加标题' : '单击添加内容';
+      const prompt = type === 'title'
+        ? officeMessage(messages, 'presentation.design.placeholderTitle')
+        : officeMessage(messages, 'presentation.design.placeholderContent');
       const element: WorkSlideElement = {
         id: createWorkId('element'),
         type: 'text',

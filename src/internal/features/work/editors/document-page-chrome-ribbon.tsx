@@ -41,6 +41,9 @@ import {
 } from './work-office-chrome';
 import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import { useOfficeMessages } from './office-messages-context';
 
 export type DocumentPageChromeEditingPart = 'footer' | 'header';
 
@@ -65,6 +68,7 @@ export function DocumentPageChromeRibbon({
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [, setRevision] = useState(0);
+  const messages = useOfficeMessages();
   const officeDialog = useOfficeDialog();
 
   useEffect(() => {
@@ -84,13 +88,13 @@ export function DocumentPageChromeRibbon({
       return;
     }
     const href = await officeDialog.prompt({
-      title: '添加链接',
-      fieldLabel: '链接地址',
+      title: officeMessage(messages, 'document.pageChrome.link.title'),
+      fieldLabel: officeMessage(messages, 'document.pageChrome.link.field'),
       initialValue: 'https://',
       placeholder: 'https://',
       inputMode: 'url',
-      confirmLabel: '添加链接',
-      required: '请输入链接地址。',
+      confirmLabel: officeMessage(messages, 'document.pageChrome.link.confirm'),
+      required: officeMessage(messages, 'document.pageChrome.link.required'),
       validate: (value) =>
         normalizeDocumentPageChromeHref(value)
           ? null
@@ -106,7 +110,7 @@ export function DocumentPageChromeRibbon({
   };
   const insertImage = async (file: File | undefined) => {
     if (!file || editor.isDestroyed) return;
-    const image = await loadDocumentPageChromeImage(file);
+    const image = await loadDocumentPageChromeImage(file, messages);
     if (!image.ok) {
       await officeDialog.notice({
         title: image.title,
@@ -128,9 +132,9 @@ export function DocumentPageChromeRibbon({
 
   return (
     <>
-      <WorkOfficeRibbonGroup label="位置">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'document.pageChrome.group.position')}>
         <PageChromeRibbonButton
-          label="切换到页眉"
+          label={officeMessage(messages, 'document.pageChrome.switchHeader')}
           displayLabel
           active={editingPart === 'header'}
           onClick={() => onEditingPartChange('header')}
@@ -138,7 +142,7 @@ export function DocumentPageChromeRibbon({
           <PanelTop size={18} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
-          label="切换到页脚"
+          label={officeMessage(messages, 'document.pageChrome.switchFooter')}
           displayLabel
           active={editingPart === 'footer'}
           onClick={() => onEditingPartChange('footer')}
@@ -146,9 +150,9 @@ export function DocumentPageChromeRibbon({
           <PanelBottom size={18} />
         </PageChromeRibbonButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="撤销">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'document.pageChrome.group.undo')}>
         <PageChromeRibbonButton
-          label="撤销页眉页脚编辑"
+          label={officeMessage(messages, 'document.pageChrome.undo')}
           shortcut="Cmd/Ctrl+Z"
           ariaKeyShortcuts="Control+Z Meta+Z"
           disabled={!state.canUndo}
@@ -161,8 +165,8 @@ export function DocumentPageChromeRibbon({
           <Undo2 size={16} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
-          label="重做页眉页脚编辑"
-          shortcut="Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y"
+          label={officeMessage(messages, 'document.pageChrome.redo')}
+          shortcut={officeMessage(messages, 'document.pageChrome.redoShortcut')}
           ariaKeyShortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
           disabled={!state.canRedo}
           onClick={() => {
@@ -175,11 +179,11 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
       </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup
-        label="文字"
+        label={officeMessage(messages, 'document.pageChrome.group.text')}
         dialogLauncher={
           onOpenFontDialog
             ? {
-                label: '页眉页脚字体高级设置',
+                label: officeMessage(messages, 'document.pageChrome.fontDialog'),
                 ...pageChromeCommandShortcut('fontDialog'),
                 onClick: onOpenFontDialog,
               }
@@ -187,7 +191,7 @@ export function DocumentPageChromeRibbon({
         }
       >
         <PageChromeRibbonButton
-          label="页眉页脚加粗"
+          label={officeMessage(messages, 'document.pageChrome.bold')}
           shortcut="Cmd/Ctrl+B"
           ariaKeyShortcuts="Control+B Meta+B"
           active={state.bold}
@@ -200,7 +204,7 @@ export function DocumentPageChromeRibbon({
           <Bold size={16} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
-          label="页眉页脚斜体"
+          label={officeMessage(messages, 'document.pageChrome.italic')}
           shortcut="Cmd/Ctrl+I"
           ariaKeyShortcuts="Control+I Meta+I"
           active={state.italic}
@@ -214,19 +218,19 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <DocumentUnderlineRibbon
           editor={editor}
-          label="页眉页脚下划线"
-          menuLabel="页眉页脚下划线样式"
-          colorLabel="页眉页脚下划线颜色"
+          label={officeMessage(messages, 'document.pageChrome.underline')}
+          menuLabel={officeMessage(messages, 'document.pageChrome.underlineStyle')}
+          colorLabel={officeMessage(messages, 'document.pageChrome.underlineColor')}
           className="work-document-page-chrome-underline"
         />
         <DocumentStrikeRibbon
           editor={editor}
-          label="页眉页脚删除线"
-          menuLabel="页眉页脚删除线样式"
+          label={officeMessage(messages, 'document.pageChrome.strike')}
+          menuLabel={officeMessage(messages, 'document.pageChrome.strikeStyle')}
           className="work-document-page-chrome-strike"
         />
         <PageChromeRibbonButton
-          label="页眉页脚下标"
+          label={officeMessage(messages, 'document.pageChrome.subscript')}
           {...pageChromeCommandShortcut('subscript')}
           active={state.subscript}
           onClick={() => {
@@ -238,7 +242,7 @@ export function DocumentPageChromeRibbon({
           <SubscriptIcon size={16} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
-          label="页眉页脚上标"
+          label={officeMessage(messages, 'document.pageChrome.superscript')}
           {...pageChromeCommandShortcut('superscript')}
           active={state.superscript}
           onClick={() => {
@@ -252,7 +256,7 @@ export function DocumentPageChromeRibbon({
         <OfficeColorPicker
           compact
           className="work-document-page-chrome-ribbon-color"
-          ariaLabel="页眉页脚文字颜色"
+          ariaLabel={officeMessage(messages, 'document.pageChrome.textColorAria')}
           value={pickerColor(state.color)}
           onValueChange={(color) => {
             // Keep ribbon focus on the color trigger via Popover restore.
@@ -262,18 +266,18 @@ export function DocumentPageChromeRibbon({
         />
         {onOpenProofingDialog && (
           <PageChromeRibbonButton
-            label="页眉页脚校对语言"
+            label={officeMessage(messages, 'document.pageChrome.proofing')}
             onClick={onOpenProofingDialog}
           >
             <Languages size={16} />
           </PageChromeRibbonButton>
         )}
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="对齐">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'document.pageChrome.group.align')}>
         {(['left', 'center', 'right', 'justify'] as const).map((alignment) => (
           <PageChromeRibbonButton
             key={alignment}
-            label={alignmentLabel(alignment)}
+            label={alignmentLabel(messages, alignment)}
             {...pageChromeCommandShortcut(
               pageChromeAlignmentCommandIds[alignment],
             )}
@@ -288,24 +292,24 @@ export function DocumentPageChromeRibbon({
           </PageChromeRibbonButton>
         ))}
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="插入">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'document.pageChrome.group.insert')}>
         <PageChromeRibbonButton
-          label={state.link ? '移除页眉页脚链接' : '添加页眉页脚链接'}
+          label={officeMessage(messages, state.link ? 'document.pageChrome.link.remove' : 'document.pageChrome.link.add')}
           active={Boolean(state.link)}
           onClick={() => void editLink()}
         >
           <Link2 size={17} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
-          label="插入页眉页脚图片"
+          label={officeMessage(messages, 'document.pageChrome.insertImage')}
           onClick={() => imageInputRef.current?.click()}
         >
           <ImageIcon size={17} />
         </PageChromeRibbonButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="页码">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'document.pageChrome.group.pageNumber')}>
         <PageChromeRibbonButton
-          label="显示页码"
+          label={officeMessage(messages, 'document.pageChrome.showPageNumber')}
           displayLabel
           active={showPageNumber}
           onClick={onTogglePageNumber}
@@ -313,9 +317,9 @@ export function DocumentPageChromeRibbon({
           <Hash size={18} />
         </PageChromeRibbonButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="关闭">
+      <WorkOfficeRibbonGroup label={officeMessage(messages, 'document.pageChrome.group.close')}>
         <PageChromeRibbonButton
-          label="关闭页眉和页脚"
+          label={officeMessage(messages, 'document.pageChrome.close')}
           displayLabel
           onClick={onClose}
         >
@@ -325,7 +329,7 @@ export function DocumentPageChromeRibbon({
       <OfficeFileInput
         ref={imageInputRef}
         accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
-        aria-label="页眉页脚图片文件"
+        aria-label={officeMessage(messages, 'document.pageChrome.imageFileAria')}
         onFileSelect={insertImage}
       />
       {officeDialog.dialog}
@@ -352,10 +356,18 @@ function PageChromeRibbonButton({
   onClick: () => void;
   children: ReactNode;
 }) {
+  const messages = useOfficeMessages();
   return (
     <WorkOfficeRibbonButton
       label={label}
-      title={shortcut ? `${label}（${shortcut}）` : label}
+      title={
+        shortcut
+          ? officeMessage(messages, 'document.pageChrome.buttonTitleWithShortcut', {
+              label,
+              shortcut,
+            })
+          : label
+      }
       aria-keyshortcuts={ariaKeyShortcuts}
       active={active}
       disabled={disabled}
@@ -390,17 +402,18 @@ const pageChromeAlignmentCommandIds = {
 } as const satisfies Record<DocumentPageChromeAlignment, DocumentCommandId>;
 
 function alignmentLabel(
+  messages: OfficeMessageCatalog,
   alignment: 'center' | 'justify' | 'left' | 'right',
 ): string {
   switch (alignment) {
     case 'center':
-      return '页眉页脚居中';
+      return officeMessage(messages, 'document.pageChrome.align.center');
     case 'justify':
-      return '页眉页脚两端对齐';
+      return officeMessage(messages, 'document.pageChrome.align.justify');
     case 'left':
-      return '页眉页脚左对齐';
+      return officeMessage(messages, 'document.pageChrome.align.left');
     case 'right':
-      return '页眉页脚右对齐';
+      return officeMessage(messages, 'document.pageChrome.align.right');
   }
 }
 

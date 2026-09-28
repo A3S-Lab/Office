@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { documentTableCellFormat } from '../work-document-table-cell-formatting';
 import {
   canSetDocumentTableRowRepeatHeader,
@@ -25,6 +26,7 @@ import {
   DocumentTablePropertiesPanel,
   DocumentTablePropertiesTabs,
 } from './document-table-properties-dialog-sections';
+import { useOfficeMessages } from './office-messages-context';
 import { WorkOfficeRibbonButton } from './work-office-chrome';
 
 export function DocumentTablePropertiesControl({
@@ -40,6 +42,7 @@ export function DocumentTablePropertiesControl({
   renderedColumnWidth?: number;
   renderedColumnWidths?: readonly number[];
 }) {
+  const messages = useOfficeMessages();
   const [source, setSource] = useState<DocumentTablePropertiesSource | null>(
     null,
   );
@@ -65,8 +68,8 @@ export function DocumentTablePropertiesControl({
   return (
     <>
       <WorkOfficeRibbonButton
-        label="表格属性"
-        visibleLabel="表格属性"
+        label={officeMessage(messages, 'document.tableProps.label')}
+        visibleLabel={officeMessage(messages, 'document.tableProps.label')}
         disabled={!documentTableSizing(editor.state)}
         onClick={openDialog}
       >
@@ -102,7 +105,8 @@ function DocumentTablePropertiesDialog({
   >('table');
   const formId = useId();
   const idBase = `document-table-properties-${useId().replaceAll(':', '')}`;
-  const errors = documentTablePropertiesErrors(draft);
+  const messages = useOfficeMessages();
+  const errors = documentTablePropertiesErrors(draft, messages);
   const invalid = hasDocumentTablePropertiesErrors(errors);
 
   const submit = (event?: FormEvent<HTMLFormElement>) => {
@@ -116,18 +120,18 @@ function DocumentTablePropertiesDialog({
 
   return (
     <Dialog
-      title="表格属性"
-      description="设置当前表格、行、列和单元格。"
+      title={officeMessage(messages, 'document.tableProps.title')}
+      description={officeMessage(messages, 'document.tableProps.description')}
       className="work-document-table-properties-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'document.tableProps.cancel')}
           </Button>
           <Button tone="primary" type="submit" form={formId} disabled={invalid}>
-            确定
+            {officeMessage(messages, 'document.tableProps.ok')}
           </Button>
         </>
       }

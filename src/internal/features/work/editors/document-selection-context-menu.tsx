@@ -1,4 +1,6 @@
 import type { Editor } from '@tiptap/core';
+import { officeMessage } from '../../../i18n/office-locale';
+import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
 import {
   createWorkDocumentSelectionAction,
@@ -6,11 +8,11 @@ import {
   type WorkDocumentSelectionMenuItem,
   type WorkDocumentSelectionSnapshot,
 } from '../work-document-selection-menu';
-import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import {
   documentAgentMenuItems,
   documentCustomSelectionMenuItems,
 } from './document-editor-support';
+import { useOfficeMessages } from './office-messages-context';
 
 export type DocumentSelectionMenuState =
   | {
@@ -40,6 +42,7 @@ export function DocumentSelectionContextMenu({
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const items =
     menu.kind === 'custom'
       ? documentCustomSelectionMenuItems(menu.items, () =>
@@ -50,66 +53,85 @@ export function DocumentSelectionContextMenu({
           ),
         )
       : onAgentRequest
-        ? documentAgentMenuItems(menu.snapshot.selection.text, onAgentRequest, {
-            target: {
-              id: 'document-selection',
-              label: '选中文本',
-              before: menu.snapshot.selection.rawText,
-            },
-            apply: (changes) => {
-              const change = changes.find(
-                (candidate) => candidate.id === 'document-selection',
-              );
-              if (!change) {
-                return { appliedTargetIds: [], conflicts: [] };
-              }
-              const { from, to, rawText } = menu.snapshot.selection;
-              const current = editor.state.doc.textBetween(from, to, '\n');
-              if (current !== rawText) {
-                return {
-                  appliedTargetIds: [],
-                  conflicts: [
-                    {
-                      targetId: change.id,
-                      label: change.label,
-                      message: '选中文本在建议生成后已发生变化。',
-                    },
-                  ],
-                };
-              }
-              const applied = getTrackChanges()
-                ? editor.commands.replaceDocumentTextWithTrackedChange(
-                    from,
-                    to,
-                    change.after,
-                  )
-                : editor
-                    .chain()
-                    .focus()
-                    .setTextSelection({ from, to })
-                    .insertContent(documentPlainTextAsHtml(change.after))
-                    .run();
-              return applied
-                ? { appliedTargetIds: [change.id], conflicts: [] }
-                : {
+        ? documentAgentMenuItems(
+            menu.snapshot.selection.text,
+            onAgentRequest,
+            messages,
+            {
+              target: {
+                id: 'document-selection',
+                label: officeMessage(
+                  messages,
+                  'document.agent.selectionTarget',
+                ),
+                before: menu.snapshot.selection.rawText,
+              },
+              apply: (changes) => {
+                const change = changes.find(
+                  (candidate) => candidate.id === 'document-selection',
+                );
+                if (!change) {
+                  return { appliedTargetIds: [], conflicts: [] };
+                }
+                const { from, to, rawText } = menu.snapshot.selection;
+                const current = editor.state.doc.textBetween(from, to, '\n');
+                if (current !== rawText) {
+                  return {
                     appliedTargetIds: [],
                     conflicts: [
                       {
                         targetId: change.id,
                         label: change.label,
-                        message: '编辑器无法替换当前选区。',
+                        message: officeMessage(
+                          messages,
+                          'document.agent.selectionChangedConflict',
+                        ),
                       },
                     ],
                   };
+                }
+                const applied = getTrackChanges()
+                  ? editor.commands.replaceDocumentTextWithTrackedChange(
+                      from,
+                      to,
+                      change.after,
+                    )
+                  : editor
+                      .chain()
+                      .focus()
+                      .setTextSelection({ from, to })
+                      .insertContent(documentPlainTextAsHtml(change.after))
+                      .run();
+                return applied
+                  ? { appliedTargetIds: [change.id], conflicts: [] }
+                  : {
+                      appliedTargetIds: [],
+                      conflicts: [
+                        {
+                          targetId: change.id,
+                          label: change.label,
+                          message: officeMessage(
+                            messages,
+                            'document.agent.replaceFailed',
+                          ),
+                        },
+                      ],
+                    };
+              },
             },
-          })
+          )
         : null;
 
   if (!items) return null;
 
   return (
     <WorkspaceContextMenu
-      label={menu.kind === 'custom' ? '选中文本操作' : '选中文本 AI 操作'}
+      label={officeMessage(
+        messages,
+        menu.kind === 'custom'
+          ? 'document.agent.menu.custom'
+          : 'document.agent.menu.ai',
+      )}
       x={menu.x}
       y={menu.y}
       items={items}

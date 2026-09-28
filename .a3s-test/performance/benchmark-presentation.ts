@@ -113,7 +113,9 @@ if (!requestedModes.length) {
 
 const timestamp = new Date().toISOString().replaceAll(':', '-');
 const resultDirectory = fileURLToPath(new URL('./results/', import.meta.url));
-const resultPath = resolve(resultDirectory, `${timestamp}-presentation.json`);
+const resultPath =
+  argument('--out') ??
+  resolve(resultDirectory, `${timestamp}-presentation.json`);
 const report: {
   completedAt?: string;
   environment: Record<string, unknown>;
@@ -569,5 +571,6 @@ function positiveInteger(value: string | undefined, fallback: number): number {
 }
 
 async function saveReport(): Promise<void> {
+  await mkdir(resolve(resultPath, '..'), { recursive: true });
   await writeFile(resultPath, `${JSON.stringify(report, null, 2)}\n`);
 }

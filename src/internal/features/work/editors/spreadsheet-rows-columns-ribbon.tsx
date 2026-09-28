@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
@@ -119,11 +121,12 @@ export function SpreadsheetRowsAndColumnsMenu({
     },
   ];
   const disabled = items.every((item) => item.disabled);
+  const messages = useOfficeMessages();
 
   return (
     <Popover
-      label="行和列"
-      panelLabel="行和列选项"
+      label={officeMessage(messages, 'spreadsheet.rowsColumns.label')}
+      panelLabel={officeMessage(messages, 'spreadsheet.rowsColumns.options')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-menu-root"
@@ -135,10 +138,12 @@ export function SpreadsheetRowsAndColumnsMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger${open ? ' active' : ''}`}
-          title="行和列"
+          title={officeMessage(messages, 'spreadsheet.rowsColumns.label')}
         >
           <Rows3 size={19} />
-          <span>行和列</span>
+          <span>
+            {officeMessage(messages, 'spreadsheet.rowsColumns.label')}
+          </span>
         </button>
       )}
     >

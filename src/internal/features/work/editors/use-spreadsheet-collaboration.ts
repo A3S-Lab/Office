@@ -90,6 +90,9 @@ export function useSpreadsheetCollaboration({
           column: change.caret.column,
           row: change.caret.row,
           sheetId: change.caret.sheetId,
+          ...(change.caret.indexUtf16 === undefined
+            ? {}
+            : { indexUtf16: change.caret.indexUtf16 }),
         });
       }
       onChangeRef.current(project(change.content));

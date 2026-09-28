@@ -53,29 +53,29 @@ describe('spreadsheet cell styles', () => {
       'total',
     ]);
     expect(
-      spreadsheetCellStyleDefinitions.map(({ id, label, group }) => ({
+      spreadsheetCellStyleDefinitions().map(({ id, label, group }) => ({
         group,
         id,
         label,
       })),
     ).toEqual([
-      { group: '常用', id: 'normal', label: '常规' },
-      { group: '常用', id: 'good', label: '好' },
-      { group: '常用', id: 'bad', label: '差' },
-      { group: '常用', id: 'neutral', label: '适中' },
-      { group: '数据和模型', id: 'calculation', label: '计算' },
-      { group: '数据和模型', id: 'checkCell', label: '检查单元格' },
-      { group: '数据和模型', id: 'explanatoryText', label: '解释性文本' },
-      { group: '数据和模型', id: 'input', label: '输入' },
-      { group: '数据和模型', id: 'linkedCell', label: '链接单元格' },
-      { group: '数据和模型', id: 'note', label: '注释' },
-      { group: '数据和模型', id: 'output', label: '输出' },
-      { group: '数据和模型', id: 'warningText', label: '警告文本' },
-      { group: '标题和汇总', id: 'heading1', label: '标题 1' },
-      { group: '标题和汇总', id: 'heading2', label: '标题 2' },
-      { group: '标题和汇总', id: 'heading3', label: '标题 3' },
-      { group: '标题和汇总', id: 'heading4', label: '标题 4' },
-      { group: '标题和汇总', id: 'total', label: '总计' },
+      { group: 'common', id: 'normal', label: '常规' },
+      { group: 'common', id: 'good', label: '好' },
+      { group: 'common', id: 'bad', label: '差' },
+      { group: 'common', id: 'neutral', label: '适中' },
+      { group: 'dataAndModel', id: 'calculation', label: '计算' },
+      { group: 'dataAndModel', id: 'checkCell', label: '检查单元格' },
+      { group: 'dataAndModel', id: 'explanatoryText', label: '解释性文本' },
+      { group: 'dataAndModel', id: 'input', label: '输入' },
+      { group: 'dataAndModel', id: 'linkedCell', label: '链接单元格' },
+      { group: 'dataAndModel', id: 'note', label: '注释' },
+      { group: 'dataAndModel', id: 'output', label: '输出' },
+      { group: 'dataAndModel', id: 'warningText', label: '警告文本' },
+      { group: 'titlesAndTotals', id: 'heading1', label: '标题 1' },
+      { group: 'titlesAndTotals', id: 'heading2', label: '标题 2' },
+      { group: 'titlesAndTotals', id: 'heading3', label: '标题 3' },
+      { group: 'titlesAndTotals', id: 'heading4', label: '标题 4' },
+      { group: 'titlesAndTotals', id: 'total', label: '总计' },
     ]);
   });
 

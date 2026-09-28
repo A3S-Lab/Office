@@ -1,8 +1,10 @@
 import { ArrowDown, ArrowUp, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconButton } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { OfficeTextField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   spreadsheetFindMatches,
   type SpreadsheetFindMatch,
@@ -19,6 +21,7 @@ export function SpreadsheetFindBar({
   onClose: () => void;
   onSelectMatch: (match: SpreadsheetFindMatch) => void;
 }) {
+  const messages = useOfficeMessages();
   const queryRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -60,18 +63,23 @@ export function SpreadsheetFindBar({
     activeIndex >= 0 && matches.length
       ? `${activeIndex + 1}/${matches.length}`
       : matches.length
-        ? `${matches.length} 个匹配`
+        ? officeMessage(messages, 'spreadsheet.findBar.matchCount', {
+            count: String(matches.length),
+          })
         : query
-          ? '没有匹配'
+          ? officeMessage(messages, 'spreadsheet.findBar.noMatch')
           : '';
 
   return (
-    <search className="work-spreadsheet-find-bar" aria-label="查找当前工作表">
+    <search
+      className="work-spreadsheet-find-bar"
+      aria-label={officeMessage(messages, 'spreadsheet.findBar.aria')}
+    >
       <Search size={15} aria-hidden="true" />
       <OfficeTextField
         ref={queryRef}
-        aria-label="查找当前工作表"
-        placeholder="查找"
+        aria-label={officeMessage(messages, 'spreadsheet.findBar.aria')}
+        placeholder={officeMessage(messages, 'spreadsheet.findBar.placeholder')}
         value={query}
         onChange={(event) => setQuery(event.currentTarget.value)}
         onKeyDown={(event) => {
@@ -89,7 +97,7 @@ export function SpreadsheetFindBar({
       <output aria-live="polite">{resultText}</output>
       <span className="work-spreadsheet-find-actions">
         <IconButton
-          label="上一个匹配"
+          label={officeMessage(messages, 'spreadsheet.findBar.previous')}
           disabled={!matches.length}
           onClick={() => {
             moveToMatch(-1);
@@ -99,7 +107,7 @@ export function SpreadsheetFindBar({
           <ArrowUp size={14} />
         </IconButton>
         <IconButton
-          label="下一个匹配"
+          label={officeMessage(messages, 'spreadsheet.findBar.next')}
           disabled={!matches.length}
           onClick={() => {
             moveToMatch(1);
@@ -108,7 +116,10 @@ export function SpreadsheetFindBar({
         >
           <ArrowDown size={14} />
         </IconButton>
-        <IconButton label="关闭查找" onClick={onClose}>
+        <IconButton
+          label={officeMessage(messages, 'spreadsheet.findBar.close')}
+          onClick={onClose}
+        >
           <X size={14} />
         </IconButton>
       </span>

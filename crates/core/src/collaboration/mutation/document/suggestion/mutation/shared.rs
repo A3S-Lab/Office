@@ -34,7 +34,6 @@ pub(super) struct SuggestionTextChunk {
 pub(super) struct LiveSuggestionSegment {
     pub text: XmlTextRef,
     pub paragraph: Option<XmlElementRef>,
-    pub attributes: Vec<(String, Any)>,
     pub identity: DocumentSuggestionIdentity,
     pub start_utf16: u32,
     pub end_utf16: u32,
@@ -222,27 +221,24 @@ pub(super) fn collect_live_suggestion_segments<T: ReadTxn>(
                     "Document suggestions may mark non-empty text only.".to_owned(),
                 ));
             }
-            let attributes = chunk
+            for (_key, value) in chunk
                 .attributes
                 .as_ref()
                 .into_iter()
                 .flat_map(|attributes| attributes.iter())
                 .filter(|(key, _)| is_document_change_attribute(key))
-                .map(|(key, value)| {
-                    let parsed = parse_suggestion_identity(value)?;
-                    if parsed != identity {
-                        return Err(content_invalid(
-                            "Overlapping Document suggestion marks carry different identities."
-                                .to_owned(),
-                        ));
-                    }
-                    Ok((key.to_string(), value.clone()))
-                })
-                .collect::<UseResult<Vec<_>>>()?;
+            {
+                let parsed = parse_suggestion_identity(value)?;
+                if parsed != identity {
+                    return Err(content_invalid(
+                        "Overlapping Document suggestion marks carry different identities."
+                            .to_owned(),
+                    ));
+                }
+            }
             segments.push(LiveSuggestionSegment {
                 text: text.clone(),
                 paragraph: paragraph.clone(),
-                attributes,
                 identity,
                 start_utf16: cursor,
                 end_utf16: end,

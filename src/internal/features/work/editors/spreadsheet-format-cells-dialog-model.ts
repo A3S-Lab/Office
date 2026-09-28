@@ -1,10 +1,11 @@
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import type { Cell } from '@fortune-sheet/core';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
   spreadsheetUnderlineStyle,
   type SpreadsheetUnderlineStyle,
 } from '../work-spreadsheet-underline';
-import { spreadsheetVisibleTextRotationFromCell } from '../work-spreadsheet-text-orientation';
+import { spreadsheetTextOrientationFromCell, spreadsheetVisibleTextRotationFromCell } from '../work-spreadsheet-text-orientation';
 import type { XlsxGradientFill } from '../work-xlsx-gradient-fill';
 import type { XlsxPatternFill } from '../work-xlsx-pattern-fill';
 import {
@@ -46,6 +47,7 @@ export interface SpreadsheetFormatCellsFields {
   horizontalAlignment: SpreadsheetFormatCellsField<SpreadsheetHorizontalAlignment>;
   verticalAlignment: SpreadsheetFormatCellsField<SpreadsheetVerticalAlignment>;
   wrapText: SpreadsheetFormatCellsField<boolean>;
+  stackedText: SpreadsheetFormatCellsField<boolean>;
   rotation: SpreadsheetFormatCellsField<number>;
   fontFamily: SpreadsheetFormatCellsField<string>;
   fontSize: SpreadsheetFormatCellsField<number>;
@@ -72,6 +74,7 @@ export interface SpreadsheetFormatCellsDraft {
   horizontalAlignment: SpreadsheetHorizontalAlignment;
   verticalAlignment: SpreadsheetVerticalAlignment;
   wrapText: boolean;
+  stackedText: boolean;
   rotation: number;
   fontFamily: string;
   fontSize: number;
@@ -165,6 +168,9 @@ export function createSpreadsheetFormatCellsDialogSource(
       horizontalAlignment: values((cell) => horizontalAlignment(cell?.ht)),
       verticalAlignment: values((cell) => verticalAlignment(cell?.vt)),
       wrapText: values((cell) => String(cell?.tb) === '2'),
+      stackedText: values(
+        (cell) => spreadsheetTextOrientationFromCell(cell).kind === 'stacked',
+      ),
       rotation: values((cell) => spreadsheetVisibleTextRotationFromCell(cell)),
       fontFamily: values((cell) =>
         typeof cell?.ff === 'string' && cell.ff.trim()
@@ -207,6 +213,7 @@ export function createSpreadsheetFormatCellsDraft(
     horizontalAlignment: source.fields.horizontalAlignment.value,
     verticalAlignment: source.fields.verticalAlignment.value,
     wrapText: source.fields.wrapText.value,
+    stackedText: source.fields.stackedText.value,
     rotation: source.fields.rotation.value,
     fontFamily: source.fields.fontFamily.value,
     fontSize: source.fields.fontSize.value,
@@ -256,8 +263,18 @@ export function spreadsheetFormatCellsPatch(
     patch.verticalAlignment = draft.verticalAlignment;
   if (shouldEmit(source.fields.wrapText, draft.wrapText, touched.wrapText))
     patch.wrapText = draft.wrapText;
-  if (shouldEmit(source.fields.rotation, draft.rotation, touched.rotation))
+  if (draft.stackedText) {
+    if (
+      shouldEmit(source.fields.stackedText, draft.stackedText, touched.textOrientation)
+    ) {
+      patch.textOrientation = 'vertical';
+    }
+  } else if (
+    shouldEmit(source.fields.rotation, draft.rotation, touched.rotation) ||
+    (touched.textOrientation && source.fields.stackedText.value)
+  ) {
     patch.rotation = draft.rotation;
+  }
   if (
     shouldEmit(source.fields.fontFamily, draft.fontFamily, touched.fontFamily)
   )
@@ -290,29 +307,45 @@ export function spreadsheetFormatCellsDraftErrors(
 ): SpreadsheetFormatCellsDraftErrors {
   const errors: SpreadsheetFormatCellsDraftErrors = {};
   if (!draft.numberFormat.trim()) {
-    errors.numberFormat = '请输入数字格式代码。';
+    errors.numberFormat = officeMessage(
+      resolveOfficeMessages(),
+      'spreadsheet.formatCells.error.numberFormatRequired',
+    );
   } else if (draft.numberFormat.trim().length > 255) {
-    errors.numberFormat = '数字格式代码不能超过 255 个字符。';
+    errors.numberFormat = officeMessage(
+      resolveOfficeMessages(),
+      'spreadsheet.formatCells.error.numberFormatTooLong',
+    );
   }
   if (
     !Number.isFinite(draft.fontSize) ||
     draft.fontSize < 1 ||
     draft.fontSize > 409
   ) {
-    errors.fontSize = '字号需为 1–409 之间的数字。';
+    errors.fontSize = officeMessage(
+      resolveOfficeMessages(),
+      'spreadsheet.formatCells.error.fontSize',
+    );
   }
   if (
-    !Number.isInteger(draft.rotation) ||
-    draft.rotation < -90 ||
-    draft.rotation > 90
+    !draft.stackedText &&
+    (!Number.isInteger(draft.rotation) ||
+      draft.rotation < -90 ||
+      draft.rotation > 90)
   ) {
-    errors.rotation = '文字旋转角度需为 -90–90 之间的整数。';
+    errors.rotation = officeMessage(
+      resolveOfficeMessages(),
+      'spreadsheet.formatCells.error.rotation',
+    );
   }
   if (
     !normalizeSpreadsheetCellFillFormat(spreadsheetFormatCellsActiveFill(draft))
   ) {
     errors.fill =
-      '请检查填充设置。渐变色标需按位置从小到大排列，位置和路径边界需保持在 0%–100%。';
+      officeMessage(
+        resolveOfficeMessages(),
+        'spreadsheet.formatCells.error.fill',
+      );
   }
   return errors;
 }

@@ -10,7 +10,9 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { officeFloatingPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
+import { officeMessage } from '../../../i18n/office-locale';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
+import { documentCommandLabel } from './document-command-i18n';
 import {
   documentFontFamilyOptionsForValue,
   documentFontFamilyValue,
@@ -20,6 +22,7 @@ import {
 import { DocumentStrikeRibbon } from './document-strike-ribbon';
 import { DocumentUnderlineRibbon } from './document-underline-ribbon';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { moveOfficeToolbarFocus } from './office-toolbar-keyboard';
 
 const bubbleMenuOptions = {
@@ -46,8 +49,13 @@ export function DocumentSelectionToolbar({
   onInsertComment: () => void;
   reviewOnly?: boolean;
 }) {
+  const messages = useOfficeMessages();
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const fontFamilyValue = documentFontFamilyValue(editor, layoutFonts);
+  const fontFamilyValue = documentFontFamilyValue(
+    editor,
+    layoutFonts,
+    messages,
+  );
   const fontSizeValue = documentFontSizeValue(editor);
 
   useEffect(() => {
@@ -81,7 +89,7 @@ export function DocumentSelectionToolbar({
       pluginKey={selectionToolbarPluginKey}
       className="work-document-selection-toolbar"
       role="toolbar"
-      aria-label="文本快捷工具栏"
+      aria-label={officeMessage(messages, 'document.selectionToolbar.aria')}
       onKeyDown={moveOfficeToolbarFocus}
       updateDelay={80}
       resizeDelay={60}
@@ -110,12 +118,16 @@ export function DocumentSelectionToolbar({
       {!reviewOnly && (
         <>
           <OfficeSelect
-            ariaLabel="快捷字体"
+            ariaLabel={officeMessage(
+              messages,
+              'document.selectionToolbar.fontFamily',
+            )}
             className="work-document-selection-font-family"
             value={fontFamilyValue}
             options={documentFontFamilyOptionsForValue(
               fontFamilyValue,
               layoutFonts,
+              messages,
             )}
             onValueChange={(value) => {
               // Keep toolbar focus on the font combobox via Popover restore.
@@ -125,7 +137,10 @@ export function DocumentSelectionToolbar({
             }}
           />
           <OfficeSelect
-            ariaLabel="快捷字号"
+            ariaLabel={officeMessage(
+              messages,
+              'document.selectionToolbar.fontSize',
+            )}
             className="work-document-selection-font-size"
             value={fontSizeValue}
             options={documentFontSizeOptionsForValue(fontSizeValue)}
@@ -141,7 +156,7 @@ export function DocumentSelectionToolbar({
             aria-hidden="true"
           />
           <SelectionToolbarButton
-            label="加粗"
+            label={documentCommandLabel('bold', messages)}
             active={editor.isActive('bold')}
             onClick={() => {
               // Keep toolbar focus on the bold trigger.
@@ -152,7 +167,7 @@ export function DocumentSelectionToolbar({
             <Bold size={15} />
           </SelectionToolbarButton>
           <SelectionToolbarButton
-            label="斜体"
+            label={documentCommandLabel('italic', messages)}
             active={editor.isActive('italic')}
             onClick={() => {
               // Keep toolbar focus on the italic trigger.
@@ -164,20 +179,29 @@ export function DocumentSelectionToolbar({
           </SelectionToolbarButton>
           <DocumentUnderlineRibbon
             editor={editor}
-            menuLabel="快捷下划线样式"
+            menuLabel={officeMessage(
+              messages,
+              'document.selectionToolbar.underline',
+            )}
             showColor={false}
             className="work-document-selection-underline"
           />
           <DocumentStrikeRibbon
             editor={editor}
-            menuLabel="快捷删除线样式"
+            menuLabel={officeMessage(
+              messages,
+              'document.selectionToolbar.strike',
+            )}
             className="work-document-selection-strike"
           />
           <OfficeColorPicker
             compact
             className="work-document-selection-color"
             value={editor.getAttributes('textStyle').color ?? '#172033'}
-            ariaLabel="快捷文字颜色"
+            ariaLabel={officeMessage(
+              messages,
+              'document.selectionToolbar.color',
+            )}
             onValueChange={(color) => {
               // Keep toolbar focus on the color trigger via Popover restore.
               // chain().focus() schedules into the editor and breaks L2 loops.
@@ -185,7 +209,7 @@ export function DocumentSelectionToolbar({
             }}
           />
           <SelectionToolbarButton
-            label="突出显示"
+            label={documentCommandLabel('highlight', messages)}
             active={editor.isActive('highlight')}
             onClick={() => {
               // Keep toolbar focus on the highlight trigger.
@@ -197,7 +221,7 @@ export function DocumentSelectionToolbar({
           </SelectionToolbarButton>
           <SelectionToolbarButton
             className="secondary"
-            label="清除格式"
+            label={documentCommandLabel('clearFormatting', messages)}
             onClick={() => editor.commands.clearDocumentFormatting()}
           >
             <Eraser size={15} />
@@ -209,7 +233,7 @@ export function DocumentSelectionToolbar({
         </>
       )}
       <SelectionToolbarButton
-        label="添加批注"
+        label={documentCommandLabel('insertComment', messages)}
         disabled={!canInsertComment}
         onClick={onInsertComment}
       >

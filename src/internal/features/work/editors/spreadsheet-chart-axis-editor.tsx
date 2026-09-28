@@ -1,3 +1,4 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   workSpreadsheetChartAxisDefaultLabelPosition,
   workSpreadsheetChartAxisIsCategoryAxis,
@@ -10,6 +11,7 @@ import type {
   WorkSpreadsheetChartAxisPosition,
   WorkSpreadsheetChartType,
 } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import {
   CommittedOfficeNumberField,
   OfficeCheckbox,
@@ -25,21 +27,15 @@ interface SpreadsheetChartAxisEditorProps {
   onChange: (axes: WorkSpreadsheetChartAxes) => void;
 }
 
-const PRIMARY_AXES: Array<{
-  position: WorkSpreadsheetChartAxisPosition;
-  label: string;
-}> = [
-  { position: 'bottom', label: '横坐标轴' },
-  { position: 'left', label: '纵坐标轴' },
-];
+const PRIMARY_AXIS_POSITIONS = ['bottom', 'left'] as const;
+const SECONDARY_AXIS_POSITIONS = ['top', 'right'] as const;
 
-const SECONDARY_AXES: Array<{
-  position: WorkSpreadsheetChartAxisPosition;
-  label: string;
-}> = [
-  { position: 'top', label: '次横坐标轴' },
-  { position: 'right', label: '次纵坐标轴' },
-];
+const AXIS_LABEL_KEYS = {
+  bottom: 'spreadsheet.chart.axis.bottom',
+  left: 'spreadsheet.chart.axis.left',
+  top: 'spreadsheet.chart.axis.top',
+  right: 'spreadsheet.chart.axis.right',
+} as const;
 
 export function SpreadsheetChartAxisEditor({
   axes,
@@ -47,9 +43,10 @@ export function SpreadsheetChartAxisEditor({
   showSecondaryAxes,
   onChange,
 }: SpreadsheetChartAxisEditorProps) {
-  const items = showSecondaryAxes
-    ? [...PRIMARY_AXES, ...SECONDARY_AXES]
-    : PRIMARY_AXES;
+  const messages = useOfficeMessages();
+  const positions = showSecondaryAxes
+    ? [...PRIMARY_AXIS_POSITIONS, ...SECONDARY_AXIS_POSITIONS]
+    : [...PRIMARY_AXIS_POSITIONS];
   const updateAxis = (
     position: WorkSpreadsheetChartAxisPosition,
     changes: Partial<WorkSpreadsheetChartAxis>,
@@ -66,14 +63,15 @@ export function SpreadsheetChartAxisEditor({
   return (
     <section
       className="work-spreadsheet-chart-axes"
-      aria-label="图表坐标轴设置"
+      aria-label={officeMessage(messages, 'spreadsheet.chart.axis.settingsAria')}
     >
       <header>
-        <strong>坐标轴</strong>
-        <span>标题、刻度与显示方式</span>
+        <strong>{officeMessage(messages, 'spreadsheet.chart.axis.title')}</strong>
+        <span>{officeMessage(messages, 'spreadsheet.chart.axis.subtitle')}</span>
       </header>
       <div>
-        {items.map(({ position, label }) => {
+        {positions.map((position) => {
+          const label = officeMessage(messages, AXIS_LABEL_KEYS[position]);
           const axis = axes?.[position];
           const valueAxis = workSpreadsheetChartAxisIsValueAxis(
             chartType,
@@ -98,9 +96,15 @@ export function SpreadsheetChartAxisEditor({
             <fieldset key={position}>
               <legend>{label}</legend>
               <div className="work-office-field">
-                <span>标题</span>
+                <span>
+                  {officeMessage(messages, 'spreadsheet.chart.axis.caption')}
+                </span>
                 <OfficeTextField
-                  aria-label={`${label}标题`}
+                  aria-label={officeMessage(
+                    messages,
+                    'spreadsheet.chart.axis.captionAria',
+                    { axis: label },
+                  )}
                   value={axis?.title ?? ''}
                   maxLength={255}
                   onChange={(event) =>
@@ -109,11 +113,20 @@ export function SpreadsheetChartAxisEditor({
                 />
               </div>
               <div className="work-office-field">
-                <span>标题引用（可选）</span>
+                <span>
+                  {officeMessage(messages, 'spreadsheet.chart.axis.captionRef')}
+                </span>
                 <OfficeTextField
-                  aria-label={`${label}标题引用`}
+                  aria-label={officeMessage(
+                    messages,
+                    'spreadsheet.chart.axis.captionRefAria',
+                    { axis: label },
+                  )}
                   value={axis?.titleReference ?? ''}
-                  placeholder="'报告'!$D$1"
+                  placeholder={officeMessage(
+                    messages,
+                    'spreadsheet.chart.axis.captionRefPlaceholder',
+                  )}
                   onChange={(event) =>
                     updateAxis(position, { titleReference: event.target.value })
                   }
@@ -121,24 +134,58 @@ export function SpreadsheetChartAxisEditor({
               </div>
               <OfficeCheckbox
                 className="axis-check"
-                ariaLabel={`${label}逆序显示`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.axis.reverseAria',
+                  { axis: label },
+                )}
                 checked={axis?.reverseOrder === true}
                 onCheckedChange={(reverseOrder) =>
                   updateAxis(position, { reverseOrder })
                 }
               >
-                逆序显示
+                {officeMessage(messages, 'spreadsheet.chart.axis.reverse')}
               </OfficeCheckbox>
               <div className="work-office-field">
-                <span>标签位置</span>
+                <span>
+                  {officeMessage(messages, 'spreadsheet.chart.axis.labelPos')}
+                </span>
                 <OfficeSelect
-                  ariaLabel={`${label}标签位置`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.axis.labelPosAria',
+                    { axis: label },
+                  )}
                   value={labelPosition}
                   options={[
-                    { value: 'nextTo', label: '轴旁' },
-                    { value: 'high', label: '高位' },
-                    { value: 'low', label: '低位' },
-                    { value: 'none', label: '不显示' },
+                    {
+                      value: 'nextTo',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.label.nextTo',
+                      ),
+                    },
+                    {
+                      value: 'high',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.label.high',
+                      ),
+                    },
+                    {
+                      value: 'low',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.label.low',
+                      ),
+                    },
+                    {
+                      value: 'none',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.label.none',
+                      ),
+                    },
                   ]}
                   onValueChange={(value) =>
                     updateAxis(position, {
@@ -150,15 +197,45 @@ export function SpreadsheetChartAxisEditor({
                 />
               </div>
               <div className="work-office-field">
-                <span>主要刻度线</span>
+                <span>
+                  {officeMessage(messages, 'spreadsheet.chart.axis.majorTick')}
+                </span>
                 <OfficeSelect
-                  ariaLabel={`${label}主要刻度线`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.axis.majorTickAria',
+                    { axis: label },
+                  )}
                   value={axis?.majorTickMark ?? 'none'}
                   options={[
-                    { value: 'none', label: '无' },
-                    { value: 'inside', label: '向内' },
-                    { value: 'outside', label: '向外' },
-                    { value: 'cross', label: '交叉' },
+                    {
+                      value: 'none',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.tick.none',
+                      ),
+                    },
+                    {
+                      value: 'inside',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.tick.inside',
+                      ),
+                    },
+                    {
+                      value: 'outside',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.tick.outside',
+                      ),
+                    },
+                    {
+                      value: 'cross',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.tick.cross',
+                      ),
+                    },
                   ]}
                   onValueChange={(value) =>
                     updateAxis(position, {
@@ -169,16 +246,28 @@ export function SpreadsheetChartAxisEditor({
                   }
                 />
               </div>
-              {categoryAxis && (
+              {categoryAxis ? (
                 <div className="work-office-field">
-                  <span>标签间隔</span>
+                  <span>
+                    {officeMessage(
+                      messages,
+                      'spreadsheet.chart.axis.labelInterval',
+                    )}
+                  </span>
                   <CommittedOfficeNumberField
                     min={1}
                     max={31_999}
                     step={1}
-                    ariaLabel={`${label}标签间隔`}
+                    ariaLabel={officeMessage(
+                      messages,
+                      'spreadsheet.chart.axis.labelIntervalAria',
+                      { axis: label },
+                    )}
                     value={axis?.labelInterval}
-                    placeholder="自动"
+                    placeholder={officeMessage(
+                      messages,
+                      'spreadsheet.chart.axis.auto',
+                    )}
                     normalizeValue={(value) =>
                       normalizeOptionalOfficeNumber(value, {
                         integer: true,
@@ -193,16 +282,25 @@ export function SpreadsheetChartAxisEditor({
                     }
                   />
                 </div>
-              )}
-              {valueAxis && (
+              ) : null}
+              {valueAxis ? (
                 <>
                   <div className="work-office-field">
-                    <span>最小值（自动）</span>
+                    <span>
+                      {officeMessage(messages, 'spreadsheet.chart.axis.min')}
+                    </span>
                     <CommittedOfficeNumberField
                       step={0.1}
-                      ariaLabel={`${label}最小值`}
+                      ariaLabel={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.minAria',
+                        { axis: label },
+                      )}
                       value={axis?.minimum}
-                      placeholder="自动"
+                      placeholder={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.auto',
+                      )}
                       normalizeValue={(value) =>
                         normalizeOptionalOfficeNumber(value, {
                           isValid: (minimum) =>
@@ -216,12 +314,21 @@ export function SpreadsheetChartAxisEditor({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>最大值（自动）</span>
+                    <span>
+                      {officeMessage(messages, 'spreadsheet.chart.axis.max')}
+                    </span>
                     <CommittedOfficeNumberField
                       step={0.1}
-                      ariaLabel={`${label}最大值`}
+                      ariaLabel={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.maxAria',
+                        { axis: label },
+                      )}
                       value={axis?.maximum}
-                      placeholder="自动"
+                      placeholder={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.auto',
+                      )}
                       normalizeValue={(value) =>
                         normalizeOptionalOfficeNumber(value, {
                           isValid: (maximum) =>
@@ -235,13 +342,25 @@ export function SpreadsheetChartAxisEditor({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>主单位（自动）</span>
+                    <span>
+                      {officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.majorUnit',
+                      )}
+                    </span>
                     <CommittedOfficeNumberField
                       min={0}
                       step={0.1}
-                      ariaLabel={`${label}主单位`}
+                      ariaLabel={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.majorUnitAria',
+                        { axis: label },
+                      )}
                       value={axis?.majorUnit}
-                      placeholder="自动"
+                      placeholder={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.auto',
+                      )}
                       normalizeValue={(value) =>
                         normalizeOptionalOfficeNumber(value, {
                           isValid: (majorUnit) => majorUnit > 0,
@@ -253,12 +372,24 @@ export function SpreadsheetChartAxisEditor({
                     />
                   </div>
                   <div className="work-office-field">
-                    <span>数字格式</span>
+                    <span>
+                      {officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.numberFormat',
+                      )}
+                    </span>
                     <OfficeTextField
-                      aria-label={`${label}数字格式`}
+                      aria-label={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.numberFormatAria',
+                        { axis: label },
+                      )}
                       value={axis?.numberFormat ?? ''}
                       maxLength={255}
-                      placeholder="自动（如 #,##0 或 0.0%）"
+                      placeholder={officeMessage(
+                        messages,
+                        'spreadsheet.chart.axis.numberFormatPlaceholder',
+                      )}
                       onChange={(event) => {
                         const numberFormat = event.target.value;
                         updateAxis(position, {
@@ -272,26 +403,37 @@ export function SpreadsheetChartAxisEditor({
                   </div>
                   <OfficeCheckbox
                     className="axis-check"
-                    ariaLabel={`${label}显示主要网格线`}
+                    ariaLabel={officeMessage(
+                      messages,
+                      'spreadsheet.chart.axis.majorGridAria',
+                      { axis: label },
+                    )}
                     checked={showMajorGridlines}
                     onCheckedChange={(showMajorGridlines) =>
                       updateAxis(position, { showMajorGridlines })
                     }
                   >
-                    显示主要网格线
+                    {officeMessage(messages, 'spreadsheet.chart.axis.majorGrid')}
                   </OfficeCheckbox>
                   <OfficeCheckbox
                     className="axis-check"
-                    ariaLabel={`${label}链接源数字格式`}
+                    ariaLabel={officeMessage(
+                      messages,
+                      'spreadsheet.chart.axis.linkNumberAria',
+                      { axis: label },
+                    )}
                     checked={sourceLinked}
                     onCheckedChange={(numberFormatSourceLinked) =>
                       updateAxis(position, { numberFormatSourceLinked })
                     }
                   >
-                    链接源数字格式
+                    {officeMessage(
+                      messages,
+                      'spreadsheet.chart.axis.linkNumber',
+                    )}
                   </OfficeCheckbox>
                 </>
-              )}
+              ) : null}
             </fieldset>
           );
         })}

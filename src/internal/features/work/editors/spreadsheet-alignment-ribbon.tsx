@@ -15,12 +15,14 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   spreadsheetTextOrientationChoiceFromCell,
   spreadsheetTextOrientationFromCell,
   type SpreadsheetTextOrientationId,
 } from '../work-spreadsheet-text-orientation';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import type { SpreadsheetCellMergeCommand } from './spreadsheet-cell-merge';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
@@ -41,10 +43,14 @@ export function SpreadsheetAlignmentRibbonGroup({
   commands: SpreadsheetEditorCommands;
   toolbarCell: Cell | null | undefined;
 }) {
+  const messages = useOfficeMessages();
   return (
-    <WorkOfficeRibbonGroup label="对齐" priority="high">
+    <WorkOfficeRibbonGroup
+      label={officeMessage(messages, 'spreadsheet.ribbon.alignment')}
+      priority="high"
+    >
       <WorkOfficeRibbonButton
-        label="左对齐"
+        label={officeMessage(messages, 'spreadsheet.ribbon.alignLeft')}
         displayLabel={false}
         active={String(toolbarCell?.ht ?? '1') === '1'}
         disabled={!can.setCellFormat('ht', '1')}
@@ -53,7 +59,7 @@ export function SpreadsheetAlignmentRibbonGroup({
         <AlignLeft size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="居中"
+        label={officeMessage(messages, 'spreadsheet.ribbon.alignCenter')}
         displayLabel={false}
         active={String(toolbarCell?.ht) === '0'}
         disabled={!can.setCellFormat('ht', '0')}
@@ -62,7 +68,7 @@ export function SpreadsheetAlignmentRibbonGroup({
         <AlignCenter size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="右对齐"
+        label={officeMessage(messages, 'spreadsheet.ribbon.alignRight')}
         displayLabel={false}
         active={String(toolbarCell?.ht) === '2'}
         disabled={!can.setCellFormat('ht', '2')}
@@ -71,7 +77,7 @@ export function SpreadsheetAlignmentRibbonGroup({
         <AlignRight size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="顶端对齐"
+        label={officeMessage(messages, 'spreadsheet.ribbon.alignTop')}
         displayLabel={false}
         active={Number(toolbarCell?.vt) === 1}
         disabled={!can.setCellFormat('vt', 1)}
@@ -80,7 +86,7 @@ export function SpreadsheetAlignmentRibbonGroup({
         <AlignVerticalJustifyStart size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="垂直居中"
+        label={officeMessage(messages, 'spreadsheet.ribbon.alignMiddle')}
         displayLabel={false}
         active={Number(toolbarCell?.vt ?? 0) === 0}
         disabled={!can.setCellFormat('vt', 0)}
@@ -89,7 +95,7 @@ export function SpreadsheetAlignmentRibbonGroup({
         <AlignVerticalJustifyCenter size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="底端对齐"
+        label={officeMessage(messages, 'spreadsheet.ribbon.alignBottom')}
         displayLabel={false}
         active={Number(toolbarCell?.vt) === 2}
         disabled={!can.setCellFormat('vt', 2)}
@@ -98,7 +104,7 @@ export function SpreadsheetAlignmentRibbonGroup({
         <AlignVerticalJustifyEnd size={15} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="自动换行"
+        label={officeMessage(messages, 'spreadsheet.ribbon.wrapText')}
         displayLabel={false}
         active={String(toolbarCell?.tb) === '2'}
         disabled={
@@ -168,20 +174,21 @@ function SpreadsheetTextOrientationMenu({
   commands: SpreadsheetEditorCommands;
   toolbarCell: Cell | null | undefined;
 }) {
+  const messages = useOfficeMessages();
   const selected = spreadsheetTextOrientationChoiceFromCell(toolbarCell);
   const orientation = spreadsheetTextOrientationFromCell(toolbarCell);
   const active = orientation.kind === 'stacked' || orientation.angle !== 0;
   const currentLabel =
     orientationItems.find(({ id }) => id === selected)?.definition.label ??
-    (orientation.kind === 'rotation' ? `${orientation.angle}°` : '竖排文字');
+    (orientation.kind === 'rotation' ? `${orientation.angle}°` : officeMessage(messages, 'spreadsheet.ribbon.verticalText'));
   const disabled = orientationItems.every(
     ({ id }) => !can.setTextOrientation(id),
   );
 
   return (
     <Popover
-      label="文字方向"
-      panelLabel="文字方向选项"
+      label={officeMessage(messages, 'spreadsheet.ribbon.textOrientation')}
+      panelLabel={officeMessage(messages, 'spreadsheet.ribbon.textOrientationPanel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-menu-root"
@@ -193,10 +200,10 @@ function SpreadsheetTextOrientationMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger work-spreadsheet-orientation-trigger${active || open ? ' active' : ''}`}
-          title={`文字方向（当前：${currentLabel}）`}
+          title={officeMessage(messages, 'spreadsheet.ribbon.textOrientationTitle', { current: currentLabel })}
         >
           <TextOrientationGlyph orientation={selected ?? 'horizontal'} />
-          <span>文字方向</span>
+          <span>{officeMessage(messages, 'spreadsheet.ribbon.textOrientation')}</span>
         </button>
       )}
     >
@@ -277,6 +284,7 @@ function SpreadsheetMergeMenu({
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
 }) {
+  const messages = useOfficeMessages();
   const items: readonly {
     command: SpreadsheetCellMergeCommand;
     id: string;
@@ -321,8 +329,8 @@ function SpreadsheetMergeMenu({
 
   return (
     <Popover
-      label="更多合并方式"
-      panelLabel="合并选项"
+      label={officeMessage(messages, 'spreadsheet.ribbon.moreMerge')}
+      panelLabel={officeMessage(messages, 'spreadsheet.ribbon.mergePanel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-split-root"
@@ -349,7 +357,7 @@ function SpreadsheetMergeMenu({
           <button
             {...triggerProps}
             className={`work-spreadsheet-ribbon-split-disclosure${open ? ' active' : ''}`}
-            title="更多合并方式"
+            title={officeMessage(messages, 'spreadsheet.ribbon.moreMerge')}
           >
             <ChevronDown size={13} aria-hidden="true" />
           </button>

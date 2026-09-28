@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, ListPlus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, Dialog } from '../../../design-system/primitives';
 import {
   createSpreadsheetSortCustomList,
@@ -8,6 +9,7 @@ import {
   spreadsheetSortCustomListsEqual,
   type SpreadsheetSortCustomList,
 } from './spreadsheet-sort-custom-list';
+import { useOfficeMessages } from './office-messages-context';
 
 interface ManagedSpreadsheetSortCustomList {
   entries: readonly string[];
@@ -36,6 +38,7 @@ export function SpreadsheetSortCustomListManagerDialog({
   onApply: (value: SpreadsheetSortCustomListManagementResult) => void;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const builtInLists = useMemo(
     () => customLists.filter((list) => list.source === 'built-in'),
     [customLists],
@@ -91,7 +94,7 @@ export function SpreadsheetSortCustomListManagerDialog({
       spreadsheetSortCustomListsEqual(entries, validation.entries),
     );
     if (duplicate) {
-      setError('该自定义序列已存在。');
+      setError(officeMessage(messages, 'spreadsheet.sort.listManager.duplicate'));
       return null;
     }
     setError(null);
@@ -119,7 +122,7 @@ export function SpreadsheetSortCustomListManagerDialog({
       rows = committed;
       setUserLists(rows);
     } else if (editingNewList && text.trim()) {
-      setError('请先添加当前序列，或清空项目后再切换。');
+      setError(officeMessage(messages, 'spreadsheet.sort.listManager.commitOrClear'));
       return;
     }
     setSelection(nextSelection);
@@ -137,7 +140,9 @@ export function SpreadsheetSortCustomListManagerDialog({
   const addNewList = () => {
     if (userLists.length >= MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS) {
       setError(
-        `当前编辑器最多保留 ${MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS} 个自定义序列。`,
+        officeMessage(messages, 'spreadsheet.sort.customListLimit', {
+          n: String(MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS),
+        }),
       );
       return;
     }
@@ -190,7 +195,9 @@ export function SpreadsheetSortCustomListManagerDialog({
     } else if (editingNewList && text.trim()) {
       if (rows.length >= MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS) {
         setError(
-          `当前编辑器最多保留 ${MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS} 个自定义序列。`,
+          officeMessage(messages, 'spreadsheet.sort.customListLimit', {
+            n: String(MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS),
+          }),
         );
         return;
       }
@@ -206,34 +213,34 @@ export function SpreadsheetSortCustomListManagerDialog({
 
   return (
     <Dialog
-      title="自定义序列"
-      description="管理排序时可复用的本地序列。内置月份和星期序列保持只读。"
+      title={officeMessage(messages, 'spreadsheet.sort.listManager.title')}
+      description={officeMessage(messages, 'spreadsheet.sort.listManager.desc')}
       className="work-spreadsheet-sort-custom-list-manager"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.sort.cancel')}
           </Button>
           <Button tone="primary" onClick={apply}>
-            确定
+            {officeMessage(messages, 'spreadsheet.sort.ok')}
           </Button>
         </>
       }
     >
       <div className="work-spreadsheet-sort-custom-list-manager-layout">
-        <section aria-label="可用序列">
+        <section aria-label={officeMessage(messages, 'spreadsheet.sort.listManager.availableAria')}>
           <label>
-            <span>自定义序列</span>
+            <span>{officeMessage(messages, 'spreadsheet.sort.listManager.listLabel')}</span>
             <select
               ref={listRef}
-              aria-label="自定义序列列表"
+              aria-label={officeMessage(messages, 'spreadsheet.sort.listManager.listAria')}
               size={10}
               value={selection}
               onChange={(event) => select(event.currentTarget.value)}
             >
-              <optgroup label="内置序列">
+              <optgroup label={officeMessage(messages, 'spreadsheet.sort.listManager.groupBuiltin')}>
                 {builtInLists.map((list, index) => (
                   <option key={`built-in:${index}`} value={`built-in:${index}`}>
                     {list.label}
@@ -241,7 +248,7 @@ export function SpreadsheetSortCustomListManagerDialog({
                 ))}
               </optgroup>
               {userLists.length ? (
-                <optgroup label="用户序列">
+                <optgroup label={officeMessage(messages, 'spreadsheet.sort.listManager.groupUser')}>
                   {userLists.map((list) => (
                     <option key={list.id} value={`user:${list.id}`}>
                       {userListLabels.get(list.id)}
@@ -260,15 +267,15 @@ export function SpreadsheetSortCustomListManagerDialog({
             onClick={() => select('new')}
           >
             <ListPlus size={15} aria-hidden="true" />
-            新建序列
+            {officeMessage(messages, 'spreadsheet.sort.listManager.newList')}
           </Button>
         </section>
 
-        <section aria-label="序列项目">
+        <section aria-label={officeMessage(messages, 'spreadsheet.sort.listManager.entriesAria')}>
           <label>
-            <span>序列项目（每行一个项目）</span>
+            <span>{officeMessage(messages, 'spreadsheet.sort.listManager.entriesLabel')}</span>
             <textarea
-              aria-label="自定义序列项目"
+              aria-label={officeMessage(messages, 'spreadsheet.sort.listManager.entriesFieldAria')}
               aria-invalid={error ? true : undefined}
               readOnly={Boolean(selectedBuiltIn)}
               rows={12}
@@ -281,10 +288,10 @@ export function SpreadsheetSortCustomListManagerDialog({
           </label>
           <p>
             {selectedBuiltIn
-              ? '内置序列不可修改或删除。'
+              ? officeMessage(messages, 'spreadsheet.sort.listManager.builtinReadonly')
               : editingNewList
-                ? '每行、英文逗号或中文逗号可分隔一个项目。'
-                : '修改项目后保存；排序和删除在点击“确定”后统一提交。'}
+                ? officeMessage(messages, 'spreadsheet.sort.listManager.entriesHint')
+                : officeMessage(messages, 'spreadsheet.sort.listManager.saveHint')}
           </p>
           {error ? (
             <p className="work-spreadsheet-sort-custom-list-error" role="alert">
@@ -295,19 +302,19 @@ export function SpreadsheetSortCustomListManagerDialog({
             {editingNewList ? (
               <Button tone="primary" type="button" onClick={addNewList}>
                 <ListPlus size={15} aria-hidden="true" />
-                添加序列
+                {officeMessage(messages, 'spreadsheet.sort.listManager.add')}
               </Button>
             ) : selectedUser ? (
               <Button tone="primary" type="button" onClick={saveSelectedUser}>
                 <Save size={15} aria-hidden="true" />
-                保存更改
+                {officeMessage(messages, 'spreadsheet.sort.listManager.save')}
               </Button>
             ) : null}
             <Button
               tone="quiet"
               type="button"
-              aria-label="上移序列"
-              title="上移序列"
+              aria-label={officeMessage(messages, 'spreadsheet.sort.listManager.moveUpAria')}
+              title={officeMessage(messages, 'spreadsheet.sort.listManager.moveUpTitle')}
               disabled={selectedUserIndex <= 0}
               onClick={() => moveSelectedUser(-1)}
             >
@@ -316,8 +323,8 @@ export function SpreadsheetSortCustomListManagerDialog({
             <Button
               tone="quiet"
               type="button"
-              aria-label="下移序列"
-              title="下移序列"
+              aria-label={officeMessage(messages, 'spreadsheet.sort.listManager.moveDownAria')}
+              title={officeMessage(messages, 'spreadsheet.sort.listManager.moveDownTitle')}
               disabled={
                 selectedUserIndex < 0 ||
                 selectedUserIndex >= userLists.length - 1
@@ -329,8 +336,8 @@ export function SpreadsheetSortCustomListManagerDialog({
             <Button
               tone="quiet"
               type="button"
-              aria-label="删除序列"
-              title="删除序列"
+              aria-label={officeMessage(messages, 'spreadsheet.sort.listManager.deleteAria')}
+              title={officeMessage(messages, 'spreadsheet.sort.listManager.deleteTitle')}
               disabled={!selectedUser}
               onClick={deleteSelectedUser}
             >
@@ -340,8 +347,9 @@ export function SpreadsheetSortCustomListManagerDialog({
         </section>
       </div>
       <p className="work-spreadsheet-sort-custom-list-manager-note">
-        最多保存 {MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS}{' '}
-        个用户序列。修改或删除当前使用的序列会同步更新对应排序条件。
+        {officeMessage(messages, 'spreadsheet.sort.listManager.footerLimit', {
+          n: String(MAX_SPREADSHEET_SORT_USER_CUSTOM_LISTS),
+        })}
       </p>
     </Dialog>
   );

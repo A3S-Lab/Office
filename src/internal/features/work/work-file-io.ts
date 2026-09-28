@@ -19,6 +19,10 @@ import {
   importWorkMarkdownFile,
 } from './work-markdown-file-io';
 import {
+  assertOoxmlArchiveWithinLimits,
+  isZipArchive,
+} from './work-ooxml-archive-guard';
+import {
   createWorkPresentationBlob,
   importWorkPresentationFile,
   type WorkPresentationExportOptions,
@@ -54,6 +58,8 @@ export async function importWorkFile(
   }
   const controller = new WorkFileImportController(options, file.size);
   const source = await materializeWorkFileSource(file, controller);
+  const sourceBytes = new Uint8Array(source.bytes);
+  if (isZipArchive(sourceBytes)) assertOoxmlArchiveWithinLimits(sourceBytes);
   const context: WorkFileImportContext = {
     bytes: source.bytes,
     controller,

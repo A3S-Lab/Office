@@ -7,6 +7,7 @@ import type {
 } from '../work-types';
 import { useOfficeDialog } from './office-controls';
 import { clamp, updateSlide } from './presentation-editor-operations';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 export interface PresentationReviewCommands {
   addComment: () => void;
@@ -39,21 +40,22 @@ export function usePresentationReviewCommands({
   selectedElement: WorkSlideElement | null;
   selectedSlide: WorkSlide;
 }): PresentationReviewCommands {
+  const messages = resolveOfficeMessages();
   const officeDialog = useOfficeDialog();
   const addComment = useCallback(() => {
     const invoker = activePresentationReviewInvoker();
     void officeDialog
       .prompt({
-        title: '批注内容',
+        title: officeMessage(messages, 'presentation.comments.promptTitle'),
         multiline: true,
-        confirmLabel: '添加批注',
-        required: '请输入批注内容。',
+        confirmLabel: officeMessage(messages, 'presentation.comments.promptConfirm'),
+        required: officeMessage(messages, 'presentation.comments.promptRequired'),
       })
       .then((text) => {
         if (!text?.trim()) return;
         const comment = {
           id: createWorkId('slide-comment'),
-          author: 'A3S Work 用户',
+          author: officeMessage(messages, 'presentation.comments.defaultAuthor'),
           initials: 'AW',
           date: new Date().toISOString(),
           text: text.trim(),

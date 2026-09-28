@@ -1,5 +1,6 @@
 import { Copy, LayoutTemplate, Plus, Trash2, X } from 'lucide-react';
 import { Button, IconButton } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import type {
   WorkPresentationContent,
   WorkPresentationLayout,
@@ -12,6 +13,7 @@ import {
   OfficeColorPicker,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
@@ -51,10 +53,11 @@ export function PresentationDesignPanel({
   master: WorkPresentationMaster;
   mode: PresentationDesignMode;
 }) {
+  const messages = useOfficeMessages();
   return (
     <section
       className="work-presentation-design-panel"
-      aria-label="母版与布局"
+      aria-label={officeMessage(messages, 'presentation.design.panelAria')}
       onKeyDown={(event) =>
         handleOfficeTaskPaneKeyDown(event, commands.closeDesign)
       }
@@ -62,15 +65,22 @@ export function PresentationDesignPanel({
       <header>
         <div>
           <LayoutTemplate size={15} />
-          <strong>母版与布局</strong>
+          <strong>
+            {officeMessage(messages, 'presentation.design.title')}
+          </strong>
           <span>
-            {content.masters?.length ?? 0} 个母版 ·{' '}
-            {content.layouts?.length ?? 0} 个布局
+            {officeMessage(messages, 'presentation.design.masterCount', {
+              count: String(content.masters?.length ?? 0),
+            })}{' '}
+            ·{' '}
+            {officeMessage(messages, 'presentation.design.layoutCount', {
+              count: String(content.layouts?.length ?? 0),
+            })}
           </span>
         </div>
         <IconButton
           className="close"
-          label="关闭母版与布局"
+          label={officeMessage(messages, 'presentation.design.close')}
           onClick={commands.closeDesign}
         >
           <X size={14} />
@@ -79,9 +89,14 @@ export function PresentationDesignPanel({
 
       <div className="work-presentation-design-controls">
         <div className="work-office-field">
-          <span>当前布局</span>
+          <span>
+            {officeMessage(messages, 'presentation.design.currentLayout')}
+          </span>
           <OfficeSelect
-            ariaLabel="幻灯片布局"
+            ariaLabel={officeMessage(
+              messages,
+              'presentation.design.layoutAria',
+            )}
             value={layout.id}
             options={(content.layouts ?? []).map((candidate) => ({
               value: candidate.id,
@@ -92,11 +107,14 @@ export function PresentationDesignPanel({
         </div>
         <OfficeCheckbox
           className="toggle"
-          ariaLabel="使用布局背景"
+          ariaLabel={officeMessage(
+            messages,
+            'presentation.design.useLayoutBackgroundAria',
+          )}
           checked={slide.useLayoutBackground === true}
           onCheckedChange={commands.togglePresentationLayoutBackground}
         >
-          使用布局背景
+          {officeMessage(messages, 'presentation.design.useLayoutBackground')}
         </OfficeCheckbox>
         <Button
           size="compact"
@@ -104,7 +122,7 @@ export function PresentationDesignPanel({
           aria-pressed={mode === 'layout'}
           onClick={() => commands.editDesign('layout')}
         >
-          编辑当前布局
+          {officeMessage(messages, 'presentation.design.editLayout')}
         </Button>
         <Button
           size="compact"
@@ -112,46 +130,60 @@ export function PresentationDesignPanel({
           aria-pressed={mode === 'master'}
           onClick={() => commands.editDesign('master')}
         >
-          编辑当前母版
+          {officeMessage(messages, 'presentation.design.editMaster')}
         </Button>
         <Button
           size="compact"
-          aria-label="新建布局"
+          aria-label={officeMessage(
+            messages,
+            'presentation.design.newLayoutAria',
+          )}
           onClick={() => commands.createPresentationLayout(false)}
         >
           <Plus size={13} />
-          新建布局
+          {officeMessage(messages, 'presentation.design.newLayout')}
         </Button>
         <Button
           size="compact"
-          aria-label="复制当前布局"
+          aria-label={officeMessage(
+            messages,
+            'presentation.design.copyLayoutAria',
+          )}
           onClick={() => commands.createPresentationLayout(true)}
         >
           <Copy size={13} />
-          复制布局
+          {officeMessage(messages, 'presentation.design.copyLayout')}
         </Button>
         <Button
           size="compact"
           tone="danger"
-          aria-label="删除当前布局"
+          aria-label={officeMessage(
+            messages,
+            'presentation.design.deleteLayoutAria',
+          )}
           disabled={!can.deletePresentationLayout()}
           onClick={commands.deletePresentationLayout}
         >
           <Trash2 size={13} />
-          删除布局
+          {officeMessage(messages, 'presentation.design.deleteLayout')}
         </Button>
       </div>
 
-      {mode === 'layout' && (
+      {mode === 'layout' ? (
         <div
           className="work-presentation-design-editing"
           data-design-mode="layout"
         >
-          <strong>正在编辑布局</strong>
+          <strong>
+            {officeMessage(messages, 'presentation.design.editingLayout')}
+          </strong>
           <div className="work-office-field">
-            <span>名称</span>
+            <span>{officeMessage(messages, 'presentation.design.name')}</span>
             <CommittedOfficeTextField
-              aria-label="布局名称"
+              aria-label={officeMessage(
+                messages,
+                'presentation.design.layoutNameAria',
+              )}
               value={layout.name}
               maxLength={255}
               formatValue={(name) => name}
@@ -162,13 +194,19 @@ export function PresentationDesignPanel({
           <OfficeColorPicker
             compact
             className="work-color-tool"
-            ariaLabel="布局背景颜色"
+            ariaLabel={officeMessage(
+              messages,
+              'presentation.design.layoutBgAria',
+            )}
             value={layout.background ?? master.background}
             onValueChange={commands.setPresentationLayoutBackground}
           />
           <OfficeCheckbox
             className="toggle"
-            ariaLabel="布局使用母版背景"
+            ariaLabel={officeMessage(
+              messages,
+              'presentation.design.layoutUseMasterBgAria',
+            )}
             checked={!layout.background}
             onCheckedChange={(checked) =>
               commands.setPresentationLayoutBackground(
@@ -176,7 +214,7 @@ export function PresentationDesignPanel({
               )
             }
           >
-            使用母版背景
+            {officeMessage(messages, 'presentation.design.useMasterBackground')}
           </OfficeCheckbox>
           <PlaceholderButtons onAdd={commands.addDesignPlaceholder} />
           <Button
@@ -184,21 +222,26 @@ export function PresentationDesignPanel({
             tone="quiet"
             onClick={() => commands.editDesign('slide')}
           >
-            返回幻灯片编辑
+            {officeMessage(messages, 'presentation.design.returnToSlide')}
           </Button>
         </div>
-      )}
+      ) : null}
 
-      {mode === 'master' && (
+      {mode === 'master' ? (
         <div
           className="work-presentation-design-editing"
           data-design-mode="master"
         >
-          <strong>正在编辑母版</strong>
+          <strong>
+            {officeMessage(messages, 'presentation.design.editingMaster')}
+          </strong>
           <div className="work-office-field">
-            <span>名称</span>
+            <span>{officeMessage(messages, 'presentation.design.name')}</span>
             <CommittedOfficeTextField
-              aria-label="母版名称"
+              aria-label={officeMessage(
+                messages,
+                'presentation.design.masterNameAria',
+              )}
               value={master.name}
               maxLength={255}
               formatValue={(name) => name}
@@ -209,7 +252,10 @@ export function PresentationDesignPanel({
           <OfficeColorPicker
             compact
             className="work-color-tool"
-            ariaLabel="母版背景颜色"
+            ariaLabel={officeMessage(
+              messages,
+              'presentation.design.masterBgAria',
+            )}
             value={master.background}
             onValueChange={commands.setPresentationMasterBackground}
           />
@@ -219,10 +265,10 @@ export function PresentationDesignPanel({
             tone="quiet"
             onClick={() => commands.editDesign('slide')}
           >
-            返回幻灯片编辑
+            {officeMessage(messages, 'presentation.design.returnToSlide')}
           </Button>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -237,21 +283,28 @@ function PlaceholderButtons({
 }: {
   onAdd: (type: 'title' | 'body') => void;
 }) {
+  const messages = useOfficeMessages();
   return (
     <div className="work-presentation-placeholder-actions">
       <Button
         size="compact"
-        aria-label="添加标题占位符"
+        aria-label={officeMessage(
+          messages,
+          'presentation.design.addTitlePlaceholderAria',
+        )}
         onClick={() => onAdd('title')}
       >
-        添加标题占位符
+        {officeMessage(messages, 'presentation.design.addTitlePlaceholder')}
       </Button>
       <Button
         size="compact"
-        aria-label="添加内容占位符"
+        aria-label={officeMessage(
+          messages,
+          'presentation.design.addContentPlaceholderAria',
+        )}
         onClick={() => onAdd('body')}
       >
-        添加内容占位符
+        {officeMessage(messages, 'presentation.design.addContentPlaceholder')}
       </Button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { MapPin, Trash2, X } from 'lucide-react';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import { useRef } from 'react';
 import {
   Button,
@@ -8,6 +9,7 @@ import {
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import type { WorkSlide } from '../work-types';
 import { CommittedOfficeTextArea } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import type { PresentationEditorCommands } from './presentation-command-types';
 import {
   handleOfficeTaskPaneKeyDown,
@@ -58,13 +60,14 @@ export function PresentationCommentsPanel({
     getActiveScope: () => panelRef.current,
     restoreFocusTarget,
   });
-  const comments = presentationCommentViews(slides);
+  const messages = useOfficeMessages();
+  const comments = presentationCommentViews(slides, messages);
   return (
     <section
       {...modalAttributes}
       ref={panelRef}
       className="work-presentation-comments-panel"
-      aria-label="演示批注审阅"
+      aria-label={officeMessage(messages, 'presentation.comments.panelAria')}
       onKeyDown={(event) => {
         focusScope.handleKeyDown(event);
         if (!event.defaultPrevented)
@@ -73,15 +76,15 @@ export function PresentationCommentsPanel({
     >
       <header>
         <div>
-          <strong>演示批注</strong>
+          <strong>{officeMessage(messages, 'presentation.comments.title')}</strong>
           <span>
-            {comments.length ? `${comments.length} 条批注` : '没有批注'}
+            {comments.length ? officeMessage(messages, 'presentation.comments.count', { count: String(comments.length) }) : officeMessage(messages, 'presentation.comments.empty')}
           </span>
         </div>
         <IconButton
           ref={closeRef}
           className="close"
-          label="关闭演示批注审阅"
+          label={officeMessage(messages, 'presentation.comments.close')}
           onClick={commands.closeComments}
         >
           <X size={14} />
@@ -96,14 +99,14 @@ export function PresentationCommentsPanel({
             <button
               type="button"
               className="work-presentation-comment-location"
-              aria-label={`定位演示批注 ${index + 1}`}
+              aria-label={officeMessage(messages, 'presentation.comments.locateAria', { index: String(index + 1) })}
               onClick={() =>
                 commands.locatePresentationComment(comment.slideId, comment.id)
               }
             >
               <MapPin size={12} />
               <span>
-                幻灯片 {comment.slideNumber} · {comment.slideName}
+                {officeMessage(messages, 'presentation.comments.slideMeta', { number: String(comment.slideNumber), name: comment.slideName })}
               </span>
             </button>
             <header>
@@ -113,7 +116,7 @@ export function PresentationCommentsPanel({
               </time>
             </header>
             <CommittedOfficeTextArea
-              aria-label={`编辑演示批注 ${index + 1}`}
+              aria-label={officeMessage(messages, 'presentation.comments.editAria', { index: String(index + 1) })}
               value={comment.text}
               formatValue={(text) => text}
               parseValue={(draft) => draft}
@@ -129,10 +132,10 @@ export function PresentationCommentsPanel({
               }
             />
             <footer>
-              <span>批注 {comment.commentIndex + 1}</span>
+              <span>{officeMessage(messages, 'presentation.comments.itemLabel', { index: String(comment.commentIndex + 1) })}</span>
               <Button
                 tone="quiet"
-                aria-label={`删除演示批注 ${index + 1}`}
+                aria-label={officeMessage(messages, 'presentation.comments.deleteAria', { index: String(index + 1) })}
                 onClick={() =>
                   commands.deletePresentationComment(
                     comment.slideId,
@@ -141,7 +144,7 @@ export function PresentationCommentsPanel({
                 }
               >
                 <Trash2 size={12} />
-                删除
+                {officeMessage(messages, 'presentation.comments.delete')}
               </Button>
             </footer>
           </article>
@@ -151,7 +154,7 @@ export function PresentationCommentsPanel({
             className="work-presentation-comments-empty"
             role="status"
           >
-            在当前幻灯片或选中元素上添加批注后，可以在这里定位、编辑或删除。
+            {officeMessage(messages, 'presentation.comments.hint')}
           </CollectionState>
         )}
       </div>
@@ -168,6 +171,7 @@ export function presentationCommentCount(slides: readonly WorkSlide[]): number {
 
 function presentationCommentViews(
   slides: readonly WorkSlide[],
+  messages = resolveOfficeMessages(),
 ): PresentationCommentView[] {
   return slides.flatMap((slide, slideIndex) =>
     (slide.comments ?? []).map((comment, commentIndex) => ({
@@ -176,7 +180,9 @@ function presentationCommentViews(
       slideNumber: slideIndex + 1,
       commentIndex,
       id: comment.id,
-      author: comment.author || '未知审阅者',
+      author:
+        comment.author ||
+        officeMessage(messages, 'presentation.comments.unknownAuthor'),
       date: comment.date,
       text: comment.text,
     })),

@@ -1,3 +1,8 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type {
   WorkDocumentImageAlignment,
   WorkDocumentImageHorizontalReference,
@@ -159,16 +164,17 @@ export function withDocumentPictureAspectRatioLock(
 
 export function documentPicturePropertiesErrors(
   draft: DocumentPicturePropertiesDraft,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): DocumentPicturePropertiesErrors {
   return {
-    width: imageDimensionError(draft.width),
-    height: imageDimensionError(draft.height),
+    width: imageDimensionError(draft.width, messages),
+    height: imageDimensionError(draft.height, messages),
     wrapDistance:
       draft.layout === 'inline' ||
       draft.layout === 'none' ||
       validNumber(draft.wrapDistance, 0, MAXIMUM_WRAP_DISTANCE_MILLIMETERS)
         ? null
-        : '请输入 0 到 25 之间的毫米数。',
+        : officeMessage(messages, 'document.picture.error.wrapDistance'),
     horizontalOffset:
       !draft.precisePosition ||
       validSignedNumber(
@@ -176,18 +182,20 @@ export function documentPicturePropertiesErrors(
         MAXIMUM_IMAGE_OFFSET_MILLIMETERS,
       )
         ? null
-        : '请输入 -558.7 到 558.7 之间的毫米数。',
+        : officeMessage(messages, 'document.picture.error.offset'),
     verticalOffset:
       !draft.precisePosition ||
       validSignedNumber(draft.verticalOffset, MAXIMUM_IMAGE_OFFSET_MILLIMETERS)
         ? null
-        : '请输入 -558.7 到 558.7 之间的毫米数。',
-    crop: imageCropError(draft),
+        : officeMessage(messages, 'document.picture.error.offset'),
+    crop: imageCropError(draft, messages),
     relativeHeight:
       draft.layout === 'inline' ||
       validInteger(draft.relativeHeight, 0, MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT)
         ? null
-        : `请输入 0 到 ${MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT} 之间的整数。`,
+        : officeMessage(messages, 'document.picture.error.relativeHeight', {
+            max: String(MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT),
+          }),
   };
 }
 
@@ -208,8 +216,9 @@ export function hasDocumentPicturePropertiesErrors(
 export function documentPicturePropertyChanges(
   initial: DocumentPicturePropertiesDraft,
   current: DocumentPicturePropertiesDraft,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): Partial<WorkDocumentImageProperties> | null {
-  const errors = documentPicturePropertiesErrors(current);
+  const errors = documentPicturePropertiesErrors(current, messages);
   if (hasDocumentPicturePropertiesErrors(errors)) return null;
 
   const changes: Partial<WorkDocumentImageProperties> = {};
@@ -320,14 +329,17 @@ function effectiveDimension(
   return fallback;
 }
 
-function imageDimensionError(value: string): string | null {
+function imageDimensionError(
+  value: string,
+  messages: OfficeMessageCatalog,
+): string | null {
   return validNumber(
     value,
     MINIMUM_IMAGE_SIZE_CENTIMETERS,
     MAXIMUM_IMAGE_SIZE_CENTIMETERS,
   )
     ? null
-    : '请输入 0.01 到 55.87 之间的厘米数。';
+    : officeMessage(messages, 'document.picture.error.dimension');
 }
 
 function validNumber(value: string, minimum: number, maximum: number): boolean {
@@ -351,7 +363,10 @@ function validInteger(
   return Number.isInteger(number) && number >= minimum && number <= maximum;
 }
 
-function imageCropError(draft: DocumentPicturePropertiesDraft): string | null {
+function imageCropError(
+  draft: DocumentPicturePropertiesDraft,
+  messages: OfficeMessageCatalog,
+): string | null {
   const edges = [
     draft.cropTop,
     draft.cropRight,
@@ -359,12 +374,12 @@ function imageCropError(draft: DocumentPicturePropertiesDraft): string | null {
     draft.cropLeft,
   ].map(numericDraft);
   if (edges.some((edge) => edge === null || edge > 99.99)) {
-    return '请输入 0 到 99.99 之间的裁剪百分比。';
+    return officeMessage(messages, 'document.picture.error.cropPercent');
   }
   const [top = 0, right = 0, bottom = 0, left = 0] = edges as number[];
   return left + right < 100 && top + bottom < 100
     ? null
-    : '相对两边的裁剪量之和必须小于 100%。';
+    : officeMessage(messages, 'document.picture.error.cropSum');
 }
 
 function numericDraft(value: string): number | null {

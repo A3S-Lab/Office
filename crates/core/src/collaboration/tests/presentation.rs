@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::Path;
 
 use base64::engine::general_purpose::STANDARD;
@@ -7,6 +8,7 @@ use yrs::{Any, Array, Doc, Map, Out, Transact, Update};
 
 use super::*;
 
+mod deck;
 mod order;
 
 const YJS_PRESENTATION_UPDATE_BASE64: &str = include_str!(concat!(
@@ -599,6 +601,263 @@ fn projected_element_text(store: &NativeOfficeCollaborationStore, element_id: &s
         .as_str()
         .unwrap()
         .to_owned()
+}
+
+#[test]
+fn presentation_replica_export_writes_every_shape_text_or_returns_no_package() {
+    let temp = tempfile::tempdir().unwrap();
+    let store = initialized_presentation_store(&temp.path().join("export-presentation"), 900_014);
+    let slide = "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><p:sp><p:cNvPr id=\"element-title\" name=\"Title\"/><p:txBody><a:p><a:r><a:t>Old</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:cNvPr id=\"kept\" name=\"Kept\"/><p:txBody><a:p><a:r><a:t>KEEP</a:t></a:r></a:p></p:txBody></p:sp></p:sld>";
+    let details = "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><p:sp><p:cNvPr id=\"element-body\" name=\"Body\"/><p:txBody><a:p><a:r><a:t>Old</a:t></a:r></a:p></p:txBody></p:sp></p:sld>";
+    let mut parts = BTreeMap::new();
+    parts.insert(
+        "ppt/slides/slide1.xml".to_owned(),
+        slide.as_bytes().to_vec(),
+    );
+    parts.insert(
+        "ppt/slides/slide2.xml".to_owned(),
+        details.as_bytes().to_vec(),
+    );
+    parts.insert("ppt/presentation.xml".to_owned(), b"<kept/>".to_vec());
+    let containers = [
+        ("slide-1", "ppt/slides/slide1.xml"),
+        ("slide-2", "ppt/slides/slide2.xml"),
+    ];
+
+    let written = export_presentation_replica(&store, parts.clone(), &containers).unwrap();
+    let cover = String::from_utf8(written["ppt/slides/slide1.xml"].clone()).unwrap();
+    let body = String::from_utf8(written["ppt/slides/slide2.xml"].clone()).unwrap();
+    assert!(cover.contains("<a:t>Shared presentation</a:t>"));
+    assert!(cover.contains("<a:t>KEEP</a:t>"));
+    assert!(body.contains("<a:t>Body</a:t>"));
+    assert_eq!(
+        written["ppt/presentation.xml"],
+        parts["ppt/presentation.xml"]
+    );
+
+    let two_runs = "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><p:sp><p:cNvPr id=\"element-body\" name=\"Body\"/><p:txBody><a:p><a:r><a:t>A</a:t></a:r><a:r><a:t>B</a:t></a:r></a:p></p:txBody></p:sp></p:sld>";
+    let mut split = parts.clone();
+    split.insert(
+        "ppt/slides/slide2.xml".to_owned(),
+        two_runs.as_bytes().to_vec(),
+    );
+    assert!(export_presentation_replica(&store, split, &containers).is_err());
+
+    assert!(export_presentation_replica(
+        &store,
+        parts.clone(),
+        &[("slide-1", "ppt/slides/slide1.xml")],
+    )
+    .is_err());
+
+    let missing_shape = "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><p:sp><p:cNvPr id=\"other\" name=\"Other\"/><p:txBody><a:p><a:r><a:t>Old</a:t></a:r></a:p></p:txBody></p:sp></p:sld>";
+    let mut unnamed = parts;
+    unnamed.insert(
+        "ppt/slides/slide2.xml".to_owned(),
+        missing_shape.as_bytes().to_vec(),
+    );
+    assert!(export_presentation_replica(&store, unnamed, &containers).is_err());
+}
+
+#[test]
+fn reordered_presentation_updates_converge_and_reopen_the_merged_export() {
+    let temp = tempfile::tempdir().unwrap();
+    let title = title_element();
+    let body = body_element();
+    let mut title_text = title.clone();
+    title_text["text"] = json!("Concurrent native title");
+    let mut title_fill = title.clone();
+    title_fill["fill"] = json!("#E0E7FF");
+    let mut body_fill = body.clone();
+    body_fill["fill"] = json!("#FDE68A");
+    let updates = [
+        offline_presentation_update(
+            &temp,
+            930_111,
+            "offline-title-text",
+            NativeOfficeCollaborationMutation::PresentationUpdateElement {
+                container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+                container_id: "slide-1".to_owned(),
+                element_id: "element-title".to_owned(),
+                expected_element: title,
+                next_element: title_text,
+            },
+        ),
+        offline_presentation_update(
+            &temp,
+            930_112,
+            "offline-title-fill",
+            NativeOfficeCollaborationMutation::PresentationUpdateElement {
+                container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+                container_id: "slide-1".to_owned(),
+                element_id: "element-title".to_owned(),
+                expected_element: title_element(),
+                next_element: title_fill,
+            },
+        ),
+        offline_presentation_update(
+            &temp,
+            930_113,
+            "offline-body-fill",
+            NativeOfficeCollaborationMutation::PresentationUpdateElement {
+                container_kind: NativeOfficeCollaborationPresentationContainerKind::Slide,
+                container_id: "slide-2".to_owned(),
+                element_id: "element-body".to_owned(),
+                expected_element: body,
+                next_element: body_fill,
+            },
+        ),
+    ];
+
+    let mut hashes = Vec::new();
+    for (permutation_index, permutation) in
+        three_presentation_permutations().into_iter().enumerate()
+    {
+        let ordered = [
+            updates[permutation[0]].clone(),
+            updates[permutation[1]].clone(),
+            updates[permutation[2]].clone(),
+        ];
+        let store = deliver_presentation_updates(
+            &temp.path().join(format!("order-{permutation_index}")),
+            930_200 + permutation_index as u64,
+            &ordered,
+        );
+        assert_eq!(
+            presentation_element_string(&store, "slides", "slide-1", "element-title", "text"),
+            Some("Concurrent native title".to_owned())
+        );
+        assert_eq!(
+            presentation_element_string(&store, "slides", "slide-1", "element-title", "fill"),
+            Some("#E0E7FF".to_owned())
+        );
+        assert_eq!(
+            presentation_element_string(&store, "slides", "slide-2", "element-body", "text"),
+            Some("Body".to_owned())
+        );
+        assert_eq!(
+            presentation_element_string(&store, "slides", "slide-2", "element-body", "fill"),
+            Some("#FDE68A".to_owned())
+        );
+        hashes.push(store.inspect().unwrap().document_state_sha256);
+    }
+    assert!(hashes.iter().all(|hash| hash == &hashes[0]));
+
+    let repeated = [
+        updates[0].clone(),
+        updates[0].clone(),
+        updates[1].clone(),
+        updates[2].clone(),
+    ];
+    let replayed = deliver_presentation_updates(&temp.path().join("repeated"), 930_220, &repeated);
+    assert_eq!(replayed.inspect().unwrap().document_state_sha256, hashes[0]);
+
+    let slide = "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><p:sp><p:cNvPr id=\"element-title\" name=\"Title\"/><p:txBody><a:p><a:r><a:t>Old</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:cNvPr id=\"kept\" name=\"Kept\"/><p:txBody><a:p><a:r><a:t>KEEP</a:t></a:r></a:p></p:txBody></p:sp></p:sld>";
+    let details = "<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"><p:sp><p:cNvPr id=\"element-body\" name=\"Body\"/><p:txBody><a:p><a:r><a:t>Old</a:t></a:r></a:p></p:txBody></p:sp></p:sld>";
+    let mut parts = BTreeMap::new();
+    parts.insert(
+        "ppt/slides/slide1.xml".to_owned(),
+        slide.as_bytes().to_vec(),
+    );
+    parts.insert(
+        "ppt/slides/slide2.xml".to_owned(),
+        details.as_bytes().to_vec(),
+    );
+    parts.insert("ppt/presentation.xml".to_owned(), b"<kept/>".to_vec());
+    let written = export_presentation_replica(
+        &replayed,
+        parts.clone(),
+        &[
+            ("slide-1", "ppt/slides/slide1.xml"),
+            ("slide-2", "ppt/slides/slide2.xml"),
+        ],
+    )
+    .unwrap();
+    assert_eq!(
+        written["ppt/presentation.xml"],
+        parts["ppt/presentation.xml"]
+    );
+    let cover = String::from_utf8(written["ppt/slides/slide1.xml"].clone()).unwrap();
+    let body_xml = String::from_utf8(written["ppt/slides/slide2.xml"].clone()).unwrap();
+    assert_eq!(
+        reopen_exported_shape_text(&cover, "element-title").unwrap(),
+        "Concurrent native title"
+    );
+    assert_eq!(reopen_exported_shape_text(&cover, "kept").unwrap(), "KEEP");
+    assert_eq!(
+        reopen_exported_shape_text(&body_xml, "element-body").unwrap(),
+        "Body"
+    );
+}
+
+fn body_element() -> JsonValue {
+    json!({
+        "id": "element-body",
+        "type": "shape",
+        "x": 20,
+        "y": 25,
+        "width": 60,
+        "height": 40,
+        "text": "Body",
+        "fontSize": 18,
+        "color": "#172033",
+        "fill": "#DCE6FB",
+        "bold": false,
+        "align": "left",
+    })
+}
+
+fn offline_presentation_update(
+    temp: &tempfile::TempDir,
+    client_id: u64,
+    operation_id: &str,
+    mutation: NativeOfficeCollaborationMutation,
+) -> Vec<u8> {
+    let store = initialized_presentation_store(&temp.path().join(operation_id), client_id);
+    let base = store.synchronize(None).unwrap().state_vector;
+    store
+        .mutate(presentation_mutation_request(operation_id, mutation))
+        .unwrap();
+    store.synchronize(Some(&base)).unwrap().update
+}
+
+fn deliver_presentation_updates(
+    root: &Path,
+    client_id: u64,
+    updates: &[Vec<u8>],
+) -> NativeOfficeCollaborationStore {
+    let store = initialized_presentation_store(root, client_id);
+    for (index, update) in updates.iter().enumerate() {
+        store
+            .apply(presentation_apply_request(
+                &format!("deliver-{client_id}-{index}"),
+                update.clone(),
+            ))
+            .unwrap();
+    }
+    store
+}
+
+fn three_presentation_permutations() -> Vec<[usize; 3]> {
+    let mut result = Vec::with_capacity(6);
+    for first in 0..3 {
+        for second in 0..3 {
+            for third in 0..3 {
+                let permutation = [first, second, third];
+                if permutation
+                    .iter()
+                    .copied()
+                    .collect::<std::collections::HashSet<_>>()
+                    .len()
+                    == 3
+                {
+                    result.push(permutation);
+                }
+            }
+        }
+    }
+    assert_eq!(result.len(), 6);
+    result
 }
 
 fn initialized_presentation_store(root: &Path, client_id: u64) -> NativeOfficeCollaborationStore {

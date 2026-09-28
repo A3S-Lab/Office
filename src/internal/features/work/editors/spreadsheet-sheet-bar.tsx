@@ -24,23 +24,43 @@ import {
   useState,
 } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type { WorkSpreadsheetSheet } from '../work-types';
 import { useOfficeDialog } from './office-dialog';
 import { OfficeMenuGroup } from './office-menu-group';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import {
   isSpreadsheetSheetHidden,
   type SpreadsheetSheetMoveDirection,
   spreadsheetSheetNameValidationMessage,
 } from './spreadsheet-sheet-model';
 
-const spreadsheetSheetColors = [
-  { color: '#4f7de8', label: '蓝色' },
-  { color: '#35a37a', label: '绿色' },
-  { color: '#d59a36', label: '橙色' },
-  { color: '#e06c53', label: '红色' },
-  { color: '#8b6ad8', label: '紫色' },
-] as const;
+function spreadsheetSheetColors(messages: OfficeMessageCatalog) {
+  return [
+    {
+      color: '#4f7de8',
+      label: officeMessage(messages, 'spreadsheet.sheet.color.blue'),
+    },
+    {
+      color: '#35a37a',
+      label: officeMessage(messages, 'spreadsheet.sheet.color.green'),
+    },
+    {
+      color: '#d59a36',
+      label: officeMessage(messages, 'spreadsheet.sheet.color.orange'),
+    },
+    {
+      color: '#e06c53',
+      label: officeMessage(messages, 'spreadsheet.sheet.color.red'),
+    },
+    {
+      color: '#8b6ad8',
+      label: officeMessage(messages, 'spreadsheet.sheet.color.purple'),
+    },
+  ] as const;
+}
 
 export interface SpreadsheetSheetBarProps {
   activeSheetId: string;
@@ -71,6 +91,7 @@ export function SpreadsheetSheetBar({
   onSetColor,
   onShow,
 }: SpreadsheetSheetBarProps) {
+  const messages = useOfficeMessages();
   const orderedSheets = [...sheets].sort(
     (left, right) =>
       (left.order ?? sheets.indexOf(left)) -
@@ -177,9 +198,14 @@ export function SpreadsheetSheetBar({
     const sheetId = sheet.id;
     if (!sheetId) return;
     const confirmed = await officeDialog.confirm({
-      title: `删除“${sheet.name}”？`,
-      description: '工作表及其中的内容将被删除。',
-      confirmLabel: '删除',
+      title: officeMessage(messages, 'spreadsheet.sheet.deleteTitle', {
+        name: sheet.name,
+      }),
+      description: officeMessage(
+        messages,
+        'spreadsheet.sheet.deleteDescription',
+      ),
+      confirmLabel: officeMessage(messages, 'spreadsheet.sheet.deleteConfirm'),
       confirmTone: 'danger',
       restoreFocusTarget: () => sheetTabRefs.current.get(sheetId) ?? null,
     });
@@ -231,16 +257,16 @@ export function SpreadsheetSheetBar({
     <nav
       key="sheet-bar"
       className="work-spreadsheet-sheet-bar"
-      aria-label="工作表"
+      aria-label={officeMessage(messages, 'spreadsheet.sheet.barAria')}
       data-editable={editable ? 'true' : 'false'}
     >
       <div className="work-spreadsheet-sheet-tools">
         <button
           type="button"
           className="work-spreadsheet-sheet-navigation"
-          aria-label="上一个工作表"
+          aria-label={officeMessage(messages, 'spreadsheet.sheet.prevAria')}
           aria-keyshortcuts="Control+PageUp Meta+PageUp"
-          title="上一个工作表（Ctrl/⌘+PageUp）"
+          title={officeMessage(messages, 'spreadsheet.sheet.prevTitle')}
           disabled={visibleSheets.length < 2}
           onClick={() => activateAdjacentSheet(-1)}
         >
@@ -249,17 +275,17 @@ export function SpreadsheetSheetBar({
         <button
           type="button"
           className="work-spreadsheet-sheet-navigation"
-          aria-label="下一个工作表"
+          aria-label={officeMessage(messages, 'spreadsheet.sheet.nextAria')}
           aria-keyshortcuts="Control+PageDown Meta+PageDown"
-          title="下一个工作表（Ctrl/⌘+PageDown）"
+          title={officeMessage(messages, 'spreadsheet.sheet.nextTitle')}
           disabled={visibleSheets.length < 2}
           onClick={() => activateAdjacentSheet(1)}
         >
           <ChevronRight size={14} />
         </button>
         <Popover
-          label="工作表列表"
-          panelLabel="工作表列表"
+          label={officeMessage(messages, 'spreadsheet.sheet.listLabel')}
+          panelLabel={officeMessage(messages, 'spreadsheet.sheet.listLabel')}
           panelRole="menu"
           placement="top-start"
           portal
@@ -267,7 +293,10 @@ export function SpreadsheetSheetBar({
           focusFirstOnOpen
           onPanelKeyDown={moveOfficeMenuFocus}
           trigger={(triggerProps) => (
-            <button {...triggerProps} title="查看全部工作表">
+            <button
+              {...triggerProps}
+              title={officeMessage(messages, 'spreadsheet.sheet.listTitle')}
+            >
               <Layers2 size={14} />
             </button>
           )}
@@ -299,24 +328,25 @@ export function SpreadsheetSheetBar({
             ))
           }
         </Popover>
-        {editable && (
+        {editable ? (
           <button
             type="button"
             className="work-spreadsheet-sheet-add"
-            aria-label="新建工作表"
+            aria-label={officeMessage(messages, 'spreadsheet.sheet.addAria')}
             aria-keyshortcuts="Shift+F11 Alt+Shift+F1"
-            title="新建工作表（Shift+F11）"
+            title={officeMessage(messages, 'spreadsheet.sheet.addTitle')}
             onClick={onCreate}
           >
             <Plus size={15} />
           </button>
-        )}
+        ) : null}
       </div>
 
       <div
         ref={sheetTabsRef}
         className="work-spreadsheet-sheet-tabs"
-        role="tablist"
+        role="group"
+        aria-label={officeMessage(messages, 'spreadsheet.sheet.listLabel')}
       >
         {visibleSheets.map((sheet, index) => {
           const sheetId = sheet.id ?? '';
@@ -334,7 +364,11 @@ export function SpreadsheetSheetBar({
                 <>
                   <input
                     ref={renameInputRef}
-                    aria-label={`重命名${sheet.name}`}
+                    aria-label={officeMessage(
+                      messages,
+                      'spreadsheet.sheet.renameAria',
+                      { name: sheet.name },
+                    )}
                     aria-invalid={renameError ? 'true' : undefined}
                     aria-describedby={renameError ? renameErrorId : undefined}
                     aria-errormessage={renameError ? renameErrorId : undefined}
@@ -368,7 +402,7 @@ export function SpreadsheetSheetBar({
                       }
                     }}
                   />
-                  {renameError && (
+                  {renameError ? (
                     <span
                       id={renameErrorId}
                       className="work-spreadsheet-sheet-rename-error"
@@ -377,7 +411,7 @@ export function SpreadsheetSheetBar({
                     >
                       {renameError}
                     </span>
-                  )}
+                  ) : null}
                 </>
               ) : (
                 <button
@@ -386,8 +420,7 @@ export function SpreadsheetSheetBar({
                     else sheetTabRefs.current.delete(sheetId);
                   }}
                   type="button"
-                  role="tab"
-                  aria-selected={active}
+                  aria-current={active ? 'true' : undefined}
                   tabIndex={active ? 0 : -1}
                   title={sheet.name}
                   onClick={() => sheetId && onActivate(sheetId)}
@@ -418,7 +451,7 @@ export function SpreadsheetSheetBar({
                   <span>{sheet.name}</span>
                 </button>
               )}
-              {editable && renamingSheetId !== sheetId && (
+              {editable && renamingSheetId !== sheetId ? (
                 <SpreadsheetSheetMenu
                   sheet={sheet}
                   canDelete={sheets.length > 1}
@@ -432,7 +465,7 @@ export function SpreadsheetSheetBar({
                   onRename={beginRename}
                   onSetColor={onSetColor}
                 />
-              )}
+              ) : null}
             </div>
           );
         })}
@@ -486,11 +519,17 @@ function SpreadsheetSheetMenu({
   onRename(sheet: WorkSpreadsheetSheet): void;
   onSetColor(sheetId: string, color: string | null): void;
 }) {
+  const messages = useOfficeMessages();
   const sheetId = sheet.id ?? '';
+  const colors = spreadsheetSheetColors(messages);
   return (
     <Popover
-      label={`${sheet.name}选项`}
-      panelLabel={`${sheet.name}工作表操作`}
+      label={officeMessage(messages, 'spreadsheet.sheet.optionsAria', {
+        name: sheet.name,
+      })}
+      panelLabel={officeMessage(messages, 'spreadsheet.sheet.optionsPanel', {
+        name: sheet.name,
+      })}
       panelRole="menu"
       placement="top-start"
       portal
@@ -502,7 +541,9 @@ function SpreadsheetSheetMenu({
           {...triggerProps}
           className="work-spreadsheet-sheet-options"
           aria-keyshortcuts="Shift+F10"
-          title={`${sheet.name}选项`}
+          title={officeMessage(messages, 'spreadsheet.sheet.optionsAria', {
+            name: sheet.name,
+          })}
         >
           <ChevronDown
             size={12}
@@ -516,7 +557,7 @@ function SpreadsheetSheetMenu({
         <>
           <SheetMenuButton
             icon={<Pencil size={14} />}
-            label="重命名"
+            label={officeMessage(messages, 'spreadsheet.sheet.rename')}
             onClick={() => {
               close();
               onRename(sheet);
@@ -524,7 +565,7 @@ function SpreadsheetSheetMenu({
           />
           <SheetMenuButton
             icon={<CopyPlus size={14} />}
-            label="复制工作表"
+            label={officeMessage(messages, 'spreadsheet.sheet.duplicate')}
             onClick={() => {
               close();
               onDuplicate(sheetId);
@@ -532,7 +573,7 @@ function SpreadsheetSheetMenu({
           />
           <SheetMenuButton
             icon={<EyeOff size={14} />}
-            label="隐藏工作表"
+            label={officeMessage(messages, 'spreadsheet.sheet.hide')}
             disabled={!canHide}
             onClick={() => {
               close();
@@ -541,22 +582,32 @@ function SpreadsheetSheetMenu({
           />
           <OfficeMenuGroup
             className="work-spreadsheet-sheet-color-row"
-            ariaLabel="标签颜色"
+            ariaLabel={officeMessage(messages, 'spreadsheet.sheet.tabColor')}
           >
             <div className="work-spreadsheet-sheet-color-row-label">
               <Palette size={14} aria-hidden="true" />
-              <span>标签颜色</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.sheet.tabColor')}
+              </span>
             </div>
             <div>
-              {spreadsheetSheetColors.map(({ color, label }) => (
+              {colors.map(({ color, label }) => (
                 <button
                   key={color}
                   type="button"
                   role="menuitemradio"
                   aria-checked={sheet.color === color}
                   tabIndex={-1}
-                  aria-label={`${label}标签`}
-                  title={`${label}标签`}
+                  aria-label={officeMessage(
+                    messages,
+                    'spreadsheet.sheet.tabColorSwatch',
+                    { label },
+                  )}
+                  title={officeMessage(
+                    messages,
+                    'spreadsheet.sheet.tabColorSwatch',
+                    { label },
+                  )}
                   className={sheet.color === color ? 'active' : undefined}
                   style={{ backgroundColor: color }}
                   onClick={() => {
@@ -570,8 +621,14 @@ function SpreadsheetSheetMenu({
                 role="menuitemradio"
                 aria-checked={!sheet.color}
                 tabIndex={-1}
-                aria-label="清除标签颜色"
-                title="清除标签颜色"
+                aria-label={officeMessage(
+                  messages,
+                  'spreadsheet.sheet.clearTabColor',
+                )}
+                title={officeMessage(
+                  messages,
+                  'spreadsheet.sheet.clearTabColor',
+                )}
                 className="clear"
                 onClick={() => {
                   close();
@@ -583,7 +640,7 @@ function SpreadsheetSheetMenu({
           <hr />
           <SheetMenuButton
             icon={<ArrowLeft size={14} />}
-            label="向左移动"
+            label={officeMessage(messages, 'spreadsheet.sheet.moveLeft')}
             disabled={!canMoveLeft}
             onClick={() => {
               close();
@@ -592,7 +649,7 @@ function SpreadsheetSheetMenu({
           />
           <SheetMenuButton
             icon={<ArrowRight size={14} />}
-            label="向右移动"
+            label={officeMessage(messages, 'spreadsheet.sheet.moveRight')}
             disabled={!canMoveRight}
             onClick={() => {
               close();
@@ -602,7 +659,7 @@ function SpreadsheetSheetMenu({
           <hr />
           <SheetMenuButton
             icon={<Trash2 size={14} />}
-            label="删除工作表"
+            label={officeMessage(messages, 'spreadsheet.sheet.delete')}
             danger
             disabled={!canDelete}
             onClick={() => {

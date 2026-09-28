@@ -1,3 +1,8 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+  type OfficeMessageKey,
+} from '../../../i18n/office-locale';
 import type {
   WorkSpreadsheetCustomFilterCondition,
   WorkSpreadsheetDynamicFilter,
@@ -20,66 +25,73 @@ export type SpreadsheetAutoFilterConditionType =
   | 'blanks'
   | 'non-blanks';
 
-export const CONDITION_LABELS: Readonly<
-  Record<SpreadsheetAutoFilterConditionType, string>
+const CONDITION_LABEL_KEYS: Readonly<
+  Record<SpreadsheetAutoFilterConditionType, OfficeMessageKey>
 > = {
-  equals: '等于',
-  'not-equals': '不等于',
-  contains: '包含',
-  'does-not-contain': '不包含',
-  'begins-with': '开头是',
-  'does-not-begin-with': '开头不是',
-  'ends-with': '结尾是',
-  'does-not-end-with': '结尾不是',
-  'matches-wildcard': '通配符匹配',
-  'does-not-match-wildcard': '通配符不匹配',
-  'greater-than': '大于',
-  'greater-than-or-equal': '大于或等于',
-  'less-than': '小于',
-  'less-than-or-equal': '小于或等于',
-  between: '介于',
-  'not-between': '不介于',
-  top: '前几项',
-  'top-percent': '前百分比',
-  bottom: '后几项',
-  'bottom-percent': '后百分比',
-  'above-average': '高于平均值',
-  'below-average': '低于平均值',
-  tomorrow: '明天',
-  today: '今天',
-  yesterday: '昨天',
-  'next-week': '下周',
-  'this-week': '本周',
-  'last-week': '上周',
-  'next-month': '下月',
-  'this-month': '本月',
-  'last-month': '上月',
-  'next-quarter': '下季度',
-  'this-quarter': '本季度',
-  'last-quarter': '上季度',
-  'next-year': '明年',
-  'this-year': '今年',
-  'last-year': '去年',
-  'year-to-date': '年初至今',
-  'quarter-1': '第一季度',
-  'quarter-2': '第二季度',
-  'quarter-3': '第三季度',
-  'quarter-4': '第四季度',
-  'month-1': '一月',
-  'month-2': '二月',
-  'month-3': '三月',
-  'month-4': '四月',
-  'month-5': '五月',
-  'month-6': '六月',
-  'month-7': '七月',
-  'month-8': '八月',
-  'month-9': '九月',
-  'month-10': '十月',
-  'month-11': '十一月',
-  'month-12': '十二月',
-  blanks: '空白',
-  'non-blanks': '非空白',
+  equals: 'spreadsheet.autoFilter.op.equals',
+  'not-equals': 'spreadsheet.autoFilter.op.not-equals',
+  contains: 'spreadsheet.autoFilter.op.contains',
+  'does-not-contain': 'spreadsheet.autoFilter.op.does-not-contain',
+  'begins-with': 'spreadsheet.autoFilter.op.begins-with',
+  'does-not-begin-with': 'spreadsheet.autoFilter.op.does-not-begin-with',
+  'ends-with': 'spreadsheet.autoFilter.op.ends-with',
+  'does-not-end-with': 'spreadsheet.autoFilter.op.does-not-end-with',
+  'matches-wildcard': 'spreadsheet.autoFilter.op.matches-wildcard',
+  'does-not-match-wildcard': 'spreadsheet.autoFilter.op.does-not-match-wildcard',
+  'greater-than': 'spreadsheet.autoFilter.op.greater-than',
+  'greater-than-or-equal': 'spreadsheet.autoFilter.op.greater-than-or-equal',
+  'less-than': 'spreadsheet.autoFilter.op.less-than',
+  'less-than-or-equal': 'spreadsheet.autoFilter.op.less-than-or-equal',
+  between: 'spreadsheet.autoFilter.op.between',
+  'not-between': 'spreadsheet.autoFilter.op.not-between',
+  top: 'spreadsheet.autoFilter.op.top',
+  'top-percent': 'spreadsheet.autoFilter.op.top-percent',
+  bottom: 'spreadsheet.autoFilter.op.bottom',
+  'bottom-percent': 'spreadsheet.autoFilter.op.bottom-percent',
+  'above-average': 'spreadsheet.autoFilter.op.above-average',
+  'below-average': 'spreadsheet.autoFilter.op.below-average',
+  tomorrow: 'spreadsheet.autoFilter.op.tomorrow',
+  today: 'spreadsheet.autoFilter.op.today',
+  yesterday: 'spreadsheet.autoFilter.op.yesterday',
+  'next-week': 'spreadsheet.autoFilter.op.next-week',
+  'this-week': 'spreadsheet.autoFilter.op.this-week',
+  'last-week': 'spreadsheet.autoFilter.op.last-week',
+  'next-month': 'spreadsheet.autoFilter.op.next-month',
+  'this-month': 'spreadsheet.autoFilter.op.this-month',
+  'last-month': 'spreadsheet.autoFilter.op.last-month',
+  'next-quarter': 'spreadsheet.autoFilter.op.next-quarter',
+  'this-quarter': 'spreadsheet.autoFilter.op.this-quarter',
+  'last-quarter': 'spreadsheet.autoFilter.op.last-quarter',
+  'next-year': 'spreadsheet.autoFilter.op.next-year',
+  'this-year': 'spreadsheet.autoFilter.op.this-year',
+  'last-year': 'spreadsheet.autoFilter.op.last-year',
+  'year-to-date': 'spreadsheet.autoFilter.op.year-to-date',
+  'quarter-1': 'spreadsheet.autoFilter.op.quarter-1',
+  'quarter-2': 'spreadsheet.autoFilter.op.quarter-2',
+  'quarter-3': 'spreadsheet.autoFilter.op.quarter-3',
+  'quarter-4': 'spreadsheet.autoFilter.op.quarter-4',
+  'month-1': 'spreadsheet.autoFilter.op.month-1',
+  'month-2': 'spreadsheet.autoFilter.op.month-2',
+  'month-3': 'spreadsheet.autoFilter.op.month-3',
+  'month-4': 'spreadsheet.autoFilter.op.month-4',
+  'month-5': 'spreadsheet.autoFilter.op.month-5',
+  'month-6': 'spreadsheet.autoFilter.op.month-6',
+  'month-7': 'spreadsheet.autoFilter.op.month-7',
+  'month-8': 'spreadsheet.autoFilter.op.month-8',
+  'month-9': 'spreadsheet.autoFilter.op.month-9',
+  'month-10': 'spreadsheet.autoFilter.op.month-10',
+  'month-11': 'spreadsheet.autoFilter.op.month-11',
+  'month-12': 'spreadsheet.autoFilter.op.month-12',
+  blanks: 'spreadsheet.autoFilter.op.blanks',
+  'non-blanks': 'spreadsheet.autoFilter.op.non-blanks',
 };
+
+export function spreadsheetAutoFilterConditionLabel(
+  type: SpreadsheetAutoFilterConditionType,
+): string {
+  return officeMessage(resolveOfficeMessages(), CONDITION_LABEL_KEYS[type]);
+}
+
 
 export const TEXT_CONDITIONS: readonly SpreadsheetAutoFilterConditionType[] = [
   'equals',
@@ -318,7 +330,7 @@ export function spreadsheetAutoFilterPrimaryConditionError(
   }
   if (spreadsheetAutoFilterRankConditionType(draft.type)) {
     const value = draft.value.trim();
-    if (!/^\d+$/.test(value)) return '请输入整数。';
+    if (!/^\d+$/.test(value)) return officeMessage(resolveOfficeMessages(), 'spreadsheet.autoFilter.error.integer');
     const maximum =
       draft.type === 'top-percent' || draft.type === 'bottom-percent'
         ? 100
@@ -326,7 +338,9 @@ export function spreadsheetAutoFilterPrimaryConditionError(
     const numeric = Number(value);
     return numeric >= 1 && numeric <= maximum
       ? null
-      : `请输入 1 到 ${maximum} 之间的整数。`;
+      : officeMessage(resolveOfficeMessages(), 'spreadsheet.autoFilter.error.integerRange', {
+          n: String(maximum),
+        });
   }
   const valueError = spreadsheetAutoFilterValueError(draft.type, draft.value);
   if (valueError) return valueError;
@@ -335,13 +349,13 @@ export function spreadsheetAutoFilterPrimaryConditionError(
       (draft.type === 'between' || draft.type === 'not-between') &&
       (!draft.upperValue.trim() || !Number.isFinite(Number(draft.upperValue)))
     ) {
-      return '请输入有效的上限。';
+      return officeMessage(resolveOfficeMessages(), 'spreadsheet.autoFilter.error.upper');
     }
     if (
       (draft.type === 'between' || draft.type === 'not-between') &&
       Number(draft.value) > Number(draft.upperValue)
     ) {
-      return '下限不能大于上限。';
+      return officeMessage(resolveOfficeMessages(), 'spreadsheet.autoFilter.error.lowerGtUpper');
     }
   }
   return null;
@@ -352,7 +366,7 @@ export function spreadsheetAutoFilterValueError(
   value: string,
 ): string | null {
   if (spreadsheetAutoFilterDynamicConditionType(type)) return null;
-  if (!value.trim()) return '请输入筛选值。';
+  if (!value.trim()) return officeMessage(resolveOfficeMessages(), 'spreadsheet.autoFilter.error.valueRequired');
   if (
     WILDCARD_CONDITIONS.includes(
       type as (typeof WILDCARD_CONDITIONS)[number],
@@ -360,10 +374,12 @@ export function spreadsheetAutoFilterValueError(
     workSpreadsheetFilterTextCharacters(value) >
       WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS
   ) {
-    return `通配符表达式不能超过 ${WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS.toLocaleString()} 个字符。`;
+    return officeMessage(resolveOfficeMessages(), 'spreadsheet.autoFilter.error.wildcardTooLong', {
+      n: WORK_SPREADSHEET_FILTER_TEXT_MAX_CHARACTERS.toLocaleString(),
+    });
   }
   return NUMBER_CONDITIONS.includes(type) && !Number.isFinite(Number(value))
-    ? '请输入有效数字。'
+    ? officeMessage(resolveOfficeMessages(), 'spreadsheet.autoFilter.error.number')
     : null;
 }
 

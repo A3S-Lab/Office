@@ -245,10 +245,50 @@ parity remains pending.
 
 Remaining:
 
-- Prove concurrent full-table, list-restructure, section, comment, and revision
-  workflows, plus DOCX import/export after merged edits.
-- Expand native convergence from bounded paragraph edits to complete table,
-  list, and section operations, comments, and the remaining tracked revisions.
+- Two offline document edits of paragraph text, page color, and the
+  track-changes switch converge to one document hash in every delivery order.
+  Delivering one of those updates again leaves the hash unchanged. Exporting
+  that merged replica and importing the package yields the same paragraph
+  text, including a package paragraph the replica did not rewrite. The styles
+  part stays byte-identical. Inserting a table row beside an observed row, or
+  deleting a row that is still one plain paragraph, rewrites ancestor row
+  identities in that same transaction. A drifted row identity, a table's last
+  row, or a row that is not one plain paragraph writes nothing and leaves the
+  hash unchanged. A list paragraph outside that table stays put. Inserting a
+  list item beside the item whose first block is the observed paragraph, or
+  deleting a list item that is still one plain paragraph, rewrites ancestor
+  row identities when that list sits in a table cell. A drifted text identity,
+  the list's last item, or an anchor that is not the item's first block writes
+  nothing and leaves the hash unchanged. Untouched table cells stay put.
+  Inserting a section beside an observed top-level section adds one plain
+  paragraph in the new section. Deleting a section that is still one plain
+  paragraph, while another section remains, removes only that section. A
+  missing section, a drifted paragraph identity, the document's last section,
+  or a section that is not one plain paragraph writes nothing and leaves the
+  hash unchanged. The observed section's paragraphs, list, and table rows stay.
+  A comment and an insertion suggestion created offline converge to one
+  document hash in every delivery order. Delivering one of those updates
+  again leaves the hash unchanged. The comment body and the insertion both
+  remain, and the text outside the comment stays. A different body for a
+  comment ID that already exists writes nothing and leaves the hash unchanged.
+  Accepting one offline insertion and rejecting another converges to one
+  document hash in every delivery order. The accepted characters stay, the
+  rejected characters do not, and the text outside both revisions stays.
+  Delivering one of those decisions again leaves the hash unchanged. A later
+  opposite decision for a suggestion that already has a decision writes
+  nothing and leaves the hash unchanged. Accepting one offline deletion and
+  rejecting another converges to one document hash in every delivery order.
+  The accepted characters stay gone, the rejected deletion stays, and the
+  text outside both revisions stays. Accepting the deletion half of a
+  replacement and rejecting its insertion half converges to one document hash
+  in every delivery order. The deleted characters stay gone, the rejected
+  insertion does not remain, and the text outside that replacement stays.
+  Delivering one of those decisions again leaves the hash unchanged.
+- Prove concurrent full-table workflows and the remaining tracked-revision
+  decisions beyond the paragraph splice, structural frames, the offline
+  comment-plus-insertion frame, the offline insertion-decision frame, the
+  offline deletion-decision frame, and the offline replacement-half frame
+  above.
 
 Exit criterion: two browsers and one native client converge on document
 content and review state; local undo never removes a remote change; a DOCX
@@ -294,12 +334,26 @@ Remaining:
 
 - Scene text typing uses `presentation-splice` on a collaborative text
   fragment. Scalar `presentation-replace-text` remains search/replace.
-- Add structural native operations and explicit conflict handling for slide
-  order, grouping, and theme changes; extend z-order beyond stable scene-element
-  moves where a concrete browser workflow requires it.
-- Keep derived thumbnails and layout measurements local and prove this in UI
-  tests.
-- Add offline/reordered-update property tests plus merged PPTX export/reopen.
+- Slide order, grouping, and background are native frames. `presentation-move-slide`
+  rewrites only `slide-order` and fails closed when the observed predecessor
+  drifted. `presentation-set-group` writes every member's `groupIds` in one
+  transaction and fails closed when any expected path drifted. `presentation-set-background`
+  writes one slide, master, or layout `background` and fails closed when that
+  field drifted. The browser content replace uses the same guards against the
+  live replica, including a slide's `useLayoutBackground` when that gesture
+  changes it. Shape text stays put. A browser element-order replace checks
+  the live replica and writes nothing when that permutation already drifted.
+  Shape text stays put. A thumbnail, thumbnail URL, measured layout, measured
+  box, or line-box list attached to a slide, master, layout, or element is
+  local: a replace that only carries those fields writes nothing and leaves
+  the state vector unchanged. A replace that also changes shape text writes
+  the text and the authored geometry, and the derived fields are absent from
+  the replica and from its update bytes. Two offline edits of a shape's text
+  and fill, together with another shape's fill, converge to one document hash
+  in every delivery order. Delivering one of those updates again leaves the
+  hash unchanged. Exporting that merged replica and reading each shape back
+  yields the same text. A shape neither edit changed, and a package shape the
+  replica does not rewrite, stay as they were.
 
 Exit criterion: concurrent object transforms, rich-text edits, slide reorder,
 comments, and delete-vs-edit cases converge and survive PPTX round trips.
@@ -358,14 +412,39 @@ XLSX concurrency coverage are pending.
 
 Remaining:
 
-- Add native typed structural operations and reference transforms for
-  row/column insertion/deletion, merged ranges, sort, and named references;
-  bridge the existing native table add/set/remove file mutations into the
-  browser-convergent table records, then add collaboration-aware conversion,
-  calculated-column, totals, and structured-reference operations.
+- Row and column insertion/deletion move cells and, in that same transaction,
+  rewrite formula references, merged-range anchors, chart reference strings,
+  and table ranges. A three-dimensional reference, a pivot table, or a corrupt
+  address fails that frame and writes nothing. Sorting a rectangle is its
+  own frame: rows move by the given permutation, formula text moves with the
+  cell, and a stale observed cell writes nothing. A merge, table, or pivot
+  table that meets the rectangle also writes nothing. Native table create,
+  update, and delete write the same `tables` map, `tableOrder`, and creation
+  claim the browser reads. A stale observed record, an overlapping range, or a
+  repeated name writes nothing and leaves the hash unchanged. Deleting the
+  record leaves the claim, so that ID cannot name a different table. A worksheet
+  cell stays put. Renaming the table or a column, or changing its range,
+  header, or totals row, rewrites structured references in that same
+  transaction: cell formulas, named-range references, chart reference strings,
+  calculated formulas on other tables, and formula metadata. A string literal
+  and an external-workbook reference stay as written. A geometry change, or a
+  table-local reference whose owning cell cannot be proven, writes nothing and
+  leaves the hash unchanged. Deleting a table that a structured reference still
+  names writes nothing and leaves the hash unchanged. Deleting an unreferenced
+  table with a built-in style writes that style onto cells that already exist
+  in the same transaction: header and stripe fills, text color, bold, and a
+  thin border around the table range. Empty positions stay empty. Cells
+  outside the range, formula text, and the creation claim stay put. A `none`
+  style has no appearance to write. A range larger than 100,000 cells writes
+  nothing and leaves the hash unchanged.
+- Two offline spreadsheet edits of different cells, or of different fields of
+  the same cell, converge to one document hash in every delivery order.
+  Delivering one of those updates again leaves the hash unchanged. Exporting
+  that merged replica and reading the worksheet back yields the same number,
+  formula, and cached value. A cell neither edit touched, and a package cell
+  the replica does not rewrite, stay as they were.
 - Treat calculated values as derived once browser and native recalculation are
   deterministic and source formulas remain the only canonical formula state.
-- Add offline/reordered-update property tests plus merged XLSX export/reopen.
 
 Exit criterion: multi-client structural edits converge, recalculation agrees
 across browser and native clients, and XLSX round trips preserve supported plus

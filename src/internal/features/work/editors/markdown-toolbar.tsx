@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import {
   Bold,
@@ -44,6 +45,7 @@ import {
 } from './markdown-source-commands';
 import type { MarkdownViewMode } from './markdown-workspace';
 import { OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,
@@ -71,11 +73,13 @@ type MarkdownInsertDialogState =
       };
     };
 
-const markdownRibbonTabs = [
-  { id: 'home', label: '开始' },
-  { id: 'insert', label: '插入' },
-  { id: 'view', label: '视图' },
-] as const;
+const MARKDOWN_RIBBON_TAB_IDS = ['home', 'insert', 'view'] as const;
+
+const MARKDOWN_RIBBON_TAB_KEYS = {
+  home: 'markdown.ribbon.tab.home',
+  insert: 'markdown.ribbon.tab.insert',
+  view: 'markdown.ribbon.tab.view',
+} as const;
 
 interface MarkdownToolbarShortcut {
   ariaKeyShortcuts: string;
@@ -97,7 +101,7 @@ const markdownToolbarShortcuts = {
   },
   redo: {
     ariaKeyShortcuts: 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
-    label: 'Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y',
+    label: '',
   },
   undo: {
     ariaKeyShortcuts: 'Control+Z Meta+Z',
@@ -140,6 +144,18 @@ export function MarkdownToolbar({
   onSourceUndo: () => boolean;
   onViewModeChange: (mode: MarkdownViewMode) => void;
 }) {
+  const messages = useOfficeMessages();
+  const markdownRibbonTabs = MARKDOWN_RIBBON_TAB_IDS.map((id) => ({
+    id,
+    label: officeMessage(messages, MARKDOWN_RIBBON_TAB_KEYS[id]),
+  }));
+  const resolvedShortcuts = {
+    ...markdownToolbarShortcuts,
+    redo: {
+      ...markdownToolbarShortcuts.redo,
+      label: officeMessage(messages, 'markdown.action.redoTitle'),
+    },
+  };
   const [activeTab, setActiveTab] = useState<MarkdownRibbonTab>('home');
   const [insertDialog, setInsertDialog] =
     useState<MarkdownInsertDialogState | null>(null);
@@ -372,7 +388,7 @@ export function MarkdownToolbar({
   return (
     <>
       <WorkOfficeRibbon
-        ariaLabel="Markdown 功能区"
+        ariaLabel={officeMessage(messages, 'markdown.toolbar.aria')}
         tabs={markdownRibbonTabs}
         defaultTab="home"
         activeTab={activeTab}
@@ -384,10 +400,10 @@ export function MarkdownToolbar({
         panels={{
           home: (
             <>
-              <WorkOfficeRibbonGroup label="撤销">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'markdown.group.undo')}>
                 <MarkdownToolbarButton
-                  label="撤销"
-                  shortcut={markdownToolbarShortcuts.undo}
+                  label={officeMessage(messages, 'markdown.action.undo')}
+                  shortcut={resolvedShortcuts.undo}
                   disabled={!canUndo}
                   onClick={() => {
                     if (usesSharedHistory) onSourceUndo();
@@ -398,8 +414,8 @@ export function MarkdownToolbar({
                   <Undo2 size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="重做"
-                  shortcut={markdownToolbarShortcuts.redo}
+                  label={officeMessage(messages, 'markdown.action.redo')}
+                  shortcut={resolvedShortcuts.redo}
                   disabled={!canRedo}
                   onClick={() => {
                     if (usesSharedHistory) onSourceRedo();
@@ -410,19 +426,19 @@ export function MarkdownToolbar({
                   <Redo2 size={16} />
                 </MarkdownToolbarButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="样式">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'markdown.group.style')}>
                 <OfficeSelect
-                  ariaLabel="段落样式"
+                  ariaLabel={officeMessage(messages, 'markdown.style.aria')}
                   className="markdown-paragraph-style-select"
                   value={paragraphStyle}
                   options={[
-                    { value: 'paragraph', label: '正文' },
-                    { value: 'h1', label: '标题 1' },
-                    { value: 'h2', label: '标题 2' },
-                    { value: 'h3', label: '标题 3' },
-                    { value: 'h4', label: '标题 4' },
-                    { value: 'h5', label: '标题 5' },
-                    { value: 'h6', label: '标题 6' },
+                    { value: 'paragraph', label: officeMessage(messages, 'markdown.style.paragraph') },
+                    { value: 'h1', label: officeMessage(messages, 'markdown.style.h1') },
+                    { value: 'h2', label: officeMessage(messages, 'markdown.style.h2') },
+                    { value: 'h3', label: officeMessage(messages, 'markdown.style.h3') },
+                    { value: 'h4', label: officeMessage(messages, 'markdown.style.h4') },
+                    { value: 'h5', label: officeMessage(messages, 'markdown.style.h5') },
+                    { value: 'h6', label: officeMessage(messages, 'markdown.style.h6') },
                   ]}
                   onValueChange={(value) => {
                     if (value === 'paragraph') {
@@ -448,10 +464,10 @@ export function MarkdownToolbar({
                   }}
                 />
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="文字">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'markdown.group.text')}>
                 <MarkdownToolbarButton
-                  label="加粗"
-                  shortcut={markdownToolbarShortcuts.bold}
+                  label={officeMessage(messages, 'markdown.action.bold')}
+                  shortcut={resolvedShortcuts.bold}
                   active={
                     sourceEditing
                       ? commandIsActive('bold')
@@ -467,8 +483,8 @@ export function MarkdownToolbar({
                   <Bold size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="斜体"
-                  shortcut={markdownToolbarShortcuts.italic}
+                  label={officeMessage(messages, 'markdown.action.italic')}
+                  shortcut={resolvedShortcuts.italic}
                   active={
                     sourceEditing
                       ? commandIsActive('italic')
@@ -484,7 +500,7 @@ export function MarkdownToolbar({
                   <Italic size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="删除线"
+                  label={officeMessage(messages, 'markdown.action.strike')}
                   active={
                     sourceEditing
                       ? commandIsActive('strike')
@@ -500,7 +516,7 @@ export function MarkdownToolbar({
                   <Strikethrough size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="行内代码"
+                  label={officeMessage(messages, 'markdown.action.inlineCode')}
                   active={
                     sourceEditing
                       ? commandIsActive('code')
@@ -516,9 +532,9 @@ export function MarkdownToolbar({
                   <Code2 size={16} />
                 </MarkdownToolbarButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="段落">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'markdown.group.paragraph')}>
                 <MarkdownToolbarButton
-                  label="项目列表"
+                  label={officeMessage(messages, 'markdown.action.bulletList')}
                   active={
                     sourceEditing
                       ? commandIsActive('bullet-list')
@@ -534,7 +550,7 @@ export function MarkdownToolbar({
                   <List size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="编号列表"
+                  label={officeMessage(messages, 'markdown.action.orderedList')}
                   active={
                     sourceEditing
                       ? commandIsActive('ordered-list')
@@ -550,7 +566,7 @@ export function MarkdownToolbar({
                   <ListOrdered size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="任务列表"
+                  label={officeMessage(messages, 'markdown.action.taskList')}
                   active={
                     sourceEditing
                       ? commandIsActive('task-list')
@@ -566,7 +582,7 @@ export function MarkdownToolbar({
                   <ListChecks size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="引用"
+                  label={officeMessage(messages, 'markdown.action.blockquote')}
                   active={
                     sourceEditing
                       ? commandIsActive('blockquote')
@@ -586,18 +602,18 @@ export function MarkdownToolbar({
           ),
           insert: (
             <>
-              <WorkOfficeRibbonGroup label="链接">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'markdown.group.link')}>
                 <MarkdownToolbarButton
-                  label={linkActive ? '编辑链接' : '添加链接'}
+                  label={linkActive ? officeMessage(messages, 'markdown.action.editLink') : officeMessage(messages, 'markdown.action.addLink')}
                   displayLabel
-                  shortcut={markdownToolbarShortcuts.link}
+                  shortcut={resolvedShortcuts.link}
                   active={linkActive}
                   onClick={openLinkDialog}
                 >
                   <Link2 size={19} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="移除链接"
+                  label={officeMessage(messages, 'markdown.action.removeLink')}
                   displayLabel
                   disabled={!linkActive}
                   onClick={removeLink}
@@ -605,16 +621,16 @@ export function MarkdownToolbar({
                   <Unlink size={19} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="插入图片"
+                  label={officeMessage(messages, 'markdown.action.insertImage')}
                   displayLabel
                   onClick={openImageDialog}
                 >
                   <ImageIcon size={19} />
                 </MarkdownToolbarButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label="内容">
+              <WorkOfficeRibbonGroup label={officeMessage(messages, 'markdown.group.content')}>
                 <MarkdownToolbarButton
-                  label="代码块"
+                  label={officeMessage(messages, 'markdown.action.codeBlock')}
                   displayLabel
                   active={
                     sourceEditing
@@ -631,7 +647,7 @@ export function MarkdownToolbar({
                   <Code2 size={19} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="分隔线"
+                  label={officeMessage(messages, 'markdown.action.horizontalRule')}
                   displayLabel
                   onClick={() =>
                     runCommand('horizontal-rule', () => {
@@ -643,7 +659,7 @@ export function MarkdownToolbar({
                   <Minus size={19} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
-                  label="表格"
+                  label={officeMessage(messages, 'markdown.action.table')}
                   displayLabel
                   onClick={() =>
                     runCommand('table', () => {
@@ -662,10 +678,10 @@ export function MarkdownToolbar({
             </>
           ),
           view: (
-            <WorkOfficeRibbonGroup label="编辑方式">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'markdown.group.editMode')}>
               <MarkdownToolbarButton
-                label="可视化编辑"
-                visibleLabel="可视化"
+                label={officeMessage(messages, 'markdown.mode.visual')}
+                visibleLabel={officeMessage(messages, 'markdown.mode.visualShort')}
                 displayLabel
                 active={viewMode === 'visual'}
                 onClick={() => onViewModeChange('visual')}
@@ -673,8 +689,8 @@ export function MarkdownToolbar({
                 <PencilLine size={19} />
               </MarkdownToolbarButton>
               <MarkdownToolbarButton
-                label="源码编辑"
-                visibleLabel="源码"
+                label={officeMessage(messages, 'markdown.mode.source')}
+                visibleLabel={officeMessage(messages, 'markdown.mode.sourceShort')}
                 displayLabel
                 active={viewMode === 'source'}
                 onClick={() => onViewModeChange('source')}
@@ -682,8 +698,8 @@ export function MarkdownToolbar({
                 <Code2 size={19} />
               </MarkdownToolbarButton>
               <MarkdownToolbarButton
-                label="分屏编辑"
-                visibleLabel="分屏"
+                label={officeMessage(messages, 'markdown.mode.split')}
+                visibleLabel={officeMessage(messages, 'markdown.mode.splitShort')}
                 displayLabel
                 active={viewMode === 'split'}
                 onClick={() => onViewModeChange('split')}
@@ -757,7 +773,7 @@ function MarkdownToolbarButton({
       {...props}
       label={label}
       visibleLabel={visibleLabel}
-      title={shortcut ? `${label}（${shortcut.label}）` : label}
+      title={shortcut ? officeMessage(resolveOfficeMessages(), 'markdown.action.shortcutTitle', { label, shortcut: shortcut.label }) : label}
       aria-keyshortcuts={shortcut?.ariaKeyShortcuts}
       active={active}
       displayLabel={displayLabel}

@@ -2,6 +2,11 @@ import { mergeAttributes, Node as TiptapNode } from '@tiptap/core';
 import { Plugin } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../i18n/office-messages';
+import {
   DEFAULT_DOCUMENT_TAB_INTERVAL_PX,
   type DocumentTabAlignment,
   type DocumentTabLeader,
@@ -31,7 +36,10 @@ export const DocumentTab = TiptapNode.create({
         'data-document-tab': 'true',
         class: 'work-document-tab',
         role: 'separator',
-        'aria-label': '制表符',
+        'aria-label': officeMessage(
+          resolveOfficeMessages(),
+          'document.tab.aria',
+        ),
       }),
     ];
   },
@@ -42,7 +50,10 @@ export const DocumentTab = TiptapNode.create({
       dom.className = 'work-document-tab';
       dom.dataset.documentTab = 'true';
       dom.setAttribute('role', 'separator');
-      dom.setAttribute('aria-label', '制表符');
+      dom.setAttribute(
+        'aria-label',
+        officeMessage(resolveOfficeMessages(), 'document.tab.aria'),
+      );
       dom.contentEditable = 'false';
       return {
         dom,
@@ -286,10 +297,21 @@ function roundLayoutValue(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export function documentTabLeaderLabel(leader: DocumentTabLeader): string {
-  if (leader === 'dot') return '点线前导符';
-  if (leader === 'hyphen') return '短横线前导符';
-  if (leader === 'underscore') return '下划线前导符';
-  if (leader === 'middleDot') return '居中点前导符';
-  return '无前导符';
+export function documentTabLeaderLabel(
+  leader: DocumentTabLeader,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
+): string {
+  if (leader === 'dot') {
+    return officeMessage(messages, 'document.tab.leader.dot');
+  }
+  if (leader === 'hyphen') {
+    return officeMessage(messages, 'document.tab.leader.hyphen');
+  }
+  if (leader === 'underscore') {
+    return officeMessage(messages, 'document.tab.leader.underscore');
+  }
+  if (leader === 'middleDot') {
+    return officeMessage(messages, 'document.tab.leader.middleDot');
+  }
+  return officeMessage(messages, 'document.tab.leader.none');
 }

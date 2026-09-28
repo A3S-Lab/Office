@@ -1,4 +1,6 @@
 import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import type {
   WorkDocumentMailMergeFilterOperator,
   WorkDocumentMailMergeFilterRule,
@@ -17,6 +19,7 @@ import {
   type OfficeSelectOption,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentMailMergeRecipientFilterDialogProps {
   source: WorkDocumentMailMergeSource;
@@ -27,20 +30,6 @@ export interface DocumentMailMergeRecipientFilterDialogProps {
   onSubmit: () => void;
 }
 
-const OPERATOR_OPTIONS = [
-  { value: 'equals', label: '等于' },
-  { value: 'notEquals', label: '不等于' },
-  { value: 'contains', label: '包含' },
-  { value: 'notContains', label: '不包含' },
-  { value: 'startsWith', label: '开头是' },
-  { value: 'endsWith', label: '结尾是' },
-  { value: 'isBlank', label: '为空' },
-  { value: 'isNotBlank', label: '不为空' },
-] as const satisfies readonly {
-  value: WorkDocumentMailMergeFilterOperator;
-  label: string;
-}[];
-
 export function DocumentMailMergeRecipientFilterDialog({
   source,
   fieldNames,
@@ -49,6 +38,7 @@ export function DocumentMailMergeRecipientFilterDialog({
   onChange,
   onSubmit,
 }: DocumentMailMergeRecipientFilterDialogProps) {
+  const messages = useOfficeMessages();
   const columns =
     fieldNames && fieldNames.length
       ? [...fieldNames]
@@ -103,8 +93,11 @@ export function DocumentMailMergeRecipientFilterDialog({
 
   return (
     <Dialog
-      title="筛选收件人"
-      description="按字段条件筛选邮件合并收件人。多条规则为并且关系。"
+      title={officeMessage(messages, 'document.mailMerge.filter.title')}
+      description={officeMessage(
+        messages,
+        'document.mailMerge.filter.description',
+      )}
       className="work-document-mail-merge-filter-dialog"
       focusKey="document-mail-merge-filter"
       restoreFocusTarget={restoreFocusTarget}
@@ -112,56 +105,75 @@ export function DocumentMailMergeRecipientFilterDialog({
       footer={
         <>
           <Button tone="quiet" onClick={onCancel}>
-            取消
+            {officeMessage(messages, 'document.mailMerge.filter.cancel')}
           </Button>
           <Button
             tone="quiet"
             onClick={() => updateFilter(null)}
             disabled={!filter.rules.length}
           >
-            清除筛选
+            {officeMessage(messages, 'document.mailMerge.filter.clear')}
           </Button>
           <Button tone="primary" onClick={onSubmit}>
-            确定
+            {officeMessage(messages, 'document.mailMerge.filter.confirm')}
           </Button>
         </>
       }
     >
       <p className="work-document-mail-merge-filter-summary">
-        当前可见 {visibleCount} / {source.records.length} 位收件人（最多{' '}
-        {DOCUMENT_MAIL_MERGE_MAX_FILTER_RULES} 条规则）。
+        {officeMessage(messages, 'document.mailMerge.filter.summary', {
+          visible: String(visibleCount),
+          total: String(source.records.length),
+          max: String(DOCUMENT_MAIL_MERGE_MAX_FILTER_RULES),
+        })}
       </p>
       {columns.length === 0 ? (
         <p className="work-document-mail-merge-filter-empty">
-          当前数据源没有可用字段。
+          {officeMessage(messages, 'document.mailMerge.filter.noFields')}
         </p>
       ) : (
         <div className="work-document-mail-merge-filter-rules">
           {filter.rules.map((rule, index) => {
             const needsValue =
               rule.operator !== 'isBlank' && rule.operator !== 'isNotBlank';
+            const n = String(index + 1);
             return (
               <div
                 key={`mail-merge-filter-rule-${index}`}
                 className="work-document-mail-merge-filter-rule"
               >
                 <div className="work-document-mail-merge-filter-field">
-                  <span>字段</span>
+                  <span>
+                    {officeMessage(messages, 'document.mailMerge.filter.field')}
+                  </span>
                   <OfficeSelect
                     id={`mail-merge-filter-field-${index}`}
-                    ariaLabel={`筛选字段 ${index + 1}`}
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.mailMerge.filter.fieldAria',
+                      { n },
+                    )}
                     value={rule.field}
                     options={fieldOptions}
                     onValueChange={(field) => updateRule(index, { field })}
                   />
                 </div>
                 <div className="work-document-mail-merge-filter-field">
-                  <span>条件</span>
+                  <span>
+                    {officeMessage(
+                      messages,
+                      'document.mailMerge.filter.condition',
+                    )}
+                  </span>
                   <OfficeSelect<WorkDocumentMailMergeFilterOperator>
                     id={`mail-merge-filter-operator-${index}`}
-                    ariaLabel={`筛选条件 ${index + 1}`}
+                    ariaLabel={officeMessage(
+                      messages,
+                      'document.mailMerge.filter.conditionAria',
+                      { n },
+                    )}
                     value={rule.operator}
-                    options={[...OPERATOR_OPTIONS]}
+                    options={operatorOptions(messages)}
                     onValueChange={(operator) =>
                       updateRule(index, { operator })
                     }
@@ -172,10 +184,19 @@ export function DocumentMailMergeRecipientFilterDialog({
                     className="work-document-mail-merge-filter-field"
                     htmlFor={`mail-merge-filter-value-${index}`}
                   >
-                    <span>值</span>
+                    <span>
+                      {officeMessage(
+                        messages,
+                        'document.mailMerge.filter.value',
+                      )}
+                    </span>
                     <OfficeTextField
                       id={`mail-merge-filter-value-${index}`}
-                      aria-label={`筛选值 ${index + 1}`}
+                      aria-label={officeMessage(
+                        messages,
+                        'document.mailMerge.filter.valueAria',
+                        { n },
+                      )}
                       value={rule.value ?? ''}
                       onChange={(event) =>
                         updateRule(index, { value: event.target.value })
@@ -184,16 +205,53 @@ export function DocumentMailMergeRecipientFilterDialog({
                   </label>
                 ) : null}
                 <Button tone="quiet" onClick={() => removeRule(index)}>
-                  删除
+                  {officeMessage(messages, 'document.mailMerge.filter.delete')}
                 </Button>
               </div>
             );
           })}
           <Button tone="quiet" onClick={addRule} disabled={!canAdd}>
-            添加条件
+            {officeMessage(messages, 'document.mailMerge.filter.add')}
           </Button>
         </div>
       )}
     </Dialog>
   );
+}
+
+function operatorOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'equals' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.equals'),
+    },
+    {
+      value: 'notEquals' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.notEquals'),
+    },
+    {
+      value: 'contains' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.contains'),
+    },
+    {
+      value: 'notContains' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.notContains'),
+    },
+    {
+      value: 'startsWith' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.startsWith'),
+    },
+    {
+      value: 'endsWith' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.endsWith'),
+    },
+    {
+      value: 'isBlank' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.isBlank'),
+    },
+    {
+      value: 'isNotBlank' as const,
+      label: officeMessage(messages, 'document.mailMerge.filter.isNotBlank'),
+    },
+  ];
 }

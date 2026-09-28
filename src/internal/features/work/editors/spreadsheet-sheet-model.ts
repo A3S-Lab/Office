@@ -1,3 +1,7 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
@@ -99,9 +103,12 @@ export function duplicateSpreadsheetSheet(
   const source = content.sheets.find((sheet) => sheet.id === sheetId);
   if (!source) return null;
   const identity = nextSpreadsheetSheetIdentity(content.sheets);
+  const catalog = resolveOfficeMessages();
   const copyName = uniqueSpreadsheetSheetName(
     content.sheets,
-    `${source.name} 副本`,
+    officeMessage(catalog, 'spreadsheet.sheet.copySuffix', {
+      name: source.name,
+    }),
   );
   const duplicate: WorkSpreadsheetSheet = {
     ...structuredClone(source),
@@ -144,11 +151,20 @@ export function spreadsheetSheetNameValidationMessage(
   sheetId: string,
   name: string,
 ): string | null {
+  const catalog = resolveOfficeMessages();
   const normalized = name.trim();
-  if (!sheets.some((sheet) => sheet.id === sheetId)) return '找不到该工作表';
-  if (!normalized) return '请输入名称';
-  if (normalized.length > 31) return '名称不能超过 31 个字符';
-  if (/[\\/?*[\]:]/u.test(normalized)) return '名称不能包含 \\ / ? * [ ] :';
+  if (!sheets.some((sheet) => sheet.id === sheetId)) {
+    return officeMessage(catalog, 'spreadsheet.sheet.notFound');
+  }
+  if (!normalized) {
+    return officeMessage(catalog, 'spreadsheet.sheet.nameRequired');
+  }
+  if (normalized.length > 31) {
+    return officeMessage(catalog, 'spreadsheet.sheet.nameTooLong');
+  }
+  if (/[\\/?*[\]:]/u.test(normalized)) {
+    return officeMessage(catalog, 'spreadsheet.sheet.nameInvalidChars');
+  }
   if (
     sheets.some(
       (sheet) =>
@@ -158,7 +174,7 @@ export function spreadsheetSheetNameValidationMessage(
         }) === 0,
     )
   ) {
-    return '名称已存在';
+    return officeMessage(catalog, 'spreadsheet.sheet.nameExists');
   }
   return null;
 }
@@ -293,13 +309,20 @@ function nextSpreadsheetSheetIdentity(sheets: WorkSpreadsheetSheet[]): {
   id: string;
   name: string;
 } {
+  const catalog = resolveOfficeMessages();
   const ids = new Set(sheets.map((sheet) => sheet.id));
   const names = new Set(sheets.map((sheet) => sheet.name));
   let ordinal = sheets.length + 1;
-  while (ids.has(`sheet-${ordinal}`) || names.has(`工作表 ${ordinal}`)) {
+  let candidateName = officeMessage(catalog, 'spreadsheet.sheet.defaultName', {
+    n: String(ordinal),
+  });
+  while (ids.has(`sheet-${ordinal}`) || names.has(candidateName)) {
     ordinal += 1;
+    candidateName = officeMessage(catalog, 'spreadsheet.sheet.defaultName', {
+      n: String(ordinal),
+    });
   }
-  return { id: `sheet-${ordinal}`, name: `工作表 ${ordinal}` };
+  return { id: `sheet-${ordinal}`, name: candidateName };
 }
 
 function uniqueSpreadsheetSheetName(

@@ -1188,13 +1188,32 @@ function orderedSlideParts(
 ): string[] {
   return descendants(presentation, 'sldId')
     .map((node) => {
-      const id = attribute(node, 'r:id') ?? attribute(node, 'id');
-      return id ? relationships.get(id) : undefined;
+      const relationshipId = slideRelationshipId(node, relationships);
+      return relationshipId ? relationships.get(relationshipId) : undefined;
     })
     .filter((relationship): relationship is OoxmlRelationship =>
       Boolean(relationship?.type.endsWith('/slide')),
     )
     .map((relationship) => relationship.target);
+}
+
+/**
+ * Resolve the package relationship id for a presentation `sldId`.
+ *
+ * Real OOXML stores the relationship on `r:id` and a numeric slide identity
+ * on bare `@id`. Synthetic fixtures historically put the relationship id on
+ * bare `@id`; accept that only when it is an actual relationship key — never
+ * treat a numeric slide identity as a relationship id.
+ */
+function slideRelationshipId(
+  node: Element,
+  relationships: Map<string, OoxmlRelationship>,
+): string | undefined {
+  const namespaced = attribute(node, 'r:id');
+  if (namespaced && relationships.has(namespaced)) return namespaced;
+  const bare = attribute(node, 'id');
+  if (bare && relationships.has(bare)) return bare;
+  return undefined;
 }
 
 function readSlideName(document: Document, slideNumber: number): string {

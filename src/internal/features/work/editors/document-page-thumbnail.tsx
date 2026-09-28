@@ -3,6 +3,8 @@ import {
   mountWorkLiveDocumentCapture,
   type WorkLiveDocumentCapturePage,
 } from '../work-document-page-capture';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface WorkDocumentPageThumbnailSource {
   element: HTMLElement;
@@ -58,6 +60,7 @@ export function DocumentPageThumbnail({
   source?: WorkDocumentPageThumbnailSource;
   renderThumbnail?: DocumentPageThumbnailRenderer;
 }) {
+  const messages = useOfficeMessages();
   const rootRef = useRef<HTMLSpanElement>(null);
   const nearViewport = useNearThumbnailViewport(rootRef);
   const captureActive = priority || nearViewport;
@@ -148,7 +151,7 @@ export function DocumentPageThumbnail({
         />
       ) : (
         <span className="work-document-page-thumbnail-fallback">
-          {fallbackText || '空白页'}
+          {fallbackText || officeMessage(messages, 'document.thumbnail.blank')}
         </span>
       )}
     </span>

@@ -1,4 +1,5 @@
 import type { Cell, CellMatrix, Selection } from '@fortune-sheet/core';
+import { officeMessage, resolveOfficeMessages } from '../../i18n/office-locale';
 import {
   buildSpreadsheetPivotOutput,
   defaultPivotValueCaption,
@@ -128,7 +129,10 @@ export function createSpreadsheetPivotFromSelection(
   );
   const bounds = selectionBounds(selection);
   if (!sourceSheet || !bounds || bounds.endRow <= bounds.startRow) {
-    return { content, error: '请选择包含标题行和至少一行数据的连续区域。' };
+    return {
+      content,
+      error: officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.needHeaderData'),
+    };
   }
   if (
     spreadsheetPivotIntersects(sourceSheet, {
@@ -140,7 +144,7 @@ export function createSpreadsheetPivotFromSelection(
   ) {
     return {
       content,
-      error: '不能把现有数据透视表的输出区域作为新的透视表源。',
+      error: officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.sourceIsPivot'),
     };
   }
   const sourceReference = formatSpreadsheetCellRanges([
@@ -166,14 +170,20 @@ export function createSpreadsheetPivotFromSelection(
   };
   const fields = spreadsheetPivotFields(content, draftPivot);
   if (!fields.length) {
-    return { content, error: '透视表源区域的标题必须非空且不重复。' };
+    return {
+      content,
+      error: officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.headersInvalid'),
+    };
   }
   const valueField = fields.find((field) => field.numeric) ?? fields.at(-1)!;
   const dimensions = fields.filter((field) => field.index !== valueField.index);
   const rowField =
     dimensions[0] ?? fields.find((field) => field.index !== valueField.index);
   if (!rowField) {
-    return { content, error: '透视表至少需要一个分类字段和一个值字段。' };
+    return {
+      content,
+      error: officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.needCategoryValue'),
+    };
   }
   const columnField = dimensions.find(
     (field) => field.index !== rowField.index,
@@ -194,7 +204,10 @@ export function createSpreadsheetPivotFromSelection(
   const ownerSheetId = createWorkId('sheet');
   const ownerSheet: WorkSpreadsheetSheet = {
     id: ownerSheetId,
-    name: nextSheetName(content, '数据透视表'),
+    name: nextSheetName(
+      content,
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.sheetBase'),
+    ),
     order: content.sheets.length,
     status: 0,
     row: 40,
@@ -325,7 +338,7 @@ export function spreadsheetPivotValidation(
     : {
         valid: false,
         code: 'pivot.invalid',
-        message: '无法根据当前字段和源数据生成透视表。',
+        message: officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.generateFailed'),
       };
 }
 
@@ -428,14 +441,14 @@ function pivotFailure(
   if (!ownerSheet || !sourceSheet) {
     return invalid(
       'pivot.source-sheet-missing',
-      '找不到透视表的源工作表或目标工作表。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.sheetsMissing'),
     );
   }
   const sourceBounds = singleRange(pivot.sourceReference);
   if (!sourceBounds || sourceBounds.endRow <= sourceBounds.startRow) {
     return invalid(
       'pivot.source-reference-invalid',
-      '源区域必须是包含标题和数据的连续单元格范围。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.sourceRange'),
     );
   }
   const sourceCellCount =
@@ -444,7 +457,9 @@ function pivotFailure(
   if (sourceCellCount > MAXIMUM_SOURCE_CELLS) {
     return invalid(
       'pivot.source-too-large',
-      `源区域不能超过 ${MAXIMUM_SOURCE_CELLS.toLocaleString()} 个单元格。`,
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.sourceTooLarge', {
+        n: MAXIMUM_SOURCE_CELLS.toLocaleString('en-US'),
+      }),
     );
   }
   const anchor = singleRange(pivot.anchor);
@@ -455,12 +470,15 @@ function pivotFailure(
   ) {
     return invalid(
       'pivot.anchor-invalid',
-      '输出位置必须是一个 A1 单元格地址。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputAddress'),
     );
   }
   const fields = spreadsheetPivotFields(content, pivot);
   if (!fields.length) {
-    return invalid('pivot.headers-invalid', '源区域的标题必须非空且不重复。');
+    return invalid(
+      'pivot.headers-invalid',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.headersDup'),
+    );
   }
   const reportFilters = pivot.reportFilters ?? [];
   const reportFilterFields = reportFilters.map((filter) => filter.fieldIndex);
@@ -474,7 +492,7 @@ function pivotFailure(
   ) {
     return invalid(
       'pivot.filters-invalid',
-      '报表筛选字段必须存在、互不重复，且不能同时作为行或列字段。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.filterFields'),
     );
   }
   for (const filter of reportFilters) {
@@ -497,7 +515,7 @@ function pivotFailure(
     ) {
       return invalid(
         'pivot.filter-item-invalid',
-        '报表筛选器选择的项目已不在源数据中。',
+        officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.filterStale'),
       );
     }
   }
@@ -507,10 +525,16 @@ function pivotFailure(
     ...reportFilterFields,
   ];
   if (!pivot.rowFields.length) {
-    return invalid('pivot.rows-empty', '至少选择一个行字段。');
+    return invalid(
+      'pivot.rows-empty',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.rowsEmpty'),
+    );
   }
   if (!pivot.values.length) {
-    return invalid('pivot.values-empty', '至少选择一个值字段。');
+    return invalid(
+      'pivot.values-empty',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.valuesEmpty'),
+    );
   }
   if (
     new Set(dimensionFields).size !== dimensionFields.length ||
@@ -519,7 +543,7 @@ function pivotFailure(
   ) {
     return invalid(
       'pivot.fields-invalid',
-      '透视表包含重复、缺失或超出源区域的字段。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.fieldsInvalid'),
     );
   }
   const output = buildSpreadsheetPivotOutput(
@@ -529,12 +553,17 @@ function pivotFailure(
     pivot,
   );
   if (!output.length || !output[0]?.length) {
-    return invalid('pivot.output-empty', '当前源数据不能生成透视表结果。');
+    return invalid(
+      'pivot.output-empty',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputEmpty'),
+    );
   }
   if (output.length * output[0].length > MAXIMUM_OUTPUT_CELLS) {
     return invalid(
       'pivot.output-too-large',
-      `透视表结果不能超过 ${MAXIMUM_OUTPUT_CELLS.toLocaleString()} 个单元格。`,
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputTooLarge', {
+        n: MAXIMUM_OUTPUT_CELLS.toLocaleString('en-US'),
+      }),
     );
   }
   const outputBounds = {
@@ -549,7 +578,7 @@ function pivotFailure(
   ) {
     return invalid(
       'pivot.output-out-of-bounds',
-      '透视表结果超出 XLSX 工作表边界。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputBounds'),
     );
   }
   if (
@@ -558,7 +587,7 @@ function pivotFailure(
   ) {
     return invalid(
       'pivot.output-overlaps-source',
-      '透视表输出区域与源数据重叠，请改用其他位置或工作表。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputOverlapsSource'),
     );
   }
   if (
@@ -573,7 +602,7 @@ function pivotFailure(
   ) {
     return invalid(
       'pivot.output-overlaps-merge',
-      '透视表输出区域与合并单元格重叠。',
+      officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputOverlapsMerge'),
     );
   }
   const oldOutput = singleRange(pivot.outputReference ?? '');
@@ -583,7 +612,7 @@ function pivotFailure(
     if (otherOutput && rangesOverlap(otherOutput, outputBounds)) {
       return invalid(
         'pivot.output-overlaps-pivot',
-        '透视表输出区域与另一个透视表重叠。',
+        officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputOverlapsPivot'),
       );
     }
   }
@@ -597,7 +626,7 @@ function pivotFailure(
       if (ownerSheet.data?.[row]?.[column]) {
         return invalid(
           'pivot.output-not-empty',
-          '透视表输出区域包含现有内容，请选择空白位置。',
+          officeMessage(resolveOfficeMessages(), 'spreadsheet.pivot.error.outputHasContent'),
         );
       }
     }

@@ -7,22 +7,39 @@ import {
   type WorkDocumentLayoutFont,
 } from '../work-document-fonts';
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import {
   normalizeOfficeFontFamily,
   officeFontFamilies,
+  officeFontFamilyGroupLabel,
   officeFontFamilyLabel,
+  officeFontFamilyLocalizedLabel,
 } from './office-font-families';
 import type { OfficeSelectOption } from './office-select';
 
-export const documentFontFamilyOptions: readonly OfficeSelectOption[] = [
-  { value: 'default', label: '默认字体' },
-  ...officeFontFamilies.map(({ cssFamily, group, label, name }) => ({
-    value: cssFamily,
-    group,
-    label,
-    previewStyle: { fontFamily: cssFamily },
-    searchText: `${name} ${label}`,
-  })),
-];
+export function documentFontFamilyOptions(
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
+): readonly OfficeSelectOption[] {
+  return [
+    {
+      value: 'default',
+      label: officeMessage(messages, 'document.font.family.default'),
+    },
+    ...officeFontFamilies.map((family) => {
+      const label = officeFontFamilyLocalizedLabel(family, messages);
+      return {
+        value: family.cssFamily,
+        group: officeFontFamilyGroupLabel(family.group, messages),
+        label,
+        previewStyle: { fontFamily: family.cssFamily },
+        searchText: `${family.name} ${label}`,
+      };
+    }),
+  ];
+}
 
 export const documentFontSizeOptions = [
   { value: 'default', label: '10.5' },
@@ -43,12 +60,13 @@ const documentFontSizeSteps = [9, 10.5, 12, 14, 16, 18, 22, 24, 36, 48, 72];
 export function documentFontFamilyValue(
   editor: Editor,
   layoutFonts: readonly WorkDocumentLayoutFont[] = [],
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
   const value = editor.getAttributes('textStyle').fontFamily;
   if (typeof value !== 'string' || !value.trim()) return 'default';
   const normalized = normalizeOfficeFontFamily(value);
   return (
-    documentFontFamilyOptionsForLayoutFonts(layoutFonts).find(
+    documentFontFamilyOptionsForLayoutFonts(layoutFonts, messages).find(
       (option) =>
         option.value !== 'default' &&
         normalizeOfficeFontFamily(option.value) === normalized,
@@ -59,8 +77,9 @@ export function documentFontFamilyValue(
 export function documentFontFamilyOptionsForValue(
   value: string,
   layoutFonts: readonly WorkDocumentLayoutFont[] = [],
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ) {
-  const options = documentFontFamilyOptionsForLayoutFonts(layoutFonts);
+  const options = documentFontFamilyOptionsForLayoutFonts(layoutFonts, messages);
   if (value === 'default' || options.some((option) => option.value === value)) {
     return options;
   }
@@ -68,7 +87,7 @@ export function documentFontFamilyOptionsForValue(
     ...options,
     {
       value,
-      group: '文档字体',
+      group: officeMessage(messages, 'document.font.familyGroup.document'),
       label: officeFontFamilyLabel(value),
       previewStyle: { fontFamily: value },
       searchText: value,
@@ -78,16 +97,18 @@ export function documentFontFamilyOptionsForValue(
 
 function documentFontFamilyOptionsForLayoutFonts(
   layoutFonts: readonly WorkDocumentLayoutFont[],
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): readonly OfficeSelectOption[] {
-  if (!layoutFonts.length) return documentFontFamilyOptions;
-  const layoutOptions = documentLayoutFontFamilyOptions(layoutFonts);
+  const base = documentFontFamilyOptions(messages);
+  if (!layoutFonts.length) return base;
+  const layoutOptions = documentLayoutFontFamilyOptions(layoutFonts, messages);
   const layoutFamilies = new Set(
     layoutOptions.map((option) => normalizeOfficeFontFamily(option.value)),
   );
   return [
-    documentFontFamilyOptions[0] as OfficeSelectOption,
+    base[0] as OfficeSelectOption,
     ...layoutOptions,
-    ...documentFontFamilyOptions
+    ...base
       .slice(1)
       .filter(
         (option) =>
@@ -96,28 +117,36 @@ function documentFontFamilyOptionsForLayoutFonts(
   ];
 }
 
-const bundledDocumentFontLabels = new Map<string, string>([
-  [OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_ID, 'Noto Sans'],
-  [OFFICE_DOCUMENT_LAYOUT_FONT_ID, '思源黑体'],
-  [OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_ID, 'Noto Naskh Arabic'],
-  [OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_ID, 'Noto Sans Hebrew'],
-]);
-
 function documentLayoutFontFamilyOptions(
   layoutFonts: readonly WorkDocumentLayoutFont[],
+  messages: OfficeMessageCatalog,
 ): OfficeSelectOption[] {
   const families = new Set<string>();
   return layoutFonts.flatMap((font) => {
     const normalized = normalizeOfficeFontFamily(font.family);
     if (!normalized || families.has(normalized)) return [];
     families.add(normalized);
-    const bundledLabel = bundledDocumentFontLabels.get(font.id);
+    const bundledLabel =
+      font.id === OFFICE_DOCUMENT_LAYOUT_FONT_ID
+        ? officeMessage(messages, 'document.font.family.sourceHanSans')
+        : font.id === OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_ID
+          ? 'Noto Sans'
+          : font.id === OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_ID
+            ? 'Noto Naskh Arabic'
+            : font.id === OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_ID
+              ? 'Noto Sans Hebrew'
+              : null;
     const value = cssFontFamilyValue(font.family);
     const label = bundledLabel ?? font.family;
     return [
       {
         value,
-        group: bundledLabel ? '内置字体' : '项目字体',
+        group: officeMessage(
+          messages,
+          bundledLabel
+            ? 'document.font.familyGroup.bundled'
+            : 'document.font.familyGroup.project',
+        ),
         label,
         previewStyle: { fontFamily: value },
         searchText: `${font.family} ${label}`,

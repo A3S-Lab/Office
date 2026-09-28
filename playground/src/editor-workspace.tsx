@@ -72,8 +72,14 @@ import { SPREADSHEET_DATE_TIME_FIXTURE } from './spreadsheet-date-time-fixture';
 import { SPREADSHEET_GRADIENT_FILL_FIXTURE } from './spreadsheet-gradient-fill-fixture';
 import { SPREADSHEET_PATTERN_FILL_FIXTURE } from './spreadsheet-pattern-fill-fixture';
 import { SPREADSHEET_RICH_TEXT_FIXTURE } from './spreadsheet-rich-text-fixture';
+import {
+  resolvePlaygroundLocale,
+  resolvePlaygroundVirtualGrid,
+} from './playground-locale';
 import { A3STestBoundary } from './testkit';
 
+const playgroundLocale = resolvePlaygroundLocale();
+const playgroundVirtualGrid = resolvePlaygroundVirtualGrid();
 const assistantMinimumWidth = 340;
 const assistantMaximumWidth = 680;
 const spreadsheetSortCustomListStore = createSpreadsheetSortCustomListStore();
@@ -831,9 +837,11 @@ export function EditorWorkspace({
                   artifactId={liveCaretFixture.collaboration.artifactId}
                   collaboration={liveCaretFixture.collaboration}
                   content={liveCaretFixture.content}
+                  locale={playgroundLocale}
                   onChange={liveCaretFixture.updateContent}
                   preview={false}
                   saveStatus="实时插入已同步"
+                  theme="light"
                 />
               </OfficeEditorTestBoundary>
             </>
@@ -854,6 +862,7 @@ export function EditorWorkspace({
                   collaboration={collaborationPresenceFixture?.collaboration}
                   content={artifact.content}
                   getSelectionMenuItems={getDocumentSelectionMenuItems}
+                  locale={playgroundLocale}
                   onAgentRequest={handleAgentRequest}
                   onChange={(content: DocumentContent) => onChange(content)}
                   onReviewConflict={(event) =>
@@ -905,6 +914,7 @@ export function EditorWorkspace({
                       artifactId={documentSuggestionFixture.artifactId}
                       collaboration={documentSuggestionFixture.suggester}
                       content={documentSuggestionFixture.content}
+                      locale={playgroundLocale}
                       onChange={documentSuggestionFixture.updateContent}
                       preview={false}
                       saveStatus="建议已同步"
@@ -940,6 +950,7 @@ export function EditorWorkspace({
                       artifactId={documentSuggestionFixture.artifactId}
                       collaboration={documentSuggestionFixture.editor}
                       content={documentSuggestionFixture.content}
+                      locale={playgroundLocale}
                       onChange={documentSuggestionFixture.updateContent}
                       onReviewConflict={(event) =>
                         onNotice(
@@ -969,6 +980,7 @@ export function EditorWorkspace({
             >
               <MarkdownEditor
                 content={artifact.content}
+                locale={playgroundLocale}
                 getSelectionMenuItems={getMarkdownSelectionMenuItems}
                 onChange={(content: MarkdownContent) => onChange(content)}
                 preview={preview}
@@ -989,12 +1001,14 @@ export function EditorWorkspace({
                 <SpreadsheetEditor
                   collaboration={spreadsheetCollaborationFixture?.collaboration}
                   content={artifact.content}
+                  locale={playgroundLocale}
                   onAgentRequest={handleAgentRequest}
                   onChange={(content: SpreadsheetContent) => onChange(content)}
                   preview={preview}
                   saveStatus="本次会话已保存"
                   sortCustomListStore={spreadsheetSortCustomListStore}
                   theme="light"
+                  virtualGrid={playgroundVirtualGrid}
                 />
               </OfficeEditorTestBoundary>
             )}
@@ -1017,6 +1031,7 @@ export function EditorWorkspace({
                     presentationCollaborationFixture?.collaboration
                   }
                   content={artifact.content}
+                  locale={playgroundLocale}
                   onAgentRequest={handleAgentRequest}
                   onChange={(content: PresentationContent) => onChange(content)}
                   preview={preview}
@@ -1045,6 +1060,7 @@ export function EditorWorkspace({
                     `${artifact.title.toLocaleLowerCase()}.pdf`
                   }
                   loadSource={loadPdf}
+                  locale={playgroundLocale}
                   onSave={savePdf}
                   sourceKey={`${artifact.id}:${artifact.revision}`}
                   theme="light"

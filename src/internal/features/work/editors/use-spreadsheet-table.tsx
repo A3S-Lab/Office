@@ -16,6 +16,7 @@ import {
   spreadsheetTableRangeFromText,
 } from './spreadsheet-table';
 import { SpreadsheetTableDialog } from './spreadsheet-table-dialog';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 
 export interface SpreadsheetTableSelectionState {
   selection: Selection;
@@ -37,6 +38,7 @@ export function useSpreadsheetTable({
   getLiveSelection: () => Selection | undefined;
   preview: boolean;
 }) {
+  const messages = resolveOfficeMessages();
   const [source, setSource] = useState<SpreadsheetTableDialogSource | null>(
     null,
   );
@@ -62,7 +64,7 @@ export function useSpreadsheetTable({
         target,
       );
       if (!nextSource) {
-        showToast('请选择包含标题和至少一行数据的连续、未合并区域。', 'error');
+        showToast(officeMessage(messages, 'spreadsheet.table.createRangeHint'), 'error');
         return false;
       }
       const grid = getGridFocusTarget();
@@ -143,7 +145,7 @@ export function useSpreadsheetTable({
                 contentRef.current,
                 source,
                 value,
-              ) ?? '无法创建表格。',
+              ) ?? officeMessage(messages, 'spreadsheet.table.createFailed'),
               'error',
             );
           }
@@ -164,7 +166,7 @@ function spreadsheetTableValidationMessage(
   value: SpreadsheetTableDialogValue,
 ): string | null {
   const range = spreadsheetTableRangeFromText(value.rangeReference);
-  if (!range) return '请输入一个连续区域。';
+  if (!range) return officeMessage(resolveOfficeMessages(), 'spreadsheet.table.rangeRequired');
   return spreadsheetTableFailureMessage(content, {
     headerRow: value.headerRow,
     name: source.name,

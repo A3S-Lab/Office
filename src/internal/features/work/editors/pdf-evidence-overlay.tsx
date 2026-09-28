@@ -10,6 +10,7 @@ import {
   type ZoomCapability,
 } from '@embedpdf/react-pdf-viewer';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   PDF_EVIDENCE_COORDINATE_BASIS,
   type PdfEvidenceBounds,
@@ -17,6 +18,7 @@ import {
   type PdfEvidencePage,
   type PdfEvidenceRegion,
 } from './pdf-evidence-contract';
+import { useOfficeMessages } from './office-messages-context';
 
 export {
   PDF_EVIDENCE_COORDINATE_BASIS,
@@ -61,6 +63,7 @@ export function PdfEvidenceOverlayLayer({
   selectedEvidenceRegionId,
   sourceKey,
 }: PdfEvidenceOverlayLayerProps) {
+  const messages = useOfficeMessages();
   const [runtime, setRuntime] = useState<EvidenceRuntime | null>(null);
   const [pageState, setPageState] = useState<PageLoadState>({ status: 'idle' });
   const [viewportRevision, setViewportRevision] = useState(0);
@@ -194,21 +197,21 @@ export function PdfEvidenceOverlayLayer({
         role="status"
         title={pageState.message}
       >
-        当前页定位不可用
+        {officeMessage(messages, 'pdf.evidence.unavailable')}
       </div>
     );
   }
   if (pageState.status === 'ready' && !pageState.page) {
     return (
       <div className="work-pdf-evidence-status" role="status">
-        当前页暂无安全定位
+        {officeMessage(messages, 'pdf.evidence.empty')}
       </div>
     );
   }
   if (!page || regions.length === 0) return null;
 
   return (
-    <fieldset className="work-pdf-evidence-overlay" aria-label="解析证据定位">
+    <fieldset className="work-pdf-evidence-overlay" aria-label={officeMessage(messages, 'pdf.evidence.overlayAria')}>
       {regions.map(({ region, style }) => {
         const selected = region.id === selectedEvidenceRegionId;
         return (
@@ -218,7 +221,7 @@ export function PdfEvidenceOverlayLayer({
             className="work-pdf-evidence-region"
             data-selected={selected || undefined}
             style={style}
-            aria-label={region.label ?? `解析区域 ${region.id}`}
+            aria-label={region.label ?? officeMessage(messages, 'pdf.evidence.regionAria', { id: region.id })}
             aria-pressed={selected}
             title={region.label}
             onClick={() => onEvidenceRegionSelect?.(region)}

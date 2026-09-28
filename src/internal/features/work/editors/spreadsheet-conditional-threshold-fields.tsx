@@ -1,9 +1,11 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import type { SpreadsheetConditionalThresholdType } from '../work-spreadsheet-conditional-values';
 import {
   OfficeCheckbox,
   OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import type { SpreadsheetConditionalThresholdDraft } from './spreadsheet-conditional-format-model';
 
 interface SpreadsheetConditionalThresholdFieldsProps {
@@ -24,25 +26,67 @@ export function SpreadsheetConditionalThresholdFields({
   showEquality = false,
   onChange,
 }: SpreadsheetConditionalThresholdFieldsProps) {
+  const messages = useOfficeMessages();
   return (
     <fieldset className="work-spreadsheet-conditional-thresholds">
-      <legend>{label}阈值</legend>
+      <legend>
+        {officeMessage(messages, 'spreadsheet.cf.threshold.legend', { label })}
+      </legend>
       {thresholds.slice(startIndex).map((threshold, offset) => {
         const index = startIndex + offset;
+        const indexLabel = String(index + 1);
         const valueRequired =
           threshold.type !== 'min' && threshold.type !== 'max';
         return (
           <div key={index}>
-            <span>第 {index + 1} 级起点</span>
+            <span>
+              {officeMessage(messages, 'spreadsheet.cf.threshold.start', {
+                index: indexLabel,
+              })}
+            </span>
             <OfficeSelect
-              ariaLabel={`${label}阈值 ${index + 1} 类型`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.cf.threshold.typeAria',
+                { label, index: indexLabel },
+              )}
               value={threshold.type}
               options={[
-                { value: 'percent', label: '百分比' },
-                { value: 'percentile', label: '百分位' },
-                { value: 'num', label: '数值' },
-                { value: 'min', label: '最小值' },
-                { value: 'max', label: '最大值' },
+                {
+                  value: 'percent',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.cf.threshold.type.percent',
+                  ),
+                },
+                {
+                  value: 'percentile',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.cf.threshold.type.percentile',
+                  ),
+                },
+                {
+                  value: 'num',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.cf.threshold.type.num',
+                  ),
+                },
+                {
+                  value: 'min',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.cf.threshold.type.min',
+                  ),
+                },
+                {
+                  value: 'max',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.cf.threshold.type.max',
+                  ),
+                },
               ]}
               onValueChange={(type) =>
                 onChange(index, {
@@ -51,7 +95,11 @@ export function SpreadsheetConditionalThresholdFields({
               }
             />
             <OfficeNumberField
-              ariaLabel={`${label}阈值 ${index + 1}`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.cf.threshold.valueAria',
+                { label, index: indexLabel },
+              )}
               value={valueRequired ? threshold.value : ''}
               disabled={!valueRequired}
               onValueChange={(value) => onChange(index, { value })}
@@ -59,11 +107,18 @@ export function SpreadsheetConditionalThresholdFields({
             {showEquality ? (
               <OfficeCheckbox
                 className="threshold-gte"
-                ariaLabel={`${label}阈值 ${index + 1} 包含等于`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.cf.threshold.includeEqualAria',
+                  { label, index: indexLabel },
+                )}
                 checked={threshold.gte}
                 onCheckedChange={(gte) => onChange(index, { gte })}
               >
-                包含等于
+                {officeMessage(
+                  messages,
+                  'spreadsheet.cf.threshold.includeEqual',
+                )}
               </OfficeCheckbox>
             ) : (
               <span />

@@ -1,4 +1,9 @@
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import {
   DOCUMENT_RUN_BORDER_STYLES,
   type DocumentRunBorder,
   type DocumentRunBorderStyle,
@@ -73,6 +78,7 @@ export function createDocumentFontDialogRunBorderDraft(
 
 export function documentFontDialogRunBorderDraftError(
   draft: DocumentFontDialogRunBorderDraft,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string | null {
   if (draft.runBorderMode !== 'value') return null;
   if (
@@ -80,19 +86,19 @@ export function documentFontDialogRunBorderDraftError(
     draft.runBorderStyle === 'nil' ||
     draft.runBorderStyle === 'none'
   ) {
-    return '请选择有效的字符边框线型。';
+    return officeMessage(messages, 'document.font.error.borderStyle');
   }
   if (
     draft.runBorderColor !== 'auto' &&
     !/^#[0-9a-f]{6}$/i.test(draft.runBorderColor)
   ) {
-    return '请选择有效的字符边框颜色。';
+    return officeMessage(messages, 'document.font.error.borderColor');
   }
   if (runBorderSizeFromDraft(draft) === null) {
-    return '请输入 0.25 至 12 磅、以 0.125 磅递增的字符边框宽度。';
+    return officeMessage(messages, 'document.font.error.borderWidth');
   }
   if (runBorderSpaceFromDraft(draft) === null) {
-    return '请输入 0 至 31 磅的整数字符边框间距。';
+    return officeMessage(messages, 'document.font.error.borderSpacing');
   }
   return null;
 }

@@ -1,5 +1,6 @@
 import type { MutableRefObject } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import { showToast } from '../../../state/app-state';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
@@ -53,6 +54,7 @@ export function useSpreadsheetClipboard({
   fallbackFocusTarget: () => HTMLElement | null;
   getSelection: () => SpreadsheetClipboardSelectionSource | null;
 }) {
+  const messages = resolveOfficeMessages();
   const [dialogSource, setDialogSource] =
     useState<SpreadsheetPasteSpecialDialogSource | null>(null);
   useEffect(() => {
@@ -80,7 +82,7 @@ export function useSpreadsheetClipboard({
       else clearRichSpreadsheetClipboard();
       void copySpreadsheetSelection(clipboard, source.selection.plainText, cut);
       if (cut && !clearSelection()) {
-        showToast('选区已复制，但无法清除原内容。', 'error');
+        showToast(officeMessage(messages, 'spreadsheet.clipboard.copyClearFailed'), 'error');
         return false;
       }
       return true;
@@ -112,11 +114,11 @@ export function useSpreadsheetClipboard({
       }
       const result = applySpreadsheetPasteSpecial(contentRef.current, request);
       if (!result || !commit(result.content)) {
-        if (notify) showToast('当前选区无法粘贴这些内容。', 'error');
+        if (notify) showToast(officeMessage(messages, 'spreadsheet.clipboard.pasteInvalid'), 'error');
         return false;
       }
       contentRef.current = result.content;
-      if (notify) showToast('已粘贴到当前选区', 'success');
+      if (notify) showToast(officeMessage(messages, 'spreadsheet.clipboard.pasted'), 'success');
       return true;
     },
     [commit, contentRef],
@@ -132,7 +134,7 @@ export function useSpreadsheetClipboard({
       const target = getSelection();
       const snapshot = spreadsheetClipboardSnapshotForText(plainText);
       if (!target || !snapshot) {
-        if (notify) showToast('剪贴板中没有可粘贴的表格内容。', 'error');
+        if (notify) showToast(officeMessage(messages, 'spreadsheet.clipboard.empty'), 'error');
         return false;
       }
       return applySnapshot(
@@ -156,7 +158,7 @@ export function useSpreadsheetClipboard({
         .then((plainText) => {
           const snapshot = spreadsheetClipboardSnapshotForText(plainText);
           if (!snapshot) {
-            showToast('剪贴板中没有可粘贴的表格内容。', 'error');
+            showToast(officeMessage(messages, 'spreadsheet.clipboard.empty'), 'error');
             return;
           }
           applySnapshot(
@@ -167,7 +169,7 @@ export function useSpreadsheetClipboard({
           );
         })
         .catch(() =>
-          showToast('无法读取剪贴板，请使用系统粘贴快捷键。', 'error'),
+          showToast(officeMessage(messages, 'spreadsheet.clipboard.readFailed'), 'error'),
         );
       return true;
     },
@@ -188,7 +190,7 @@ export function useSpreadsheetClipboard({
       .then((plainText) => {
         const snapshot = spreadsheetClipboardSnapshotForText(plainText);
         if (!snapshot) {
-          showToast('剪贴板中没有可粘贴的表格内容。', 'error');
+          showToast(officeMessage(messages, 'spreadsheet.clipboard.empty'), 'error');
           return;
         }
         setDialogSource({
@@ -199,7 +201,7 @@ export function useSpreadsheetClipboard({
         });
       })
       .catch(() =>
-        showToast('无法读取剪贴板，请使用系统粘贴快捷键。', 'error'),
+        showToast(officeMessage(messages, 'spreadsheet.clipboard.readFailed'), 'error'),
       );
     return true;
   }, [clipboard, editable, fallbackFocusTarget, getSelection]);
@@ -222,7 +224,7 @@ export function useSpreadsheetClipboard({
 
   const validateDialog = useCallback(
     (options: SpreadsheetPasteSpecialOptions): string | null => {
-      if (!dialogSource) return '选择性粘贴对话框已关闭。';
+      if (!dialogSource) return officeMessage(messages, 'spreadsheet.clipboard.pasteSpecialClosed');
       return spreadsheetPasteSpecialValidationError(contentRef.current, {
         snapshot: dialogSource.snapshot,
         targetSheetId: dialogSource.targetSheetId,

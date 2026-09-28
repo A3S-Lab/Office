@@ -22,6 +22,7 @@ import {
   plainXlsxRangeExtent,
   type PlainXlsxCellChunk,
 } from './work-xlsx-plain-fast-path';
+import { createXlsxDenseWorksheet, xlsxDenseRows } from './work-xlsx-worksheet';
 
 const SPREADSHEET_PACKAGE_SCAN_WORKER_TIMEOUT_MS = 120_000;
 const MAX_XLSX_COLUMN_COUNT = 16_384;
@@ -126,7 +127,9 @@ export function scanSpreadsheetPackageInWorker(
         }
         fastWorkbook = {
           ...response.workbook,
-          Sheets: Object.fromEntries(sheetNames.map((name) => [name, []])),
+          Sheets: Object.fromEntries(
+            sheetNames.map((name) => [name, createXlsxDenseWorksheet()]),
+          ),
         } as WorkBook;
         pendingPlainWorksheets = Object.fromEntries(
           sheetNames.map((name) => [
@@ -195,7 +198,8 @@ export function scanSpreadsheetPackageInWorker(
         const worksheet = fastWorkbook?.Sheets[response.name];
         const pending = pendingPlainWorksheets?.[response.name];
         if (
-          !Array.isArray(worksheet) ||
+          !worksheet ||
+          !xlsxDenseRows(worksheet) ||
           response.dense !== true ||
           !pending ||
           pending.expectedColumnCount !== response.columnCount ||
@@ -275,7 +279,7 @@ function completePlainWorksheets(
     const worksheet = workbook.Sheets[name];
     const candidate = pending[name];
     if (
-      !Array.isArray(worksheet) ||
+      !xlsxDenseRows(worksheet) ||
       typeof (worksheet as unknown as Record<string, unknown>)['!ref'] !==
         'string' ||
       !candidate ||

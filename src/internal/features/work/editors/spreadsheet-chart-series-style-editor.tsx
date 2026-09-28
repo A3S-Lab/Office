@@ -1,3 +1,4 @@
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   defaultWorkSpreadsheetChartSeriesStyle,
   normalizeWorkSpreadsheetChartSeriesStyle,
@@ -8,6 +9,7 @@ import type {
   WorkSpreadsheetChartMarkerSymbol,
   WorkSpreadsheetChartSeriesStyle,
 } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import {
   CommittedOfficeNumberField,
   OfficeCheckbox,
@@ -29,6 +31,8 @@ export function SpreadsheetChartSeriesStyleEditor({
   value,
   onChange,
 }: SpreadsheetChartSeriesStyleEditorProps) {
+  const messages = useOfficeMessages();
+  const n = String(seriesNumber);
   const defaults = seriesStyleDefaults(seriesNumber - 1, supportsMarkers);
   const style = normalizeWorkSpreadsheetChartSeriesStyle(value) ?? defaults;
   const marker =
@@ -41,30 +45,56 @@ export function SpreadsheetChartSeriesStyleEditor({
   return (
     <section
       className="work-spreadsheet-chart-series-style"
-      aria-label={`系列 ${seriesNumber} 外观设置`}
+      aria-label={officeMessage(
+        messages,
+        'spreadsheet.chart.seriesStyle.settingsAria',
+        { n },
+      )}
     >
       <OfficeCheckbox
         className="check enable-series-style"
-        ariaLabel={`系列 ${seriesNumber} 使用自定义外观`}
+        ariaLabel={officeMessage(
+          messages,
+          'spreadsheet.chart.seriesStyle.enableAria',
+          { n },
+        )}
         checked={Boolean(value)}
         onCheckedChange={(checked) => onChange(checked ? defaults : undefined)}
       >
-        自定义系列外观
+        {officeMessage(messages, 'spreadsheet.chart.seriesStyle.enable')}
       </OfficeCheckbox>
-      {value && (
+      {value ? (
         <div>
           <div className="work-office-field">
-            <span>填充颜色</span>
+            <span>
+              {officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.fillColor',
+              )}
+            </span>
             <OfficeColorPicker
-              ariaLabel={`系列 ${seriesNumber} 填充颜色`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.fillColorAria',
+                { n },
+              )}
               value={style.fillColor ?? '#4F6BED'}
               onValueChange={(fillColor) => update({ fillColor })}
             />
           </div>
           <div className="work-office-field">
-            <span>填充透明度（%）</span>
+            <span>
+              {officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.fillTransparency',
+              )}
+            </span>
             <CommittedOfficeNumberField
-              ariaLabel={`系列 ${seriesNumber} 填充透明度`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.fillTransparencyAria',
+                { n },
+              )}
               min={0}
               max={100}
               step={1}
@@ -80,17 +110,35 @@ export function SpreadsheetChartSeriesStyleEditor({
             />
           </div>
           <div className="work-office-field">
-            <span>线条颜色</span>
+            <span>
+              {officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.lineColor',
+              )}
+            </span>
             <OfficeColorPicker
-              ariaLabel={`系列 ${seriesNumber} 线条颜色`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.lineColorAria',
+                { n },
+              )}
               value={style.lineColor ?? '#4F6BED'}
               onValueChange={(lineColor) => update({ lineColor })}
             />
           </div>
           <div className="work-office-field">
-            <span>线条宽度（磅）</span>
+            <span>
+              {officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.lineWidth',
+              )}
+            </span>
             <CommittedOfficeNumberField
-              ariaLabel={`系列 ${seriesNumber} 线条宽度`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.lineWidthAria',
+                { n },
+              )}
               min={0.25}
               max={20}
               step={0.25}
@@ -106,37 +154,124 @@ export function SpreadsheetChartSeriesStyleEditor({
             />
           </div>
           <div className="work-office-field">
-            <span>线条虚线</span>
+            <span>
+              {officeMessage(messages, 'spreadsheet.chart.seriesStyle.lineDash')}
+            </span>
             <OfficeSelect
-              ariaLabel={`系列 ${seriesNumber} 线条虚线`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.seriesStyle.lineDashAria',
+                { n },
+              )}
               value={style.lineDash ?? 'solid'}
               options={[
-                { value: 'solid', label: '实线' },
-                { value: 'dash', label: '虚线' },
-                { value: 'dot', label: '点线' },
-                { value: 'dashDot', label: '点划线' },
+                {
+                  value: 'solid',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.lineDash.solid',
+                  ),
+                },
+                {
+                  value: 'dash',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.lineDash.dash',
+                  ),
+                },
+                {
+                  value: 'dot',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.lineDash.dot',
+                  ),
+                },
+                {
+                  value: 'dashDot',
+                  label: officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.lineDash.dashDot',
+                  ),
+                },
               ]}
               onValueChange={(lineDash) =>
                 update({ lineDash: lineDash as WorkSpreadsheetChartLineDash })
               }
             />
           </div>
-          {supportsMarkers && (
+          {supportsMarkers ? (
             <>
               <div className="work-office-field">
-                <span>数据标记符号</span>
+                <span>
+                  {officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerSymbol',
+                  )}
+                </span>
                 <OfficeSelect
-                  ariaLabel={`系列 ${seriesNumber} 数据标记符号`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerSymbolAria',
+                    { n },
+                  )}
                   value={marker.symbol ?? 'circle'}
                   options={[
-                    { value: 'none', label: '无' },
-                    { value: 'circle', label: '圆形' },
-                    { value: 'square', label: '方形' },
-                    { value: 'diamond', label: '菱形' },
-                    { value: 'triangle', label: '三角形' },
-                    { value: 'plus', label: '加号' },
-                    { value: 'x', label: '叉号' },
-                    { value: 'star', label: '星形' },
+                    {
+                      value: 'none',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.none',
+                      ),
+                    },
+                    {
+                      value: 'circle',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.circle',
+                      ),
+                    },
+                    {
+                      value: 'square',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.square',
+                      ),
+                    },
+                    {
+                      value: 'diamond',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.diamond',
+                      ),
+                    },
+                    {
+                      value: 'triangle',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.triangle',
+                      ),
+                    },
+                    {
+                      value: 'plus',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.plus',
+                      ),
+                    },
+                    {
+                      value: 'x',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.x',
+                      ),
+                    },
+                    {
+                      value: 'star',
+                      label: officeMessage(
+                        messages,
+                        'spreadsheet.chart.seriesStyle.marker.star',
+                      ),
+                    },
                   ]}
                   onValueChange={(symbol) =>
                     updateMarker({
@@ -146,9 +281,18 @@ export function SpreadsheetChartSeriesStyleEditor({
                 />
               </div>
               <div className="work-office-field">
-                <span>数据标记大小（磅）</span>
+                <span>
+                  {officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerSize',
+                  )}
+                </span>
                 <CommittedOfficeNumberField
-                  ariaLabel={`系列 ${seriesNumber} 数据标记大小`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerSizeAria',
+                    { n },
+                  )}
                   min={2}
                   max={72}
                   step={1}
@@ -164,25 +308,43 @@ export function SpreadsheetChartSeriesStyleEditor({
                 />
               </div>
               <div className="work-office-field">
-                <span>数据标记填充</span>
+                <span>
+                  {officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerFill',
+                  )}
+                </span>
                 <OfficeColorPicker
-                  ariaLabel={`系列 ${seriesNumber} 数据标记填充颜色`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerFillAria',
+                    { n },
+                  )}
                   value={marker.fillColor ?? '#FFFFFF'}
                   onValueChange={(fillColor) => updateMarker({ fillColor })}
                 />
               </div>
               <div className="work-office-field">
-                <span>数据标记轮廓</span>
+                <span>
+                  {officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerLine',
+                  )}
+                </span>
                 <OfficeColorPicker
-                  ariaLabel={`系列 ${seriesNumber} 数据标记轮廓颜色`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.seriesStyle.markerLineAria',
+                    { n },
+                  )}
                   value={marker.lineColor ?? style.lineColor ?? '#4F6BED'}
                   onValueChange={(lineColor) => updateMarker({ lineColor })}
                 />
               </div>
             </>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

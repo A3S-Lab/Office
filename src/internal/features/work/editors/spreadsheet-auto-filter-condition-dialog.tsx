@@ -1,4 +1,5 @@
 import { type FormEvent, useId, useMemo, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, Dialog, Field } from '../../../design-system/primitives';
 import type {
   WorkSpreadsheetCustomFilterCondition,
@@ -8,7 +9,7 @@ import { OfficeSelect, type OfficeSelectOption } from './office-controls';
 import {
   AVERAGE_CONDITIONS,
   BLANK_CONDITIONS,
-  CONDITION_LABELS,
+  spreadsheetAutoFilterConditionLabel,
   DATE_CONDITIONS,
   NUMBER_COMPARISON_CONDITIONS,
   NUMBER_CONDITIONS,
@@ -23,6 +24,7 @@ import {
   type SpreadsheetAutoFilterConditionType,
   WILDCARD_CONDITIONS,
 } from './spreadsheet-auto-filter-condition-dialog-model';
+import { useOfficeMessages } from './office-messages-context';
 
 export type { SpreadsheetAutoFilterConditionType } from './spreadsheet-auto-filter-condition-dialog-model';
 
@@ -48,6 +50,7 @@ export function SpreadsheetAutoFilterConditionDialog({
   onClear: () => boolean;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [draft, setDraft] = useState(() =>
     spreadsheetAutoFilterConditionDraft(
       source.criteria,
@@ -79,13 +82,13 @@ export function SpreadsheetAutoFilterConditionDialog({
   );
   const valueLabel = rankValue
     ? rankPercent
-      ? '百分比'
-      : '项目数'
+      ? officeMessage(messages, 'spreadsheet.autoFilter.rank.percent')
+      : officeMessage(messages, 'spreadsheet.autoFilter.rank.items')
     : wildcardValue
-      ? '通配符表达式'
+      ? officeMessage(messages, 'spreadsheet.autoFilter.field.wildcard')
       : needsUpperValue
-        ? '下限'
-        : '筛选值';
+        ? officeMessage(messages, 'spreadsheet.autoFilter.field.lower')
+        : officeMessage(messages, 'spreadsheet.autoFilter.field.value');
   const numericValue = NUMBER_CONDITIONS.includes(draft.type) || rankValue;
   const showRankConditions = source.numeric || rankValue;
   const showAverageConditions =
@@ -107,23 +110,23 @@ export function SpreadsheetAutoFilterConditionDialog({
     for (const type of TEXT_CONDITIONS) {
       options.push({
         value: type,
-        label: CONDITION_LABELS[type],
-        group: '文本与值',
+        label: spreadsheetAutoFilterConditionLabel(type),
+        group: officeMessage(messages, 'spreadsheet.autoFilter.group.textValue'),
       });
     }
     for (const type of NUMBER_CONDITIONS) {
       options.push({
         value: type,
-        label: CONDITION_LABELS[type],
-        group: '数字',
+        label: spreadsheetAutoFilterConditionLabel(type),
+        group: officeMessage(messages, 'spreadsheet.autoFilter.group.number'),
       });
     }
     if (showRankConditions) {
       for (const type of RANK_CONDITIONS) {
         options.push({
           value: type,
-          label: CONDITION_LABELS[type],
-          group: '排名',
+          label: spreadsheetAutoFilterConditionLabel(type),
+          group: officeMessage(messages, 'spreadsheet.autoFilter.group.rank'),
         });
       }
     }
@@ -131,8 +134,8 @@ export function SpreadsheetAutoFilterConditionDialog({
       for (const type of AVERAGE_CONDITIONS) {
         options.push({
           value: type,
-          label: CONDITION_LABELS[type],
-          group: '平均值',
+          label: spreadsheetAutoFilterConditionLabel(type),
+          group: officeMessage(messages, 'spreadsheet.autoFilter.group.average'),
         });
       }
     }
@@ -140,16 +143,16 @@ export function SpreadsheetAutoFilterConditionDialog({
       for (const type of DATE_CONDITIONS) {
         options.push({
           value: type,
-          label: CONDITION_LABELS[type],
-          group: '日期',
+          label: spreadsheetAutoFilterConditionLabel(type),
+          group: officeMessage(messages, 'spreadsheet.autoFilter.group.date'),
         });
       }
     }
     for (const type of BLANK_CONDITIONS) {
       options.push({
         value: type,
-        label: CONDITION_LABELS[type],
-        group: '空白单元格',
+        label: spreadsheetAutoFilterConditionLabel(type),
+        group: officeMessage(messages, 'spreadsheet.autoFilter.group.blanks'),
       });
     }
     return options;
@@ -161,15 +164,15 @@ export function SpreadsheetAutoFilterConditionDialog({
     for (const type of TEXT_CONDITIONS) {
       options.push({
         value: type as WorkSpreadsheetCustomFilterCondition['type'],
-        label: CONDITION_LABELS[type],
-        group: '文本与值',
+        label: spreadsheetAutoFilterConditionLabel(type),
+        group: officeMessage(messages, 'spreadsheet.autoFilter.group.textValue'),
       });
     }
     for (const type of NUMBER_COMPARISON_CONDITIONS) {
       options.push({
         value: type as WorkSpreadsheetCustomFilterCondition['type'],
-        label: CONDITION_LABELS[type],
-        group: '数字',
+        label: spreadsheetAutoFilterConditionLabel(type),
+        group: officeMessage(messages, 'spreadsheet.autoFilter.group.number'),
       });
     }
     return options;
@@ -198,7 +201,7 @@ export function SpreadsheetAutoFilterConditionDialog({
 
   return (
     <Dialog
-      title="自定义自动筛选"
+      title={officeMessage(messages, 'spreadsheet.autoFilter.title')}
       description={`${source.sheetName}!${source.columnLabel}`}
       className="work-spreadsheet-auto-filter-dialog"
       restoreFocusTarget={restoreFocusTarget}
@@ -213,11 +216,11 @@ export function SpreadsheetAutoFilterConditionDialog({
                 if (onClear()) onClose();
               }}
             >
-              清除此列筛选
+              {officeMessage(messages, 'spreadsheet.autoFilter.clearColumn')}
             </Button>
           )}
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.autoFilter.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -225,7 +228,7 @@ export function SpreadsheetAutoFilterConditionDialog({
             form={formId}
             disabled={Boolean(error)}
           >
-            确定
+            {officeMessage(messages, 'spreadsheet.autoFilter.ok')}
           </Button>
         </>
       }
@@ -236,11 +239,11 @@ export function SpreadsheetAutoFilterConditionDialog({
         onSubmit={submit}
       >
         <Field
-          label="筛选条件"
-          description="仅隐藏不符合条件的行；其他列的筛选条件会继续生效。"
+          label={officeMessage(messages, 'spreadsheet.autoFilter.condition')}
+          description={officeMessage(messages, 'spreadsheet.autoFilter.conditionDesc')}
         >
           <OfficeSelect
-            ariaLabel="筛选条件"
+            ariaLabel={officeMessage(messages, 'spreadsheet.autoFilter.condition')}
             initialFocus
             value={draft.type}
             options={primaryConditionOptions}
@@ -255,7 +258,7 @@ export function SpreadsheetAutoFilterConditionDialog({
               required
               description={
                 wildcardValue
-                  ? '* 匹配任意多个字符，? 匹配单个字符，~ 用于转义。'
+                  ? officeMessage(messages, 'spreadsheet.autoFilter.wildcardHint')
                   : undefined
               }
               error={touched ? (primaryError ?? undefined) : undefined}
@@ -275,10 +278,10 @@ export function SpreadsheetAutoFilterConditionDialog({
               />
             </Field>
             {needsUpperValue && (
-              <Field label="上限" required>
+              <Field label={officeMessage(messages, 'spreadsheet.autoFilter.upper')} required>
                 <input
                   type="text"
-                  aria-label="上限"
+                  aria-label={officeMessage(messages, 'spreadsheet.autoFilter.upper')}
                   inputMode="decimal"
                   value={draft.upperValue}
                   onBlur={() => setTouched(true)}
@@ -302,14 +305,14 @@ export function SpreadsheetAutoFilterConditionDialog({
               setTouched(false);
             }}
           >
-            添加第二个条件
+            {officeMessage(messages, 'spreadsheet.autoFilter.addSecond')}
           </Button>
         )}
 
         {draft.useSecond && (
           <div className="work-spreadsheet-auto-filter-compound">
             <fieldset className="work-spreadsheet-auto-filter-conjunction">
-              <legend>条件关系</legend>
+              <legend>{officeMessage(messages, 'spreadsheet.autoFilter.relation')}</legend>
               <label>
                 <input
                   type="radio"
@@ -322,7 +325,7 @@ export function SpreadsheetAutoFilterConditionDialog({
                     }));
                   }}
                 />
-                并且
+                {officeMessage(messages, 'spreadsheet.autoFilter.and')}
               </label>
               <label>
                 <input
@@ -336,13 +339,13 @@ export function SpreadsheetAutoFilterConditionDialog({
                     }));
                   }}
                 />
-                或者
+                {officeMessage(messages, 'spreadsheet.autoFilter.or')}
               </label>
             </fieldset>
             <div className="work-spreadsheet-auto-filter-second-condition">
-              <Field label="第二个筛选条件">
+              <Field label={officeMessage(messages, 'spreadsheet.autoFilter.secondCondition')}>
                 <OfficeSelect
-                  ariaLabel="第二个筛选条件"
+                  ariaLabel={officeMessage(messages, 'spreadsheet.autoFilter.secondCondition')}
                   value={draft.secondType}
                   options={secondConditionOptions}
                   onValueChange={(secondType) => {
@@ -352,18 +355,18 @@ export function SpreadsheetAutoFilterConditionDialog({
                 />
               </Field>
               <Field
-                label="第二个筛选值"
+                label={officeMessage(messages, 'spreadsheet.autoFilter.secondValue')}
                 required
                 description={
                   secondWildcardValue
-                    ? '* 匹配任意多个字符，? 匹配单个字符，~ 用于转义。'
+                    ? officeMessage(messages, 'spreadsheet.autoFilter.wildcardHint')
                     : undefined
                 }
                 error={touched ? (secondError ?? undefined) : undefined}
               >
                 <input
                   type="text"
-                  aria-label="第二个筛选值"
+                  aria-label={officeMessage(messages, 'spreadsheet.autoFilter.secondValue')}
                   inputMode={secondNumericValue ? 'decimal' : 'text'}
                   value={draft.secondValue}
                   onBlur={() => setTouched(true)}
@@ -387,7 +390,7 @@ export function SpreadsheetAutoFilterConditionDialog({
                 setTouched(false);
               }}
             >
-              移除第二个条件
+              {officeMessage(messages, 'spreadsheet.autoFilter.removeSecond')}
             </Button>
           </div>
         )}

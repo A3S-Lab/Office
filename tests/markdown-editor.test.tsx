@@ -153,6 +153,15 @@ test('keeps the default split view to one editor and one read-only preview', asy
   expect(editableTask).not.toBeNull();
   expect(editableTask).toBeEnabled();
   expect(screen.queryByLabelText('Markdown 源码')).toBeNull();
+
+  fireEvent.click(editableTask as HTMLInputElement);
+  await waitFor(() =>
+    expect(
+      within(visualEditor).getByRole('checkbox', {
+        name: '已完成：Review the plan',
+      }),
+    ).toBeChecked(),
+  );
 });
 
 test('publishes only committed Chinese text from controlled visual Markdown IME', async () => {

@@ -178,6 +178,7 @@ export function patchPresentationIdRecords<T extends { id: string }>(
 ): void {
   const previousById = new Map(previous.map((value) => [value.id, value]));
   const nextById = new Map(next.map((value) => [value.id, value]));
+  const omitGroupIds = groupFrameIsStale(records, previousById, next);
   for (const value of previous) {
     if (nextById.has(value.id)) continue;
     if (!durableTombstones) {
@@ -228,13 +229,31 @@ export function patchPresentationIdRecords<T extends { id: string }>(
       record as Y.Map<unknown>,
       (before ?? {}) as unknown as Record<string, unknown>,
       value as unknown as Record<string, unknown>,
+      omitGroupIds ? GROUP_PATH_FIELD : undefined,
     );
   }
-  patchPresentationOrder(
-    order,
-    previous.map((value) => value.id),
-    next.map((value) => value.id),
-  );
+  const previousIds = previous.map((value) => value.id);
+  const nextIds = next.map((value) => value.id);
+  if (
+    durableTombstones &&
+    presentationOrderPermutationIsStale(order, previousIds, nextIds)
+  ) {
+    return;
+  }
+  patchPresentationOrder(order, previousIds, nextIds);
+}
+
+/** Same element set, but the live order is no longer the observed order. */
+export function presentationOrderPermutationIsStale(
+  order: Y.Array<string>,
+  previousIds: readonly string[],
+  nextIds: readonly string[],
+): boolean {
+  if (previousIds.length !== nextIds.length) return false;
+  const next = new Set(nextIds);
+  if (next.size !== nextIds.length) return false;
+  if (!previousIds.every((id) => next.has(id))) return false;
+  return !jsonEqual(order.toArray(), previousIds);
 }
 
 export function patchPresentationOrder(
@@ -357,13 +376,50 @@ function readJsonMap(
   return value;
 }
 
+const GROUP_PATH_FIELD = 'groupIds';
+
+function groupFrameIsStale<T extends { id: string }>(
+  records: Y.Map<unknown>,
+  previousById: ReadonlyMap<string, T>,
+  next: readonly T[],
+): boolean {
+  for (const value of next) {
+    const before = previousById.get(value.id);
+    if (!before) continue;
+    const observed = groupPath(before);
+    if (jsonEqual(observed, groupPath(value))) continue;
+    const record = records.get(value.id);
+    if (
+      !(record instanceof Y.Map) ||
+      record.get(PRESENTATION_RECORD_TOMBSTONE) === true
+    ) {
+      return true;
+    }
+    if (!jsonEqual(observed, groupPath(liveGroupRecord(record)))) return true;
+  }
+  return false;
+}
+
+function groupPath(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return [];
+  const groupIds = (value as { groupIds?: unknown }).groupIds;
+  return groupIds === undefined ? [] : groupIds;
+}
+
+function liveGroupRecord(record: Y.Map<unknown>): { groupIds?: unknown } {
+  if (!record.has(GROUP_PATH_FIELD)) return {};
+  return { groupIds: record.get(GROUP_PATH_FIELD) };
+}
+
 function patchPresentationJsonMap(
   target: Y.Map<unknown>,
   previous: Record<string, unknown>,
   next: Record<string, unknown>,
+  omitKey?: string,
 ): void {
   const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
   for (const key of keys) {
+    if (key === omitKey) continue;
     if (jsonEqual(previous[key], next[key])) continue;
     if (next[key] === undefined) target.delete(key);
     else target.set(key, cloneJsonValue(next[key]));

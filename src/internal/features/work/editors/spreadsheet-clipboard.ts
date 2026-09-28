@@ -1,5 +1,9 @@
 import { showToast } from '../../../state/app-state';
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
+import {
   createSpreadsheetTextClipboardSnapshot,
   normalizeSpreadsheetClipboardText,
   type SpreadsheetClipboardSnapshot,
@@ -137,12 +141,21 @@ export async function copySpreadsheetSelection(
   value: string,
   cut: boolean,
 ): Promise<boolean> {
+  const catalog = resolveOfficeMessages();
   try {
     await clipboard.writeText(value);
-    showToast(cut ? '选区已剪切' : '选区已复制', 'success');
+    showToast(
+      cut
+        ? officeMessage(catalog, 'spreadsheet.clipboard.cut')
+        : officeMessage(catalog, 'spreadsheet.clipboard.copied'),
+      'success',
+    );
     return true;
   } catch {
-    showToast('无法访问剪贴板，请使用系统快捷键。', 'error');
+    showToast(
+      officeMessage(catalog, 'spreadsheet.clipboard.unavailable'),
+      'error',
+    );
     return false;
   }
 }

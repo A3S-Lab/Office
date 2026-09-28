@@ -3,51 +3,45 @@ import { documentTextCaseKeyboardShortcuts } from '../work-document-text-case';
 import { documentUnderlineKeyboardShortcuts } from '../work-document-underline';
 
 export const documentRibbonTabs = [
-  { id: 'home', label: '开始' },
-  { id: 'insert', label: '插入' },
-  { id: 'page', label: '页面布局', compactLabel: '布局' },
-  { id: 'references', label: '引用' },
-  { id: 'review', label: '审阅' },
-  { id: 'view', label: '视图' },
+  { id: 'home' },
+  { id: 'insert' },
+  { id: 'page', hasCompactLabel: true },
+  { id: 'references' },
+  { id: 'review' },
+  { id: 'view' },
 ] as const;
 
 export const documentPictureRibbonTab = {
   id: 'picture',
-  label: '图片',
   contextual: true,
 } as const;
 
 export const documentTextBoxRibbonTab = {
   id: 'textBox',
-  label: '文本框',
   contextual: true,
 } as const;
 
 export const documentConnectorRibbonTab = {
   id: 'connector',
-  label: '连接符',
   contextual: true,
 } as const;
 
 export const documentTableRibbonTabs = [
   {
     id: 'tableDesign',
-    label: '表格设计',
-    compactLabel: '设计',
+    hasCompactLabel: true,
     contextual: true,
   },
   {
     id: 'tableLayout',
-    label: '表格布局',
-    compactLabel: '布局',
+    hasCompactLabel: true,
     contextual: true,
   },
 ] as const;
 
 export const documentPageChromeRibbonTab = {
   id: 'pageChrome',
-  label: '页眉和页脚',
-  compactLabel: '页眉页脚',
+  hasCompactLabel: true,
   contextual: true,
 } as const;
 
@@ -79,7 +73,6 @@ export type DocumentCommandLocation =
 
 export interface DocumentCommandDefinition {
   id: string;
-  label: string;
   location: DocumentCommandLocation;
   shortcut?: DocumentCommandShortcut;
 }
@@ -87,7 +80,6 @@ export interface DocumentCommandDefinition {
 export const documentCommandCatalog = {
   undo: {
     id: 'history.undo',
-    label: '撤销',
     location: { area: 'quickAccess' },
     shortcut: {
       label: 'Cmd/Ctrl+Z',
@@ -97,37 +89,33 @@ export const documentCommandCatalog = {
   },
   redo: {
     id: 'history.redo',
-    label: '重做',
     location: { area: 'quickAccess' },
     shortcut: {
-      label: 'Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y',
+      label: 'Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y',
       aria: 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
       editor: ['Mod-Shift-z', 'Mod-y'],
     },
   },
   growFont: {
     id: 'font.grow',
-    label: '增大字号',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+Shift+. 或 Cmd/Ctrl+]',
+      label: 'Cmd/Ctrl+Shift+. or Cmd/Ctrl+]',
       aria: 'Control+Shift+. Meta+Shift+. Control+] Meta+]',
       editor: ['Mod-Shift-.', 'Mod-]'],
     },
   },
   shrinkFont: {
     id: 'font.shrink',
-    label: '减小字号',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
-      label: 'Cmd/Ctrl+Shift+, 或 Cmd/Ctrl+[',
+      label: 'Cmd/Ctrl+Shift+, or Cmd/Ctrl+[',
       aria: 'Control+Shift+, Meta+Shift+, Control+[ Meta+[',
       editor: ['Mod-Shift-,', 'Mod-['],
     },
   },
   copyFormat: {
     id: 'clipboard.copyFormat',
-    label: '复制格式',
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+C',
@@ -137,7 +125,6 @@ export const documentCommandCatalog = {
   },
   pasteFormat: {
     id: 'clipboard.pasteFormat',
-    label: '粘贴格式',
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+V',
@@ -147,7 +134,6 @@ export const documentCommandCatalog = {
   },
   fontDialog: {
     id: 'font.dialog',
-    label: '字体高级设置',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+D',
@@ -157,12 +143,10 @@ export const documentCommandCatalog = {
   },
   formatPainter: {
     id: 'clipboard.formatPainter',
-    label: '格式刷',
     location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
   },
   bold: {
     id: 'font.bold',
-    label: '加粗',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+B',
@@ -172,7 +156,6 @@ export const documentCommandCatalog = {
   },
   italic: {
     id: 'font.italic',
-    label: '斜体',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+I',
@@ -182,7 +165,6 @@ export const documentCommandCatalog = {
   },
   underline: {
     id: 'font.underline',
-    label: '下划线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+U',
@@ -192,7 +174,6 @@ export const documentCommandCatalog = {
   },
   doubleUnderline: {
     id: 'font.doubleUnderline',
-    label: '双下划线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+D',
@@ -202,7 +183,6 @@ export const documentCommandCatalog = {
   },
   wordsUnderline: {
     id: 'font.wordsUnderline',
-    label: '仅字下划线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+W',
@@ -212,12 +192,10 @@ export const documentCommandCatalog = {
   },
   strike: {
     id: 'font.strike',
-    label: '删除线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   doubleStrike: {
     id: 'font.doubleStrike',
-    label: '双删除线',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+X',
@@ -227,7 +205,6 @@ export const documentCommandCatalog = {
   },
   allCaps: {
     id: 'font.allCaps',
-    label: '全部大写',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+A',
@@ -237,7 +214,6 @@ export const documentCommandCatalog = {
   },
   smallCaps: {
     id: 'font.smallCaps',
-    label: '小型大写',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+K',
@@ -247,7 +223,6 @@ export const documentCommandCatalog = {
   },
   changeCase: {
     id: 'font.changeCase',
-    label: '切换大小写',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Shift+F3',
@@ -257,7 +232,6 @@ export const documentCommandCatalog = {
   },
   subscript: {
     id: 'font.subscript',
-    label: '下标',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+=',
@@ -267,7 +241,6 @@ export const documentCommandCatalog = {
   },
   superscript: {
     id: 'font.superscript',
-    label: '上标',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+=',
@@ -277,12 +250,10 @@ export const documentCommandCatalog = {
   },
   highlight: {
     id: 'font.highlight',
-    label: '突出显示',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   hiddenText: {
     id: 'font.hiddenText',
-    label: '隐藏文字',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+H',
@@ -292,12 +263,10 @@ export const documentCommandCatalog = {
   },
   runBorder: {
     id: 'font.runBorder',
-    label: '字符边框',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
   },
   clearFormatting: {
     id: 'font.clearFormatting',
-    label: '清除格式',
     location: { area: 'ribbon', tab: 'home', group: 'font' },
     shortcut: {
       label: 'Cmd/Ctrl+Space',
@@ -307,27 +276,24 @@ export const documentCommandCatalog = {
   },
   increaseIndent: {
     id: 'paragraph.increaseIndent',
-    label: '增加缩进',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
-      label: 'Cmd/Ctrl+M 或 Shift+Alt+. 或 Alt+Shift+→',
+      label: 'Cmd/Ctrl+M or Shift+Alt+. or Alt+Shift+→',
       aria: 'Control+M Meta+M Shift+Alt+. Alt+Shift+ArrowRight',
       editor: ['Mod-m', 'Shift-Alt-.', 'Alt-Shift-ArrowRight'],
     },
   },
   decreaseIndent: {
     id: 'paragraph.decreaseIndent',
-    label: '减少缩进',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
-      label: 'Cmd/Ctrl+Shift+M 或 Shift+Alt+, 或 Alt+Shift+←',
+      label: 'Cmd/Ctrl+Shift+M or Shift+Alt+, or Alt+Shift+←',
       aria: 'Control+Shift+M Meta+Shift+M Shift+Alt+, Alt+Shift+ArrowLeft',
       editor: ['Mod-Shift-m', 'Shift-Alt-,', 'Alt-Shift-ArrowLeft'],
     },
   },
   bulletList: {
     id: 'paragraph.bulletList',
-    label: '项目符号',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+L',
@@ -337,7 +303,6 @@ export const documentCommandCatalog = {
   },
   moveBlockUp: {
     id: 'paragraph.moveBlockUp',
-    label: '上移段落',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Alt+Shift+↑',
@@ -347,7 +312,6 @@ export const documentCommandCatalog = {
   },
   moveBlockDown: {
     id: 'paragraph.moveBlockDown',
-    label: '下移段落',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Alt+Shift+↓',
@@ -357,7 +321,6 @@ export const documentCommandCatalog = {
   },
   alignLeft: {
     id: 'paragraph.alignLeft',
-    label: '左对齐',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+L',
@@ -367,7 +330,6 @@ export const documentCommandCatalog = {
   },
   alignCenter: {
     id: 'paragraph.alignCenter',
-    label: '居中',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+E',
@@ -377,7 +339,6 @@ export const documentCommandCatalog = {
   },
   alignRight: {
     id: 'paragraph.alignRight',
-    label: '右对齐',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+R',
@@ -387,7 +348,6 @@ export const documentCommandCatalog = {
   },
   alignJustify: {
     id: 'paragraph.alignJustify',
-    label: '两端对齐',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+J',
@@ -397,7 +357,6 @@ export const documentCommandCatalog = {
   },
   alignDistribute: {
     id: 'paragraph.alignDistribute',
-    label: '分散对齐',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+J',
@@ -407,7 +366,6 @@ export const documentCommandCatalog = {
   },
   lineSpacingSingle: {
     id: 'paragraph.lineSpacingSingle',
-    label: '单倍行距',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+1',
@@ -417,7 +375,6 @@ export const documentCommandCatalog = {
   },
   lineSpacingOneAndHalf: {
     id: 'paragraph.lineSpacingOneAndHalf',
-    label: '1.5 倍行距',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+5',
@@ -427,7 +384,6 @@ export const documentCommandCatalog = {
   },
   lineSpacingDouble: {
     id: 'paragraph.lineSpacingDouble',
-    label: '双倍行距',
     location: { area: 'ribbon', tab: 'home', group: 'paragraph' },
     shortcut: {
       label: 'Cmd/Ctrl+2',
@@ -437,7 +393,6 @@ export const documentCommandCatalog = {
   },
   normalStyle: {
     id: 'styles.normal',
-    label: '正文',
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+N',
@@ -447,7 +402,6 @@ export const documentCommandCatalog = {
   },
   heading1: {
     id: 'styles.heading1',
-    label: '标题 1',
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
     shortcut: {
       label: 'Cmd/Ctrl+Alt+1',
@@ -457,7 +411,6 @@ export const documentCommandCatalog = {
   },
   heading2: {
     id: 'styles.heading2',
-    label: '标题 2',
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
     shortcut: {
       label: 'Cmd/Ctrl+Alt+2',
@@ -467,7 +420,6 @@ export const documentCommandCatalog = {
   },
   heading3: {
     id: 'styles.heading3',
-    label: '标题 3',
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
     shortcut: {
       label: 'Cmd/Ctrl+Alt+3',
@@ -477,7 +429,6 @@ export const documentCommandCatalog = {
   },
   find: {
     id: 'editing.find',
-    label: '查找',
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: 'Cmd/Ctrl+F',
@@ -487,7 +438,6 @@ export const documentCommandCatalog = {
   },
   replace: {
     id: 'editing.replace',
-    label: '替换',
     location: { area: 'ribbon', tab: 'home', group: 'editing' },
     shortcut: {
       label: 'Cmd/Ctrl+H',
@@ -497,7 +447,6 @@ export const documentCommandCatalog = {
   },
   insertPageBreak: {
     id: 'insert.pageBreak',
-    label: '插入分页符',
     location: { area: 'ribbon', tab: 'insert', group: 'pages' },
     shortcut: {
       label: 'Cmd/Ctrl+Enter',
@@ -507,22 +456,18 @@ export const documentCommandCatalog = {
   },
   insertTextBox: {
     id: 'insert.textBox',
-    label: '插入文本框',
     location: { area: 'ribbon', tab: 'insert', group: 'text' },
   },
   insertConnector: {
     id: 'insert.connector',
-    label: '插入连接符',
     location: { area: 'ribbon', tab: 'insert', group: 'text' },
   },
   insertContentControl: {
     id: 'insert.contentControl',
-    label: '插入内容控件',
     location: { area: 'ribbon', tab: 'insert', group: 'text' },
   },
   hyperlink: {
     id: 'insert.hyperlink',
-    label: '添加链接',
     location: { area: 'ribbon', tab: 'insert', group: 'links' },
     shortcut: {
       label: 'Cmd/Ctrl+K',
@@ -532,18 +477,15 @@ export const documentCommandCatalog = {
   },
   bookmark: {
     id: 'insert.bookmark',
-    label: '添加书签',
     location: { area: 'ribbon', tab: 'insert', group: 'links' },
   },
   spelling: {
     id: 'review.spelling',
-    label: '拼写检查',
     location: { area: 'ribbon', tab: 'review', group: 'proofing' },
     shortcut: { label: 'F7', aria: 'F7', editor: ['F7'] },
   },
   insertComment: {
     id: 'review.insertComment',
-    label: '添加批注',
     location: { area: 'ribbon', tab: 'review', group: 'comments' },
     shortcut: {
       label: 'Cmd/Ctrl+Alt+M',
@@ -553,7 +495,6 @@ export const documentCommandCatalog = {
   },
   trackChanges: {
     id: 'review.trackChanges',
-    label: '修订模式',
     location: { area: 'ribbon', tab: 'review', group: 'tracking' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+E',
@@ -563,38 +504,31 @@ export const documentCommandCatalog = {
   },
   tableOfContents: {
     id: 'references.tableOfContents',
-    label: '插入或自定义目录',
     location: { area: 'ribbon', tab: 'references', group: 'tableOfContents' },
   },
   refreshTableOfContents: {
     id: 'references.refreshTableOfContents',
-    label: '更新目录',
     location: { area: 'ribbon', tab: 'references', group: 'tableOfContents' },
   },
   markIndexEntry: {
     id: 'references.markIndexEntry',
-    label: '标记索引项',
     location: { area: 'ribbon', tab: 'references', group: 'index' },
   },
   index: {
     id: 'references.index',
-    label: '插入或自定义索引',
     location: { area: 'ribbon', tab: 'references', group: 'index' },
   },
   refreshIndex: {
     id: 'references.refreshIndex',
-    label: '更新索引',
     location: { area: 'ribbon', tab: 'references', group: 'index' },
   },
   refreshFields: {
     id: 'references.refreshFields',
-    label: '更新域',
     location: { area: 'ribbon', tab: 'references', group: 'update' },
     shortcut: { label: 'F9', aria: 'F9', editor: ['F9'] },
   },
   unlinkFields: {
     id: 'references.unlinkFields',
-    label: '取消域链接',
     location: { area: 'ribbon', tab: 'references', group: 'update' },
     shortcut: {
       label: 'Ctrl+Shift+F9',
@@ -604,7 +538,6 @@ export const documentCommandCatalog = {
   },
   lockFields: {
     id: 'references.lockFields',
-    label: '锁定域',
     location: { area: 'ribbon', tab: 'references', group: 'update' },
     shortcut: {
       label: 'Ctrl+F11',
@@ -614,7 +547,6 @@ export const documentCommandCatalog = {
   },
   unlockFields: {
     id: 'references.unlockFields',
-    label: '解除域锁定',
     location: { area: 'ribbon', tab: 'references', group: 'update' },
     shortcut: {
       label: 'Ctrl+Shift+F11',
@@ -624,7 +556,6 @@ export const documentCommandCatalog = {
   },
   toggleFieldCodes: {
     id: 'view.toggleFieldCodes',
-    label: '切换域代码',
     location: { area: 'ribbon', tab: 'view', group: 'show' },
     shortcut: {
       label: 'Alt+F9 / Shift+F9',
@@ -634,17 +565,14 @@ export const documentCommandCatalog = {
   },
   navigationPane: {
     id: 'view.navigationPane',
-    label: '导航窗格',
     location: { area: 'ribbon', tab: 'view', group: 'show' },
   },
   showHiddenText: {
     id: 'view.showHiddenText',
-    label: '显示隐藏文字',
     location: { area: 'ribbon', tab: 'view', group: 'show' },
   },
   wordCount: {
     id: 'status.wordCount',
-    label: '字数统计',
     location: { area: 'status' },
     shortcut: {
       label: 'Cmd/Ctrl+Shift+G',

@@ -8,10 +8,14 @@ describe('spreadsheet import worker', () => {
     const workbook = {
       SheetNames: ['Sheet 1'],
       Sheets: {
-        'Sheet 1': Object.assign(
-          [[{ t: 's', v: 'A1' }], undefined, [undefined, { t: 'n', v: 2 }]],
-          { '!ref': 'A1:B3' },
-        ) as unknown as WorkSheet,
+        'Sheet 1': {
+          '!data': [
+            [{ t: 's', v: 'A1' }],
+            undefined,
+            [undefined, { t: 'n', v: 2 }],
+          ],
+          '!ref': 'A1:B3',
+        } as unknown as WorkSheet,
       },
     } satisfies WorkBook;
     const worker = await withSpreadsheetWorker(
@@ -157,12 +161,14 @@ describe('spreadsheet import worker', () => {
 
 describe('XLSX worksheet iteration', () => {
   test('iterates dense rows without materializing sparse address entries', () => {
-    const worksheet = [
-      [{ v: 'A1', t: 's' }, undefined, { v: 'C1', t: 's' }],
-      Array.from({ length: 27 }, (_, column) =>
-        column === 26 ? { v: 'AA2', t: 's' } : undefined,
-      ),
-    ] as unknown as WorkSheet;
+    const worksheet = {
+      '!data': [
+        [{ v: 'A1', t: 's' }, undefined, { v: 'C1', t: 's' }],
+        Array.from({ length: 27 }, (_, column) =>
+          column === 26 ? { v: 'AA2', t: 's' } : undefined,
+        ),
+      ],
+    } as unknown as WorkSheet;
 
     expect(
       Array.from(xlsxWorksheetCellEntries(worksheet)).map(

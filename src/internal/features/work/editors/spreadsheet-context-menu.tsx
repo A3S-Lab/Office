@@ -12,6 +12,10 @@ import {
   Scissors,
   Trash2,
 } from 'lucide-react';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { showToast } from '../../../state/app-state';
 import type { WorkspaceContextMenuItem } from '../../workspace/components/workspace-context-menu';
 import type { WorkSpreadsheetAgentSelection } from '../work-spreadsheet-agent-context';
@@ -76,10 +80,11 @@ export function spreadsheetCoreContextMenuItems({
   commands: SpreadsheetContextCommands;
   selection: Pick<WorkSpreadsheetAgentSelection, 'clipboard' | 'reference'>;
 }): WorkspaceContextMenuItem[] {
+  const catalog = resolveOfficeMessages();
   return [
     {
       id: 'cut-cells',
-      label: '剪切',
+      label: officeMessage(catalog, 'spreadsheet.context.cut'),
       icon: <Scissors size={14} />,
       shortcut: '⌘X',
       ariaKeyShortcut: 'Control+X Meta+X',
@@ -88,7 +93,7 @@ export function spreadsheetCoreContextMenuItems({
     },
     {
       id: 'copy-cells',
-      label: '复制',
+      label: officeMessage(catalog, 'spreadsheet.context.copy'),
       icon: <Copy size={14} />,
       shortcut: '⌘C',
       ariaKeyShortcut: 'Control+C Meta+C',
@@ -97,7 +102,7 @@ export function spreadsheetCoreContextMenuItems({
     },
     {
       id: 'paste-cells',
-      label: '粘贴',
+      label: officeMessage(catalog, 'spreadsheet.context.paste'),
       icon: <ClipboardPaste size={14} />,
       shortcut: '⌘V',
       ariaKeyShortcut: 'Control+V Meta+V',
@@ -106,7 +111,7 @@ export function spreadsheetCoreContextMenuItems({
     },
     {
       id: 'paste-special-cells',
-      label: '选择性粘贴…',
+      label: officeMessage(catalog, 'spreadsheet.context.pasteSpecial'),
       icon: <ClipboardPaste size={14} />,
       shortcut: '⌘⌥V',
       ariaKeyShortcut: 'Control+Alt+V Meta+Alt+V',
@@ -115,7 +120,7 @@ export function spreadsheetCoreContextMenuItems({
     },
     {
       id: 'clear-cells',
-      label: '清除内容',
+      label: officeMessage(catalog, 'spreadsheet.context.clearContents'),
       icon: <Eraser size={14} />,
       shortcut: 'Delete',
       ariaKeyShortcut: 'Delete',
@@ -123,7 +128,12 @@ export function spreadsheetCoreContextMenuItems({
       disabled: !can.clearSelectedCells(),
       onSelect: () => {
         if (!commands.clearSelectedCells()) {
-          showToast(`无法清除选区 ${selection.reference}。`, 'error');
+          showToast(
+            officeMessage(catalog, 'spreadsheet.context.clearFailed', {
+              reference: selection.reference,
+            }),
+            'error',
+          );
         }
       },
     },
@@ -141,16 +151,29 @@ export function spreadsheetStructureContextMenuItems({
   commands: SpreadsheetStructureCommands;
   onResize(axis: SpreadsheetStructureAxis): void;
 }): WorkspaceContextMenuItem[] {
+  const catalog = resolveOfficeMessages();
   const row = axis === 'row';
-  const subject = row ? '行' : '列';
-  const before = row ? '上方' : '左侧';
-  const after = row ? '下方' : '右侧';
+  const subject = officeMessage(
+    catalog,
+    row ? 'spreadsheet.context.row' : 'spreadsheet.context.column',
+  );
+  const before = officeMessage(
+    catalog,
+    row ? 'spreadsheet.context.beforeRow' : 'spreadsheet.context.beforeColumn',
+  );
+  const after = officeMessage(
+    catalog,
+    row ? 'spreadsheet.context.afterRow' : 'spreadsheet.context.afterColumn',
+  );
   const defaultSize = row ? 24 : 96;
   return [
     ...spreadsheetSortContextMenuItems({ can, commands, idSuffix: axis }),
     {
       id: `insert-${axis}-before`,
-      label: `在${before}插入${subject}`,
+      label: officeMessage(catalog, 'spreadsheet.context.insertBefore', {
+        before,
+        subject,
+      }),
       icon: <Plus size={14} />,
       separatorBefore: true,
       disabled: !can.insertSelectedStructure(axis, 'before'),
@@ -158,14 +181,19 @@ export function spreadsheetStructureContextMenuItems({
     },
     {
       id: `insert-${axis}-after`,
-      label: `在${after}插入${subject}`,
+      label: officeMessage(catalog, 'spreadsheet.context.insertAfter', {
+        after,
+        subject,
+      }),
       icon: <Plus size={14} />,
       disabled: !can.insertSelectedStructure(axis, 'after'),
       onSelect: () => commands.insertSelectedStructure(axis, 'after'),
     },
     {
       id: `delete-${axis}`,
-      label: `删除所选${subject}`,
+      label: officeMessage(catalog, 'spreadsheet.context.deleteSelected', {
+        subject,
+      }),
       icon: <Trash2 size={14} />,
       danger: true,
       disabled: !can.deleteSelectedStructure(axis),
@@ -173,14 +201,19 @@ export function spreadsheetStructureContextMenuItems({
     },
     {
       id: `resize-${axis}`,
-      label: row ? '行高…' : '列宽…',
+      label: officeMessage(
+        catalog,
+        row ? 'spreadsheet.context.rowHeight' : 'spreadsheet.context.columnWidth',
+      ),
       icon: row ? <MoveVertical size={14} /> : <MoveHorizontal size={14} />,
       disabled: !can.setSelectedStructureSize(axis, defaultSize),
       onSelect: () => onResize(axis),
     },
     {
       id: `hide-${axis}`,
-      label: `隐藏所选${subject}`,
+      label: officeMessage(catalog, 'spreadsheet.context.hideSelected', {
+        subject,
+      }),
       icon: <EyeOff size={14} />,
       separatorBefore: true,
       disabled: !can.setSelectedStructureHidden(axis, true),
@@ -188,7 +221,7 @@ export function spreadsheetStructureContextMenuItems({
     },
     {
       id: `show-${axis}`,
-      label: `取消隐藏${subject}`,
+      label: officeMessage(catalog, 'spreadsheet.context.unhide', { subject }),
       icon: <Eye size={14} />,
       disabled: !can.setSelectedStructureHidden(axis, false),
       onSelect: () => commands.setSelectedStructureHidden(axis, false),
@@ -207,10 +240,11 @@ export function spreadsheetSortContextMenuItems({
   idSuffix?: string;
   separatorBefore?: boolean;
 }): WorkspaceContextMenuItem[] {
+  const catalog = resolveOfficeMessages();
   return [
     {
       id: `sort-${idSuffix}-ascending`,
-      label: '升序排列',
+      label: officeMessage(catalog, 'spreadsheet.context.sortAsc'),
       icon: <ArrowUp size={14} />,
       separatorBefore,
       disabled: !can.sortSelectedCells('ascending'),
@@ -218,7 +252,7 @@ export function spreadsheetSortContextMenuItems({
     },
     {
       id: `sort-${idSuffix}-descending`,
-      label: '降序排列',
+      label: officeMessage(catalog, 'spreadsheet.context.sortDesc'),
       icon: <ArrowDown size={14} />,
       disabled: !can.sortSelectedCells('descending'),
       onSelect: () => commands.sortSelectedCells('descending'),

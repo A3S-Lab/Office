@@ -23,6 +23,7 @@ import {
   Undo2,
 } from 'lucide-react';
 import { type ReactNode, useMemo } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { spreadsheetChartCount } from '../work-spreadsheet-charts';
 import { spreadsheetFormulaCount } from '../work-spreadsheet-formula-analysis';
 import { spreadsheetPivotCount } from '../work-spreadsheet-pivots';
@@ -31,6 +32,7 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetTable,
 } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import { SpreadsheetAlignmentRibbonGroup } from './spreadsheet-alignment-ribbon';
 import type { SpreadsheetResolvedCellBorders } from './spreadsheet-cell-border';
 import { SpreadsheetCellStyleRibbon } from './spreadsheet-cell-style-ribbon';
@@ -38,9 +40,11 @@ import { SpreadsheetClipboardRibbonGroup } from './spreadsheet-clipboard-ribbon'
 import {
   type SpreadsheetRibbonTabId,
   spreadsheetCommandCatalog,
-  spreadsheetRibbonTabs,
-  spreadsheetTableDesignRibbonTab,
 } from './spreadsheet-command-catalog';
+import {
+  localizedSpreadsheetRibbonTabs,
+  spreadsheetCommandLabel,
+} from './spreadsheet-command-i18n';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
@@ -129,9 +133,14 @@ export function SpreadsheetEditorRibbon({
   toolbarCell: Cell | null | undefined;
   toolbarCellBorders?: SpreadsheetResolvedCellBorders;
 }) {
-  const ribbonTabs = activeTable
-    ? [...spreadsheetRibbonTabs, spreadsheetTableDesignRibbonTab]
-    : spreadsheetRibbonTabs;
+  const messages = useOfficeMessages();
+  const ribbonTabs = useMemo(
+    () =>
+      localizedSpreadsheetRibbonTabs(messages, {
+        includeTableDesign: Boolean(activeTable),
+      }),
+    [activeTable, messages],
+  );
   const formulaCount = useMemo(
     () => spreadsheetFormulaCount(content),
     [content],
@@ -139,7 +148,7 @@ export function SpreadsheetEditorRibbon({
   const pivotCount = useMemo(() => spreadsheetPivotCount(content), [content]);
   return (
     <WorkOfficeRibbon
-      ariaLabel="表格功能区"
+      ariaLabel={officeMessage(messages, 'spreadsheet.editorRibbon.aria')}
       tabs={ribbonTabs}
       defaultTab="home"
       activeTab={activeTab}
@@ -150,7 +159,7 @@ export function SpreadsheetEditorRibbon({
       quickAccessActions={[
         {
           id: spreadsheetCommandCatalog.undo.id,
-          label: spreadsheetCommandCatalog.undo.label,
+          label: spreadsheetCommandLabel('undo', messages),
           icon: <Undo2 size={15} />,
           shortcut: spreadsheetCommandCatalog.undo.shortcut.label,
           ariaKeyShortcuts: spreadsheetCommandCatalog.undo.shortcut.aria,
@@ -161,7 +170,7 @@ export function SpreadsheetEditorRibbon({
         },
         {
           id: spreadsheetCommandCatalog.redo.id,
-          label: spreadsheetCommandCatalog.redo.label,
+          label: spreadsheetCommandLabel('redo', messages),
           icon: <Redo2 size={15} />,
           shortcut: spreadsheetCommandCatalog.redo.shortcut.label,
           ariaKeyShortcuts: spreadsheetCommandCatalog.redo.shortcut.aria,
@@ -196,7 +205,7 @@ export function SpreadsheetEditorRibbon({
               commands={commands}
               toolbarCell={toolbarCell}
             />
-            <WorkOfficeRibbonGroup label="样式">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.styles')}>
               <SpreadsheetCellStyleRibbon
                 can={can}
                 commands={commands}
@@ -213,7 +222,7 @@ export function SpreadsheetEditorRibbon({
                 onToggle={onTogglePanel}
               />
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="单元格">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.cells')}>
               <SpreadsheetRowsAndColumnsMenu can={can} commands={commands} />
             </WorkOfficeRibbonGroup>
             <SpreadsheetEditingRibbonGroup
@@ -225,7 +234,7 @@ export function SpreadsheetEditorRibbon({
         ),
         insert: (
           <>
-            <WorkOfficeRibbonGroup label="表格" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.tables')} priority="high">
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.table.label}
                 title={`${spreadsheetCommandCatalog.table.label}（${spreadsheetCommandCatalog.table.shortcut.label}）`}
@@ -238,7 +247,7 @@ export function SpreadsheetEditorRibbon({
                 <Table2 size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="链接" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.links')} priority="high">
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.hyperlink.label}
                 title={`${spreadsheetCommandCatalog.hyperlink.label}（${spreadsheetCommandCatalog.hyperlink.shortcut.label}）`}
@@ -251,7 +260,7 @@ export function SpreadsheetEditorRibbon({
                 <Link2 size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="图表" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.charts')} priority="high">
               <SpreadsheetRibbonTool
                 controlsId={panelId}
                 panel="charts"
@@ -265,7 +274,7 @@ export function SpreadsheetEditorRibbon({
           </>
         ),
         pageLayout: (
-          <WorkOfficeRibbonGroup label="页面设置" priority="high">
+          <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.pageSetup')} priority="high">
             <SpreadsheetRibbonTool
               controlsId={panelId}
               panel="print-area"
@@ -279,7 +288,7 @@ export function SpreadsheetEditorRibbon({
         ),
         formulas: (
           <>
-            <WorkOfficeRibbonGroup label="定义的名称" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.definedNames')} priority="high">
               <SpreadsheetRibbonTool
                 controlsId={panelId}
                 panel="names"
@@ -290,7 +299,7 @@ export function SpreadsheetEditorRibbon({
                 onToggle={onTogglePanel}
               />
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="计算" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.calculation')} priority="high">
               <SpreadsheetRibbonTool
                 controlsId={panelId}
                 panel="formulas"
@@ -316,7 +325,7 @@ export function SpreadsheetEditorRibbon({
         ),
         data: (
           <>
-            <WorkOfficeRibbonGroup label="排序和筛选" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.sortFilter')} priority="high">
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.sortAscending.label}
                 disabled={!can.sortSelectedCells('ascending')}
@@ -340,7 +349,12 @@ export function SpreadsheetEditorRibbon({
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.autoFilter.label}
-                title={`${spreadsheetCommandCatalog.autoFilter.label}（${spreadsheetCommandCatalog.autoFilter.shortcut.label}）；表头菜单（${spreadsheetCommandCatalog.autoFilter.menuShortcut.label}）`}
+                title={officeMessage(messages, 'spreadsheet.editorRibbon.autoFilterTitle', {
+                  label: spreadsheetCommandCatalog.autoFilter.label,
+                  shortcut: spreadsheetCommandCatalog.autoFilter.shortcut.label,
+                  menuShortcut:
+                    spreadsheetCommandCatalog.autoFilter.menuShortcut.label,
+                })}
                 aria-keyshortcuts={
                   spreadsheetCommandCatalog.autoFilter.shortcut.aria
                 }
@@ -351,7 +365,7 @@ export function SpreadsheetEditorRibbon({
                 <ListFilter size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="数据工具" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.dataTools')} priority="high">
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.dataValidation.label}
                 disabled={!can.openDataValidation()}
@@ -360,7 +374,7 @@ export function SpreadsheetEditorRibbon({
                 <ListChecks size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="分析">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.analyze')}>
               <SpreadsheetRibbonTool
                 controlsId={panelId}
                 panel="pivots"
@@ -374,7 +388,7 @@ export function SpreadsheetEditorRibbon({
           </>
         ),
         review: (
-          <WorkOfficeRibbonGroup label="保护" priority="high">
+          <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.protect')} priority="high">
             <SpreadsheetRibbonTool
               controlsId={panelId}
               panel="protection"
@@ -388,12 +402,12 @@ export function SpreadsheetEditorRibbon({
         ),
         view: (
           <>
-            <WorkOfficeRibbonGroup label="工作簿视图" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.workbookView')} priority="high">
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.formulaBar.label}
                 active={formulaBarVisible}
                 disabled={!onToggleFormulaBar}
-                title={formulaBarVisible ? '隐藏编辑栏' : '显示编辑栏'}
+                title={formulaBarVisible ? officeMessage(messages, 'spreadsheet.editorRibbon.hideFormulaBar') : officeMessage(messages, 'spreadsheet.editorRibbon.showFormulaBar')}
                 onClick={() => onToggleFormulaBar?.()}
               >
                 <Sigma size={19} />
@@ -403,7 +417,9 @@ export function SpreadsheetEditorRibbon({
                 active={showFormulas}
                 disabled={!onToggleShowFormulas}
                 title={
-                  showFormulas ? '隐藏公式（Ctrl+`）' : '显示公式（Ctrl+`）'
+                  showFormulas
+                    ? officeMessage(messages, 'spreadsheet.editorRibbon.hideFormulas')
+                    : officeMessage(messages, 'spreadsheet.editorRibbon.showFormulas')
                 }
                 aria-keyshortcuts={
                   spreadsheetCommandCatalog.showFormulas.shortcut.aria
@@ -416,7 +432,7 @@ export function SpreadsheetEditorRibbon({
                 label={spreadsheetCommandCatalog.gridLines.label}
                 active={gridLinesVisible}
                 disabled={!can.setGridLines(!gridLinesVisible)}
-                title={gridLinesVisible ? '隐藏网格线' : '显示网格线'}
+                title={gridLinesVisible ? officeMessage(messages, 'spreadsheet.editorRibbon.hideGridLines') : officeMessage(messages, 'spreadsheet.editorRibbon.showGridLines')}
                 onClick={() => commands.setGridLines(!gridLinesVisible)}
               >
                 <Grid3X3 size={19} />
@@ -425,13 +441,13 @@ export function SpreadsheetEditorRibbon({
                 label={spreadsheetCommandCatalog.headings.label}
                 active={headingsVisible}
                 disabled={!onToggleHeadings}
-                title={headingsVisible ? '隐藏标题' : '显示标题'}
+                title={headingsVisible ? officeMessage(messages, 'spreadsheet.editorRibbon.hideHeadings') : officeMessage(messages, 'spreadsheet.editorRibbon.showHeadings')}
                 onClick={() => onToggleHeadings?.()}
               >
                 <Heading size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="窗口" priority="high">
+            <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.editorRibbon.group.window')} priority="high">
               <SpreadsheetFreezePanesMenu
                 active={freezePanesActive}
                 can={can}

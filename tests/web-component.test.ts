@@ -71,6 +71,17 @@ test('registers every custom element idempotently', async () => {
   const presence = {} as OfficeCollaborationPresence;
   documentEditor.presence = presence;
   expect(documentEditor.presence).toBe(presence);
+  documentEditor.locale = 'en-US';
+  expect(documentEditor.getAttribute('locale')).toBe('en-US');
+  expect(documentEditor.locale).toBe('en-US');
+  const onError = () => undefined;
+  const onDiagnostic = () => undefined;
+  documentEditor.onError = onError;
+  documentEditor.onDiagnostic = onDiagnostic;
+  expect(documentEditor.onError).toBe(onError);
+  expect(documentEditor.onDiagnostic).toBe(onDiagnostic);
+  documentEditor.messages = { 'editor.error.retry': 'Retry' };
+  expect(documentEditor.messages?.['editor.error.retry']).toBe('Retry');
 
   const markdownEditor = document.createElement(
     A3S_OFFICE_ELEMENT_NAMES.markdown,

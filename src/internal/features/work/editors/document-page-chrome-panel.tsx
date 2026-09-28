@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   normalizeDocumentPageChrome,
   updateDocumentPageChromeVariant,
@@ -8,8 +9,9 @@ import type {
   WorkDocumentPageChromeContent,
   WorkDocumentPageChromeVariant,
 } from '../work-types';
-import { OfficeCheckbox, OfficeSelect } from './office-controls';
 import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
+import { OfficeCheckbox, OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export function DocumentPageChromePanel({
   pageChrome,
@@ -18,11 +20,18 @@ export function DocumentPageChromePanel({
   pageChrome: WorkDocumentPageChrome;
   onChange: (pageChrome: WorkDocumentPageChrome) => void;
 }) {
+  const messages = useOfficeMessages();
   const chrome = normalizeDocumentPageChrome(pageChrome);
   const [variant, setVariant] =
     useState<WorkDocumentPageChromeVariant>('default');
-  const label =
-    variant === 'first' ? '首页' : variant === 'even' ? '偶数页' : '默认页';
+  const variantLabel = officeMessage(
+    messages,
+    variant === 'first'
+      ? 'document.pageChrome.panel.variant.first'
+      : variant === 'even'
+        ? 'document.pageChrome.panel.variant.even'
+        : 'document.pageChrome.panel.variant.default',
+  );
   const updateVariant = (patch: Partial<WorkDocumentPageChromeContent>) => {
     onChange(updateDocumentPageChromeVariant(chrome, variant, patch));
   };
@@ -51,37 +60,65 @@ export function DocumentPageChromePanel({
 
   return (
     <fieldset className="work-document-page-chrome-panel">
-      <legend>页眉和页脚</legend>
+      <legend>
+        {officeMessage(messages, 'document.pageChrome.panel.legend')}
+      </legend>
       <div className="work-document-page-chrome-options">
         <OfficeCheckbox
-          ariaLabel="首页页眉页脚不同"
+          ariaLabel={officeMessage(
+            messages,
+            'document.pageChrome.panel.differentFirstAria',
+          )}
           checked={chrome.differentFirstPage}
           onCheckedChange={toggleFirstPage}
         >
-          首页不同
+          {officeMessage(messages, 'document.pageChrome.panel.differentFirst')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="奇偶页页眉页脚不同"
+          ariaLabel={officeMessage(
+            messages,
+            'document.pageChrome.panel.differentOddEvenAria',
+          )}
           checked={chrome.differentOddEvenPages}
           onCheckedChange={toggleOddEvenPages}
         >
-          奇偶页不同
+          {officeMessage(
+            messages,
+            'document.pageChrome.panel.differentOddEven',
+          )}
         </OfficeCheckbox>
         <div className="work-office-field">
-          <span>编辑</span>
+          <span>
+            {officeMessage(messages, 'document.pageChrome.panel.edit')}
+          </span>
           <OfficeSelect
-            ariaLabel="页眉页脚页面类型"
+            ariaLabel={officeMessage(
+              messages,
+              'document.pageChrome.panel.variantAria',
+            )}
             value={variant}
             options={[
-              { value: 'default', label: '默认页' },
+              {
+                value: 'default',
+                label: officeMessage(
+                  messages,
+                  'document.pageChrome.panel.variant.default',
+                ),
+              },
               {
                 value: 'first',
-                label: '首页',
+                label: officeMessage(
+                  messages,
+                  'document.pageChrome.panel.variant.first',
+                ),
                 disabled: !chrome.differentFirstPage,
               },
               {
                 value: 'even',
-                label: '偶数页',
+                label: officeMessage(
+                  messages,
+                  'document.pageChrome.panel.variant.even',
+                ),
                 disabled: !chrome.differentOddEvenPages,
               },
             ]}
@@ -91,23 +128,31 @@ export function DocumentPageChromePanel({
       </div>
       <DocumentPageChromeRichTextEditor
         key={`${variant}-header`}
-        label={`${label}页眉`}
+        label={officeMessage(messages, 'document.pageChrome.panel.headerLabel', {
+          variant: variantLabel,
+        })}
         value={chrome[variant].headerHtml}
         onChange={(headerHtml) => updateVariant({ headerHtml })}
       />
       <DocumentPageChromeRichTextEditor
         key={`${variant}-footer`}
-        label={`${label}页脚`}
+        label={officeMessage(messages, 'document.pageChrome.panel.footerLabel', {
+          variant: variantLabel,
+        })}
         value={chrome[variant].footerHtml}
         onChange={(footerHtml) => updateVariant({ footerHtml })}
       />
       <OfficeCheckbox
         className="work-document-page-number-option"
-        ariaLabel={`${label}显示页码`}
+        ariaLabel={officeMessage(
+          messages,
+          'document.pageChrome.panel.showPageNumberAria',
+          { variant: variantLabel },
+        )}
         checked={chrome[variant].showPageNumber}
         onCheckedChange={(showPageNumber) => updateVariant({ showPageNumber })}
       >
-        在本页面类型的页脚中显示页码
+        {officeMessage(messages, 'document.pageChrome.panel.showPageNumber')}
       </OfficeCheckbox>
     </fieldset>
   );

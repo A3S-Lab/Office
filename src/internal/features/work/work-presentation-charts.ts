@@ -1,3 +1,8 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+  type OfficeMessageCatalog,
+} from '../../i18n/office-locale';
 import { presentationChartAxesForType } from './work-presentation-chart-axes';
 import {
   normalizeWorkSpreadsheetChartLayout,
@@ -34,7 +39,9 @@ const chartPercentageFormatter = new Intl.NumberFormat('zh-CN', {
   maximumFractionDigits: 1,
 });
 
-export function createPresentationChartElement(): WorkSlideElement {
+export function createPresentationChartElement(
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
+): WorkSlideElement {
   return {
     id: createWorkId('element'),
     type: 'chart',
@@ -50,28 +57,56 @@ export function createPresentationChartElement(): WorkSlideElement {
     align: 'center',
     borderColor: '#d9dee8',
     borderWidth: 1,
-    altText: '季度数据图表',
+    altText: officeMessage(messages, 'presentation.chart.sample.altText'),
     chart: {
       type: 'column',
-      title: '季度数据',
-      categories: ['第一季度', '第二季度', '第三季度'],
-      series: [{ name: '系列 1', values: [32, 48, 61] }],
+      title: officeMessage(messages, 'presentation.chart.sample.title'),
+      categories: [
+        officeMessage(messages, 'presentation.chart.sample.q1'),
+        officeMessage(messages, 'presentation.chart.sample.q2'),
+        officeMessage(messages, 'presentation.chart.sample.q3'),
+      ],
+      series: [
+        {
+          name: officeMessage(messages, 'presentation.chart.sample.series1'),
+          values: [32, 48, 61],
+        },
+      ],
       showLegend: true,
       legendPosition: 'right',
     },
   };
 }
 
-export function presentationChartTypeLabel(type: WorkSlideChartType): string {
-  if (type === 'bar') return '条形图';
-  if (type === 'line') return '折线图';
-  if (type === 'pie') return '饼图';
-  if (type === 'doughnut') return '圆环图';
-  if (type === 'area') return '面积图';
-  if (type === 'radar') return '雷达图';
-  if (type === 'scatter') return '散点图';
-  if (type === 'bubble') return '气泡图';
-  return '柱形图';
+export function presentationChartTypeLabel(
+  type: WorkSlideChartType,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
+): string {
+  if (type === 'bar') {
+    return officeMessage(messages, 'presentation.chart.typeShort.bar');
+  }
+  if (type === 'line') {
+    return officeMessage(messages, 'presentation.chart.typeShort.line');
+  }
+  if (type === 'pie') {
+    return officeMessage(messages, 'presentation.chart.typeShort.pie');
+  }
+  if (type === 'doughnut') {
+    return officeMessage(messages, 'presentation.chart.typeShort.doughnut');
+  }
+  if (type === 'area') {
+    return officeMessage(messages, 'presentation.chart.typeShort.area');
+  }
+  if (type === 'radar') {
+    return officeMessage(messages, 'presentation.chart.typeShort.radar');
+  }
+  if (type === 'scatter') {
+    return officeMessage(messages, 'presentation.chart.typeShort.scatter');
+  }
+  if (type === 'bubble') {
+    return officeMessage(messages, 'presentation.chart.typeShort.bubble');
+  }
+  return officeMessage(messages, 'presentation.chart.typeShort.column');
 }
 
 export function withPresentationChartType(
@@ -304,13 +339,16 @@ export function parsePresentationChartXValues(value: string): string[] {
 
 export function createPresentationChartSeries(
   chart: WorkSlideChart,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): WorkSlideChartSeries {
   const values = Array.from(
     { length: Math.max(1, chart.categories.length) },
     () => 0,
   );
   return {
-    name: `系列 ${chart.series.length + 1}`,
+    name: officeMessage(messages, 'presentation.chart.seriesFallback', {
+      index: String(chart.series.length + 1),
+    }),
     values,
     ...(chart.type === 'bubble' ? { bubbleSizes: values.map(() => 1) } : {}),
   };
@@ -464,12 +502,21 @@ export function normalizePresentationChartLegendPosition(
 
 export function presentationChartLegendPositionLabel(
   position: WorkSlideChartLegendPosition,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (position === 'left') return '左侧';
-  if (position === 'top') return '顶部';
-  if (position === 'bottom') return '底部';
-  if (position === 'topRight') return '右上角';
-  return '右侧';
+  if (position === 'left') {
+    return officeMessage(messages, 'presentation.chart.legend.left');
+  }
+  if (position === 'top') {
+    return officeMessage(messages, 'presentation.chart.legend.top');
+  }
+  if (position === 'bottom') {
+    return officeMessage(messages, 'presentation.chart.legend.bottom');
+  }
+  if (position === 'topRight') {
+    return officeMessage(messages, 'presentation.chart.legend.topRight');
+  }
+  return officeMessage(messages, 'presentation.chart.legend.right');
 }
 
 export function presentationChartShowsLegend(chart: WorkSlideChart): boolean {
@@ -569,22 +616,52 @@ export function presentationChartHasDataLabels(chart: WorkSlideChart): boolean {
 
 export function presentationChartDataLabelPositionLabel(
   position: WorkSlideChartDataLabelPosition,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
-  if (position === 'center') return '居中';
-  if (position === 'insideBase') return '内侧基部';
-  if (position === 'insideEnd') return '内侧末端';
-  if (position === 'outsideEnd') return '外侧末端';
-  if (position === 'left') return '左侧';
-  if (position === 'right') return '右侧';
-  if (position === 'above') return '上方';
-  if (position === 'below') return '下方';
-  return '最佳匹配';
+  if (position === 'center') {
+    return officeMessage(messages, 'presentation.chart.dataLabel.position.center');
+  }
+  if (position === 'insideBase') {
+    return officeMessage(
+      messages,
+      'presentation.chart.dataLabel.position.insideBase',
+    );
+  }
+  if (position === 'insideEnd') {
+    return officeMessage(
+      messages,
+      'presentation.chart.dataLabel.position.insideEnd',
+    );
+  }
+  if (position === 'outsideEnd') {
+    return officeMessage(
+      messages,
+      'presentation.chart.dataLabel.position.outsideEnd',
+    );
+  }
+  if (position === 'left') {
+    return officeMessage(messages, 'presentation.chart.dataLabel.position.left');
+  }
+  if (position === 'right') {
+    return officeMessage(messages, 'presentation.chart.dataLabel.position.right');
+  }
+  if (position === 'above') {
+    return officeMessage(messages, 'presentation.chart.dataLabel.position.above');
+  }
+  if (position === 'below') {
+    return officeMessage(messages, 'presentation.chart.dataLabel.position.below');
+  }
+  return officeMessage(
+    messages,
+    'presentation.chart.dataLabel.position.bestFit',
+  );
 }
 
 export function presentationChartDataLabelText(
   chart: WorkSlideChart,
   seriesIndex: number,
   pointIndex: number,
+  messages: OfficeMessageCatalog = resolveOfficeMessages(),
 ): string {
   const series = chart.series[seriesIndex];
   if (!series || !chart.dataLabels) return '';
@@ -594,10 +671,18 @@ export function presentationChartDataLabelText(
   );
   const parts: string[] = [];
   if (labels.showSeriesName)
-    parts.push(series.name.trim() || `系列 ${seriesIndex + 1}`);
+    parts.push(
+      series.name.trim() ||
+        officeMessage(messages, 'presentation.chart.seriesFallback', {
+          index: String(seriesIndex + 1),
+        }),
+    );
   if (labels.showCategoryName)
     parts.push(
-      chart.categories[pointIndex]?.trim() || `分类 ${pointIndex + 1}`,
+      chart.categories[pointIndex]?.trim() ||
+        officeMessage(messages, 'presentation.chart.categoryFallback', {
+          index: String(pointIndex + 1),
+        }),
     );
   if (labels.showValue)
     parts.push(formatPresentationChartNumber(series.values[pointIndex]));

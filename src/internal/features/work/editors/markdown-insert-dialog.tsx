@@ -1,13 +1,25 @@
 import { type FormEvent, useId, useRef, useState } from 'react';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { Button, Dialog } from '../../../design-system/primitives';
 import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
   normalizeDocumentHref,
 } from '../work-document-links';
 import { OfficeTextField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
+export function markdownImageValidationMessage(
+  messages = resolveOfficeMessages(),
+): string {
+  return officeMessage(messages, 'markdown.insert.imageUrlError');
+}
+
+/** @deprecated Prefer markdownImageValidationMessage(messages). */
 export const MARKDOWN_IMAGE_VALIDATION_MESSAGE =
-  '请输入完整的 http、https 或相对图片地址。';
+  markdownImageValidationMessage();
 
 export type MarkdownInsertDialogRequest =
   | {
@@ -35,6 +47,7 @@ export function MarkdownInsertDialog({
   onClose: () => void;
   onSubmit: (result: MarkdownInsertDialogResult) => void;
 }) {
+  const messages = useOfficeMessages();
   const formId = useId();
   const textFieldId = useId();
   const sourceFieldId = useId();
@@ -45,7 +58,7 @@ export function MarkdownInsertDialog({
   );
   const normalizedSource = normalizeMarkdownInsertSource(request.kind, source);
   const sourceReady = normalizedSource !== null;
-  const sourceError = markdownInsertSourceError(request.kind, source);
+  const sourceError = markdownInsertSourceError(request.kind, source, messages);
   const sourceErrorId = `${sourceFieldId}-error`;
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -71,15 +84,15 @@ export function MarkdownInsertDialog({
   const title =
     request.kind === 'link'
       ? request.action === 'edit'
-        ? '编辑链接'
-        : '添加链接'
-      : '插入图片';
+        ? officeMessage(messages, 'markdown.insert.editLink')
+        : officeMessage(messages, 'markdown.insert.addLink')
+      : officeMessage(messages, 'markdown.insert.insertImage');
   const submitLabel =
     request.kind === 'link'
       ? request.action === 'edit'
-        ? '保存'
-        : '添加'
-      : '插入';
+        ? officeMessage(messages, 'markdown.insert.save')
+        : officeMessage(messages, 'markdown.insert.add')
+      : officeMessage(messages, 'markdown.insert.insert');
   const focusText = request.kind === 'link' && !request.label.trim();
 
   return (
@@ -91,7 +104,7 @@ export function MarkdownInsertDialog({
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'markdown.insert.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -107,12 +120,12 @@ export function MarkdownInsertDialog({
       <form id={formId} className="work-markdown-insert-form" onSubmit={submit}>
         <label className="work-office-dialog-field" htmlFor={textFieldId}>
           <span className="work-office-dialog-field-label">
-            {request.kind === 'link' ? '显示文字' : '替代文字（可选）'}
+            {request.kind === 'link' ? officeMessage(messages, 'markdown.insert.linkText') : officeMessage(messages, 'markdown.insert.altText')}
           </span>
           <OfficeTextField
             id={textFieldId}
             aria-label={
-              request.kind === 'link' ? '显示文字' : '替代文字（可选）'
+              request.kind === 'link' ? officeMessage(messages, 'markdown.insert.linkText') : officeMessage(messages, 'markdown.insert.altText')
             }
             data-autofocus={focusText || undefined}
             value={text}
@@ -121,11 +134,11 @@ export function MarkdownInsertDialog({
         </label>
         <label className="work-office-dialog-field" htmlFor={sourceFieldId}>
           <span className="work-office-dialog-field-label">
-            {request.kind === 'link' ? '链接地址' : '图片地址'}
+            {request.kind === 'link' ? officeMessage(messages, 'markdown.insert.linkUrl') : officeMessage(messages, 'markdown.insert.imageUrl')}
           </span>
           <OfficeTextField
             id={sourceFieldId}
-            aria-label={request.kind === 'link' ? '链接地址' : '图片地址'}
+            aria-label={request.kind === 'link' ? officeMessage(messages, 'markdown.insert.linkUrl') : officeMessage(messages, 'markdown.insert.imageUrl')}
             aria-describedby={sourceError ? sourceErrorId : undefined}
             aria-invalid={sourceError ? true : undefined}
             inputMode="url"
@@ -188,11 +201,12 @@ function normalizeMarkdownSourceSpaces(source: string): string {
 function markdownInsertSourceError(
   kind: MarkdownInsertDialogRequest['kind'],
   source: string,
+  messages = resolveOfficeMessages(),
 ): string | null {
   const value = source.trim();
   if (!value || value === 'https://') return null;
   if (normalizeMarkdownInsertSource(kind, value)) return null;
   return kind === 'link'
     ? DOCUMENT_LINK_VALIDATION_MESSAGE
-    : MARKDOWN_IMAGE_VALIDATION_MESSAGE;
+    : markdownImageValidationMessage(messages);
 }

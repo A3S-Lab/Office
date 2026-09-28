@@ -2,7 +2,9 @@ import type { Selection } from '@fortune-sheet/core';
 import { PanelLeft, PanelsTopLeft, PanelTop, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
@@ -24,6 +26,7 @@ export function SpreadsheetFreezePanesMenu({
   commands: SpreadsheetEditorCommands;
   selection: Selection;
 }) {
+  const messages = useOfficeMessages();
   const presets: readonly {
     preset: SpreadsheetFreezePanePreset;
     label: string;
@@ -33,7 +36,7 @@ export function SpreadsheetFreezePanesMenu({
       ? [
           {
             preset: 'none' as const,
-            label: '取消冻结窗格',
+            label: officeMessage(messages, 'spreadsheet.freeze.unfreeze'),
             icon: <X size={16} />,
           },
         ]
@@ -45,12 +48,12 @@ export function SpreadsheetFreezePanesMenu({
     },
     {
       preset: 'topRow',
-      label: '冻结首行',
+      label: officeMessage(messages, 'spreadsheet.freeze.topRow'),
       icon: <PanelTop size={16} />,
     },
     {
       preset: 'firstColumn',
-      label: '冻结首列',
+      label: officeMessage(messages, 'spreadsheet.freeze.firstColumn'),
       icon: <PanelLeft size={16} />,
     },
   ];
@@ -59,7 +62,7 @@ export function SpreadsheetFreezePanesMenu({
   return (
     <Popover
       label={spreadsheetCommandCatalog.freezePanes.label}
-      panelLabel="冻结窗格选项"
+      panelLabel={officeMessage(messages, 'spreadsheet.freeze.options')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-menu-root"
@@ -71,7 +74,11 @@ export function SpreadsheetFreezePanesMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger${active || open ? ' active' : ''}`}
-          title={active ? '冻结窗格（已启用）' : '冻结窗格'}
+          title={
+            active
+              ? officeMessage(messages, 'spreadsheet.freeze.titleActive')
+              : officeMessage(messages, 'spreadsheet.freeze.title')
+          }
         >
           <PanelsTopLeft size={19} />
           <span>{spreadsheetCommandCatalog.freezePanes.label}</span>

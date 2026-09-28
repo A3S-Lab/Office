@@ -157,7 +157,12 @@ export function isSpreadsheetGridKeyboardTarget(
 ): boolean {
   if (target === null) return true;
   return (
-    target instanceof Element && Boolean(target.closest('.fortune-container'))
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        '.fortune-container, .work-spreadsheet-virtual-grid',
+      ),
+    )
   );
 }
 

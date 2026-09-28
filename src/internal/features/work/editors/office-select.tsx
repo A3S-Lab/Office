@@ -8,6 +8,8 @@ import {
   useState,
 } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface OfficeSelectOption<T extends string = string> {
   value: T;
@@ -25,7 +27,7 @@ export function OfficeSelect<T extends string>({
   options,
   onValueChange,
   disabled = false,
-  placeholder = '请选择',
+  placeholder,
   className = '',
   ariaKeyShortcuts,
   initialFocus = false,
@@ -48,6 +50,9 @@ export function OfficeSelect<T extends string>({
   'aria-invalid'?: boolean;
   'aria-required'?: boolean;
 }) {
+  const messages = useOfficeMessages();
+  const resolvedPlaceholder =
+    placeholder ?? officeMessage(messages, 'office.select.placeholder');
   const reactId = useId().replaceAll(':', '');
   const [open, setOpen] = useState(false);
   const selectedIndex = useMemo(
@@ -144,7 +149,7 @@ export function OfficeSelect<T extends string>({
           }}
         >
           <span style={selected?.previewStyle}>
-            {selected?.label ?? placeholder}
+            {selected?.label ?? resolvedPlaceholder}
           </span>
           <ChevronDown size={13} aria-hidden="true" />
         </button>

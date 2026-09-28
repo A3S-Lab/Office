@@ -9,14 +9,16 @@ import {
   useState,
 } from 'react';
 import { Button, IconButton } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { documentTextMatches } from '../work-document-search';
-import { OfficeTextField } from './office-controls';
 import {
   registerDocumentFindHighlight,
   unregisterDocumentFindHighlight,
   updateDocumentFindHighlights,
 } from './document-find-highlight';
 import { DocumentTaskPane } from './document-task-pane';
+import { OfficeTextField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export type DocumentFindReplaceMode = 'find' | 'replace';
 
@@ -35,6 +37,7 @@ export function DocumentFindReplacePanel({
   onReplaceText: (from: number, to: number, replacement: string) => boolean;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const queryRef = useRef<HTMLInputElement>(null);
   const queryId = useId();
   const replacementId = useId();
@@ -96,7 +99,12 @@ export function DocumentFindReplacePanel({
       .setTextSelection({ from: match.from, to: match.to })
       .scrollIntoView()
       .run();
-    setAnnouncement(`第 ${index + 1} 个，共 ${matches.length} 个`);
+    setAnnouncement(
+      officeMessage(messages, 'document.find.announce.position', {
+        current: String(index + 1),
+        total: String(matches.length),
+      }),
+    );
   };
 
   const moveToMatch = (direction: -1 | 1) => {
@@ -116,7 +124,9 @@ export function DocumentFindReplacePanel({
         ? document.activeElement
         : null;
     if (!match || !onReplaceText(match.from, match.to, replacement)) return;
-    setAnnouncement('已替换当前匹配');
+    setAnnouncement(
+      officeMessage(messages, 'document.find.announce.replaced'),
+    );
     const remaining = documentTextMatches(editor.state.doc, query);
     const next =
       remaining[Math.min(Math.max(activeIndex, 0), remaining.length - 1)];
@@ -144,7 +154,13 @@ export function DocumentFindReplacePanel({
     for (const match of [...matches].reverse()) {
       if (onReplaceText(match.from, match.to, replacement)) replaced += 1;
     }
-    setAnnouncement(replaced ? `已替换 ${replaced} 处` : '没有可替换的内容');
+    setAnnouncement(
+      replaced
+        ? officeMessage(messages, 'document.find.announce.replacedAll', {
+            count: String(replaced),
+          })
+        : officeMessage(messages, 'document.find.announce.none'),
+    );
     setActiveIndex(-1);
     queryRef.current?.focus({ preventScroll: true });
   };
@@ -165,16 +181,21 @@ export function DocumentFindReplacePanel({
   return (
     <DocumentTaskPane
       className="work-document-find-panel"
-      title={mode === 'replace' ? '查找和替换' : '查找'}
-      description="在当前文档中定位文字"
-      closeLabel="关闭查找"
+      title={officeMessage(
+        messages,
+        mode === 'replace'
+          ? 'document.find.titleReplace'
+          : 'document.find.title',
+      )}
+      description={officeMessage(messages, 'document.find.description')}
+      closeLabel={officeMessage(messages, 'document.find.close')}
       onClose={onClose}
       onKeyDown={handleCommandKeyDown}
     >
       <div
         className="work-document-find-tabs"
         role="tablist"
-        aria-label="查找方式"
+        aria-label={officeMessage(messages, 'document.find.modeAria')}
       >
         <button
           type="button"
@@ -182,7 +203,7 @@ export function DocumentFindReplacePanel({
           aria-selected={mode === 'find'}
           onClick={() => onModeChange('find')}
         >
-          查找
+          {officeMessage(messages, 'document.find.tabFind')}
         </button>
         <button
           type="button"
@@ -190,18 +211,19 @@ export function DocumentFindReplacePanel({
           aria-selected={mode === 'replace'}
           onClick={() => onModeChange('replace')}
         >
-          替换
+          {officeMessage(messages, 'document.find.tabReplace')}
         </button>
       </div>
       <div className="work-document-task-pane-body work-document-find-body">
         <label htmlFor={queryId}>
-          <span>查找内容</span>
+          <span>{officeMessage(messages, 'document.find.query')}</span>
           <span className="work-document-find-field">
             <Search size={14} aria-hidden="true" />
             <OfficeTextField
               id={queryId}
               ref={queryRef}
-              aria-label="查找内容"
+              data-document-find-query=""
+              aria-label={officeMessage(messages, 'document.find.query')}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -214,10 +236,11 @@ export function DocumentFindReplacePanel({
         </label>
         {mode === 'replace' && (
           <label htmlFor={replacementId}>
-            <span>替换为</span>
+            <span>{officeMessage(messages, 'document.find.replacement')}</span>
             <OfficeTextField
               id={replacementId}
-              aria-label="替换为"
+              data-document-find-replacement=""
+              aria-label={officeMessage(messages, 'document.find.replacement')}
               value={replacement}
               onChange={(event) => setReplacement(event.target.value)}
               onKeyDown={(event) => {
@@ -232,21 +255,23 @@ export function DocumentFindReplacePanel({
         <div className="work-document-find-results">
           <output aria-live="polite">
             {!query
-              ? '输入文字开始查找'
+              ? officeMessage(messages, 'document.find.prompt')
               : matches.length
-                ? `${matches.length} 个匹配`
-                : '没有匹配内容'}
+                ? officeMessage(messages, 'document.find.matchCount', {
+                    count: String(matches.length),
+                  })
+                : officeMessage(messages, 'document.find.noMatches')}
           </output>
           <div>
             <IconButton
-              label="上一个匹配"
+              label={officeMessage(messages, 'document.find.previous')}
               disabled={!matches.length}
               onClick={() => moveToMatch(-1)}
             >
               <ArrowUp size={14} />
             </IconButton>
             <IconButton
-              label="下一个匹配"
+              label={officeMessage(messages, 'document.find.next')}
               disabled={!matches.length}
               onClick={() => moveToMatch(1)}
             >
@@ -263,7 +288,7 @@ export function DocumentFindReplacePanel({
               onClick={replaceCurrent}
             >
               <Replace size={13} />
-              替换
+              {officeMessage(messages, 'document.find.replace')}
             </Button>
             <Button
               size="compact"
@@ -272,7 +297,7 @@ export function DocumentFindReplacePanel({
               onClick={replaceAll}
             >
               <ReplaceAll size={13} />
-              全部替换
+              {officeMessage(messages, 'document.find.replaceAll')}
             </Button>
           </div>
         )}

@@ -1,22 +1,32 @@
+import { officeMessage, resolveOfficeMessages } from '../../i18n/office-locale';
 export const SPREADSHEET_CONDITIONAL_ICON_SETS = [
-  { name: '3Arrows', label: '三向彩色箭头', count: 3 },
-  { name: '3ArrowsGray', label: '三向灰色箭头', count: 3 },
-  { name: '3Flags', label: '三色旗帜', count: 3 },
-  { name: '3TrafficLights1', label: '三色交通灯（实心）', count: 3 },
-  { name: '3TrafficLights2', label: '三色交通灯（边框）', count: 3 },
-  { name: '3Signs', label: '三色标志', count: 3 },
-  { name: '3Symbols', label: '三色符号（圆形）', count: 3 },
-  { name: '3Symbols2', label: '三色符号', count: 3 },
-  { name: '4Arrows', label: '四向彩色箭头', count: 4 },
-  { name: '4ArrowsGray', label: '四向灰色箭头', count: 4 },
-  { name: '4RedToBlack', label: '红到黑圆点', count: 4 },
-  { name: '4Rating', label: '四级评分', count: 4 },
-  { name: '4TrafficLights', label: '四色交通灯', count: 4 },
-  { name: '5Arrows', label: '五向彩色箭头', count: 5 },
-  { name: '5ArrowsGray', label: '五向灰色箭头', count: 5 },
-  { name: '5Rating', label: '五级评分', count: 5 },
-  { name: '5Quarters', label: '五级圆饼', count: 5 },
+  { name: '3Arrows', count: 3 },
+  { name: '3ArrowsGray', count: 3 },
+  { name: '3Flags', count: 3 },
+  { name: '3TrafficLights1', count: 3 },
+  { name: '3TrafficLights2', count: 3 },
+  { name: '3Signs', count: 3 },
+  { name: '3Symbols', count: 3 },
+  { name: '3Symbols2', count: 3 },
+  { name: '4Arrows', count: 4 },
+  { name: '4ArrowsGray', count: 4 },
+  { name: '4RedToBlack', count: 4 },
+  { name: '4Rating', count: 4 },
+  { name: '4TrafficLights', count: 4 },
+  { name: '5Arrows', count: 5 },
+  { name: '5ArrowsGray', count: 5 },
+  { name: '5Rating', count: 5 },
+  { name: '5Quarters', count: 5 },
 ] as const;
+
+export function spreadsheetConditionalIconSetLabel(
+  name: (typeof SPREADSHEET_CONDITIONAL_ICON_SETS)[number]['name'],
+): string {
+  return officeMessage(
+    resolveOfficeMessages(),
+    `spreadsheet.cf.iconSet.${name}` as Parameters<typeof officeMessage>[1],
+  );
+}
 
 export type SpreadsheetConditionalIconSetName =
   (typeof SPREADSHEET_CONDITIONAL_ICON_SETS)[number]['name'];
@@ -144,7 +154,7 @@ export function spreadsheetConditionalIconAppearance(
   const definition = SPREADSHEET_CONDITIONAL_ICON_SETS.find(
     (item) => item.name === icon.iconSet,
   )!;
-  const label = `${definition.label} ${index + 1}/${icon.count}`;
+  const label = `${spreadsheetConditionalIconSetLabel(definition.name)} ${index + 1}/${icon.count}`;
   if (icon.iconSet.includes('Arrows')) {
     const glyphs =
       icon.count === 3

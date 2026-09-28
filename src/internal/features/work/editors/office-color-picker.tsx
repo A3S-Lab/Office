@@ -1,4 +1,6 @@
 import { Ban, Check, ChevronDown } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -103,6 +105,7 @@ export function OfficeColorPicker({
   triggerLabel?: string;
   triggerIcon?: ReactNode;
 }) {
+  const messages = useOfficeMessages();
   const [draft, setDraft] = useState(value);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(() =>
@@ -164,7 +167,7 @@ export function OfficeColorPicker({
       }}
       type="button"
       role="option"
-      aria-label={`颜色 ${color}`}
+      aria-label={officeMessage(messages, 'office.color.swatchAria', { color })}
       aria-selected={color.toLowerCase() === value.toLowerCase()}
       tabIndex={index === activeIndex ? 0 : -1}
       key={color}
@@ -254,15 +257,15 @@ export function OfficeColorPicker({
           <div
             className="work-office-color-palette"
             role="listbox"
-            aria-label="颜色"
+            aria-label={officeMessage(messages, 'office.color.panelAria')}
           >
-            <span className="work-office-color-section-title">主题颜色</span>
+            <span className="work-office-color-section-title">{officeMessage(messages, 'office.color.theme')}</span>
             <div className="work-office-color-grid theme">
               {THEME_COLORS.map((color, index) =>
                 colorOption(color, index, close),
               )}
             </div>
-            <span className="work-office-color-section-title">标准色</span>
+            <span className="work-office-color-section-title">{officeMessage(messages, 'office.color.standard')}</span>
             <div className="work-office-color-grid standard">
               {STANDARD_COLORS.map((color, index) =>
                 colorOption(color, THEME_COLORS.length + index, close),
@@ -277,10 +280,10 @@ export function OfficeColorPicker({
               aria-hidden="true"
             />
             <label>
-              <span>自定义颜色</span>
+              <span>{officeMessage(messages, 'office.color.custom')}</span>
               <input
                 type="text"
-                aria-label="自定义颜色值"
+                aria-label={officeMessage(messages, 'office.color.customValueAria')}
                 aria-invalid={
                   draft.trim() && !normalizedDraft ? true : undefined
                 }
@@ -298,11 +301,11 @@ export function OfficeColorPicker({
             <Button
               size="compact"
               tone="primary"
-              aria-label="应用自定义颜色"
+              aria-label={officeMessage(messages, 'office.color.applyAria')}
               disabled={!normalizedDraft}
               onClick={() => applyDraft(close)}
             >
-              应用
+              {officeMessage(messages, 'office.color.apply')}
             </Button>
           </div>
         </fieldset>

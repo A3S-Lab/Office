@@ -1,3 +1,4 @@
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import { useEffect, useRef } from 'react';
 import { drawSpreadsheetGradientFill } from '../work-spreadsheet-gradient-fill-canvas';
 import { drawSpreadsheetPatternFillOverlay } from '../work-spreadsheet-pattern-fill-canvas';
@@ -87,24 +88,50 @@ function spreadsheetFillPreviewLabel(
   fill: SpreadsheetCellFillFormat,
   patternLabels: Readonly<Record<XlsxPatternFillType, string>>,
 ): string {
-  if (fill.kind === 'none') return '无填充预览';
-  if (fill.kind === 'solid') return `纯色填充预览 ${fill.color}`;
-  if (fill.kind === 'pattern') {
-    return `图案填充预览 ${patternLabels[fill.value.patternType]}`;
+  const messages = resolveOfficeMessages();
+  if (fill.kind === 'none') {
+    return officeMessage(messages, 'spreadsheet.formatCells.fill.preview.none');
   }
-  return `${fill.value.type === 'linear' ? '线性' : '路径'}渐变填充预览，共 ${fill.value.stops.length} 个色标`;
+  if (fill.kind === 'solid') {
+    return officeMessage(messages, 'spreadsheet.formatCells.fill.preview.solid', {
+      color: fill.color,
+    });
+  }
+  if (fill.kind === 'pattern') {
+    return officeMessage(messages, 'spreadsheet.formatCells.fill.preview.pattern', {
+      pattern: patternLabels[fill.value.patternType],
+    });
+  }
+  const type = officeMessage(
+    messages,
+    fill.value.type === 'linear'
+      ? 'spreadsheet.formatCells.fill.gradient.linear'
+      : 'spreadsheet.formatCells.fill.gradient.path',
+  );
+  return officeMessage(messages, 'spreadsheet.formatCells.fill.preview.gradient', {
+    type,
+    n: String(fill.value.stops.length),
+  });
 }
 
 function spreadsheetFillPreviewCaption(
   fill: SpreadsheetCellFillFormat,
   patternLabels: Readonly<Record<XlsxPatternFillType, string>>,
 ): string {
-  if (fill.kind === 'none') return '无填充';
+  const messages = resolveOfficeMessages();
+  if (fill.kind === 'none') {
+    return officeMessage(messages, 'spreadsheet.formatCells.fill.summary.none');
+  }
   if (fill.kind === 'solid') return fill.color.toUpperCase();
   if (fill.kind === 'pattern') return patternLabels[fill.value.patternType];
   return fill.value.type === 'linear'
-    ? `线性 · ${formatNumber(fill.value.degree)}° · ${fill.value.stops.length} 个色标`
-    : `路径 · ${fill.value.stops.length} 个色标`;
+    ? officeMessage(messages, 'spreadsheet.formatCells.fill.summary.linear', {
+        degree: formatNumber(fill.value.degree),
+        n: String(fill.value.stops.length),
+      })
+    : officeMessage(messages, 'spreadsheet.formatCells.fill.summary.path', {
+        n: String(fill.value.stops.length),
+      });
 }
 
 function formatNumber(value: number): string {

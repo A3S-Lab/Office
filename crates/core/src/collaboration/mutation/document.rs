@@ -7,9 +7,12 @@ use super::super::{
 
 pub(in crate::collaboration) mod comment;
 pub(in crate::collaboration) mod identity;
+mod list_item;
 mod paragraph;
+mod section;
 mod structure;
 pub(in crate::collaboration) mod suggestion;
+mod table_row;
 pub(in crate::collaboration) mod text;
 
 pub(super) fn validate_document_mutation(
@@ -60,6 +63,85 @@ pub(super) fn validate_document_mutation(
             expected_text_id,
             expected_text,
         } => paragraph::validate_delete_paragraph(paragraph_id, expected_text_id, expected_text),
+        NativeOfficeCollaborationMutation::DocumentInsertTableRow {
+            anchor_row_id,
+            expected_row_text_id,
+            row_id,
+            row_text_id,
+            paragraph_id,
+            text_id,
+            text,
+            ..
+        } => table_row::validate_insert_table_row(
+            anchor_row_id,
+            expected_row_text_id,
+            row_id,
+            row_text_id,
+            paragraph_id,
+            text_id,
+            text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentDeleteTableRow {
+            row_id,
+            expected_row_text_id,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        } => table_row::validate_delete_table_row(
+            row_id,
+            expected_row_text_id,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentInsertListItem {
+            anchor_paragraph_id,
+            expected_text_id,
+            paragraph_id,
+            text_id,
+            text,
+            ..
+        } => list_item::validate_insert_list_item(
+            anchor_paragraph_id,
+            expected_text_id,
+            paragraph_id,
+            text_id,
+            text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentDeleteListItem {
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        } => list_item::validate_delete_list_item(paragraph_id, expected_text_id, expected_text),
+        NativeOfficeCollaborationMutation::DocumentInsertSection {
+            anchor_section_id,
+            expected_paragraph_id,
+            expected_text_id,
+            section_id,
+            paragraph_id,
+            text_id,
+            text,
+            ..
+        } => section::validate_insert_section(
+            anchor_section_id,
+            expected_paragraph_id,
+            expected_text_id,
+            section_id,
+            paragraph_id,
+            text_id,
+            text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentDeleteSection {
+            section_id,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        } => section::validate_delete_section(
+            section_id,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        ),
         NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
@@ -158,6 +240,104 @@ pub(super) fn apply_document_mutation(
         } => paragraph::delete_paragraph(
             doc,
             manifest,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentInsertTableRow {
+            anchor_row_id,
+            expected_row_text_id,
+            position,
+            row_id,
+            row_text_id,
+            paragraph_id,
+            text_id,
+            text,
+        } => table_row::insert_table_row(
+            doc,
+            manifest,
+            anchor_row_id,
+            expected_row_text_id,
+            *position,
+            row_id,
+            row_text_id,
+            paragraph_id,
+            text_id,
+            text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentDeleteTableRow {
+            row_id,
+            expected_row_text_id,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        } => table_row::delete_table_row(
+            doc,
+            manifest,
+            row_id,
+            expected_row_text_id,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentInsertListItem {
+            anchor_paragraph_id,
+            expected_text_id,
+            position,
+            paragraph_id,
+            text_id,
+            text,
+        } => list_item::insert_list_item(
+            doc,
+            manifest,
+            anchor_paragraph_id,
+            expected_text_id,
+            *position,
+            paragraph_id,
+            text_id,
+            text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentDeleteListItem {
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        } => list_item::delete_list_item(
+            doc,
+            manifest,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentInsertSection {
+            anchor_section_id,
+            expected_paragraph_id,
+            expected_text_id,
+            position,
+            section_id,
+            paragraph_id,
+            text_id,
+            text,
+        } => section::insert_section(
+            doc,
+            manifest,
+            anchor_section_id,
+            expected_paragraph_id,
+            expected_text_id,
+            *position,
+            section_id,
+            paragraph_id,
+            text_id,
+            text,
+        ),
+        NativeOfficeCollaborationMutation::DocumentDeleteSection {
+            section_id,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+        } => section::delete_section(
+            doc,
+            manifest,
+            section_id,
             paragraph_id,
             expected_text_id,
             expected_text,

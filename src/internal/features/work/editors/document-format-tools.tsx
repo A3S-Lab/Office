@@ -1,13 +1,16 @@
 import type { Editor } from '@tiptap/core';
 import { ClipboardCopy, ClipboardPaste, Paintbrush } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import { getDocumentCommandDefinition } from './document-command-catalog';
+import { documentCommandLabel } from './document-command-i18n';
 import {
   copyDocumentFormatting,
   hasDocumentFormatClipboard,
   pasteDocumentFormatting,
   subscribeDocumentFormatClipboard,
 } from './document-format-clipboard';
-import { getDocumentCommandDefinition } from './document-command-catalog';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -19,6 +22,7 @@ interface DocumentFormatPainterSelection {
 }
 
 export function DocumentFormatTools({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
   const hasFormat = useSyncExternalStore(
     subscribeDocumentFormatClipboard,
     hasDocumentFormatClipboard,
@@ -90,18 +94,25 @@ export function DocumentFormatTools({ editor }: { editor: Editor }) {
   };
 
   return (
-    <WorkOfficeRibbonGroup label="剪贴板" priority="normal">
+    <WorkOfficeRibbonGroup
+      label={officeMessage(messages, 'document.format.clipboardGroup')}
+      priority="normal"
+    >
       <WorkOfficeRibbonButton
-        label="复制格式"
-        title={`复制格式（${copyFormatCommand.shortcut?.label}）`}
+        label={documentCommandLabel('copyFormat', messages)}
+        title={officeMessage(messages, 'document.format.copyTitle', {
+          shortcut: copyFormatCommand.shortcut?.label ?? '',
+        })}
         aria-keyshortcuts={copyFormatCommand.shortcut?.aria}
         onClick={copyFormat}
       >
         <ClipboardCopy size={17} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="粘贴格式"
-        title={`粘贴格式（${pasteFormatCommand.shortcut?.label}）`}
+        label={documentCommandLabel('pasteFormat', messages)}
+        title={officeMessage(messages, 'document.format.pasteTitle', {
+          shortcut: pasteFormatCommand.shortcut?.label ?? '',
+        })}
         aria-keyshortcuts={pasteFormatCommand.shortcut?.aria}
         disabled={!hasFormat}
         onClick={() => pasteDocumentFormatting(editor)}
@@ -109,8 +120,8 @@ export function DocumentFormatTools({ editor }: { editor: Editor }) {
         <ClipboardPaste size={17} />
       </WorkOfficeRibbonButton>
       <WorkOfficeRibbonButton
-        label="格式刷"
-        title="格式刷（选择源格式后应用到下一处选择）"
+        label={documentCommandLabel('formatPainter', messages)}
+        title={officeMessage(messages, 'document.format.painterTitle')}
         active={formatPainterActive}
         onClick={toggleFormatPainter}
       >

@@ -2,14 +2,17 @@ import type { Editor } from '@tiptap/core';
 import { MoveVertical } from 'lucide-react';
 import { useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { documentParagraphSpacing } from '../work-document-paragraph-formatting';
 import { OfficeNumberField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export function DocumentParagraphSpacingPopover({
   editor,
 }: {
   editor: Editor;
 }) {
+  const messages = useOfficeMessages();
   const spacing = documentParagraphSpacing(editor);
   const [open, setOpen] = useState(false);
   const [beforeDraft, setBeforeDraft] = useState(() =>
@@ -50,8 +53,11 @@ export function DocumentParagraphSpacingPopover({
 
   return (
     <Popover
-      label="段落间距"
-      panelLabel="段落间距选项"
+      label={officeMessage(messages, 'document.paragraphSpacing.label')}
+      panelLabel={officeMessage(
+        messages,
+        'document.paragraphSpacing.panelLabel',
+      )}
       panelRole="dialog"
       portal
       open={open}
@@ -69,10 +75,17 @@ export function DocumentParagraphSpacingPopover({
         <button
           {...triggerProps}
           className={`with-label${customized || open ? ' active' : ''}`}
-          title={customized ? '段落间距（已自定义）' : '段落间距'}
+          title={officeMessage(
+            messages,
+            customized
+              ? 'document.paragraphSpacing.titleCustom'
+              : 'document.paragraphSpacing.label',
+          )}
         >
           <MoveVertical size={19} />
-          <span>段落间距</span>
+          <span>
+            {officeMessage(messages, 'document.paragraphSpacing.label')}
+          </span>
         </button>
       )}
     >
@@ -86,16 +99,26 @@ export function DocumentParagraphSpacingPopover({
           setAfterDraft(afterValue);
         }}
       >
-        <legend>段落间距</legend>
+        <legend>
+          {officeMessage(messages, 'document.paragraphSpacing.legend')}
+        </legend>
         <div className="work-document-paragraph-spacing-field">
-          <span>段前</span>
+          <span>
+            {officeMessage(messages, 'document.paragraphSpacing.before')}
+          </span>
           <OfficeNumberField
-            ariaLabel="段前间距（磅）"
+            ariaLabel={officeMessage(
+              messages,
+              'document.paragraphSpacing.beforeAria',
+            )}
             value={beforeDraft}
             min={0}
             max={720}
             step={0.5}
-            placeholder="默认"
+            placeholder={officeMessage(
+              messages,
+              'document.paragraphSpacing.defaultPlaceholder',
+            )}
             escapeConsumer={beforeDirty}
             onValueChange={setBeforeDraft}
             onCommit={(value) => commit('before', value)}
@@ -103,31 +126,46 @@ export function DocumentParagraphSpacingPopover({
               beforeDirty ? () => setBeforeDraft(beforeValue) : undefined
             }
           />
-          <span>磅</span>
+          <span>
+            {officeMessage(messages, 'document.paragraphSpacing.unit')}
+          </span>
         </div>
         <div className="work-document-paragraph-spacing-field">
-          <span>段后</span>
+          <span>
+            {officeMessage(messages, 'document.paragraphSpacing.after')}
+          </span>
           <OfficeNumberField
-            ariaLabel="段后间距（磅）"
+            ariaLabel={officeMessage(
+              messages,
+              'document.paragraphSpacing.afterAria',
+            )}
             value={afterDraft}
             min={0}
             max={720}
             step={0.5}
-            placeholder="默认"
+            placeholder={officeMessage(
+              messages,
+              'document.paragraphSpacing.defaultPlaceholder',
+            )}
             escapeConsumer={afterDirty}
             onValueChange={setAfterDraft}
             onCommit={(value) => commit('after', value)}
             onCancel={afterDirty ? () => setAfterDraft(afterValue) : undefined}
           />
-          <span>磅</span>
+          <span>
+            {officeMessage(messages, 'document.paragraphSpacing.unit')}
+          </span>
         </div>
         <button
           type="button"
           className="work-document-paragraph-spacing-reset"
-          aria-label="恢复默认间距"
+          aria-label={officeMessage(
+            messages,
+            'document.paragraphSpacing.resetAria',
+          )}
           onClick={clear}
         >
-          恢复默认
+          {officeMessage(messages, 'document.paragraphSpacing.reset')}
         </button>
       </fieldset>
     </Popover>

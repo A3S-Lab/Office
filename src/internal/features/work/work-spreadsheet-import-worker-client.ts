@@ -1,4 +1,4 @@
-import type { ParsingOptions, WorkBook } from 'xlsx';
+import type { ParsingOptions, WorkBook, WorkSheet } from 'xlsx';
 import type {
   SpreadsheetImportDenseRow,
   SpreadsheetImportWorkerResponse,
@@ -7,6 +7,7 @@ import {
   recordSpreadsheetImportMeasure,
   spreadsheetImportNow,
 } from './work-spreadsheet-import-diagnostics';
+import { createXlsxDenseWorksheet, xlsxDenseRows } from './work-xlsx-worksheet';
 
 const SPREADSHEET_IMPORT_WORKER_TIMEOUT_MS = 120_000;
 
@@ -85,16 +86,20 @@ export function readSpreadsheetWorkbookInWorker(
           finish(null);
           return;
         }
-        const worksheet = response.dense ? [] : {};
+        const worksheet: WorkSheet = response.dense
+          ? createXlsxDenseWorksheet()
+          : {};
         Object.assign(worksheet, response.properties);
         workbook.Sheets[response.name] = worksheet;
         return;
       }
       if (response.kind === 'rows') {
         rowChunkCount += 1;
-        const worksheet = workbook?.Sheets[response.name];
+        const rows = xlsxDenseRows(workbook?.Sheets[response.name]) as Array<
+          SpreadsheetImportDenseRow | undefined
+        > | null;
         if (
-          !Array.isArray(worksheet) ||
+          !rows ||
           !Number.isSafeInteger(response.startRow) ||
           response.startRow < 0 ||
           !Array.isArray(response.rows)
@@ -102,9 +107,6 @@ export function readSpreadsheetWorkbookInWorker(
           finish(null);
           return;
         }
-        const rows = worksheet as unknown as Array<
-          SpreadsheetImportDenseRow | undefined
-        >;
         rows.length = Math.max(
           rows.length,
           response.startRow + response.rows.length,
@@ -118,7 +120,7 @@ export function readSpreadsheetWorkbookInWorker(
       if (response.kind === 'cells') {
         sparseCellChunkCount += 1;
         const worksheet = workbook?.Sheets[response.name];
-        if (!worksheet || Array.isArray(worksheet)) {
+        if (!worksheet || xlsxDenseRows(worksheet)) {
           finish(null);
           return;
         }

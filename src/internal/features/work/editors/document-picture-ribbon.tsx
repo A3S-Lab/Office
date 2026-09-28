@@ -11,6 +11,8 @@ import {
   TextWrap,
   Trash2,
 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   defaultDocumentImageTransform,
   documentImageLayoutOptions,
@@ -21,20 +23,14 @@ import {
 } from '../work-document-image-layout';
 import { DocumentPicturePropertiesControl } from './document-picture-properties-dialog';
 import { OfficeSelect } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 
-const imageWrapDistanceOptions = [
-  { value: '0', label: '无间距' },
-  { value: '2', label: '2 毫米' },
-  { value: '3', label: '3 毫米' },
-  { value: '5', label: '5 毫米' },
-  { value: '10', label: '10 毫米' },
-] as const;
-
 export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
   const image = documentImageLayoutOptions(editor);
   const transform =
     documentImageProperties(editor).transform ??
@@ -60,9 +56,11 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
 
   return (
     <>
-      <WorkOfficeRibbonGroup label="文字环绕">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.picture.ribbon.wrapGroup')}
+      >
         <PictureButton
-          label="嵌入文字"
+          label={officeMessage(messages, 'document.picture.wrap.inline')}
           active={image.layout === 'inline'}
           disabled={!imageSelected}
           onClick={() => updateLayout('inline')}
@@ -70,7 +68,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <Rows3 size={18} />
         </PictureButton>
         <PictureButton
-          label="四周环绕"
+          label={officeMessage(messages, 'document.picture.wrap.square')}
           active={image.layout === 'square'}
           disabled={!imageSelected}
           onClick={() => updateLayout('square')}
@@ -78,7 +76,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <TextWrap size={18} />
         </PictureButton>
         <PictureButton
-          label="紧密环绕"
+          label={officeMessage(messages, 'document.picture.wrap.tight')}
           active={image.layout === 'tight'}
           disabled={!imageSelected}
           onClick={() => updateLayout('tight')}
@@ -86,7 +84,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <TextWrap size={18} />
         </PictureButton>
         <PictureButton
-          label="穿越环绕"
+          label={officeMessage(messages, 'document.picture.wrap.through')}
           active={image.layout === 'through'}
           disabled={!imageSelected}
           onClick={() => updateLayout('through')}
@@ -94,7 +92,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <TextWrap size={18} />
         </PictureButton>
         <PictureButton
-          label="上下环绕"
+          label={officeMessage(messages, 'document.picture.wrap.topBottom')}
           active={image.layout === 'topBottom'}
           disabled={!imageSelected}
           onClick={() => updateLayout('topBottom')}
@@ -102,7 +100,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <Rows3 size={18} />
         </PictureButton>
         <PictureButton
-          label="自由浮动"
+          label={officeMessage(messages, 'document.picture.wrap.none')}
           active={image.layout === 'none'}
           disabled={!imageSelected}
           onClick={() => updateLayout('none')}
@@ -110,9 +108,14 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <TextWrap size={18} />
         </PictureButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="位置">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(
+          messages,
+          'document.picture.ribbon.positionGroup',
+        )}
+      >
         <PictureButton
-          label="左对齐"
+          label={officeMessage(messages, 'document.picture.align.left')}
           active={image.alignment === 'left'}
           disabled={!imageSelected}
           onClick={() => updateAlignment('left')}
@@ -120,7 +123,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <AlignLeft size={18} />
         </PictureButton>
         <PictureButton
-          label="居中"
+          label={officeMessage(messages, 'document.picture.align.center')}
           active={image.alignment === 'center'}
           disabled={!imageSelected}
           onClick={() => updateAlignment('center')}
@@ -128,7 +131,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <AlignCenter size={18} />
         </PictureButton>
         <PictureButton
-          label="右对齐"
+          label={officeMessage(messages, 'document.picture.align.right')}
           active={image.alignment === 'right'}
           disabled={!imageSelected}
           onClick={() => updateAlignment('right')}
@@ -136,9 +139,14 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <AlignRight size={18} />
         </PictureButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="变换">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(
+          messages,
+          'document.picture.ribbon.transformGroup',
+        )}
+      >
         <PictureButton
-          label="向左旋转"
+          label={officeMessage(messages, 'document.picture.ribbon.rotateLeft')}
           disabled={!imageSelected}
           onClick={() =>
             updateTransform((current) => ({
@@ -149,7 +157,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <RotateCcw size={18} />
         </PictureButton>
         <PictureButton
-          label="向右旋转"
+          label={officeMessage(messages, 'document.picture.ribbon.rotateRight')}
           disabled={!imageSelected}
           onClick={() =>
             updateTransform((current) => ({
@@ -160,7 +168,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <RotateCw size={18} />
         </PictureButton>
         <PictureButton
-          label="水平翻转"
+          label={officeMessage(messages, 'document.picture.transform.flipH')}
           active={transform.flipHorizontal}
           disabled={!imageSelected}
           onClick={() =>
@@ -172,7 +180,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <FlipHorizontal2 size={18} />
         </PictureButton>
         <PictureButton
-          label="垂直翻转"
+          label={officeMessage(messages, 'document.picture.transform.flipV')}
           active={transform.flipVertical}
           disabled={!imageSelected}
           onClick={() =>
@@ -184,12 +192,23 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <FlipVertical2 size={18} />
         </PictureButton>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="与文字距离">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(
+          messages,
+          'document.picture.ribbon.distanceGroup',
+        )}
+      >
         <OfficeSelect
           className="work-document-picture-wrap-distance-select"
-          ariaLabel="图片与文字距离"
+          ariaLabel={officeMessage(
+            messages,
+            'document.picture.ribbon.distanceAria',
+          )}
           value={wrapDistanceValue}
-          options={imageWrapDistanceOptionsForValue(wrapDistanceValue)}
+          options={imageWrapDistanceOptionsForValue(
+            messages,
+            wrapDistanceValue,
+          )}
           disabled={
             !imageSelected ||
             image.layout === 'inline' ||
@@ -202,10 +221,12 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           }
         />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="图片">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.picture.ribbon.pictureGroup')}
+      >
         <DocumentPicturePropertiesControl editor={editor} />
         <PictureButton
-          label="删除图片"
+          label={officeMessage(messages, 'document.picture.ribbon.delete')}
           disabled={!imageSelected}
           onClick={() => editor.chain().focus().deleteSelection().run()}
         >
@@ -224,11 +245,56 @@ function rotateImage(
   return next as WorkDocumentImageRotation;
 }
 
-function imageWrapDistanceOptionsForValue(value: string) {
-  if (imageWrapDistanceOptions.some((option) => option.value === value)) {
-    return imageWrapDistanceOptions;
+function imageWrapDistanceOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: '0',
+      label: officeMessage(messages, 'document.picture.ribbon.distance.none'),
+    },
+    {
+      value: '2',
+      label: officeMessage(messages, 'document.picture.ribbon.distance.mm', {
+        value: '2',
+      }),
+    },
+    {
+      value: '3',
+      label: officeMessage(messages, 'document.picture.ribbon.distance.mm', {
+        value: '3',
+      }),
+    },
+    {
+      value: '5',
+      label: officeMessage(messages, 'document.picture.ribbon.distance.mm', {
+        value: '5',
+      }),
+    },
+    {
+      value: '10',
+      label: officeMessage(messages, 'document.picture.ribbon.distance.mm', {
+        value: '10',
+      }),
+    },
+  ] as const;
+}
+
+function imageWrapDistanceOptionsForValue(
+  messages: OfficeMessageCatalog,
+  value: string,
+) {
+  const options = imageWrapDistanceOptions(messages);
+  if (options.some((option) => option.value === value)) {
+    return options;
   }
-  return [...imageWrapDistanceOptions, { value, label: `${value} 毫米` }];
+  return [
+    ...options,
+    {
+      value,
+      label: officeMessage(messages, 'document.picture.ribbon.distance.mm', {
+        value,
+      }),
+    },
+  ];
 }
 
 function PictureButton({

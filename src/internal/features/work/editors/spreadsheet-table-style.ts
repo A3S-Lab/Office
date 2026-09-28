@@ -1,3 +1,7 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type {
   WorkSpreadsheetTable,
   WorkSpreadsheetTableStyle,
@@ -56,9 +60,17 @@ const DARK_ACCENTS = [
 ] as const;
 
 let cachedChoices: readonly SpreadsheetTableStyleChoice[] | null = null;
+let cachedChoicesLocale: string | null = null;
 
 export function spreadsheetTableStyleChoices(): readonly SpreadsheetTableStyleChoice[] {
-  cachedChoices ??= Object.freeze([
+  const catalog = resolveOfficeMessages();
+  const localeKey = officeMessage(
+    catalog,
+    'spreadsheet.table.style.family.light',
+  );
+  if (cachedChoices && cachedChoicesLocale === localeKey) return cachedChoices;
+  cachedChoicesLocale = localeKey;
+  cachedChoices = Object.freeze([
     ...tableStyleFamilyChoices('light', 21),
     ...tableStyleFamilyChoices('medium', 28),
     ...tableStyleFamilyChoices('dark', 11),
@@ -246,9 +258,14 @@ function parseHex(value: string): [number, number, number] {
 }
 
 function familyLabel(family: 'dark' | 'light' | 'medium'): string {
-  if (family === 'light') return '浅色';
-  if (family === 'medium') return '中等';
-  return '深色';
+  const catalog = resolveOfficeMessages();
+  if (family === 'light') {
+    return officeMessage(catalog, 'spreadsheet.table.style.family.light');
+  }
+  if (family === 'medium') {
+    return officeMessage(catalog, 'spreadsheet.table.style.family.medium');
+  }
+  return officeMessage(catalog, 'spreadsheet.table.style.family.dark');
 }
 
 function capitalize(value: string): string {

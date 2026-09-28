@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { officeMessage } from '../../../i18n/office-locale';
 import { GalleryVerticalEnd } from 'lucide-react';
 import {
   type PointerEvent,
@@ -24,10 +25,12 @@ import type {
   WorkSlideElement,
 } from '../work-types';
 import { OfficeTextArea } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import { SlideChart } from './presentation-chart-canvas';
 import { PresentationCollaborationPresenceLayer } from './presentation-collaboration-presence';
 import type { PresentationEditorCommands } from './presentation-command-types';
 import type { PresentationDesignMode } from './presentation-editor-types';
+import { PresentationObjectList } from './presentation-object-list-panel';
 import {
   presentationElementCanEditContent,
   presentationSelectionBounds,
@@ -131,6 +134,7 @@ export function PresentationWorkspace({
   onTextEditorChange,
   onTextSelectionChange,
 }: PresentationWorkspaceProps) {
+  const messages = useOfficeMessages();
   const [mobileSlideNavigationOpen, setMobileSlideNavigationOpen] =
     useState(false);
   const mobileSlideNavigationModal = useMobileSlideNavigationModal();
@@ -176,8 +180,8 @@ export function PresentationWorkspace({
   const selectionTransformAnchor = selectedElements.at(-1);
   const selectionResizeLabel =
     selectionUnits.length === 1 && selectionUnits[0]?.groupId
-      ? '缩放所选组合'
-      : '缩放所选对象';
+      ? officeMessage(messages, 'presentation.workspace.zoomGroup')
+      : officeMessage(messages, 'presentation.workspace.zoomObject');
   if (viewMode === 'sorter') {
     return (
       <PresentationThumbnailRail
@@ -219,13 +223,13 @@ export function PresentationWorkspace({
         ref={mobileSlideNavigationToggleRef}
         type="button"
         className="work-presentation-slide-navigation-toggle"
-        aria-label="打开幻灯片导航"
+        aria-label={officeMessage(messages, 'presentation.workspace.openNav')}
         aria-controls={mobileSlideNavigationId}
         aria-expanded={mobileSlideNavigationOpen}
         onClick={() => setMobileSlideNavigationOpen(true)}
       >
         <GalleryVerticalEnd size={15} />
-        <span>第 {selectedSlideIndex + 1} 张</span>
+        <span>{officeMessage(messages, 'presentation.workspace.slideNumber', { index: String(selectedSlideIndex + 1) })}</span>
       </button>
       <PresentationThumbnailRail
         aspectRatio={aspectRatio}
@@ -249,7 +253,7 @@ export function PresentationWorkspace({
         <button
           type="button"
           className="work-presentation-slide-navigation-backdrop"
-          aria-label="关闭幻灯片导航遮罩"
+          aria-label={officeMessage(messages, 'presentation.workspace.closeNav')}
           tabIndex={-1}
           onClick={closeMobileSlideNavigation}
         />
@@ -261,286 +265,305 @@ export function PresentationWorkspace({
         onPointerUp={onDragEnd}
         onPointerCancel={onDragCancel}
       >
-        <section
-          ref={canvasRef}
-          className="work-slide-canvas interactive"
-          aria-label={canvasName}
-          style={{
-            background: activeBackground,
-            aspectRatio,
-            width: `${zoom}%`,
-            maxWidth: `${(1050 * zoom) / 100}px`,
-          }}
-          onPointerDown={() => commands.selectElement(null, false)}
-          onContextMenu={(event) => {
-            if (designMode !== 'slide') return;
-            onOpenContextMenu(event, selectedSlide, selectedSlideIndex);
-          }}
-        >
-          {inheritedElements.map((element) => (
-            <SlideElementPreview
-              element={element}
-              key={`inherited:${element.id}`}
-              origin="inherited"
-            />
-          ))}
-          {placeholderGuides.map((definition) => (
-            <button
-              type="button"
-              className="work-slide-placeholder-guide"
-              key={`placeholder:${definition.placeholder?.key ?? definition.id}`}
-              style={slideElementStyle(definition)}
-              aria-label={`添加${definition.placeholder?.type === 'title' ? '标题' : '内容'}占位符`}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                commands.instantiatePlaceholder(definition);
-              }}
-            >
-              {definition.placeholder?.prompt ?? '单击添加内容'}
-            </button>
-          ))}
-          {snapGuides.map((guide) => (
-            <span
-              aria-hidden="true"
-              className={`work-slide-snap-guide ${guide.axis === 'x' ? 'vertical' : 'horizontal'}`}
-              data-presentation-snap-guide={guide.axis}
-              data-presentation-snap-source={guide.source}
-              key={guide.axis}
-              style={
-                guide.axis === 'x'
-                  ? { left: `${guide.position}%` }
-                  : { top: `${guide.position}%` }
-              }
-            />
-          ))}
-          {selectionBounds && selectedElements.length > 1 && (
-            <span
-              className="work-slide-selection-frame"
-              data-presentation-selection-frame
-              style={{
-                left: `${selectionBounds.left}%`,
-                top: `${selectionBounds.top}%`,
-                width: `${selectionBounds.width}%`,
-                height: `${selectionBounds.height}%`,
-              }}
-            >
+        <div className="work-slide-stage-main">
+          <PresentationObjectList
+            elements={activeElements}
+            selectedElementIds={selectedElementIds}
+            listLabel="Slide objects"
+            emptyLabel="No objects on this slide"
+            onSelectElement={(elementId, additive) =>
+              commands.selectElement(elementId, additive)
+            }
+          />
+          <section
+            ref={canvasRef}
+            className="work-slide-canvas interactive"
+            aria-label={canvasName}
+            style={{
+              background: activeBackground,
+              aspectRatio,
+              width: `${zoom}%`,
+              maxWidth: `${(1050 * zoom) / 100}px`,
+            }}
+            onPointerDown={() => commands.selectElement(null, false)}
+            onContextMenu={(event) => {
+              if (designMode !== 'slide') return;
+              onOpenContextMenu(event, selectedSlide, selectedSlideIndex);
+            }}
+          >
+            {inheritedElements.map((element) => (
+              <SlideElementPreview
+                element={element}
+                key={`inherited:${element.id}`}
+                origin="inherited"
+              />
+            ))}
+            {placeholderGuides.map((definition) => (
               <button
                 type="button"
-                aria-label={selectionResizeLabel}
-                title={selectionResizeLabel}
-                className="work-slide-selection-resize-handle"
-                data-presentation-selection-control
-                onPointerDown={(event) => {
-                  if (!selectionTransformAnchor) return;
-                  onBeginDrag(event, selectionTransformAnchor, 'resize');
-                }}
-              />
-            </span>
-          )}
-          {activeElements.map((element) => {
-            const selected = selectedElementSet.has(element.id);
-            const editing = editingElementId === element.id;
-            const label =
-              element.altText?.trim() ||
-              element.text?.trim() ||
-              element.placeholder?.prompt?.trim() ||
-              '幻灯片元素';
-            return (
-              <fieldset
-                key={element.id}
-                className={`work-slide-element ${element.type} ${element.placeholder ? 'placeholder' : ''} ${
-                  selected ? 'selected' : ''
-                } ${
-                  selected && selectedElements.length > 1
-                    ? 'multi-selected'
-                    : ''
-                } ${editing ? 'editing' : ''}`}
-                // biome-ignore lint/a11y/noNoninteractiveTabindex: Slide objects are keyboard-selectable and support object commands.
-                tabIndex={0}
-                data-slide-element-id={element.id}
-                data-slide-element-group-path={
-                  element.groupIds?.length
-                    ? element.groupIds.join('/')
-                    : undefined
-                }
-                data-slide-element-origin={designMode}
-                data-slide-element-selected={selected ? 'true' : 'false'}
-                style={slideElementStyle(element)}
+                className="work-slide-placeholder-guide"
+                key={`placeholder:${definition.placeholder?.key ?? definition.id}`}
+                style={slideElementStyle(definition)}
+                aria-label={officeMessage(messages, definition.placeholder?.type === 'title' ? 'presentation.workspace.addTitlePlaceholder' : 'presentation.workspace.addContentPlaceholder')}
+                onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
-                  if (
-                    !editing &&
-                    event.target instanceof HTMLElement &&
-                    event.target.closest('a')
-                  ) {
-                    event.preventDefault();
-                  }
-                }}
-                onDoubleClick={(event) => {
-                  if (!presentationElementCanEditContent(element)) return;
-                  event.preventDefault();
                   event.stopPropagation();
-                  commands.editElement(element.id);
+                  commands.instantiatePlaceholder(definition);
                 }}
-                onFocus={(event) => {
-                  if (event.currentTarget !== event.target || selected) return;
-                  commands.selectElement(element.id, false);
+              >
+                {definition.placeholder?.prompt ?? officeMessage(messages, 'presentation.workspace.clickToAdd')}
+              </button>
+            ))}
+            {snapGuides.map((guide) => (
+              <span
+                aria-hidden="true"
+                className={`work-slide-snap-guide ${guide.axis === 'x' ? 'vertical' : 'horizontal'}`}
+                data-presentation-snap-guide={guide.axis}
+                data-presentation-snap-source={guide.source}
+                key={guide.axis}
+                style={
+                  guide.axis === 'x'
+                    ? { left: `${guide.position}%` }
+                    : { top: `${guide.position}%` }
+                }
+              />
+            ))}
+            {selectionBounds && selectedElements.length > 1 && (
+              <span
+                className="work-slide-selection-frame"
+                data-presentation-selection-frame
+                style={{
+                  left: `${selectionBounds.left}%`,
+                  top: `${selectionBounds.top}%`,
+                  width: `${selectionBounds.width}%`,
+                  height: `${selectionBounds.height}%`,
                 }}
-                onKeyDown={(event) => {
-                  if (isWorkspaceContextMenuKeyboardEvent(event)) {
+              >
+                <button
+                  type="button"
+                  aria-label={selectionResizeLabel}
+                  title={selectionResizeLabel}
+                  className="work-slide-selection-resize-handle"
+                  data-presentation-selection-control
+                  onPointerDown={(event) => {
+                    if (!selectionTransformAnchor) return;
+                    onBeginDrag(event, selectionTransformAnchor, 'resize');
+                  }}
+                />
+              </span>
+            )}
+            {activeElements.map((element) => {
+              const selected = selectedElementSet.has(element.id);
+              const editing = editingElementId === element.id;
+              const label =
+                element.altText?.trim() ||
+                element.text?.trim() ||
+                element.placeholder?.prompt?.trim() ||
+                officeMessage(messages, 'presentation.workspace.slideElement');
+              return (
+                <fieldset
+                  key={element.id}
+                  className={`work-slide-element ${element.type} ${element.placeholder ? 'placeholder' : ''} ${
+                    selected ? 'selected' : ''
+                  } ${
+                    selected && selectedElements.length > 1
+                      ? 'multi-selected'
+                      : ''
+                  } ${editing ? 'editing' : ''}`}
+                  // biome-ignore lint/a11y/noNoninteractiveTabindex: Slide objects are keyboard-selectable and support object commands.
+                  tabIndex={0}
+                  data-slide-element-id={element.id}
+                  data-slide-element-group-path={
+                    element.groupIds?.length
+                      ? element.groupIds.join('/')
+                      : undefined
+                  }
+                  data-slide-element-origin={designMode}
+                  data-slide-element-selected={selected ? 'true' : 'false'}
+                  style={slideElementStyle(element)}
+                  onClick={(event) => {
+                    if (
+                      !editing &&
+                      event.target instanceof HTMLElement &&
+                      event.target.closest('a')
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
+                  onDoubleClick={(event) => {
+                    if (!presentationElementCanEditContent(element)) return;
                     event.preventDefault();
                     event.stopPropagation();
+                    commands.editElement(element.id);
+                  }}
+                  onFocus={(event) => {
+                    if (event.currentTarget !== event.target || selected)
+                      return;
+                    commands.selectElement(element.id, false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (isWorkspaceContextMenuKeyboardEvent(event)) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onOpenContextMenu(
+                        event,
+                        selectedSlide,
+                        selectedSlideIndex,
+                        element,
+                      );
+                      return;
+                    }
+                    if (
+                      event.key !== 'Enter' ||
+                      editing ||
+                      !presentationElementCanEditContent(element)
+                    ) {
+                      return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    commands.editElement(element.id);
+                  }}
+                  onContextMenu={(event) => {
+                    if (!selected) commands.selectElement(element.id, false);
+                    if (designMode !== 'slide') return;
                     onOpenContextMenu(
                       event,
                       selectedSlide,
                       selectedSlideIndex,
                       element,
                     );
-                    return;
-                  }
-                  if (
-                    event.key !== 'Enter' ||
-                    editing ||
-                    !presentationElementCanEditContent(element)
-                  ) {
-                    return;
-                  }
-                  event.preventDefault();
-                  event.stopPropagation();
-                  commands.editElement(element.id);
-                }}
-                onContextMenu={(event) => {
-                  if (!selected) commands.selectElement(element.id, false);
-                  if (designMode !== 'slide') return;
-                  onOpenContextMenu(
-                    event,
-                    selectedSlide,
-                    selectedSlideIndex,
-                    element,
-                  );
-                }}
-                onPointerDown={(event) => {
-                  if (
-                    event.target instanceof HTMLTextAreaElement ||
-                    (event.target instanceof HTMLElement &&
-                      event.target.closest('[data-slide-editor]'))
-                  ) {
+                  }}
+                  onPointerDown={(event) => {
+                    if (
+                      event.target instanceof HTMLTextAreaElement ||
+                      (event.target instanceof HTMLElement &&
+                        event.target.closest('[data-slide-editor]'))
+                    ) {
+                      event.stopPropagation();
+                      return;
+                    }
+                    if (event.shiftKey) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      commands.selectElement(element.id, true);
+                      return;
+                    }
                     event.stopPropagation();
-                    return;
-                  }
-                  if (event.shiftKey) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    commands.selectElement(element.id, true);
-                    return;
-                  }
-                  event.stopPropagation();
-                  onBeginDrag(event, element, 'move');
-                }}
-              >
-                <legend className="sr-only">{label}</legend>
-                {element.type === 'image' && element.image ? (
-                  <img
-                    src={element.image.dataUrl}
-                    alt={element.altText ?? element.image.name}
-                    draggable={false}
-                  />
-                ) : element.type === 'table' && element.table ? (
-                  editing ? (
-                    <EditableSlideTable
-                      element={element}
-                      onChange={(rows) =>
-                        commands.updateElement({
-                          table: { ...element.table, rows },
-                        })
-                      }
+                    onBeginDrag(event, element, 'move');
+                  }}
+                >
+                  <legend className="sr-only">{label}</legend>
+                  {element.type === 'image' && element.image ? (
+                    <img
+                      src={element.image.dataUrl}
+                      alt={element.altText ?? element.image.name}
+                      draggable={false}
                     />
-                  ) : (
-                    <SlideTablePreview element={element} />
-                  )
-                ) : element.type === 'chart' && element.chart ? (
-                  <SlideChart
-                    chart={element.chart}
-                    label={element.altText ?? element.chart.title ?? '图表'}
-                  />
-                ) : element.textRuns?.length ||
-                  element.text ||
-                  element.type === 'text' ||
-                  element.type === 'shape' ? (
-                  editing ? (
-                    <PresentationTextEditor
-                      autoFocus
-                      element={element}
-                      onChange={(value) =>
-                        commands.updateTextElement(element.id, value)
-                      }
-                      onEditorChange={(editor) =>
-                        onTextEditorChange(element.id, editor)
-                      }
-                      onExitEditing={commands.exitEditing}
-                      onSelectionChange={onTextSelectionChange}
-                    />
-                  ) : (
-                    <SlideElementTextPreview
-                      element={element}
-                      showPlaceholder
-                    />
-                  )
-                ) : null}
-                {selected && !editing && (
-                  <>
-                    <span
-                      className="work-slide-move-handle"
-                      aria-hidden="true"
-                      onPointerDown={(event) =>
-                        onBeginDrag(event, element, 'move')
-                      }
-                    />
-                    {selectedElements.length === 1 && (
-                      <span
-                        className="work-slide-resize-handle"
-                        aria-hidden="true"
-                        onPointerDown={(event) =>
-                          onBeginDrag(event, element, 'resize')
+                  ) : element.type === 'table' && element.table ? (
+                    editing ? (
+                      <EditableSlideTable
+                        element={element}
+                        onChange={(rows) =>
+                          commands.updateElement({
+                            table: { ...element.table, rows },
+                          })
                         }
                       />
-                    )}
-                  </>
-                )}
-              </fieldset>
-            );
-          })}
-          {designMode === 'slide' && (
-            <PresentationCollaborationPresenceLayer
-              elements={activeElements}
-              slideId={selectedSlide.id}
-            />
-          )}
-          {designMode === 'slide' &&
-            (selectedSlide.comments ?? []).map((comment, index) => (
-              <button
-                type="button"
-                className={`work-presentation-comment-pin ${comment.id === activeCommentId ? 'active' : ''}`}
-                key={comment.id}
-                aria-label={`打开演示批注 ${index + 1}`}
-                style={{ left: `${comment.x}%`, top: `${comment.y}%` }}
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  commands.openComment(comment.id);
-                }}
-              >
-                {index + 1}
-              </button>
-            ))}
-        </section>
+                    ) : (
+                      <SlideTablePreview element={element} />
+                    )
+                  ) : element.type === 'chart' && element.chart ? (
+                    <SlideChart
+                      chart={element.chart}
+                      label={element.altText ?? element.chart.title ?? officeMessage(messages, 'presentation.workspace.chartFallback')}
+                    />
+                  ) : element.textRuns?.length ||
+                    element.text ||
+                    element.type === 'text' ||
+                    element.type === 'shape' ? (
+                    editing ? (
+                      <PresentationTextEditor
+                        autoFocus
+                        element={element}
+                        onChange={(value) =>
+                          commands.updateTextElement(element.id, value)
+                        }
+                        onEditorChange={(editor) =>
+                          onTextEditorChange(element.id, editor)
+                        }
+                        onExitEditing={commands.exitEditing}
+                        onSelectionChange={onTextSelectionChange}
+                      />
+                    ) : (
+                      <SlideElementTextPreview
+                        element={element}
+                        showPlaceholder
+                      />
+                    )
+                  ) : null}
+                  {selected && !editing && (
+                    <>
+                      <span
+                        className="work-slide-move-handle"
+                        aria-hidden="true"
+                        onPointerDown={(event) =>
+                          onBeginDrag(event, element, 'move')
+                        }
+                      />
+                      {selectedElements.length === 1 && (
+                        <span
+                          className="work-slide-resize-handle"
+                          aria-hidden="true"
+                          onPointerDown={(event) =>
+                            onBeginDrag(event, element, 'resize')
+                          }
+                        />
+                      )}
+                    </>
+                  )}
+                </fieldset>
+              );
+            })}
+            {designMode === 'slide' && (
+              <PresentationCollaborationPresenceLayer
+                elements={activeElements}
+                slideId={selectedSlide.id}
+              />
+            )}
+            {designMode === 'slide' &&
+              (selectedSlide.comments ?? []).map((comment, index) => (
+                <button
+                  type="button"
+                  className={`work-presentation-comment-pin ${comment.id === activeCommentId ? 'active' : ''}`}
+                  key={comment.id}
+                  aria-label={officeMessage(messages, 'presentation.workspace.openCommentAria', { index: String(index + 1) })}
+                  style={{ left: `${comment.x}%`, top: `${comment.y}%` }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    commands.openComment(comment.id);
+                  }}
+                >
+                  {index + 1}
+                </button>
+              ))}
+          </section>
+        </div>
         <footer>
           <span>
             {designMode === 'layout'
-              ? `布局：${selectedLayout?.name ?? ''}`
+              ? officeMessage(messages, 'presentation.workspace.layoutMeta', {
+                  name: selectedLayout?.name ?? '',
+                })
               : designMode === 'master'
-                ? `母版：${selectedMaster?.name ?? ''}`
-                : `幻灯片 ${selectedSlideIndex + 1} / ${content.slides.length}`}
+                ? officeMessage(messages, 'presentation.workspace.masterMeta', {
+                    name: selectedMaster?.name ?? '',
+                  })
+                : officeMessage(messages, 'presentation.workspace.slideMeta', {
+                    current: String(selectedSlideIndex + 1),
+                    total: String(content.slides.length),
+                  })}
             {selectedElements.length > 0 && (
               <>
                 {' · '}
@@ -548,6 +571,7 @@ export function PresentationWorkspace({
                   {presentationSelectionStatus(
                     selectedElements.length,
                     selectionUnits,
+                    messages,
                   )}
                 </span>
               </>
@@ -560,11 +584,11 @@ export function PresentationWorkspace({
         </footer>
         {designMode === 'slide' && notesVisible && (
           <div className="work-slide-notes">
-            <span>演讲者备注</span>
+            <span>{officeMessage(messages, 'presentation.workspace.notesLabel')}</span>
             <OfficeTextArea
-              aria-label="演讲者备注"
+              aria-label={officeMessage(messages, 'presentation.workspace.notesAria')}
               value={selectedSlide.notes ?? ''}
-              placeholder="添加演讲者备注"
+              placeholder={officeMessage(messages, 'presentation.workspace.notesPlaceholder')}
               onChange={(event) => commands.updateNotes(event.target.value)}
             />
           </div>
@@ -613,12 +637,20 @@ function mediaQueryMatches(query: string): boolean {
 function presentationSelectionStatus(
   selectedElementCount: number,
   units: ReturnType<typeof presentationSelectionUnits>,
+  messages: ReturnType<typeof useOfficeMessages>,
 ): string {
   if (units.length === 1 && units[0].groupId && selectedElementCount > 1) {
-    return `已选择 1 组，共 ${selectedElementCount} 个对象`;
+    return officeMessage(messages, 'presentation.workspace.selectedOneGroup', {
+      count: String(selectedElementCount),
+    });
   }
   if (units.length === selectedElementCount) {
-    return `已选择 ${selectedElementCount} 个对象`;
+    return officeMessage(messages, 'presentation.workspace.selectedObjects', {
+      count: String(selectedElementCount),
+    });
   }
-  return `已选择 ${units.length} 项，共 ${selectedElementCount} 个对象`;
+  return officeMessage(messages, 'presentation.workspace.selectedMixed', {
+    units: String(units.length),
+    count: String(selectedElementCount),
+  });
 }

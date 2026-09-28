@@ -6,6 +6,8 @@ import {
   SquareDashedMousePointer,
   Trash2,
 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   DOCUMENT_CONNECTOR_DEFAULTS,
   DOCUMENT_CONNECTOR_LIMITS,
@@ -23,76 +25,14 @@ import {
   OfficeColorPicker,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 
-const layoutOptions = [
-  { value: 'inline', label: '嵌入文字', icon: Rows3 },
-  { value: 'floating', label: '浮于文字上方', icon: SquareDashedMousePointer },
-] as const satisfies readonly {
-  value: WorkDocumentConnectorLayout;
-  label: string;
-  icon: typeof Rows3;
-}[];
-
-const arrowOptions = [
-  { value: 'none', label: '无箭头' },
-  { value: 'triangle', label: '三角箭头' },
-  { value: 'stealth', label: '隐形箭头' },
-  { value: 'diamond', label: '菱形箭头' },
-  { value: 'oval', label: '圆形箭头' },
-  { value: 'open', label: '开放箭头' },
-] as const satisfies readonly {
-  value: WorkDocumentConnectorArrow;
-  label: string;
-}[];
-
-const connectorKindOptions = [
-  { value: 'straight', label: '直线连接符' },
-  { value: 'elbow', label: '肘形连接符' },
-  { value: 'curved', label: '曲线连接符' },
-] as const satisfies readonly {
-  value: WorkDocumentConnectorKind;
-  label: string;
-}[];
-
-const lineStyleOptions = [
-  { value: 'solid', label: '实线' },
-  { value: 'dash', label: '虚线' },
-  { value: 'dot', label: '点线' },
-  { value: 'dashDot', label: '点划线' },
-] as const satisfies readonly {
-  value: WorkDocumentConnectorLineStyle;
-  label: string;
-}[];
-
-const widthOptions = [
-  { value: '0.35', label: '细（0.35 mm）' },
-  { value: '0.7', label: '中（0.7 mm）' },
-  { value: '1.4', label: '粗（1.4 mm）' },
-] as const;
-
-const horizontalReferenceOptions = [
-  { value: 'column', label: '栏' },
-  { value: 'margin', label: '页边距' },
-  { value: 'page', label: '页面' },
-] as const satisfies readonly {
-  value: WorkDocumentConnectorReference;
-  label: string;
-}[];
-
-const verticalReferenceOptions = [
-  { value: 'paragraph', label: '段落' },
-  { value: 'margin', label: '页边距' },
-  { value: 'page', label: '页面' },
-] as const satisfies readonly {
-  value: WorkDocumentConnectorVerticalReference;
-  label: string;
-}[];
-
 export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
   const properties = documentConnectorProperties(editor);
   const selected = editor.isActive('documentConnector');
   const update = (value: Partial<WorkDocumentConnectorProperties>) => {
@@ -115,59 +55,71 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
 
   return (
     <>
-      <WorkOfficeRibbonGroup label="连接线" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.connector.group.line')}
+        priority="high"
+      >
         <OfficeSelect<WorkDocumentConnectorKind>
           className="work-document-connector-kind-select"
-          ariaLabel="连接符类型"
+          ariaLabel={officeMessage(messages, 'document.connector.kindAria')}
           value={properties.connectorKind}
-          options={connectorKindOptions}
+          options={connectorKindOptions(messages)}
           disabled={!selected}
           onValueChange={(connectorKind) => update({ connectorKind })}
         />
         <OfficeColorPicker
-          ariaLabel="连接符线条颜色"
-          triggerLabel="线条颜色"
+          ariaLabel={officeMessage(messages, 'document.connector.lineColorAria')}
+          triggerLabel={officeMessage(
+            messages,
+            'document.connector.lineColorTrigger',
+          )}
           value={properties.lineColor}
           disabled={!selected}
           onValueChange={(lineColor) => update({ lineColor })}
         />
         <OfficeSelect
           className="work-document-connector-width-select"
-          ariaLabel="连接符线条粗细"
+          ariaLabel={officeMessage(messages, 'document.connector.lineWidthAria')}
           value={String(properties.lineWidth)}
-          options={widthOptionsForValue(String(properties.lineWidth))}
+          options={widthOptionsForValue(messages, String(properties.lineWidth))}
           disabled={!selected}
           onValueChange={(value) => update({ lineWidth: Number(value) })}
         />
         <OfficeSelect<WorkDocumentConnectorLineStyle>
           className="work-document-connector-style-select"
-          ariaLabel="连接符线条样式"
+          ariaLabel={officeMessage(messages, 'document.connector.lineStyleAria')}
           value={properties.lineStyle}
-          options={lineStyleOptions}
+          options={lineStyleOptions(messages)}
           disabled={!selected}
           onValueChange={(lineStyle) => update({ lineStyle })}
         />
         <OfficeSelect<WorkDocumentConnectorArrow>
           className="work-document-connector-arrow-select"
-          ariaLabel="连接符起点箭头"
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.startArrowAria',
+          )}
           value={properties.startArrow}
-          options={arrowOptions}
+          options={arrowOptions(messages)}
           disabled={!selected}
           onValueChange={(startArrow) => update({ startArrow })}
         />
         <ArrowUpRight size={18} aria-hidden="true" />
         <OfficeSelect<WorkDocumentConnectorArrow>
           className="work-document-connector-arrow-select"
-          ariaLabel="连接符终点箭头"
+          ariaLabel={officeMessage(messages, 'document.connector.endArrowAria')}
           value={properties.endArrow}
-          options={arrowOptions}
+          options={arrowOptions(messages)}
           disabled={!selected}
           onValueChange={(endArrow) => update({ endArrow })}
         />
         <ArrowDownRight size={18} aria-hidden="true" />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="布局" priority="high">
-        {layoutOptions.map((option) => {
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.connector.group.layout')}
+        priority="high"
+      >
+        {layoutOptions(messages).map((option) => {
           const Icon = option.icon;
           return (
             <ConnectorButton
@@ -182,10 +134,15 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           );
         })}
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="大小">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.picture.size.legend')}
+      >
         <ConnectorNumberField
-          label="宽度（毫米）"
-          ariaLabel="连接符宽度（毫米）"
+          label={officeMessage(messages, 'document.connector.size.width')}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.size.widthAria',
+          )}
           value={properties.width}
           min={DOCUMENT_CONNECTOR_LIMITS.width.min}
           max={DOCUMENT_CONNECTOR_LIMITS.width.max}
@@ -193,8 +150,11 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(width) => update({ width })}
         />
         <ConnectorNumberField
-          label="高度（毫米）"
-          ariaLabel="连接符高度（毫米）"
+          label={officeMessage(messages, 'document.connector.size.height')}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.size.heightAria',
+          )}
           value={properties.height}
           min={DOCUMENT_CONNECTOR_LIMITS.height.min}
           max={DOCUMENT_CONNECTOR_LIMITS.height.max}
@@ -202,10 +162,18 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(height) => update({ height })}
         />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="端点">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.connector.group.endpoints')}
+      >
         <ConnectorNumberField
-          label="起点 X（%）"
-          ariaLabel="连接符起点 X（百分比）"
+          label={officeMessage(
+            messages,
+            'document.connector.endpoint.startX',
+          )}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.endpoint.startXAria',
+          )}
           value={properties.startX}
           min={DOCUMENT_CONNECTOR_LIMITS.endpoint.min}
           max={DOCUMENT_CONNECTOR_LIMITS.endpoint.max}
@@ -213,8 +181,14 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(startX) => update({ startX })}
         />
         <ConnectorNumberField
-          label="起点 Y（%）"
-          ariaLabel="连接符起点 Y（百分比）"
+          label={officeMessage(
+            messages,
+            'document.connector.endpoint.startY',
+          )}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.endpoint.startYAria',
+          )}
           value={properties.startY}
           min={DOCUMENT_CONNECTOR_LIMITS.endpoint.min}
           max={DOCUMENT_CONNECTOR_LIMITS.endpoint.max}
@@ -222,8 +196,11 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(startY) => update({ startY })}
         />
         <ConnectorNumberField
-          label="终点 X（%）"
-          ariaLabel="连接符终点 X（百分比）"
+          label={officeMessage(messages, 'document.connector.endpoint.endX')}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.endpoint.endXAria',
+          )}
           value={properties.endX}
           min={DOCUMENT_CONNECTOR_LIMITS.endpoint.min}
           max={DOCUMENT_CONNECTOR_LIMITS.endpoint.max}
@@ -231,8 +208,11 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(endX) => update({ endX })}
         />
         <ConnectorNumberField
-          label="终点 Y（%）"
-          ariaLabel="连接符终点 Y（百分比）"
+          label={officeMessage(messages, 'document.connector.endpoint.endY')}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.endpoint.endYAria',
+          )}
           value={properties.endY}
           min={DOCUMENT_CONNECTOR_LIMITS.endpoint.min}
           max={DOCUMENT_CONNECTOR_LIMITS.endpoint.max}
@@ -240,13 +220,23 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(endY) => update({ endY })}
         />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="位置">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.picture.position.legend')}
+      >
         <div className="work-office-field work-document-connector-offset-field">
-          <span>水平相对于</span>
+          <span>
+            {officeMessage(
+              messages,
+              'document.connector.position.horizontalRelative',
+            )}
+          </span>
           <OfficeSelect<WorkDocumentConnectorReference>
-            ariaLabel="连接符水平相对于"
+            ariaLabel={officeMessage(
+              messages,
+              'document.connector.position.horizontalRelativeAria',
+            )}
             value={properties.horizontalReference}
-            options={horizontalReferenceOptions}
+            options={horizontalReferenceOptions(messages)}
             disabled={!selected || properties.layout !== 'floating'}
             onValueChange={(horizontalReference) =>
               update({ horizontalReference })
@@ -254,18 +244,32 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           />
         </div>
         <div className="work-office-field work-document-connector-offset-field">
-          <span>垂直相对于</span>
+          <span>
+            {officeMessage(
+              messages,
+              'document.connector.position.verticalRelative',
+            )}
+          </span>
           <OfficeSelect<WorkDocumentConnectorVerticalReference>
-            ariaLabel="连接符垂直相对于"
+            ariaLabel={officeMessage(
+              messages,
+              'document.connector.position.verticalRelativeAria',
+            )}
             value={properties.verticalReference}
-            options={verticalReferenceOptions}
+            options={verticalReferenceOptions(messages)}
             disabled={!selected || properties.layout !== 'floating'}
             onValueChange={(verticalReference) => update({ verticalReference })}
           />
         </div>
         <ConnectorNumberField
-          label="水平偏移（毫米）"
-          ariaLabel="连接符水平偏移（毫米）"
+          label={officeMessage(
+            messages,
+            'document.connector.position.horizontalOffset',
+          )}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.position.horizontalOffsetAria',
+          )}
           value={properties.horizontalOffset ?? 0}
           min={DOCUMENT_CONNECTOR_LIMITS.offset.min}
           max={DOCUMENT_CONNECTOR_LIMITS.offset.max}
@@ -273,8 +277,14 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(horizontalOffset) => update({ horizontalOffset })}
         />
         <ConnectorNumberField
-          label="垂直偏移（毫米）"
-          ariaLabel="连接符垂直偏移（毫米）"
+          label={officeMessage(
+            messages,
+            'document.connector.position.verticalOffset',
+          )}
+          ariaLabel={officeMessage(
+            messages,
+            'document.connector.position.verticalOffsetAria',
+          )}
           value={properties.verticalOffset ?? 0}
           min={DOCUMENT_CONNECTOR_LIMITS.offset.min}
           max={DOCUMENT_CONNECTOR_LIMITS.offset.max}
@@ -282,16 +292,18 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
           onValueCommit={(verticalOffset) => update({ verticalOffset })}
         />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="连接符">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.connector.group.object')}
+      >
         <ConnectorButton
-          label="删除连接符"
+          label={officeMessage(messages, 'document.connector.delete')}
           disabled={!selected}
           onClick={() => editor.commands.deleteDocumentConnector()}
         >
           <Trash2 size={18} />
         </ConnectorButton>
         <ConnectorButton
-          label="恢复默认样式"
+          label={officeMessage(messages, 'document.connector.resetStyle')}
           disabled={!selected}
           onClick={() =>
             update({
@@ -321,6 +333,139 @@ export function DocumentConnectorRibbon({ editor }: { editor: Editor }) {
       </WorkOfficeRibbonGroup>
     </>
   );
+}
+
+function layoutOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'inline' as const,
+      label: officeMessage(messages, 'document.picture.wrap.inline'),
+      icon: Rows3,
+    },
+    {
+      value: 'floating' as const,
+      label: officeMessage(messages, 'document.connector.layout.floating'),
+      icon: SquareDashedMousePointer,
+    },
+  ];
+}
+
+function arrowOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'none' as const,
+      label: officeMessage(messages, 'document.connector.arrow.none'),
+    },
+    {
+      value: 'triangle' as const,
+      label: officeMessage(messages, 'document.connector.arrow.triangle'),
+    },
+    {
+      value: 'stealth' as const,
+      label: officeMessage(messages, 'document.connector.arrow.stealth'),
+    },
+    {
+      value: 'diamond' as const,
+      label: officeMessage(messages, 'document.connector.arrow.diamond'),
+    },
+    {
+      value: 'oval' as const,
+      label: officeMessage(messages, 'document.connector.arrow.oval'),
+    },
+    {
+      value: 'open' as const,
+      label: officeMessage(messages, 'document.connector.arrow.open'),
+    },
+  ];
+}
+
+function connectorKindOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'straight' as const,
+      label: officeMessage(messages, 'document.connector.kind.straight'),
+    },
+    {
+      value: 'elbow' as const,
+      label: officeMessage(messages, 'document.connector.kind.elbow'),
+    },
+    {
+      value: 'curved' as const,
+      label: officeMessage(messages, 'document.connector.kind.curved'),
+    },
+  ];
+}
+
+function lineStyleOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'solid' as const,
+      label: officeMessage(messages, 'document.connector.line.solid'),
+    },
+    {
+      value: 'dash' as const,
+      label: officeMessage(messages, 'document.connector.line.dash'),
+    },
+    {
+      value: 'dot' as const,
+      label: officeMessage(messages, 'document.connector.line.dot'),
+    },
+    {
+      value: 'dashDot' as const,
+      label: officeMessage(messages, 'document.connector.line.dashDot'),
+    },
+  ];
+}
+
+function widthOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: '0.35',
+      label: officeMessage(messages, 'document.connector.width.thin'),
+    },
+    {
+      value: '0.7',
+      label: officeMessage(messages, 'document.connector.width.medium'),
+    },
+    {
+      value: '1.4',
+      label: officeMessage(messages, 'document.connector.width.thick'),
+    },
+  ] as const;
+}
+
+function horizontalReferenceOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'column' as const,
+      label: officeMessage(messages, 'document.picture.href.column'),
+    },
+    {
+      value: 'margin' as const,
+      label: officeMessage(messages, 'document.picture.href.margin'),
+    },
+    {
+      value: 'page' as const,
+      label: officeMessage(messages, 'document.picture.href.page'),
+    },
+  ];
+}
+
+function verticalReferenceOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'paragraph' as const,
+      label: officeMessage(messages, 'document.picture.vref.paragraph'),
+    },
+    {
+      value: 'margin' as const,
+      label: officeMessage(messages, 'document.picture.href.margin'),
+    },
+    {
+      value: 'page' as const,
+      label: officeMessage(messages, 'document.picture.href.page'),
+    },
+  ];
 }
 
 function ConnectorNumberField({
@@ -363,10 +508,18 @@ function ConnectorNumberField({
   );
 }
 
-function widthOptionsForValue(value: string) {
-  if (widthOptions.some((option) => option.value === value))
-    return widthOptions;
-  return [...widthOptions, { value, label: `${value} 毫米` }] as const;
+function widthOptionsForValue(messages: OfficeMessageCatalog, value: string) {
+  const options = widthOptions(messages);
+  if (options.some((option) => option.value === value)) return options;
+  return [
+    ...options,
+    {
+      value,
+      label: officeMessage(messages, 'document.connector.width.customMm', {
+        value,
+      }),
+    },
+  ] as const;
 }
 
 function ConnectorButton({

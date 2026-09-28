@@ -7,6 +7,7 @@ use super::super::{
     NativeOfficeCollaborationPresentationElementAddress, NativeOfficeCollaborationProjectedContent,
 };
 
+mod deck;
 mod element;
 mod find;
 mod json;
@@ -22,6 +23,11 @@ pub(super) fn validate_presentation_mutation(
     match mutation {
         NativeOfficeCollaborationMutation::PresentationMoveElement { .. } => {
             order::validate_element_order_mutation(mutation)
+        }
+        NativeOfficeCollaborationMutation::PresentationMoveSlide { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetGroup { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetBackground { .. } => {
+            deck::validate_deck_mutation(mutation)
         }
         _ => element::validate_element_mutation(mutation),
     }
@@ -71,6 +77,11 @@ pub(super) fn apply_presentation_mutation(
     match mutation {
         NativeOfficeCollaborationMutation::PresentationMoveElement { .. } => {
             order::apply_element_order_mutation(doc, manifest, mutation)
+        }
+        NativeOfficeCollaborationMutation::PresentationMoveSlide { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetGroup { .. }
+        | NativeOfficeCollaborationMutation::PresentationSetBackground { .. } => {
+            deck::apply_deck_mutation(doc, manifest, mutation)
         }
         _ => element::apply_element_mutation(doc, manifest, mutation),
     }

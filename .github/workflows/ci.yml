@@ -48,6 +48,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Audit dependencies
+        run: bun run audit:deps
+
       - name: Type-check library
         run: bun run typecheck
 

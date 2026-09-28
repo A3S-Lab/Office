@@ -1,4 +1,5 @@
 import type { PluginRegistry } from '@embedpdf/react-pdf-viewer';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,6 +17,7 @@ import type {
   PdfEditorCanCommands,
   PdfEditorCommands,
 } from './pdf-editor-extensions';
+import { useOfficeMessages } from './office-messages-context';
 import { reorderedPdfPageIndexes } from './pdf-page-organization';
 import {
   calculatePdfThumbnailRange,
@@ -58,6 +60,7 @@ export function PdfPageOrganizerDialog({
   onClose,
   onDismissError,
 }: PdfPageOrganizerDialogProps) {
+  const messages = useOfficeMessages();
   const initialIndex = Math.min(
     Math.max(0, totalPages - 1),
     Math.max(0, currentPage - 1),
@@ -120,22 +123,22 @@ export function PdfPageOrganizerDialog({
 
   return (
     <Dialog
-      title="组织 PDF 页面"
-      description="选择页面后插入、删除、旋转、重排、抽取、合并或拆分。"
+      title={officeMessage(messages, 'pdf.organizer.title')}
+      description={officeMessage(messages, 'pdf.organizer.description')}
       className="work-pdf-page-organizer-dialog"
       closeDisabled={effectiveBusy}
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
       footer={
         <Button tone="primary" disabled={effectiveBusy} onClick={onClose}>
-          完成
+          {officeMessage(messages, 'pdf.organizer.done')}
         </Button>
       }
     >
       <OfficeFileInput
         ref={mergeInputRef}
         accept=".pdf,application/pdf"
-        aria-label="选择要合并的 PDF"
+        aria-label={officeMessage(messages, 'pdf.organizer.mergeInputAria')}
         disabled={effectiveBusy}
         onFileSelect={(file) => {
           if (!can.mergePages(insertionIndex, file)) return;
@@ -146,30 +149,30 @@ export function PdfPageOrganizerDialog({
       <div
         className="work-pdf-page-organizer-actions"
         role="toolbar"
-        aria-label="PDF 页面组织命令"
+        aria-label={officeMessage(messages, 'pdf.organizer.commandsAria')}
         onKeyDown={moveOfficeToolbarFocus}
       >
         <Button
           tone="secondary"
-          aria-label="插入空白页"
+          aria-label={officeMessage(messages, 'pdf.organizer.insertBlankAria')}
           disabled={!can.insertBlankPage(insertionIndex) || effectiveBusy}
           onClick={() =>
             void commitMutation(() => commands.insertBlankPage(insertionIndex))
           }
         >
-          <FilePlus2 size={15} /> 插入空白页
+          <FilePlus2 size={15} /> {officeMessage(messages, 'pdf.organizer.insertBlank')}
         </Button>
         <Button
           tone="secondary"
-          aria-label="合并另一个 PDF"
+          aria-label={officeMessage(messages, 'pdf.organizer.mergeAria')}
           disabled={effectiveBusy}
           onClick={() => mergeInputRef.current?.click()}
         >
-          <Files size={15} /> 合并 PDF
+          <Files size={15} /> {officeMessage(messages, 'pdf.organizer.merge')}
         </Button>
         <Button
           tone="secondary"
-          aria-label="前移所选页"
+          aria-label={officeMessage(messages, 'pdf.organizer.moveEarlierAria')}
           disabled={
             !moveLeftOrder || !can.reorderPages(moveLeftOrder) || effectiveBusy
           }
@@ -179,11 +182,11 @@ export function PdfPageOrganizerDialog({
             }
           }}
         >
-          <ChevronLeft size={15} /> 前移
+          <ChevronLeft size={15} /> {officeMessage(messages, 'pdf.organizer.moveEarlier')}
         </Button>
         <Button
           tone="secondary"
-          aria-label="后移所选页"
+          aria-label={officeMessage(messages, 'pdf.organizer.moveLaterAria')}
           disabled={
             !moveRightOrder ||
             !can.reorderPages(moveRightOrder) ||
@@ -195,11 +198,11 @@ export function PdfPageOrganizerDialog({
             }
           }}
         >
-          <ChevronRight size={15} /> 后移
+          <ChevronRight size={15} /> {officeMessage(messages, 'pdf.organizer.moveLater')}
         </Button>
         <Button
           tone="secondary"
-          aria-label="向左旋转所选页"
+          aria-label={officeMessage(messages, 'pdf.organizer.rotateLeftAria')}
           disabled={!can.rotatePages(selectedIndexes, 270) || effectiveBusy}
           onClick={() =>
             void commitMutation(() =>
@@ -207,53 +210,53 @@ export function PdfPageOrganizerDialog({
             )
           }
         >
-          <RotateCcw size={15} /> 左转
+          <RotateCcw size={15} /> {officeMessage(messages, 'pdf.organizer.rotateLeft')}
         </Button>
         <Button
           tone="secondary"
-          aria-label="向右旋转所选页"
+          aria-label={officeMessage(messages, 'pdf.organizer.rotateRightAria')}
           disabled={!can.rotatePages(selectedIndexes, 90) || effectiveBusy}
           onClick={() =>
             void commitMutation(() => commands.rotatePages(selectedIndexes, 90))
           }
         >
-          <RotateCw size={15} /> 右转
+          <RotateCw size={15} /> {officeMessage(messages, 'pdf.organizer.rotateRight')}
         </Button>
         <Button
           tone="secondary"
-          aria-label="抽取所选页"
+          aria-label={officeMessage(messages, 'pdf.organizer.extractAria')}
           disabled={!can.extractPages(selectedIndexes) || effectiveBusy}
           onClick={() =>
             void runExport(() => commands.extractPages(selectedIndexes))
           }
         >
-          <Download size={15} /> 抽取
+          <Download size={15} /> {officeMessage(messages, 'pdf.organizer.extract')}
         </Button>
         <Button
           tone="secondary"
-          aria-label="在所选页后拆分"
+          aria-label={officeMessage(messages, 'pdf.organizer.splitAria')}
           disabled={!can.splitPages(splitBoundaries) || effectiveBusy}
           onClick={() =>
             void runExport(() => commands.splitPages(splitBoundaries))
           }
         >
-          <Scissors size={15} /> 拆分
+          <Scissors size={15} /> {officeMessage(messages, 'pdf.organizer.split')}
         </Button>
         <Button
           tone="danger"
-          aria-label="删除所选页"
+          aria-label={officeMessage(messages, 'pdf.organizer.deleteAria')}
           disabled={!can.deletePages(selectedIndexes) || effectiveBusy}
           onClick={() =>
             void commitMutation(() => commands.deletePages(selectedIndexes))
           }
         >
-          <Trash2 size={15} /> 删除
+          <Trash2 size={15} /> {officeMessage(messages, 'pdf.organizer.delete')}
         </Button>
       </div>
 
       <div className="work-pdf-page-organizer-selection">
         <output aria-live="polite">
-          已选择 {selectedIndexes.length} / {totalPages} 页
+          {officeMessage(messages, 'pdf.organizer.selectedCount', { selected: String(selectedIndexes.length), total: String(totalPages) })}
         </output>
         <button
           type="button"
@@ -264,20 +267,20 @@ export function PdfPageOrganizerDialog({
             )
           }
         >
-          全选
+          {officeMessage(messages, 'pdf.organizer.selectAll')}
         </button>
         <button
           type="button"
           disabled={effectiveBusy}
           onClick={() => setSelected(new Set([initialIndex]))}
         >
-          仅当前页
+          {officeMessage(messages, 'pdf.organizer.currentOnly')}
         </button>
       </div>
 
       <section
         className="work-pdf-page-organizer-viewport"
-        aria-label="可重排 PDF 页面"
+        aria-label={officeMessage(messages, 'pdf.organizer.listAria')}
         onScroll={(event) =>
           setAnchorIndex(
             Math.floor(
@@ -330,13 +333,13 @@ export function PdfPageOrganizerDialog({
       {error && (
         <div className="work-pdf-page-organizer-error" role="alert">
           <div>
-            <strong>无法安全完成页面操作</strong>
+            <strong>{officeMessage(messages, 'pdf.organizer.errorTitle')}</strong>
             <p>{error.message}</p>
             <code>{error.code}</code>
           </div>
           <button
             type="button"
-            aria-label="关闭错误提示"
+            aria-label={officeMessage(messages, 'pdf.organizer.closeError')}
             onClick={onDismissError}
           >
             ×
@@ -351,8 +354,7 @@ export function PdfPageOrganizerDialog({
         </ul>
       )}
       <p className="work-pdf-page-organizer-boundary">
-        页面操作在 Worker 中生成新
-        PDF，并由一个撤销记录恢复。签名、加密、表单、目录或标记结构无法安全重写时会明确停止。
+        {officeMessage(messages, 'pdf.organizer.workerHint')}
       </p>
     </Dialog>
   );
@@ -375,13 +377,14 @@ function OrganizerPage({
   onDrop: (targetIndex: number) => void;
   onSelect: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
+  const messages = useOfficeMessages();
   const { sourceUrl, state } = usePdfThumbnailSource(registry, pageIndex + 1);
   return (
     <button
       type="button"
       className={selected ? 'selected' : undefined}
       aria-current={current ? 'page' : undefined}
-      aria-label={`选择第 ${pageIndex + 1} 页`}
+      aria-label={officeMessage(messages, 'pdf.organizer.selectPageAria', { page: String(pageIndex + 1) })}
       aria-pressed={selected}
       data-pdf-organizer-page-index={pageIndex}
       disabled={disabled}
@@ -402,7 +405,7 @@ function OrganizerPage({
     >
       <span className="work-pdf-page-organizer-number">
         {pageIndex + 1}
-        {current && <small>当前</small>}
+        {current && <small>{officeMessage(messages, 'pdf.organizer.currentBadge')}</small>}
       </span>
       <span className="work-pdf-page-organizer-preview" data-state={state}>
         {sourceUrl && <img src={sourceUrl} alt="" draggable={false} />}

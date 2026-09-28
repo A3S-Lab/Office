@@ -1,5 +1,9 @@
 import type { Cell, CellMatrix, Sheet } from '@fortune-sheet/core';
 import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../i18n/office-locale';
+import {
   cloneSparseMatrix,
   sparseArrayEntries,
   sparseMatrixColumnCount,
@@ -11,8 +15,15 @@ import {
   type SpreadsheetCellRange,
 } from './work-spreadsheet-ranges';
 
-export const DEFAULT_PROTECTION_HINT =
-  '此工作表已受保护。若要更改锁定的单元格，请先取消工作表保护。';
+export function defaultProtectionHint(): string {
+  return officeMessage(
+    resolveOfficeMessages(),
+    'spreadsheet.protection.hint',
+  );
+}
+
+/** @deprecated Prefer defaultProtectionHint() for locale-aware text. */
+export const DEFAULT_PROTECTION_HINT = defaultProtectionHint();
 
 export interface FortuneSheetEditableRange {
   name: string;
@@ -74,7 +85,7 @@ export function defaultSheetProtectionAuthority(
     editObjects: 0,
     editScenarios: 0,
     hintText: '',
-    defaultSheetHintText: DEFAULT_PROTECTION_HINT,
+    defaultSheetHintText: defaultProtectionHint(),
     allowRangeList: [],
     cellProtectionRanges: [],
   };

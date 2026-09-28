@@ -2,6 +2,8 @@ import type { Editor } from '@tiptap/core';
 import { Grid2X2 } from 'lucide-react';
 import { useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageKey } from '../../../i18n/office-messages';
 import {
   DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
   type DocumentTableCellMarginSide,
@@ -9,27 +11,25 @@ import {
 } from '../work-document-table-geometry';
 import { documentTableSizing } from '../work-document-table-sizing';
 import { OfficeNumberField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 const PIXELS_PER_CENTIMETER = 96 / 2.54;
-const marginFields = [
-  { side: 'top', label: '上', ariaLabel: '单元格上边距（厘米）' },
-  { side: 'bottom', label: '下', ariaLabel: '单元格下边距（厘米）' },
-  { side: 'left', label: '左', ariaLabel: '单元格左边距（厘米）' },
-  { side: 'right', label: '右', ariaLabel: '单元格右边距（厘米）' },
-] as const satisfies readonly {
-  side: DocumentTableCellMarginSide;
-  label: string;
-  ariaLabel: string;
-}[];
+const MARGIN_SIDES = [
+  'top',
+  'bottom',
+  'left',
+  'right',
+] as const satisfies readonly DocumentTableCellMarginSide[];
 
 export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
   const margins = currentMargins(editor);
   const [open, setOpen] = useState(false);
   const [drafts, setDrafts] = useState(() => marginDrafts(margins));
   const customized = !sameMargins(margins, DEFAULT_DOCUMENT_TABLE_CELL_MARGINS);
   const committedDrafts = marginDrafts(margins);
-  const dirty = marginFields.some(
-    ({ side }) => drafts[side] !== committedDrafts[side],
+  const dirty = MARGIN_SIDES.some(
+    (side) => drafts[side] !== committedDrafts[side],
   );
 
   const commit = (side: DocumentTableCellMarginSide, rawValue: string) => {
@@ -56,8 +56,8 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
 
   return (
     <Popover
-      label="单元格边距"
-      panelLabel="单元格边距设置"
+      label={officeMessage(messages, 'document.tableMargins.label')}
+      panelLabel={officeMessage(messages, 'document.tableMargins.panelLabel')}
       panelRole="dialog"
       portal
       open={open}
@@ -72,10 +72,17 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
         <button
           {...triggerProps}
           className={`with-label${customized || popoverOpen ? ' active' : ''}`}
-          title={customized ? '单元格边距（已自定义）' : '单元格边距'}
+          title={officeMessage(
+            messages,
+            customized
+              ? 'document.tableMargins.titleCustom'
+              : 'document.tableMargins.label',
+          )}
         >
           <Grid2X2 size={18} />
-          <span>单元格边距</span>
+          <span>
+            {officeMessage(messages, 'document.tableMargins.label')}
+          </span>
         </button>
       )}
     >
@@ -88,33 +95,50 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
           setDrafts(committedDrafts);
         }}
       >
-        <legend>单元格边距</legend>
-        <p>设置文字到单元格边框的距离。</p>
+        <legend>
+          {officeMessage(messages, 'document.tableMargins.legend')}
+        </legend>
+        <p>
+          {officeMessage(messages, 'document.tableMargins.description')}
+        </p>
         <div className="work-document-table-margins-grid">
-          {marginFields.map(({ side, label, ariaLabel }) => {
-            const dirty = drafts[side] !== committedDrafts[side];
+          {MARGIN_SIDES.map((side) => {
+            const sideLabel = officeMessage(
+              messages,
+              `document.tableMargins.side.${side}` as OfficeMessageKey,
+            );
+            const fieldDirty = drafts[side] !== committedDrafts[side];
             return (
               <fieldset key={side} className="work-document-table-margin-field">
-                <legend className="sr-only">{label}边距</legend>
-                <span aria-hidden="true">{label}</span>
+                <legend className="sr-only">
+                  {officeMessage(messages, 'document.tableMargins.sideLegend', {
+                    side: sideLabel,
+                  })}
+                </legend>
+                <span aria-hidden="true">{sideLabel}</span>
                 <OfficeNumberField
-                  ariaLabel={ariaLabel}
+                  ariaLabel={officeMessage(
+                    messages,
+                    `document.tableMargins.sideAria.${side}` as OfficeMessageKey,
+                  )}
                   value={drafts[side]}
                   min={0}
                   max={5}
                   step={0.05}
-                  escapeConsumer={dirty}
+                  escapeConsumer={fieldDirty}
                   onValueChange={(value) =>
                     setDrafts((current) => ({ ...current, [side]: value }))
                   }
                   onCommit={(value) => commit(side, value)}
                   onCancel={
-                    dirty
+                    fieldDirty
                       ? () => setDrafts(marginDrafts(currentMargins(editor)))
                       : undefined
                   }
                 />
-                <small>厘米</small>
+                <small>
+                  {officeMessage(messages, 'document.tableMargins.unit')}
+                </small>
               </fieldset>
             );
           })}
@@ -125,7 +149,7 @@ export function DocumentTableMarginsPopover({ editor }: { editor: Editor }) {
           disabled={!customized}
           onClick={restoreDefault}
         >
-          恢复标准边距
+          {officeMessage(messages, 'document.tableMargins.reset')}
         </button>
       </fieldset>
     </Popover>
@@ -159,7 +183,7 @@ function sameMargins(
   left: DocumentTableCellMargins,
   right: DocumentTableCellMargins,
 ): boolean {
-  return marginFields.every(
-    ({ side }) => Math.abs(left[side] - right[side]) < 0.01,
+  return MARGIN_SIDES.every(
+    (side) => Math.abs(left[side] - right[side]) < 0.01,
   );
 }

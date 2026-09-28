@@ -62,6 +62,8 @@ import { DocumentIndexEntryDialog } from './document-index-entry-dialog';
 import { DocumentTableOfContentsDialog } from './document-table-of-contents-dialog';
 import { OfficeTextField, useOfficeDialog } from './office-controls';
 import { readOfficeFileAsDataUrl } from './office-file-data';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 type DocumentInsertDialog =
   | {
@@ -133,6 +135,7 @@ export function useDocumentInsertCommands({
   editor: Editor | null;
   resolveFieldContext?: WorkDocumentFieldContextResolver | null;
 }): DocumentInsertCommands {
+  const messages = useOfficeMessages();
   const officeDialog = useOfficeDialog();
   const [insertDialog, setInsertDialog] = useState<DocumentInsertDialog | null>(
     null,
@@ -161,15 +164,15 @@ export function useDocumentInsertCommands({
         ].includes(file.type)
       ) {
         await officeDialog.notice({
-          title: '无法插入图片',
-          description: '请选择 PNG、JPEG、GIF、WebP 或 BMP 图片。',
+          title: officeMessage(messages, 'document.insert.imageUnsupportedTitle'),
+          description: officeMessage(messages, 'document.insert.imageUnsupportedDesc'),
         });
         return;
       }
       if (file.size > 8 * 1024 * 1024) {
         await officeDialog.notice({
-          title: '图片过大',
-          description: '单张图片不能超过 8 MiB。',
+          title: officeMessage(messages, 'document.insert.imageTooLargeTitle'),
+          description: officeMessage(messages, 'document.insert.imageTooLargeDesc'),
         });
         return;
       }
@@ -184,8 +187,8 @@ export function useDocumentInsertCommands({
         }
       } catch {
         await officeDialog.notice({
-          title: '无法读取图片',
-          description: '文件可能已经移动或损坏，请重新选择。',
+          title: officeMessage(messages, 'document.insert.imageReadFailedTitle'),
+          description: officeMessage(messages, 'document.insert.imageReadFailedDesc'),
         });
       }
     },
@@ -243,8 +246,8 @@ export function useDocumentInsertCommands({
     ];
     if (!targets.length) {
       void officeDialog.notice({
-        title: '还没有可引用目标',
-        description: '请先插入图片或表格题注，或在正文中添加书签。',
+        title: officeMessage(messages, 'document.insert.noReferenceTargetsTitle'),
+        description: officeMessage(messages, 'document.insert.noReferenceTargetsDesc'),
       });
       return;
     }
@@ -314,8 +317,8 @@ export function useDocumentInsertCommands({
     const value = selectedDocumentIndexDraft(editor);
     if (!value) {
       void officeDialog.notice({
-        title: '请选择索引文字',
-        description: '请先选择要标记的正文文字，或选中一个已有索引项。',
+        title: officeMessage(messages, 'document.insert.selectIndexTextTitle'),
+        description: officeMessage(messages, 'document.insert.selectIndexTextDesc'),
       });
       return;
     }
@@ -533,20 +536,20 @@ export function useDocumentInsertCommands({
         <Dialog
           title={
             insertDialog.captionKind === 'figure'
-              ? '插入图片题注'
-              : '插入表格题注'
+              ? officeMessage(messages, 'document.insert.captionFigureTitle')
+              : officeMessage(messages, 'document.insert.captionTableTitle')
           }
-          description="题注编号会自动生成，并可用于交叉引用。"
+          description={officeMessage(messages, 'document.insert.captionDesc')}
           className="work-document-insert-dialog"
           restoreFocusTarget={() => invokerRef.current}
           onClose={() => setInsertDialog(null)}
           footer={
             <>
               <Button tone="quiet" onClick={() => setInsertDialog(null)}>
-                取消
+                {officeMessage(messages, 'office.dialog.cancel')}
               </Button>
               <Button tone="primary" onClick={submitCaption}>
-                插入题注
+                {officeMessage(messages, 'document.insert.captionSubmit')}
               </Button>
             </>
           }
@@ -555,14 +558,14 @@ export function useDocumentInsertCommands({
             className="work-document-dialog-field"
             htmlFor={captionFieldId}
           >
-            <span>题注文字</span>
+            <span>{officeMessage(messages, 'document.insert.captionLabel')}</span>
             <OfficeTextField
               id={captionFieldId}
               data-autofocus
-              aria-label="题注文字"
+              aria-label={officeMessage(messages, 'document.insert.captionLabel')}
               value={insertDialog.title}
               maxLength={240}
-              placeholder="例如：系统架构"
+              placeholder={officeMessage(messages, 'document.insert.captionPlaceholder')}
               onChange={(event) =>
                 setInsertDialog({
                   ...insertDialog,
@@ -580,15 +583,15 @@ export function useDocumentInsertCommands({
       )}
       {insertDialog?.kind === 'crossReference' && (
         <Dialog
-          title="插入交叉引用"
-          description="选择正文中已有的图片、表格题注或书签；书签还可以插入实时目标页码。"
+          title={officeMessage(messages, 'document.insert.crossRefTitle')}
+          description={officeMessage(messages, 'document.insert.crossRefDesc')}
           className="work-document-reference-dialog"
           restoreFocusTarget={() => invokerRef.current}
           onClose={() => setInsertDialog(null)}
           footer={
             <>
               <Button tone="quiet" onClick={() => setInsertDialog(null)}>
-                取消
+                {officeMessage(messages, 'office.dialog.cancel')}
               </Button>
               <Button
                 tone="secondary"
@@ -602,14 +605,14 @@ export function useDocumentInsertCommands({
                 }
                 onClick={submitPageReference}
               >
-                插入目标页码
+                {officeMessage(messages, 'document.insert.crossRefInsertPage')}
               </Button>
               <Button
                 tone="primary"
                 disabled={!insertDialog.selectedKey}
                 onClick={submitCrossReference}
               >
-                插入引用
+                {officeMessage(messages, 'document.insert.crossRefInsert')}
               </Button>
             </>
           }
@@ -617,7 +620,7 @@ export function useDocumentInsertCommands({
           <div
             className="work-document-reference-list"
             role="radiogroup"
-            aria-label="可引用目标"
+            aria-label={officeMessage(messages, 'document.insert.crossRefTargetsAria')}
           >
             {insertDialog.targets.map((target, index) => {
               const targetKey = referenceTargetKey(target);
@@ -647,14 +650,16 @@ export function useDocumentInsertCommands({
                   />
                   <strong>
                     {target.type === 'bookmark'
-                      ? `书签 ${target.name}`
+                      ? officeMessage(messages, 'document.insert.bookmarkLabel', {
+                          name: target.name,
+                        })
                       : target.display}
                   </strong>
                   <span>
                     {target.title ||
                       (target.type === 'bookmark'
-                        ? '（空书签）'
-                        : '（无题注文字）')}
+                        ? officeMessage(messages, 'document.insert.emptyBookmark')
+                        : officeMessage(messages, 'document.insert.emptyCaption'))}
                   </span>
                 </label>
               );
@@ -747,11 +752,12 @@ function defaultDocumentFieldDraft(): WorkDocumentFieldDraft {
 }
 
 function documentFieldPreview(draft: WorkDocumentFieldDraft): string {
+  const messages = resolveOfficeMessages();
   if (draft.kind === 'pageReference' && !draft.targetName) {
-    return '请选择引用目标';
+    return officeMessage(messages, 'document.insert.fieldSelectTarget');
   }
   if (draft.kind === 'mergeField' && !draft.targetName.trim()) {
-    return '请输入合并域名';
+    return officeMessage(messages, 'document.insert.fieldEnterMergeName');
   }
   return documentFieldDisplay(
     draft.kind,

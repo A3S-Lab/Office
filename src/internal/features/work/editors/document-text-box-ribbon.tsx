@@ -9,6 +9,8 @@ import {
   SquareDashedMousePointer,
   Trash2,
 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import {
   DOCUMENT_TEXT_BOX_DEFAULTS,
   DOCUMENT_TEXT_BOX_LIMITS,
@@ -25,69 +27,14 @@ import {
   OfficeColorPicker,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 
-const layoutOptions = [
-  { value: 'inline', label: '嵌入文字', icon: Rows3 },
-  { value: 'floating', label: '浮于文字上方', icon: SquareDashedMousePointer },
-] as const satisfies readonly {
-  value: WorkDocumentTextBoxLayout;
-  label: string;
-  icon: typeof Rows3;
-}[];
-
-const shapeOptions = [
-  { value: 'rectangle', label: '矩形' },
-  { value: 'roundedRectangle', label: '圆角矩形' },
-  { value: 'ellipse', label: '椭圆' },
-  { value: 'diamond', label: '菱形' },
-  { value: 'triangle', label: '三角形' },
-  { value: 'parallelogram', label: '平行四边形' },
-  { value: 'hexagon', label: '六边形' },
-] as const satisfies readonly {
-  value: WorkDocumentShapeType;
-  label: string;
-}[];
-
-const horizontalReferenceOptions = [
-  { value: 'column', label: '栏' },
-  { value: 'margin', label: '页边距' },
-  { value: 'page', label: '页面' },
-] as const satisfies readonly {
-  value: WorkDocumentTextBoxHorizontalReference;
-  label: string;
-}[];
-
-const verticalReferenceOptions = [
-  { value: 'paragraph', label: '段落' },
-  { value: 'margin', label: '页边距' },
-  { value: 'page', label: '页面' },
-] as const satisfies readonly {
-  value: WorkDocumentTextBoxVerticalReference;
-  label: string;
-}[];
-
-const verticalAlignOptions = [
-  { value: 'top', label: '顶端', icon: AlignVerticalJustifyStart },
-  { value: 'center', label: '居中', icon: AlignVerticalJustifyCenter },
-  { value: 'bottom', label: '底端', icon: AlignVerticalJustifyEnd },
-] as const satisfies readonly {
-  value: WorkDocumentTextBoxVerticalAlign;
-  label: string;
-  icon: typeof AlignVerticalJustifyStart;
-}[];
-
-const borderWidthOptions = [
-  { value: '0', label: '无边框' },
-  { value: '0.35', label: '细（0.35 mm）' },
-  { value: '0.7', label: '中（0.7 mm）' },
-  { value: '1.4', label: '粗（1.4 mm）' },
-] as const;
-
 export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
+  const messages = useOfficeMessages();
   const properties = documentTextBoxProperties(editor);
   const selected = editor.isActive('documentTextBox');
   const update = (value: Partial<WorkDocumentTextBoxProperties>) => {
@@ -113,19 +60,25 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
 
   return (
     <>
-      <WorkOfficeRibbonGroup label="形状" priority="high">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.textBox.group.shape')}
+        priority="high"
+      >
         <OfficeSelect<WorkDocumentShapeType>
           className="work-document-text-box-shape-select"
-          ariaLabel="文本框形状"
+          ariaLabel={officeMessage(messages, 'document.textBox.shapeAria')}
           value={properties.shapeType}
-          options={shapeOptions}
+          options={shapeOptions(messages)}
           disabled={!selected}
           onValueChange={(shapeType) => update({ shapeType })}
         />
         <Shapes size={18} aria-hidden="true" />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="布局" priority="high">
-        {layoutOptions.map((option) => {
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.textBox.group.layout')}
+        priority="high"
+      >
+        {layoutOptions(messages).map((option) => {
           const Icon = option.icon;
           return (
             <TextBoxButton
@@ -140,11 +93,18 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           );
         })}
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="大小">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.picture.size.legend')}
+      >
         <div className="work-office-field work-document-text-box-size-field">
-          <span>宽度（毫米）</span>
+          <span>
+            {officeMessage(messages, 'document.textBox.size.width')}
+          </span>
           <CommittedOfficeNumberField
-            ariaLabel="文本框宽度（毫米）"
+            ariaLabel={officeMessage(
+              messages,
+              'document.textBox.size.widthAria',
+            )}
             value={properties.width}
             min={DOCUMENT_TEXT_BOX_LIMITS.width.min}
             max={DOCUMENT_TEXT_BOX_LIMITS.width.max}
@@ -161,9 +121,14 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           />
         </div>
         <div className="work-office-field work-document-text-box-size-field">
-          <span>高度（毫米）</span>
+          <span>
+            {officeMessage(messages, 'document.textBox.size.height')}
+          </span>
           <CommittedOfficeNumberField
-            ariaLabel="文本框高度（毫米）"
+            ariaLabel={officeMessage(
+              messages,
+              'document.textBox.size.heightAria',
+            )}
             value={properties.height}
             min={DOCUMENT_TEXT_BOX_LIMITS.height.min}
             max={DOCUMENT_TEXT_BOX_LIMITS.height.max}
@@ -180,13 +145,23 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           />
         </div>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="位置">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.picture.position.legend')}
+      >
         <div className="work-office-field work-document-text-box-position-field">
-          <span>水平相对于</span>
+          <span>
+            {officeMessage(
+              messages,
+              'document.textBox.position.horizontalRelative',
+            )}
+          </span>
           <OfficeSelect<WorkDocumentTextBoxHorizontalReference>
-            ariaLabel="文本框水平相对于"
+            ariaLabel={officeMessage(
+              messages,
+              'document.textBox.position.horizontalRelativeAria',
+            )}
             value={properties.horizontalReference}
-            options={horizontalReferenceOptions}
+            options={horizontalReferenceOptions(messages)}
             disabled={!selected || properties.layout !== 'floating'}
             onValueChange={(horizontalReference) =>
               update({ horizontalReference })
@@ -194,19 +169,35 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           />
         </div>
         <div className="work-office-field work-document-text-box-position-field">
-          <span>垂直相对于</span>
+          <span>
+            {officeMessage(
+              messages,
+              'document.textBox.position.verticalRelative',
+            )}
+          </span>
           <OfficeSelect<WorkDocumentTextBoxVerticalReference>
-            ariaLabel="文本框垂直相对于"
+            ariaLabel={officeMessage(
+              messages,
+              'document.textBox.position.verticalRelativeAria',
+            )}
             value={properties.verticalReference}
-            options={verticalReferenceOptions}
+            options={verticalReferenceOptions(messages)}
             disabled={!selected || properties.layout !== 'floating'}
             onValueChange={(verticalReference) => update({ verticalReference })}
           />
         </div>
         <div className="work-office-field work-document-text-box-offset-field">
-          <span>水平偏移（毫米）</span>
+          <span>
+            {officeMessage(
+              messages,
+              'document.textBox.position.horizontalOffset',
+            )}
+          </span>
           <CommittedOfficeNumberField
-            ariaLabel="文本框水平偏移（毫米）"
+            ariaLabel={officeMessage(
+              messages,
+              'document.textBox.position.horizontalOffsetAria',
+            )}
             value={properties.horizontalOffset ?? 0}
             min={DOCUMENT_TEXT_BOX_LIMITS.offset.min}
             max={DOCUMENT_TEXT_BOX_LIMITS.offset.max}
@@ -223,9 +214,17 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           />
         </div>
         <div className="work-office-field work-document-text-box-offset-field">
-          <span>垂直偏移（毫米）</span>
+          <span>
+            {officeMessage(
+              messages,
+              'document.textBox.position.verticalOffset',
+            )}
+          </span>
           <CommittedOfficeNumberField
-            ariaLabel="文本框垂直偏移（毫米）"
+            ariaLabel={officeMessage(
+              messages,
+              'document.textBox.position.verticalOffsetAria',
+            )}
             value={properties.verticalOffset ?? 0}
             min={DOCUMENT_TEXT_BOX_LIMITS.offset.min}
             max={DOCUMENT_TEXT_BOX_LIMITS.offset.max}
@@ -242,8 +241,10 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           />
         </div>
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="文本对齐">
-        {verticalAlignOptions.map((option) => {
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.textBox.group.align')}
+      >
+        {verticalAlignOptions(messages).map((option) => {
           const Icon = option.icon;
           return (
             <TextBoxButton
@@ -258,22 +259,30 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           );
         })}
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="填充和轮廓">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.textBox.group.fillStroke')}
+      >
         <OfficeColorPicker
-          ariaLabel="文本框填充颜色"
-          triggerLabel="填充"
+          ariaLabel={officeMessage(messages, 'document.textBox.fillAria')}
+          triggerLabel={officeMessage(
+            messages,
+            'document.textBox.fillTrigger',
+          )}
           value={properties.fill}
           disabled={!selected}
           resetAction={{
             kind: 'automatic',
-            label: '无填充',
+            label: officeMessage(messages, 'document.textBox.fillNone'),
             onSelect: () => update({ fill: 'transparent' }),
           }}
           onValueChange={(fill) => update({ fill })}
         />
         <OfficeColorPicker
-          ariaLabel="文本框边框颜色"
-          triggerLabel="边框"
+          ariaLabel={officeMessage(messages, 'document.textBox.strokeAria')}
+          triggerLabel={officeMessage(
+            messages,
+            'document.textBox.strokeTrigger',
+          )}
           value={
             properties.borderColor === 'none'
               ? '#ffffff'
@@ -282,16 +291,22 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           disabled={!selected}
           resetAction={{
             kind: 'none',
-            label: '无轮廓',
+            label: officeMessage(messages, 'document.textBox.strokeNone'),
             onSelect: () => update({ borderColor: 'none', borderWidth: 0 }),
           }}
           onValueChange={(borderColor) => update({ borderColor })}
         />
         <OfficeSelect
           className="work-document-text-box-border-width-select"
-          ariaLabel="文本框边框粗细"
+          ariaLabel={officeMessage(
+            messages,
+            'document.textBox.strokeWidthAria',
+          )}
           value={String(properties.borderWidth)}
-          options={borderWidthOptionsForValue(String(properties.borderWidth))}
+          options={borderWidthOptionsForValue(
+            messages,
+            String(properties.borderWidth),
+          )}
           disabled={!selected}
           onValueChange={(value) =>
             update({
@@ -301,16 +316,18 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
           }
         />
       </WorkOfficeRibbonGroup>
-      <WorkOfficeRibbonGroup label="文本框">
+      <WorkOfficeRibbonGroup
+        label={officeMessage(messages, 'document.textBox.group.object')}
+      >
         <TextBoxButton
-          label="删除文本框"
+          label={officeMessage(messages, 'document.textBox.delete')}
           disabled={!selected}
           onClick={() => editor.commands.deleteDocumentTextBox()}
         >
           <Trash2 size={18} />
         </TextBoxButton>
         <TextBoxButton
-          label="恢复默认样式"
+          label={officeMessage(messages, 'document.textBox.resetStyle')}
           disabled={!selected}
           onClick={() =>
             update({
@@ -336,6 +353,129 @@ export function DocumentTextBoxRibbon({ editor }: { editor: Editor }) {
       </WorkOfficeRibbonGroup>
     </>
   );
+}
+
+function layoutOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'inline' as const,
+      label: officeMessage(messages, 'document.picture.wrap.inline'),
+      icon: Rows3,
+    },
+    {
+      value: 'floating' as const,
+      label: officeMessage(messages, 'document.textBox.layout.floating'),
+      icon: SquareDashedMousePointer,
+    },
+  ];
+}
+
+function shapeOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'rectangle' as const,
+      label: officeMessage(messages, 'document.textBox.shape.rectangle'),
+    },
+    {
+      value: 'roundedRectangle' as const,
+      label: officeMessage(messages, 'document.textBox.shape.roundedRectangle'),
+    },
+    {
+      value: 'ellipse' as const,
+      label: officeMessage(messages, 'document.textBox.shape.ellipse'),
+    },
+    {
+      value: 'diamond' as const,
+      label: officeMessage(messages, 'document.textBox.shape.diamond'),
+    },
+    {
+      value: 'triangle' as const,
+      label: officeMessage(messages, 'document.textBox.shape.triangle'),
+    },
+    {
+      value: 'parallelogram' as const,
+      label: officeMessage(messages, 'document.textBox.shape.parallelogram'),
+    },
+    {
+      value: 'hexagon' as const,
+      label: officeMessage(messages, 'document.textBox.shape.hexagon'),
+    },
+  ];
+}
+
+function horizontalReferenceOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'column' as const,
+      label: officeMessage(messages, 'document.picture.href.column'),
+    },
+    {
+      value: 'margin' as const,
+      label: officeMessage(messages, 'document.picture.href.margin'),
+    },
+    {
+      value: 'page' as const,
+      label: officeMessage(messages, 'document.picture.href.page'),
+    },
+  ];
+}
+
+function verticalReferenceOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'paragraph' as const,
+      label: officeMessage(messages, 'document.picture.vref.paragraph'),
+    },
+    {
+      value: 'margin' as const,
+      label: officeMessage(messages, 'document.picture.href.margin'),
+    },
+    {
+      value: 'page' as const,
+      label: officeMessage(messages, 'document.picture.href.page'),
+    },
+  ];
+}
+
+function verticalAlignOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: 'top' as const,
+      label: officeMessage(messages, 'document.textBox.align.top'),
+      icon: AlignVerticalJustifyStart,
+    },
+    {
+      value: 'center' as const,
+      label: officeMessage(messages, 'document.textBox.align.center'),
+      icon: AlignVerticalJustifyCenter,
+    },
+    {
+      value: 'bottom' as const,
+      label: officeMessage(messages, 'document.textBox.align.bottom'),
+      icon: AlignVerticalJustifyEnd,
+    },
+  ];
+}
+
+function borderWidthOptions(messages: OfficeMessageCatalog) {
+  return [
+    {
+      value: '0',
+      label: officeMessage(messages, 'document.textBox.border.none'),
+    },
+    {
+      value: '0.35',
+      label: officeMessage(messages, 'document.textBox.border.thin'),
+    },
+    {
+      value: '0.7',
+      label: officeMessage(messages, 'document.textBox.border.medium'),
+    },
+    {
+      value: '1.4',
+      label: officeMessage(messages, 'document.textBox.border.thick'),
+    },
+  ] as const;
 }
 
 function TextBoxButton({
@@ -374,9 +514,21 @@ function normalizeTextBoxNumber(
   return Number(number.toFixed(2));
 }
 
-function borderWidthOptionsForValue(value: string) {
-  if (borderWidthOptions.some((option) => option.value === value)) {
-    return borderWidthOptions;
+function borderWidthOptionsForValue(
+  messages: OfficeMessageCatalog,
+  value: string,
+) {
+  const options = borderWidthOptions(messages);
+  if (options.some((option) => option.value === value)) {
+    return options;
   }
-  return [...borderWidthOptions, { value, label: `${value} 毫米` }] as const;
+  return [
+    ...options,
+    {
+      value,
+      label: officeMessage(messages, 'document.textBox.border.customMm', {
+        value,
+      }),
+    },
+  ] as const;
 }

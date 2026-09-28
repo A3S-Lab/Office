@@ -1,3 +1,18 @@
+import {
+  officeMessage,
+  resolveOfficeMessages,
+  type OfficeMessageKey,
+} from '../../../i18n/office-locale';
+import {
+  SPREADSHEET_SORT_BUILTIN_EN_MONTHS,
+  SPREADSHEET_SORT_BUILTIN_EN_MONTHS_ABBR,
+  SPREADSHEET_SORT_BUILTIN_EN_WEEKDAYS,
+  SPREADSHEET_SORT_BUILTIN_EN_WEEKDAYS_ABBR,
+  SPREADSHEET_SORT_BUILTIN_ZH_MONTHS,
+  SPREADSHEET_SORT_BUILTIN_ZH_WEEKDAYS,
+  SPREADSHEET_SORT_BUILTIN_ZH_WEEKDAYS_SHORT,
+} from '../../../i18n/spreadsheet-sort-builtin-list-entries';
+
 export const MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES = 256;
 export const MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRY_CODE_POINTS = 128;
 export const MAX_SPREADSHEET_SORT_CUSTOM_LIST_CODE_POINTS = 4_096;
@@ -88,7 +103,7 @@ export function mergeSpreadsheetSortCustomLists(
   lists: readonly SpreadsheetSortCustomList[],
 ): readonly SpreadsheetSortCustomList[] {
   const merged: SpreadsheetSortCustomList[] = [
-    ...SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS,
+    ...spreadsheetSortBuiltInCustomLists(),
   ];
   let userListCount = 0;
   for (const candidate of lists) {
@@ -151,105 +166,88 @@ function truncateSpreadsheetSortCustomListLabelEntry(entry: string): string {
 function customListError(
   code: SpreadsheetSortCustomListErrorCode,
 ): Extract<SpreadsheetSortCustomListValidationResult, { ok: false }> {
-  const messages: Record<SpreadsheetSortCustomListErrorCode, string> = {
-    'duplicate-entry': '自定义序列不能包含重复项（忽略大小写和全半角差异）。',
-    'entry-too-long': `每个序列项最多包含 ${MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRY_CODE_POINTS} 个字符。`,
-    'invalid-entry': '自定义序列只能包含非空文本项。',
-    'list-too-long': `一个自定义序列最多包含 ${MAX_SPREADSHEET_SORT_CUSTOM_LIST_CODE_POINTS.toLocaleString('en-US')} 个字符。`,
-    'not-enough-entries': '自定义序列至少需要两个项目。',
-    'too-many-entries': `一个自定义序列最多包含 ${MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES} 个项目。`,
+  const catalog = resolveOfficeMessages();
+  const keys: Record<SpreadsheetSortCustomListErrorCode, OfficeMessageKey> = {
+    'duplicate-entry': 'spreadsheet.sort.customList.error.duplicateEntry',
+    'entry-too-long': 'spreadsheet.sort.customList.error.entryTooLong',
+    'invalid-entry': 'spreadsheet.sort.customList.error.invalidEntry',
+    'list-too-long': 'spreadsheet.sort.customList.error.listTooLong',
+    'not-enough-entries': 'spreadsheet.sort.customList.error.notEnoughEntries',
+    'too-many-entries': 'spreadsheet.sort.customList.error.tooManyEntries',
   };
-  return { ok: false, code, message: messages[code] };
+  const params =
+    code === 'entry-too-long'
+      ? { n: String(MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRY_CODE_POINTS) }
+      : code === 'list-too-long'
+        ? {
+            n: MAX_SPREADSHEET_SORT_CUSTOM_LIST_CODE_POINTS.toLocaleString(
+              'en-US',
+            ),
+          }
+        : code === 'too-many-entries'
+          ? { n: String(MAX_SPREADSHEET_SORT_CUSTOM_LIST_ENTRIES) }
+          : undefined;
+  return {
+    ok: false,
+    code,
+    message: officeMessage(catalog, keys[code], params),
+  };
 }
 
 function builtInCustomList(
-  label: string,
+  labelKey: OfficeMessageKey,
   entries: readonly string[],
+  catalog = resolveOfficeMessages(),
 ): SpreadsheetSortCustomList {
   return Object.freeze({
     source: 'built-in',
     entries: Object.freeze([...entries]),
-    label,
+    label: officeMessage(catalog, labelKey),
   });
 }
 
-export const SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS = Object.freeze([
-  builtInCustomList('月份（一月 → 十二月）', [
-    '一月',
-    '二月',
-    '三月',
-    '四月',
-    '五月',
-    '六月',
-    '七月',
-    '八月',
-    '九月',
-    '十月',
-    '十一月',
-    '十二月',
-  ]),
-  builtInCustomList('星期（星期日 → 星期六）', [
-    '星期日',
-    '星期一',
-    '星期二',
-    '星期三',
-    '星期四',
-    '星期五',
-    '星期六',
-  ]),
-  builtInCustomList('周（周日 → 周六）', [
-    '周日',
-    '周一',
-    '周二',
-    '周三',
-    '周四',
-    '周五',
-    '周六',
-  ]),
-  builtInCustomList('月份（January → December）', [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ]),
-  builtInCustomList('月份（Jan → Dec）', [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ]),
-  builtInCustomList('星期（Sunday → Saturday）', [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ]),
-  builtInCustomList('星期（Sun → Sat）', [
-    'Sun',
-    'Mon',
-    'Tue',
-    'Wed',
-    'Thu',
-    'Fri',
-    'Sat',
-  ]),
-] as const);
+export function spreadsheetSortBuiltInCustomLists(
+  catalog = resolveOfficeMessages(),
+): readonly SpreadsheetSortCustomList[] {
+  return Object.freeze([
+    builtInCustomList(
+      'spreadsheet.sort.builtin.zhMonths',
+      SPREADSHEET_SORT_BUILTIN_ZH_MONTHS,
+      catalog,
+    ),
+    builtInCustomList(
+      'spreadsheet.sort.builtin.zhWeekdays',
+      SPREADSHEET_SORT_BUILTIN_ZH_WEEKDAYS,
+      catalog,
+    ),
+    builtInCustomList(
+      'spreadsheet.sort.builtin.zhWeekdaysShort',
+      SPREADSHEET_SORT_BUILTIN_ZH_WEEKDAYS_SHORT,
+      catalog,
+    ),
+    builtInCustomList(
+      'spreadsheet.sort.builtin.enMonths',
+      SPREADSHEET_SORT_BUILTIN_EN_MONTHS,
+      catalog,
+    ),
+    builtInCustomList(
+      'spreadsheet.sort.builtin.enMonthsAbbr',
+      SPREADSHEET_SORT_BUILTIN_EN_MONTHS_ABBR,
+      catalog,
+    ),
+    builtInCustomList(
+      'spreadsheet.sort.builtin.enWeekdays',
+      SPREADSHEET_SORT_BUILTIN_EN_WEEKDAYS,
+      catalog,
+    ),
+    builtInCustomList(
+      'spreadsheet.sort.builtin.enWeekdaysAbbr',
+      SPREADSHEET_SORT_BUILTIN_EN_WEEKDAYS_ABBR,
+      catalog,
+    ),
+  ]);
+}
+
+/** @deprecated Prefer spreadsheetSortBuiltInCustomLists() for locale-aware labels. */
+export const SPREADSHEET_SORT_BUILT_IN_CUSTOM_LISTS =
+  spreadsheetSortBuiltInCustomLists();

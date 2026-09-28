@@ -15,6 +15,8 @@ import {
   type DocumentNavigationListHandle,
   useDocumentNavigationWindow,
 } from './document-navigation-window';
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 
 const DOCUMENT_SEARCH_RESULT_HEIGHT = 56;
 const DOCUMENT_SEARCH_RESULT_GAP = 5;
@@ -41,6 +43,7 @@ export const DocumentSearchNavigation = forwardRef<
   },
   ref,
 ) {
+  const messages = useOfficeMessages();
   const keys = useMemo(() => matches.map(documentNavigationMatchId), [matches]);
   const selectedMatch = matches[selectedMatchIndex];
   const selectedKey = selectedMatch
@@ -89,7 +92,7 @@ export const DocumentSearchNavigation = forwardRef<
     <nav
       ref={navigation.viewportRef}
       className="work-document-task-pane-body work-document-search-results"
-      aria-label="文档搜索结果"
+      aria-label={officeMessage(messages, 'document.searchNav.aria')}
       data-document-navigation-collection="search"
       data-document-navigation-item-count={matches.length}
       data-document-navigation-mounted-count={navigation.mountedCount}
@@ -119,7 +122,7 @@ export const DocumentSearchNavigation = forwardRef<
             const resultId = documentNavigationMatchId(match);
             const section =
               currentWorkDocumentOutlineItem(outline, match.from)?.text ??
-              '文档开头';
+              officeMessage(messages, 'document.searchNav.start')
             return (
               <li
                 aria-posinset={entry.index + 1}
@@ -132,7 +135,10 @@ export const DocumentSearchNavigation = forwardRef<
                   type="button"
                   className="work-document-search-result"
                   tabIndex={navigation.rovingIndex === entry.index ? 0 : -1}
-                  aria-label={`第 ${entry.index + 1} 个匹配：${match.matchedText}`}
+                  aria-label={officeMessage(messages, 'document.searchNav.matchAria', {
+                    n: String(entry.index + 1),
+                    text: match.matchedText,
+                  })}
                   aria-current={
                     selectedMatchIndex === entry.index ? 'location' : undefined
                   }
@@ -156,7 +162,9 @@ export const DocumentSearchNavigation = forwardRef<
           })}
         </ol>
       ) : (
-        <div className="work-document-outline-empty">尝试更短或不同的文字</div>
+        <div className="work-document-outline-empty">
+          {officeMessage(messages, 'document.searchNav.empty')}
+        </div>
       )}
     </nav>
   );

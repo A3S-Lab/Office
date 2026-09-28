@@ -20,6 +20,9 @@ import type { DocumentTabStop } from '../work-document-tab-stops';
 import { resolveDocumentPageSize } from '../work-document-page-size';
 import type { WorkDocumentSectionLayout } from '../work-types';
 import { DocumentRulerTabStops } from './document-ruler-tab-stops';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
+import { useOfficeMessages } from './office-messages-context';
 
 type DocumentRulerHandleKind =
   | 'page-left-margin'
@@ -52,6 +55,7 @@ export function DocumentRuler({
   onParagraphIndentChange,
   onTabStopsChange,
 }: DocumentRulerProps) {
+  const messages = useOfficeMessages();
   const rulerRef = useRef<HTMLFieldSetElement>(null);
   const pageWidth = documentRulerPageWidth(layout);
   const marginLeft = millimetersToPixels(layout.margins.left);
@@ -215,7 +219,9 @@ export function DocumentRuler({
           } as CSSProperties
         }
       >
-        <legend className="sr-only">水平标尺</legend>
+        <legend className="sr-only">
+          {officeMessage(messages, 'document.ruler.horizontalLegend')}
+        </legend>
         <span aria-hidden="true" className="work-document-ruler-margin left" />
         <span aria-hidden="true" className="work-document-ruler-margin right" />
         <span aria-hidden="true" className="work-document-ruler-track">
@@ -239,56 +245,60 @@ export function DocumentRuler({
         />
         <DocumentRulerHandle
           kind="page-left-margin"
-          label="左页边距"
+          label={officeMessage(messages, 'document.ruler.leftMargin')}
           maximum={60}
           minimum={5}
           position={marginLeft}
           value={layout.margins.left}
-          valueText={`${formatRulerValue(layout.margins.left)} 毫米`}
+          valueText={officeMessage(messages, 'document.ruler.mm', {
+            value: formatRulerValue(layout.margins.left),
+          })}
           onKeyboardChange={updateFromKeyboard}
           onPointerChange={updateFromPointer}
         />
         <DocumentRulerHandle
           kind="page-right-margin"
-          label="右页边距"
+          label={officeMessage(messages, 'document.ruler.rightMargin')}
           maximum={60}
           minimum={5}
           position={pageWidth - marginRight}
           value={layout.margins.right}
-          valueText={`${formatRulerValue(layout.margins.right)} 毫米`}
+          valueText={officeMessage(messages, 'document.ruler.mm', {
+            value: formatRulerValue(layout.margins.right),
+          })}
           onKeyboardChange={updateFromKeyboard}
           onPointerChange={updateFromPointer}
         />
         <DocumentRulerHandle
           kind="left-indent"
-          label="左缩进"
+          label={officeMessage(messages, 'document.ruler.leftIndent')}
           maximum={maximumLeftIndent}
           minimum={0}
           position={leftIndentPosition}
           value={indent.left}
-          valueText={formatParagraphIndentValue(indent.left)}
+          valueText={formatParagraphIndentValue(indent.left, messages)}
           onKeyboardChange={updateFromKeyboard}
           onPointerChange={updateFromPointer}
         />
         <DocumentRulerHandle
           kind="first-line-indent"
-          label="首行/悬挂缩进"
+          label={officeMessage(messages, 'document.ruler.firstLineIndent')}
           maximum={maximumFirstLineIndent}
           minimum={-indent.left}
           position={firstLineIndentPosition}
           value={indent.firstLine}
-          valueText={formatFirstLineIndentValue(indent.firstLine)}
+          valueText={formatFirstLineIndentValue(indent.firstLine, messages)}
           onKeyboardChange={updateFromKeyboard}
           onPointerChange={updateFromPointer}
         />
         <DocumentRulerHandle
           kind="right-indent"
-          label="右缩进"
+          label={officeMessage(messages, 'document.ruler.rightIndent')}
           maximum={maximumRightIndent}
           minimum={0}
           position={rightIndentPosition}
           value={indent.right}
-          valueText={formatParagraphIndentValue(indent.right)}
+          valueText={formatParagraphIndentValue(indent.right, messages)}
           onKeyboardChange={updateFromKeyboard}
           onPointerChange={updateFromPointer}
         />
@@ -511,14 +521,32 @@ function formatRulerValue(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-function formatParagraphIndentValue(value: number): string {
-  return value ? `${formatCentimeters(value)} 厘米` : '无缩进';
+function formatParagraphIndentValue(
+  value: number,
+  messages: OfficeMessageCatalog,
+): string {
+  return value
+    ? officeMessage(messages, 'document.ruler.cm', {
+        value: formatCentimeters(value),
+      })
+    : officeMessage(messages, 'document.ruler.noIndent');
 }
 
-function formatFirstLineIndentValue(value: number): string {
-  if (value > 0) return `首行缩进 ${formatCentimeters(value)} 厘米`;
-  if (value < 0) return `悬挂缩进 ${formatCentimeters(-value)} 厘米`;
-  return '无首行缩进';
+function formatFirstLineIndentValue(
+  value: number,
+  messages: OfficeMessageCatalog,
+): string {
+  if (value > 0) {
+    return officeMessage(messages, 'document.ruler.firstLineIndentValue', {
+      value: formatCentimeters(value),
+    });
+  }
+  if (value < 0) {
+    return officeMessage(messages, 'document.ruler.hangingIndentValue', {
+      value: formatCentimeters(-value),
+    });
+  }
+  return officeMessage(messages, 'document.ruler.noFirstLineIndent');
 }
 
 function formatCentimeters(value: number): string {

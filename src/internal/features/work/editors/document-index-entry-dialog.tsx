@@ -1,7 +1,9 @@
-import { Button, Dialog } from '../../../design-system/primitives';
 import { useId } from 'react';
+import { Button, Dialog } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import type { WorkDocumentIndexEntryDraft } from '../work-document-index';
 import { OfficeCheckbox, OfficeTextField } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
 export interface DocumentIndexEntryDialogProps {
   editing: boolean;
@@ -20,6 +22,7 @@ export function DocumentIndexEntryDialog({
   onChange,
   onSubmit,
 }: DocumentIndexEntryDialogProps) {
+  const messages = useOfficeMessages();
   const update = (patch: Partial<WorkDocumentIndexEntryDraft>) =>
     onChange({ ...value, ...patch });
   const crossReferenceEnabled = Boolean(value.crossReference);
@@ -29,33 +32,43 @@ export function DocumentIndexEntryDialog({
 
   return (
     <Dialog
-      title={editing ? '编辑索引项' : '标记索引项'}
-      description="标记主索引项、次索引项或交叉引用，并保留原生 DOCX XE 域。"
+      title={officeMessage(
+        messages,
+        editing
+          ? 'document.indexEntry.title.edit'
+          : 'document.indexEntry.title.insert',
+      )}
+      description={officeMessage(messages, 'document.indexEntry.description')}
       className="work-document-index-entry-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onCancel}
       footer={
         <>
           <Button tone="quiet" onClick={onCancel}>
-            取消
+            {officeMessage(messages, 'document.indexEntry.cancel')}
           </Button>
           <Button
             tone="primary"
             disabled={!value.mainEntry.trim()}
             onClick={onSubmit}
           >
-            {editing ? '应用' : '标记'}
+            {officeMessage(
+              messages,
+              editing
+                ? 'document.indexEntry.apply'
+                : 'document.indexEntry.mark',
+            )}
           </Button>
         </>
       }
     >
       <div className="work-document-index-entry-dialog-fields">
         <label htmlFor={mainEntryId}>
-          <span>主索引项</span>
+          <span>{officeMessage(messages, 'document.indexEntry.main')}</span>
           <OfficeTextField
             id={mainEntryId}
             data-autofocus
-            aria-label="主索引项"
+            aria-label={officeMessage(messages, 'document.indexEntry.main')}
             value={value.mainEntry}
             maxLength={240}
             onChange={(event) => update({ mainEntry: event.target.value })}
@@ -67,40 +80,60 @@ export function DocumentIndexEntryDialog({
           />
         </label>
         <label htmlFor={subEntryId}>
-          <span>次索引项</span>
+          <span>{officeMessage(messages, 'document.indexEntry.sub')}</span>
           <OfficeTextField
             id={subEntryId}
-            aria-label="次索引项"
+            aria-label={officeMessage(messages, 'document.indexEntry.sub')}
             value={value.subEntry}
             maxLength={240}
-            placeholder="可选"
+            placeholder={officeMessage(
+              messages,
+              'document.indexEntry.optional',
+            )}
             onChange={(event) => update({ subEntry: event.target.value })}
           />
         </label>
       </div>
       <div className="work-document-index-entry-dialog-mode">
         <OfficeCheckbox
-          ariaLabel="使用交叉引用"
+          ariaLabel={officeMessage(
+            messages,
+            'document.indexEntry.useCrossRef',
+          )}
           checked={crossReferenceEnabled}
           onCheckedChange={(enabled) =>
             update({
-              crossReference: enabled ? value.crossReference || '参见' : '',
+              crossReference: enabled
+                ? value.crossReference ||
+                  officeMessage(
+                    messages,
+                    'document.indexEntry.crossRefDefault',
+                  )
+                : '',
               pageBold: enabled ? false : value.pageBold,
               pageItalic: enabled ? false : value.pageItalic,
             })
           }
         >
-          使用交叉引用
+          {officeMessage(messages, 'document.indexEntry.useCrossRef')}
         </OfficeCheckbox>
         {crossReferenceEnabled && (
           <label htmlFor={crossReferenceId}>
-            <span>引用目标</span>
+            <span>
+              {officeMessage(messages, 'document.indexEntry.crossRefTarget')}
+            </span>
             <OfficeTextField
               id={crossReferenceId}
-              aria-label="交叉引用目标"
+              aria-label={officeMessage(
+                messages,
+                'document.indexEntry.crossRefTargetAria',
+              )}
               value={value.crossReference}
               maxLength={240}
-              placeholder="例如：Architecture"
+              placeholder={officeMessage(
+                messages,
+                'document.indexEntry.crossRefPlaceholder',
+              )}
               onChange={(event) =>
                 update({ crossReference: event.target.value })
               }
@@ -112,22 +145,24 @@ export function DocumentIndexEntryDialog({
         className="work-document-index-entry-dialog-page-style"
         disabled={crossReferenceEnabled}
       >
-        <legend>当前页码格式</legend>
+        <legend>
+          {officeMessage(messages, 'document.indexEntry.pageFormatLegend')}
+        </legend>
         <OfficeCheckbox
-          ariaLabel="页码加粗"
+          ariaLabel={officeMessage(messages, 'document.indexEntry.pageBold')}
           checked={value.pageBold}
           disabled={crossReferenceEnabled}
           onCheckedChange={(pageBold) => update({ pageBold })}
         >
-          页码加粗
+          {officeMessage(messages, 'document.indexEntry.pageBold')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="页码倾斜"
+          ariaLabel={officeMessage(messages, 'document.indexEntry.pageItalic')}
           checked={value.pageItalic}
           disabled={crossReferenceEnabled}
           onCheckedChange={(pageItalic) => update({ pageItalic })}
         >
-          页码倾斜
+          {officeMessage(messages, 'document.indexEntry.pageItalic')}
         </OfficeCheckbox>
       </fieldset>
     </Dialog>

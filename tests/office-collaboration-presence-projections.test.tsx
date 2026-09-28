@@ -16,12 +16,15 @@ import {
 import { OfficeCollaborationPresenceProvider } from '../src/internal/features/work/editors/office-collaboration-presence-context';
 import { MarkdownSourcePresenceLayer } from '../src/internal/features/work/editors/office-collaboration-presence-ui';
 import { PdfCollaborationPresenceLayer } from '../src/internal/features/work/editors/pdf-collaboration-presence';
-import { PresentationCollaborationPresenceLayer } from '../src/internal/features/work/editors/presentation-collaboration-presence';
+import { PresentationCollaborationPresenceLayer, PresentationFrameCaretProvider } from '../src/internal/features/work/editors/presentation-collaboration-presence';
 import {
+  spreadsheetCellLayoutBox,
+  spreadsheetFrameCaretPaint,
   spreadsheetPresenceProjection,
   spreadsheetWrittenCellProjection,
   useSpreadsheetCollaborationPresenceProjection,
 } from '../src/internal/features/work/editors/spreadsheet-collaboration-presence';
+import { presentationFrameCaretPaint } from '../src/internal/features/work/editors/presentation-collaboration-presence';
 import type {
   WorkSlideElement,
   WorkSpreadsheetContent,
@@ -152,6 +155,170 @@ test('highlights the cell a frame wrote and does not blink when that cell is unc
   expect(adds).toEqual([1]);
   expect(removes).toEqual([]);
   view.unmount();
+});
+
+test('paints a spreadsheet splice caret inside the plain-text cell and skips field writes', () => {
+  const measure = (slice: string) => slice.length * 8;
+  const box = { left: 44, top: 24, width: 96, height: 24 };
+  const content: WorkSpreadsheetContent = {
+    type: 'spreadsheet',
+    sheets: [
+      {
+        id: 'sheet-data',
+        name: 'Data',
+        row: 20,
+        column: 10,
+        celldata: [
+          { r: 1, c: 0, v: { v: '中文', m: '中文' } },
+          { r: 2, c: 0, v: { v: 12, m: '12' } },
+          { r: 3, c: 0, v: { f: '=A1', v: '中文', m: '中文' } },
+        ],
+      },
+    ],
+  };
+  expect(
+    spreadsheetFrameCaretPaint({
+      box,
+      cell: { sheetId: 'sheet-data', row: 1, column: 0, indexUtf16: 1 },
+      content,
+      layoutSettled: true,
+      measure,
+    }),
+  ).toMatchObject({ head: 1, left: 52, width: 2 });
+  expect(
+    spreadsheetFrameCaretPaint({
+      box,
+      cell: { sheetId: 'sheet-data', row: 1, column: 0 },
+      content,
+      layoutSettled: true,
+      measure,
+    }),
+  ).toBeNull();
+  expect(
+    spreadsheetFrameCaretPaint({
+      box,
+      cell: { sheetId: 'sheet-data', row: 2, column: 0, indexUtf16: 1 },
+      content,
+      layoutSettled: true,
+      measure,
+    }),
+  ).toBeNull();
+  expect(
+    spreadsheetFrameCaretPaint({
+      box,
+      cell: { sheetId: 'sheet-data', row: 3, column: 0, indexUtf16: 1 },
+      content,
+      layoutSettled: true,
+      measure,
+    }),
+  ).toBeNull();
+});
+
+test('paints a presentation splice caret inside the shape text', () => {
+  const element: WorkSlideElement = {
+    id: 'shape-1',
+    type: 'shape',
+    x: 12,
+    y: 18,
+    width: 36,
+    height: 24,
+    text: '中文',
+    fontSize: 16,
+    color: '#111827',
+    fill: '#ffffff',
+    bold: false,
+    align: 'left',
+  };
+  const box = { left: 0, top: 0, width: 120, height: 40 };
+  const measure = (slice: string) => slice.length * 16;
+  expect(
+    presentationFrameCaretPaint({
+      box,
+      caret: {
+        kind: 'presentation',
+        containerKind: 'slide',
+        containerId: 'slide-1',
+        elementId: 'shape-1',
+        indexUtf16: 1,
+      },
+      element,
+      layoutSettled: true,
+      measure,
+    }),
+  ).toMatchObject({ head: 1, left: 16, width: 2 });
+  expect(
+    presentationFrameCaretPaint({
+      box,
+      caret: {
+        kind: 'presentation',
+        containerKind: 'slide',
+        containerId: 'slide-1',
+        elementId: 'shape-1',
+      },
+      element,
+      layoutSettled: true,
+      measure,
+    }),
+  ).toBeNull();
+  expect(
+    presentationFrameCaretPaint({
+      box,
+      caret: {
+        kind: 'presentation',
+        containerKind: 'slide',
+        containerId: 'slide-1',
+        elementId: 'other',
+        indexUtf16: 1,
+      },
+      element,
+      layoutSettled: true,
+      measure,
+    }),
+  ).toBeNull();
+
+  const view = render(
+    <PresentationFrameCaretProvider
+      caret={{
+        kind: 'presentation',
+        containerKind: 'slide',
+        containerId: 'slide-1',
+        elementId: 'shape-1',
+        indexUtf16: 1,
+      }}
+    >
+      <PresentationCollaborationPresenceLayer
+        elements={[element]}
+        measure={measure}
+        slideId="slide-1"
+        textBox={box}
+      />
+    </PresentationFrameCaretProvider>,
+  );
+  const caret = document.querySelector<HTMLElement>(
+    '[data-frame-caret-index="1"]',
+  );
+  expect(caret).not.toBeNull();
+  expect(caret).toHaveStyle({ left: '16px', width: '2px' });
+  view.unmount();
+});
+
+test('offsets the spreadsheet cell box by headers and scroll', () => {
+  const box = spreadsheetCellLayoutBox({
+    column: 1,
+    columnHeaderHeight: 24,
+    row: 1,
+    rowHeaderWidth: 44,
+    scrollLeft: 10,
+    scrollTop: 4,
+    sheet: {
+      id: 'sheet-data',
+      name: 'Data',
+      defaultColWidth: 96,
+      defaultRowHeight: 24,
+      config: { columnlen: { 0: 80 } },
+    },
+  });
+  expect(box).toEqual({ left: 114, top: 44, width: 96, height: 24 });
 });
 
 test('projects presentation object geometry without disturbing local focus', async () => {

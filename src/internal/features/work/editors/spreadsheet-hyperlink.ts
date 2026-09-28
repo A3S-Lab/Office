@@ -1,4 +1,8 @@
 import type { Cell } from '@fortune-sheet/core';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { cloneSparseMatrix } from '../spreadsheet-sparse';
 import { spreadsheetPivotOutputContains } from '../work-spreadsheet-pivots';
 import { sheetProtectionAuthority } from '../work-spreadsheet-protection';
@@ -420,20 +424,25 @@ function hyperlinkError(code: SpreadsheetHyperlinkErrorCode): {
   code: SpreadsheetHyperlinkErrorCode;
   message: string;
 } {
-  const messages: Record<SpreadsheetHyperlinkErrorCode, string> = {
-    'empty-address': '请输入超链接地址。',
-    'formula-display-text': '公式单元格只能更新链接目标，不能替换显示文本。',
-    'invalid-cell-range': '请输入一个有效的 A1 单元格或连续区域。',
-    'invalid-display-text': '显示文本不能为空，且最多包含 32767 个字符。',
-    'invalid-web-address': '请输入有效的 HTTP 或 HTTPS 地址。',
-    'pivot-cell': '不能在数据透视表结果区域中插入超链接。',
-    'protected-cell': '不能在受保护的工作表中更改超链接。',
-    'source-out-of-bounds': '当前单元格超出了工作表的有效边界。',
-    'source-sheet-not-found': '找不到当前工作表。',
-    'target-out-of-bounds': '链接目标超出了目标工作表的有效边界。',
-    'target-sheet-hidden': '不能链接到隐藏工作表。',
-    'target-sheet-not-found': '找不到链接目标工作表。',
-    'unsupported-link-type': '不支持此超链接类型。',
+  const catalog = resolveOfficeMessages();
+  const messageKeys = {
+    'empty-address': 'spreadsheet.hyperlink.error.emptyAddress',
+    'formula-display-text': 'spreadsheet.hyperlink.error.formulaDisplayText',
+    'invalid-cell-range': 'spreadsheet.hyperlink.error.invalidCellRange',
+    'invalid-display-text': 'spreadsheet.hyperlink.error.invalidDisplayText',
+    'invalid-web-address': 'spreadsheet.hyperlink.error.invalidWebAddress',
+    'pivot-cell': 'spreadsheet.hyperlink.error.pivotCell',
+    'protected-cell': 'spreadsheet.hyperlink.error.protectedCell',
+    'source-out-of-bounds': 'spreadsheet.hyperlink.error.sourceOutOfBounds',
+    'source-sheet-not-found': 'spreadsheet.hyperlink.error.sourceSheetNotFound',
+    'target-out-of-bounds': 'spreadsheet.hyperlink.error.targetOutOfBounds',
+    'target-sheet-hidden': 'spreadsheet.hyperlink.error.targetSheetHidden',
+    'target-sheet-not-found': 'spreadsheet.hyperlink.error.targetSheetNotFound',
+    'unsupported-link-type': 'spreadsheet.hyperlink.error.unsupportedLinkType',
+  } as const satisfies Record<SpreadsheetHyperlinkErrorCode, string>;
+  return {
+    ok: false,
+    code,
+    message: officeMessage(catalog, messageKeys[code]),
   };
-  return { ok: false, code, message: messages[code] };
 }

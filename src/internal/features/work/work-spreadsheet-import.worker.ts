@@ -8,6 +8,7 @@ import {
   type SpreadsheetImportWorkerRequest,
   type SpreadsheetImportWorkerResponse,
 } from './work-spreadsheet-import-worker-protocol';
+import { xlsxDenseRows } from './work-xlsx-worksheet';
 
 interface SpreadsheetImportWorkerScope {
   onmessage:
@@ -46,11 +47,11 @@ function workbookMetadata(
 
 function streamWorksheet(name: string, worksheet: WorkSheet): void {
   const properties = worksheetProperties(worksheet);
-  if (Array.isArray(worksheet)) {
+  const rows = xlsxDenseRows(worksheet) as Array<
+    SpreadsheetImportDenseRow | undefined
+  > | null;
+  if (rows) {
     scope.postMessage({ kind: 'worksheet', dense: true, name, properties });
-    const rows = worksheet as unknown as Array<
-      SpreadsheetImportDenseRow | undefined
-    >;
     for (
       let startRow = 0;
       startRow < rows.length;
@@ -89,7 +90,9 @@ function worksheetProperties(worksheet: WorkSheet): Record<string, unknown> {
   const properties: Record<string, unknown> = {};
   const source = worksheet as unknown as Record<string, unknown>;
   for (const name in worksheet) {
-    if (name.startsWith('!')) properties[name] = source[name];
+    // Dense rows stream separately in bounded chunks.
+    if (name.startsWith('!') && name !== '!data')
+      properties[name] = source[name];
   }
   return properties;
 }

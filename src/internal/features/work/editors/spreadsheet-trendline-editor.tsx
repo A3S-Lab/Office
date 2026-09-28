@@ -1,8 +1,10 @@
 import { Plus, Trash2 } from 'lucide-react';
+import { officeMessage } from '../../../i18n/office-locale';
 import type {
   WorkSpreadsheetTrendline,
   WorkSpreadsheetTrendlineType,
 } from '../work-types';
+import { useOfficeMessages } from './office-messages-context';
 import {
   CommittedOfficeNumberField,
   OfficeCheckbox,
@@ -22,6 +24,7 @@ export function SpreadsheetTrendlineEditor({
   trendlines,
   onChange,
 }: SpreadsheetTrendlineEditorProps) {
+  const messages = useOfficeMessages();
   const replaceTrendline = (
     index: number,
     change: Partial<WorkSpreadsheetTrendline>,
@@ -36,41 +39,104 @@ export function SpreadsheetTrendlineEditor({
   return (
     <section
       className="work-spreadsheet-trendlines"
-      aria-label={`系列 ${seriesNumber} 趋势线`}
+      aria-label={officeMessage(
+        messages,
+        'spreadsheet.chart.trendline.sectionAria',
+        { n: String(seriesNumber) },
+      )}
     >
       <header>
-        <strong>趋势线</strong>
+        <strong>
+          {officeMessage(messages, 'spreadsheet.chart.trendline.title')}
+        </strong>
         <button
           type="button"
-          aria-label={`添加系列 ${seriesNumber} 趋势线`}
+          aria-label={officeMessage(
+            messages,
+            'spreadsheet.chart.trendline.addAria',
+            { n: String(seriesNumber) },
+          )}
           onClick={() => onChange([...trendlines, { type: 'linear' }])}
         >
           <Plus size={11} />
-          添加趋势线
+          {officeMessage(messages, 'spreadsheet.chart.trendline.add')}
         </button>
       </header>
-      {!trendlines.length && (
-        <p>可为同一系列叠加线性、多项式或移动平均等趋势分析。</p>
-      )}
+      {!trendlines.length ? (
+        <p>{officeMessage(messages, 'spreadsheet.chart.trendline.empty')}</p>
+      ) : null}
       {trendlines.map((trendline, index) => {
         const trendlineNumber = index + 1;
-        const labelPrefix = `系列 ${seriesNumber} 趋势线 ${trendlineNumber}`;
+        const labelPrefix = officeMessage(
+          messages,
+          'spreadsheet.chart.trendline.itemPrefix',
+          {
+            n: String(seriesNumber),
+            index: String(trendlineNumber),
+          },
+        );
         const hasIntercept = trendline.intercept !== undefined;
         return (
           <fieldset key={`${seriesNumber}-${trendlineNumber}`}>
-            <legend>趋势线 {trendlineNumber}</legend>
+            <legend>
+              {officeMessage(messages, 'spreadsheet.chart.trendline.itemLegend', {
+                index: String(trendlineNumber),
+              })}
+            </legend>
             <div className="work-office-field">
-              <span>类型</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.trendline.type')}
+              </span>
               <OfficeSelect
-                ariaLabel={`${labelPrefix} 类型`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.trendline.typeAria',
+                  { prefix: labelPrefix },
+                )}
                 value={trendline.type}
                 options={[
-                  { value: 'linear', label: '线性' },
-                  { value: 'exponential', label: '指数' },
-                  { value: 'logarithmic', label: '对数' },
-                  { value: 'polynomial', label: '多项式' },
-                  { value: 'power', label: '幂' },
-                  { value: 'movingAverage', label: '移动平均' },
+                  {
+                    value: 'linear',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.trendline.type.linear',
+                    ),
+                  },
+                  {
+                    value: 'exponential',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.trendline.type.exponential',
+                    ),
+                  },
+                  {
+                    value: 'logarithmic',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.trendline.type.logarithmic',
+                    ),
+                  },
+                  {
+                    value: 'polynomial',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.trendline.type.polynomial',
+                    ),
+                  },
+                  {
+                    value: 'power',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.trendline.type.power',
+                    ),
+                  },
+                  {
+                    value: 'movingAverage',
+                    label: officeMessage(
+                      messages,
+                      'spreadsheet.chart.trendline.type.movingAverage',
+                    ),
+                  },
                 ]}
                 onValueChange={(value) =>
                   onChange(
@@ -87,22 +153,38 @@ export function SpreadsheetTrendlineEditor({
               />
             </div>
             <div className="work-office-field">
-              <span>名称</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.trendline.name')}
+              </span>
               <OfficeTextField
-                aria-label={`${labelPrefix} 名称`}
+                aria-label={officeMessage(
+                  messages,
+                  'spreadsheet.chart.trendline.nameAria',
+                  { prefix: labelPrefix },
+                )}
                 value={trendline.name ?? ''}
                 maxLength={255}
-                placeholder={`趋势线 ${trendlineNumber}`}
+                placeholder={officeMessage(
+                  messages,
+                  'spreadsheet.chart.trendline.namePlaceholder',
+                  { index: String(trendlineNumber) },
+                )}
                 onChange={(event) =>
                   replaceTrendline(index, { name: event.target.value })
                 }
               />
             </div>
-            {trendline.type === 'polynomial' && (
+            {trendline.type === 'polynomial' ? (
               <div className="work-office-field">
-                <span>阶数</span>
+                <span>
+                  {officeMessage(messages, 'spreadsheet.chart.trendline.order')}
+                </span>
                 <CommittedOfficeNumberField
-                  ariaLabel={`${labelPrefix} 阶数`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.trendline.orderAria',
+                    { prefix: labelPrefix },
+                  )}
                   min={2}
                   max={6}
                   step={1}
@@ -117,12 +199,18 @@ export function SpreadsheetTrendlineEditor({
                   onValueCommit={(order) => replaceTrendline(index, { order })}
                 />
               </div>
-            )}
-            {trendline.type === 'movingAverage' && (
+            ) : null}
+            {trendline.type === 'movingAverage' ? (
               <div className="work-office-field">
-                <span>周期</span>
+                <span>
+                  {officeMessage(messages, 'spreadsheet.chart.trendline.period')}
+                </span>
                 <CommittedOfficeNumberField
-                  ariaLabel={`${labelPrefix} 周期`}
+                  ariaLabel={officeMessage(
+                    messages,
+                    'spreadsheet.chart.trendline.periodAria',
+                    { prefix: labelPrefix },
+                  )}
                   min={2}
                   max={255}
                   step={1}
@@ -139,11 +227,17 @@ export function SpreadsheetTrendlineEditor({
                   }
                 />
               </div>
-            )}
+            ) : null}
             <div className="work-office-field">
-              <span>前推</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.trendline.forward')}
+              </span>
               <CommittedOfficeNumberField
-                ariaLabel={`${labelPrefix} 前推`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.trendline.forwardAria',
+                  { prefix: labelPrefix },
+                )}
                 min={0}
                 step={0.1}
                 value={trendline.forward ?? 0}
@@ -156,9 +250,15 @@ export function SpreadsheetTrendlineEditor({
               />
             </div>
             <div className="work-office-field">
-              <span>后推</span>
+              <span>
+                {officeMessage(messages, 'spreadsheet.chart.trendline.backward')}
+              </span>
               <CommittedOfficeNumberField
-                ariaLabel={`${labelPrefix} 后推`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.trendline.backwardAria',
+                  { prefix: labelPrefix },
+                )}
                 min={0}
                 step={0.1}
                 value={trendline.backward ?? 0}
@@ -172,18 +272,31 @@ export function SpreadsheetTrendlineEditor({
             </div>
             <OfficeCheckbox
               className="check intercept-toggle"
-              ariaLabel={`${labelPrefix} 固定截距`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.trendline.interceptAria',
+                { prefix: labelPrefix },
+              )}
               checked={hasIntercept}
               onCheckedChange={(checked) =>
                 replaceTrendline(index, { intercept: checked ? 0 : undefined })
               }
             >
-              固定截距
+              {officeMessage(messages, 'spreadsheet.chart.trendline.intercept')}
             </OfficeCheckbox>
             <div className="work-office-field">
-              <span>截距</span>
+              <span>
+                {officeMessage(
+                  messages,
+                  'spreadsheet.chart.trendline.interceptValue',
+                )}
+              </span>
               <CommittedOfficeNumberField
-                ariaLabel={`${labelPrefix} 截距`}
+                ariaLabel={officeMessage(
+                  messages,
+                  'spreadsheet.chart.trendline.interceptValueAria',
+                  { prefix: labelPrefix },
+                )}
                 step={0.1}
                 disabled={!hasIntercept}
                 value={trendline.intercept ?? 0}
@@ -195,28 +308,40 @@ export function SpreadsheetTrendlineEditor({
             </div>
             <OfficeCheckbox
               className="check"
-              ariaLabel={`${labelPrefix} 显示公式`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.trendline.showEqAria',
+                { prefix: labelPrefix },
+              )}
               checked={trendline.displayEquation === true}
               onCheckedChange={(displayEquation) =>
                 replaceTrendline(index, { displayEquation })
               }
             >
-              显示公式
+              {officeMessage(messages, 'spreadsheet.chart.trendline.showEq')}
             </OfficeCheckbox>
             <OfficeCheckbox
               className="check"
-              ariaLabel={`${labelPrefix} 显示 R 方`}
+              ariaLabel={officeMessage(
+                messages,
+                'spreadsheet.chart.trendline.showR2Aria',
+                { prefix: labelPrefix },
+              )}
               checked={trendline.displayRSquared === true}
               onCheckedChange={(displayRSquared) =>
                 replaceTrendline(index, { displayRSquared })
               }
             >
-              显示 R²
+              {officeMessage(messages, 'spreadsheet.chart.trendline.showR2')}
             </OfficeCheckbox>
             <button
               type="button"
               className="remove-trendline"
-              aria-label={`删除${labelPrefix}`}
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.chart.trendline.deleteAria',
+                { prefix: labelPrefix },
+              )}
               onClick={() =>
                 onChange(
                   trendlines.filter((_, candidate) => candidate !== index),

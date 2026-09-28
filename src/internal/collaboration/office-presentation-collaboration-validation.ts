@@ -1,3 +1,13 @@
+import {
+  workSlideAnimationClass,
+  workSlideAnimationSequenceIssue,
+} from '../features/work/work-presentation-animation';
+import {
+  WORK_SLIDE_ANIMATION_LIMIT,
+  WORK_SLIDE_ANIMATION_MAX_DELAY_MS,
+  WORK_SLIDE_ANIMATION_MAX_DURATION_MS,
+  WORK_SLIDE_ANIMATION_MIN_DURATION_MS,
+} from '../features/work/work-presentation-animation-constraints';
 import type {
   WorkPresentationContent,
   WorkPresentationLayout,
@@ -7,21 +17,27 @@ import type {
   WorkSlideComment,
   WorkSlideElement,
 } from '../features/work/work-types';
-import {
-  WORK_SLIDE_ANIMATION_LIMIT,
-  WORK_SLIDE_ANIMATION_MAX_DELAY_MS,
-  WORK_SLIDE_ANIMATION_MAX_DURATION_MS,
-  WORK_SLIDE_ANIMATION_MIN_DURATION_MS,
-} from '../features/work/work-presentation-animation-constraints';
-import {
-  workSlideAnimationClass,
-  workSlideAnimationSequenceIssue,
-} from '../features/work/work-presentation-animation';
 import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
   cloneWorkOfficeCollaborationJson as cloneJsonValue,
   isWorkOfficeCollaborationRecord as isRecord,
 } from './office-collaboration-json';
+
+/** Preview pixels and measured boxes are local. They are not replica fields. */
+const DERIVED_PRESENTATION_FIELDS = [
+  'thumbnail',
+  'thumbnailUrl',
+  'measuredLayout',
+  'measuredBox',
+  'lineBoxes',
+] as const;
+
+function omitDerivedPresentationFields(record: object): void {
+  const target = record as Record<string, unknown>;
+  for (const field of DERIVED_PRESENTATION_FIELDS) {
+    delete target[field];
+  }
+}
 
 export function validateWorkOfficePresentationContent(
   content: WorkPresentationContent,
@@ -125,6 +141,7 @@ function validateSlide(value: unknown): WorkSlide {
   if (record.animations !== undefined) {
     slide.animations = validateSlideAnimations(record.animations, slide);
   }
+  omitDerivedPresentationFields(slide);
   return slide;
 }
 
@@ -249,6 +266,7 @@ function validateMaster(value: unknown): WorkPresentationMaster {
     `element in presentation master '${master.id}'`,
     validateElement,
   );
+  omitDerivedPresentationFields(master);
   return master;
 }
 
@@ -269,6 +287,7 @@ function validateLayout(value: unknown): WorkPresentationLayout {
     `element in presentation layout '${layout.id}'`,
     validateElement,
   );
+  omitDerivedPresentationFields(layout);
   return layout;
 }
 
@@ -323,6 +342,7 @@ function validateElement(value: unknown): WorkSlideElement {
     );
   }
   element.align = record.align;
+  omitDerivedPresentationFields(element);
   return element;
 }
 

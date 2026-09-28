@@ -163,7 +163,7 @@ export function runDocumentWpsShortcut(
       editor.commands.changeDocumentIndent(-1);
       return true;
     }
-    // WPS/Word Ctrl+Shift+N: apply the Normal / 正文 paragraph style.
+    // WPS/Word Ctrl+Shift+N: apply the Normal paragraph style.
     if (key === 'n') {
       editor.chain().focus().setParagraph().run();
       return true;

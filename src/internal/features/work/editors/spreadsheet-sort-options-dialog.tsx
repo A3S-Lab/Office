@@ -1,5 +1,7 @@
 import { type FormEvent, useId, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, Dialog } from '../../../design-system/primitives';
+import { useOfficeMessages } from './office-messages-context';
 import type { SpreadsheetSortOptions } from './spreadsheet-sort';
 
 export function SpreadsheetSortOptionsDialog({
@@ -15,6 +17,7 @@ export function SpreadsheetSortOptionsDialog({
   onApply: (value: SpreadsheetSortOptions) => void;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [draft, setDraft] = useState(value);
   const formId = useId();
   const dirty =
@@ -33,8 +36,8 @@ export function SpreadsheetSortOptionsDialog({
 
   return (
     <Dialog
-      title="排序选项"
-      description="选择文本比较规则和数据在选定区域内的排序方向。"
+      title={officeMessage(messages, 'spreadsheet.sort.options.title')}
+      description={officeMessage(messages, 'spreadsheet.sort.options.desc')}
       className="work-spreadsheet-sort-options-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
@@ -48,10 +51,10 @@ export function SpreadsheetSortOptionsDialog({
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.sort.cancel')}
           </Button>
           <Button tone="primary" type="submit" form={formId}>
-            确定
+            {officeMessage(messages, 'spreadsheet.sort.ok')}
           </Button>
         </>
       }
@@ -62,11 +65,16 @@ export function SpreadsheetSortOptionsDialog({
         onSubmit={submit}
       >
         <fieldset className="work-spreadsheet-sort-options">
-          <legend>文本比较</legend>
+          <legend>
+            {officeMessage(messages, 'spreadsheet.sort.options.textCompare')}
+          </legend>
           <label>
             <input
               type="checkbox"
-              aria-label="区分大小写"
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.sort.options.caseSensitive',
+              )}
               checked={draft.caseSensitive}
               onChange={(event) => {
                 const caseSensitive = event.currentTarget.checked;
@@ -77,19 +85,34 @@ export function SpreadsheetSortOptionsDialog({
               }}
             />
             <span>
-              <strong>区分大小写</strong>
-              <small>升序时，同一字母的小写形式排在大写形式之前。</small>
+              <strong>
+                {officeMessage(
+                  messages,
+                  'spreadsheet.sort.options.caseSensitive',
+                )}
+              </strong>
+              <small>
+                {officeMessage(
+                  messages,
+                  'spreadsheet.sort.options.caseSensitiveHint',
+                )}
+              </small>
             </span>
           </label>
         </fieldset>
         <fieldset className="work-spreadsheet-sort-options">
-          <legend>方法</legend>
+          <legend>
+            {officeMessage(messages, 'spreadsheet.sort.options.method')}
+          </legend>
           <label>
             <input
               type="radio"
               name="spreadsheet-sort-text-method"
               value="pinyin"
-              aria-label="拼音排序"
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.sort.options.pinyin',
+              )}
               checked={draft.textMethod === 'pinyin'}
               onChange={() =>
                 setDraft((current) => ({
@@ -99,8 +122,12 @@ export function SpreadsheetSortOptionsDialog({
               }
             />
             <span>
-              <strong>拼音排序</strong>
-              <small>按汉字拼音和文本字符顺序比较。</small>
+              <strong>
+                {officeMessage(messages, 'spreadsheet.sort.options.pinyin')}
+              </strong>
+              <small>
+                {officeMessage(messages, 'spreadsheet.sort.options.pinyinHint')}
+              </small>
             </span>
           </label>
           <label>
@@ -108,7 +135,10 @@ export function SpreadsheetSortOptionsDialog({
               type="radio"
               name="spreadsheet-sort-text-method"
               value="stroke"
-              aria-label="笔画排序"
+              aria-label={officeMessage(
+                messages,
+                'spreadsheet.sort.options.stroke',
+              )}
               checked={draft.textMethod === 'stroke'}
               onChange={() =>
                 setDraft((current) => ({
@@ -118,16 +148,25 @@ export function SpreadsheetSortOptionsDialog({
               }
             />
             <span>
-              <strong>笔画排序</strong>
-              <small>按汉字笔画顺序比较，适合中文姓名和目录。</small>
+              <strong>
+                {officeMessage(messages, 'spreadsheet.sort.options.stroke')}
+              </strong>
+              <small>
+                {officeMessage(messages, 'spreadsheet.sort.options.strokeHint')}
+              </small>
             </span>
           </label>
         </fieldset>
         <fieldset className="work-spreadsheet-sort-options">
-          <legend>方向</legend>
+          <legend>
+            {officeMessage(messages, 'spreadsheet.sort.options.direction')}
+          </legend>
           {orientationLocked ? (
             <p className="work-spreadsheet-sort-options-lock-note">
-              结构化数据区域仅支持按列排序，以保持字段、表头和筛选条件对应。
+              {officeMessage(
+                messages,
+                'spreadsheet.sort.options.structuredOnlyColumns',
+              )}
             </p>
           ) : null}
           <label>
@@ -147,8 +186,15 @@ export function SpreadsheetSortOptionsDialog({
               }
             />
             <span>
-              <strong>按列排序</strong>
-              <small>根据所选列，从上到下移动整行。</small>
+              <strong>
+                {officeMessage(messages, 'spreadsheet.sort.options.byColumn')}
+              </strong>
+              <small>
+                {officeMessage(
+                  messages,
+                  'spreadsheet.sort.options.byColumnHint',
+                )}
+              </small>
             </span>
           </label>
           <label>
@@ -169,8 +215,12 @@ export function SpreadsheetSortOptionsDialog({
               }
             />
             <span>
-              <strong>按行排序</strong>
-              <small>根据所选行，从左到右移动整列。</small>
+              <strong>
+                {officeMessage(messages, 'spreadsheet.sort.options.byRow')}
+              </strong>
+              <small>
+                {officeMessage(messages, 'spreadsheet.sort.options.byRowHint')}
+              </small>
             </span>
           </label>
         </fieldset>

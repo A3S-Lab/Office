@@ -1,4 +1,5 @@
 import { type FormEvent, useId, useMemo, useState } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
 import { Button, Dialog, Tabs } from '../../../design-system/primitives';
 import type { SpreadsheetCellFormatPatch } from './spreadsheet-cell-format';
 import { SpreadsheetFormatCellsPanel } from './spreadsheet-format-cells-dialog-panels';
@@ -15,6 +16,7 @@ import {
   defaultSpreadsheetFormatCellsOpenIntent,
   type SpreadsheetFormatCellsOpenIntent,
 } from './spreadsheet-format-cells-intent';
+import { useOfficeMessages } from './office-messages-context';
 
 export function SpreadsheetFormatCellsDialog({
   source,
@@ -29,6 +31,7 @@ export function SpreadsheetFormatCellsDialog({
   onApply: (patch: SpreadsheetCellFormatPatch) => boolean;
   onClose: () => void;
 }) {
+  const messages = useOfficeMessages();
   const [draft, setDraft] = useState(() =>
     createSpreadsheetFormatCellsDraft(source),
   );
@@ -42,15 +45,22 @@ export function SpreadsheetFormatCellsDialog({
   const patch = spreadsheetFormatCellsPatch(source, draft, touched);
   const hasChanges = Object.keys(patch).length > 0;
   const invalid = Object.keys(errors).length > 0;
-  const tabs = useMemo(
-    () =>
-      spreadsheetFormatCellsTabs.map((tab) => ({
-        ...tab,
-        tabId: `${idBase}-${tab.id}-tab`,
-        panelId: `${idBase}-${tab.id}-panel`,
-      })),
-    [idBase],
-  );
+  const tabs = useMemo(() => {
+    const tabLabelKey = {
+      number: 'spreadsheet.formatCells.tab.number',
+      alignment: 'spreadsheet.formatCells.tab.alignment',
+      font: 'spreadsheet.formatCells.tab.font',
+      border: 'spreadsheet.formatCells.tab.border',
+      fill: 'spreadsheet.formatCells.tab.fill',
+      protection: 'spreadsheet.formatCells.tab.protection',
+    } as const;
+    return spreadsheetFormatCellsTabs.map((tab) => ({
+      ...tab,
+      label: officeMessage(messages, tabLabelKey[tab.id]),
+      tabId: `${idBase}-${tab.id}-tab`,
+      panelId: `${idBase}-${tab.id}-panel`,
+    }));
+  }, [idBase, messages]);
 
   const submit = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
@@ -60,15 +70,15 @@ export function SpreadsheetFormatCellsDialog({
 
   return (
     <Dialog
-      title="设置单元格格式"
-      description={formatCellsSelectionDescription(source)}
+      title={officeMessage(messages, 'spreadsheet.formatCells.title')}
+      description={formatCellsSelectionDescription(source, messages)}
       className="work-spreadsheet-format-cells-dialog"
       restoreFocusTarget={restoreFocusTarget}
       onClose={onClose}
       footer={
         <>
           <Button tone="quiet" onClick={onClose}>
-            取消
+            {officeMessage(messages, 'spreadsheet.formatCells.cancel')}
           </Button>
           <Button
             tone="primary"
@@ -76,13 +86,13 @@ export function SpreadsheetFormatCellsDialog({
             form={formId}
             disabled={!hasChanges || invalid}
           >
-            应用
+            {officeMessage(messages, 'spreadsheet.formatCells.apply')}
           </Button>
         </>
       }
     >
       <Tabs
-        ariaLabel="单元格格式分类"
+        ariaLabel={officeMessage(messages, 'spreadsheet.formatCells.tabsAria')}
         value={activeTab}
         items={tabs}
         variant="line"
@@ -113,8 +123,12 @@ export function SpreadsheetFormatCellsDialog({
 
 function formatCellsSelectionDescription(
   source: SpreadsheetFormatCellsDialogSource,
+  messages: ReturnType<typeof useOfficeMessages>,
 ): string {
   const rows = source.range.row[1] - source.range.row[0] + 1;
   const columns = source.range.column[1] - source.range.column[0] + 1;
-  return `设置当前选区的数字、对齐、字体、边框、填充和保护属性（${rows} 行 × ${columns} 列）。`;
+  return officeMessage(messages, 'spreadsheet.formatCells.description', {
+    rows: String(rows),
+    columns: String(columns),
+  });
 }

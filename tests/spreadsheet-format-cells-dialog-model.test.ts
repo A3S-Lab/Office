@@ -297,4 +297,41 @@ describe('spreadsheet format cells dialog model', () => {
       }).fill,
     ).toContain('请检查填充设置');
   });
+
+  test('keeps stacked text distinct from a zero-degree rotation', () => {
+    const content = {
+      type: 'spreadsheet',
+      sheets: [
+        {
+          id: 'sheet-1',
+          name: 'Sheet 1',
+          data: [[{ v: '竖排', tr: '3' }]],
+        },
+      ],
+    } satisfies WorkSpreadsheetContent;
+    const source = createSpreadsheetFormatCellsDialogSource(
+      content,
+      'sheet-1',
+      { row: [0, 0], column: [0, 0] },
+      content.sheets[0]?.data ?? [],
+      { row: 0, column: 0 },
+    );
+    if (!source) throw new Error('Expected a format-cells dialog source.');
+    const draft = createSpreadsheetFormatCellsDraft(source);
+
+    expect(draft.stackedText).toBe(true);
+    expect(spreadsheetFormatCellsPatch(source, draft, {})).toEqual({});
+    expect(
+      spreadsheetFormatCellsPatch(source, { ...draft, stackedText: false }, {
+        textOrientation: true,
+      }),
+    ).toEqual({ rotation: 0 });
+    expect(
+      spreadsheetFormatCellsPatch(
+        source,
+        { ...draft, stackedText: false, rotation: 45 },
+        { rotation: true, textOrientation: true },
+      ),
+    ).toEqual({ rotation: 45 });
+  });
 });

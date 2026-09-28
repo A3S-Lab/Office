@@ -1,10 +1,10 @@
 export const spreadsheetFormatCellsTabs = [
-  { id: 'number', label: '数字' },
-  { id: 'alignment', label: '对齐' },
-  { id: 'font', label: '字体' },
-  { id: 'border', label: '边框' },
-  { id: 'fill', label: '填充' },
-  { id: 'protection', label: '保护' },
+  { id: 'number' },
+  { id: 'alignment' },
+  { id: 'font' },
+  { id: 'border' },
+  { id: 'fill' },
+  { id: 'protection' },
 ] as const;
 
 export type SpreadsheetFormatCellsTabId =

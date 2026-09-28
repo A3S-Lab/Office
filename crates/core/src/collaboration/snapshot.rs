@@ -133,11 +133,50 @@ pub fn write_document_snapshot(
     Ok(parts)
 }
 
+/// Write every document paragraph from the live replica into `word/document.xml`.
+///
+/// Each paragraph is addressed by its `paraId`. A paragraph with no `paraId`,
+/// a package that has no such paragraph, or a paragraph that is not a single
+/// text run fails the export and returns no package. Other parts stay
+/// byte-identical.
+pub fn export_document_replica(
+    store: &NativeOfficeCollaborationStore,
+    parts: BTreeMap<String, Vec<u8>>,
+) -> UseResult<BTreeMap<String, Vec<u8>>> {
+    let projection = store.project()?;
+    let super::NativeOfficeCollaborationProjectedContent::Document { paragraphs, .. } =
+        projection.content
+    else {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "Document export requires a document replica.",
+        ));
+    };
+    let mut owned = Vec::with_capacity(paragraphs.len());
+    for paragraph in paragraphs {
+        let Some(paragraph_id) = paragraph.paragraph_id else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                "A document replica paragraph has no paraId.",
+            ));
+        };
+        owned.push((paragraph_id, paragraph.text));
+    }
+    let refs = owned
+        .iter()
+        .map(|(paragraph_id, text)| (paragraph_id.as_str(), text.as_str()))
+        .collect::<Vec<_>>();
+    write_document_snapshot(parts, &refs)
+}
+
 /// Write plain-text cell values into worksheet parts.
 ///
 /// Only an `inlineStr` cell with one text run, or a `t="str"` cell with one
 /// value, is rewritten. Shared-string indexes, formulas, and numeric cells
-/// fail closed so one cell cannot change another.
+/// fail closed so one cell cannot change another. Formula text uses
+/// [`write_spreadsheet_formula_snapshot`]. A shared string used by exactly
+/// one cell uses [`write_spreadsheet_shared_string_snapshot`]. A plain
+/// numeric `<v>` uses [`write_spreadsheet_number_snapshot`].
 pub fn write_spreadsheet_snapshot(
     mut parts: BTreeMap<String, Vec<u8>>,
     cells: &[(&str, u32, u32, &str)],
@@ -165,6 +204,457 @@ pub fn write_spreadsheet_snapshot(
     }
     Ok(parts)
 }
+
+/// Replace one formula, and optionally its cached `<v>`, inside a worksheet cell.
+///
+/// The cell must contain exactly one `<f>` element. Other cells and parts stay
+/// byte-identical. Cached values are not recalculated here.
+pub fn write_spreadsheet_formula_snapshot(
+    mut parts: BTreeMap<String, Vec<u8>>,
+    cells: &[(&str, u32, u32, &str, Option<&str>)],
+) -> UseResult<BTreeMap<String, Vec<u8>>> {
+    let mut updated = BTreeMap::<String, String>::new();
+    for (part, row, column, formula, cached) in cells {
+        let current = updated.get(*part).cloned().or_else(|| {
+            parts
+                .get(*part)
+                .and_then(|bytes| String::from_utf8(bytes.clone()).ok())
+        });
+        let Some(xml) = current else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Spreadsheet part '{part}' is missing or not UTF-8."),
+            ));
+        };
+        let xml = replace_formula_cell(&xml, *row, *column, formula, *cached)?;
+        updated.insert((*part).to_owned(), xml);
+    }
+    for (part, xml) in updated {
+        parts.insert(part, xml.into_bytes());
+    }
+    Ok(parts)
+}
+
+/// Replace the text of a shared string that belongs to exactly one cell.
+///
+/// The worksheet cell must be `t="s"` with one numeric index. If any worksheet
+/// in `parts` points at that index more than once, the function returns an
+/// error and does not produce a package.
+pub fn write_spreadsheet_shared_string_snapshot(
+    mut parts: BTreeMap<String, Vec<u8>>,
+    cells: &[(&str, u32, u32, &str)],
+) -> UseResult<BTreeMap<String, Vec<u8>>> {
+    let mut sheets = BTreeMap::<String, String>::new();
+    let mut shared = parts
+        .get(SHARED_STRINGS_PART)
+        .and_then(|bytes| String::from_utf8(bytes.clone()).ok());
+    for (part, row, column, text) in cells {
+        let sheet = sheets.get(*part).cloned().or_else(|| {
+            parts
+                .get(*part)
+                .and_then(|bytes| String::from_utf8(bytes.clone()).ok())
+        });
+        let Some(sheet_xml) = sheet else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Spreadsheet part '{part}' is missing or not UTF-8."),
+            ));
+        };
+        let Some(shared_xml) = shared.as_deref() else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                "xl/sharedStrings.xml is missing or not UTF-8.",
+            ));
+        };
+        let index = shared_string_index(&sheet_xml, *row, *column)?;
+        if shared_string_uses(&sheets, &parts, index) != 1 {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Shared string {index} is used by more than one cell."),
+            ));
+        }
+        shared = Some(replace_shared_string_item(shared_xml, index, text)?);
+        sheets.insert((*part).to_owned(), sheet_xml);
+    }
+    for (part, xml) in sheets {
+        parts.insert(part, xml.into_bytes());
+    }
+    if let Some(xml) = shared {
+        if parts.contains_key(SHARED_STRINGS_PART) {
+            parts.insert(SHARED_STRINGS_PART.to_owned(), xml.into_bytes());
+        }
+    }
+    Ok(parts)
+}
+
+/// Replace the cached number in a worksheet cell that is not a formula or a
+/// shared string.
+///
+/// The cell must contain one `<v>` and no `<f>`. Its type is either omitted
+/// or `n`. Shared-string cells, inline strings, and formula cells fail closed
+/// and produce no package. Other cells and parts stay byte-identical.
+pub fn write_spreadsheet_number_snapshot(
+    mut parts: BTreeMap<String, Vec<u8>>,
+    cells: &[(&str, u32, u32, &str)],
+) -> UseResult<BTreeMap<String, Vec<u8>>> {
+    let mut updated = BTreeMap::<String, String>::new();
+    for (part, row, column, text) in cells {
+        let current = updated.get(*part).cloned().or_else(|| {
+            parts
+                .get(*part)
+                .and_then(|bytes| String::from_utf8(bytes.clone()).ok())
+        });
+        let Some(xml) = current else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Spreadsheet part '{part}' is missing or not UTF-8."),
+            ));
+        };
+        updated.insert(
+            (*part).to_owned(),
+            replace_number_cell(&xml, *row, *column, text)?,
+        );
+    }
+    for (part, xml) in updated {
+        parts.insert(part, xml.into_bytes());
+    }
+    Ok(parts)
+}
+
+/// Write every populated spreadsheet cell from the live replica into `parts`.
+///
+/// Formula text and its cached value, a plain number, inline text, and a
+/// shared string owned by exactly one cell are written together. A cell whose
+/// replica value does not match the package cell, or a shared string used by
+/// more than one cell, fails the export and returns no package. Parts that
+/// this export does not rewrite stay byte-identical.
+pub fn export_spreadsheet_replica(
+    store: &NativeOfficeCollaborationStore,
+    parts: BTreeMap<String, Vec<u8>>,
+    sheet_parts: &[(&str, &str)],
+) -> UseResult<BTreeMap<String, Vec<u8>>> {
+    let projection = store.project()?;
+    let super::NativeOfficeCollaborationProjectedContent::Spreadsheet { sheets } =
+        projection.content
+    else {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "Spreadsheet export requires a spreadsheet replica.",
+        ));
+    };
+    let mut part_by_sheet = BTreeMap::<&str, &str>::new();
+    for (sheet_id, part) in sheet_parts {
+        if part_by_sheet.insert(*sheet_id, *part).is_some() {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Spreadsheet sheet '{sheet_id}' is mapped twice."),
+            ));
+        }
+    }
+    let known_sheets = sheets
+        .iter()
+        .map(|sheet| sheet.sheet_id.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    for sheet_id in part_by_sheet.keys() {
+        if !known_sheets.contains(sheet_id) {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Spreadsheet sheet '{sheet_id}' is not in the replica."),
+            ));
+        }
+    }
+
+    let mut formulas = Vec::new();
+    let mut numbers = Vec::new();
+    let mut inlines = Vec::new();
+    let mut shared_strings = Vec::new();
+    for sheet in &sheets {
+        if sheet.cells.is_empty() {
+            continue;
+        }
+        let Some(part) = part_by_sheet.get(sheet.sheet_id.as_str()).copied() else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!(
+                    "Spreadsheet sheet '{}' has cells and no worksheet part.",
+                    sheet.sheet_id
+                ),
+            ));
+        };
+        let xml = worksheet_xml(&parts, part)?;
+        for cell in &sheet.cells {
+            let package_kind = package_cell_kind(&xml, cell.row, cell.column)?;
+            let value = replica_cell_value(&cell.cell)?;
+            match (value, package_kind) {
+                (ReplicaCellValue::Formula { formula, cached }, PackageCellKind::Formula) => {
+                    formulas.push(FormulaExport {
+                        part: part.to_owned(),
+                        row: cell.row,
+                        column: cell.column,
+                        formula,
+                        cached,
+                    });
+                }
+                (ReplicaCellValue::Number(text), PackageCellKind::Number) => {
+                    numbers.push(TextExport {
+                        part: part.to_owned(),
+                        row: cell.row,
+                        column: cell.column,
+                        text,
+                    });
+                }
+                (ReplicaCellValue::Text(text), PackageCellKind::Inline) => {
+                    inlines.push(TextExport {
+                        part: part.to_owned(),
+                        row: cell.row,
+                        column: cell.column,
+                        text,
+                    });
+                }
+                (ReplicaCellValue::Text(text), PackageCellKind::SharedString) => {
+                    shared_strings.push(TextExport {
+                        part: part.to_owned(),
+                        row: cell.row,
+                        column: cell.column,
+                        text,
+                    });
+                }
+                _ => {
+                    return Err(collaboration_error(
+                        "office.collaboration.snapshot_invalid",
+                        format!(
+                            "Spreadsheet cell '{}!{}' cannot be exported into its package cell.",
+                            sheet.sheet_id,
+                            cell_reference(cell.row, cell.column)
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+
+    let mut parts = parts;
+    if !formulas.is_empty() {
+        let refs = formulas
+            .iter()
+            .map(|cell| {
+                (
+                    cell.part.as_str(),
+                    cell.row,
+                    cell.column,
+                    cell.formula.as_str(),
+                    cell.cached.as_deref(),
+                )
+            })
+            .collect::<Vec<_>>();
+        parts = write_spreadsheet_formula_snapshot(parts, &refs)?;
+    }
+    if !numbers.is_empty() {
+        let refs = text_refs(&numbers);
+        parts = write_spreadsheet_number_snapshot(parts, &refs)?;
+    }
+    if !inlines.is_empty() {
+        let refs = text_refs(&inlines);
+        parts = write_spreadsheet_snapshot(parts, &refs)?;
+    }
+    if !shared_strings.is_empty() {
+        let refs = text_refs(&shared_strings);
+        parts = write_spreadsheet_shared_string_snapshot(parts, &refs)?;
+    }
+    Ok(parts)
+}
+
+struct FormulaExport {
+    part: String,
+    row: u32,
+    column: u32,
+    formula: String,
+    cached: Option<String>,
+}
+
+struct TextExport {
+    part: String,
+    row: u32,
+    column: u32,
+    text: String,
+}
+
+enum ReplicaCellValue {
+    Formula {
+        formula: String,
+        cached: Option<String>,
+    },
+    Number(String),
+    Text(String),
+}
+
+enum PackageCellKind {
+    Formula,
+    Number,
+    Inline,
+    SharedString,
+}
+
+fn text_refs(cells: &[TextExport]) -> Vec<(&str, u32, u32, &str)> {
+    cells
+        .iter()
+        .map(|cell| {
+            (
+                cell.part.as_str(),
+                cell.row,
+                cell.column,
+                cell.text.as_str(),
+            )
+        })
+        .collect()
+}
+
+fn worksheet_xml(parts: &BTreeMap<String, Vec<u8>>, part: &str) -> UseResult<String> {
+    let bytes = parts.get(part).ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Spreadsheet part '{part}' is missing."),
+        )
+    })?;
+    String::from_utf8(bytes.clone()).map_err(|_| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Spreadsheet part '{part}' is not UTF-8."),
+        )
+    })
+}
+
+fn replica_cell_value(cell: &serde_json::Value) -> UseResult<ReplicaCellValue> {
+    let Some(object) = cell.as_object() else {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "A spreadsheet replica cell is not a JSON object.",
+        ));
+    };
+    if let Some(formula) = object.get("f").filter(|value| !value.is_null()) {
+        let Some(formula) = formula.as_str().filter(|text| !text.is_empty()) else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                "A spreadsheet replica formula is not text.",
+            ));
+        };
+        let cached = match object.get("v") {
+            None | Some(serde_json::Value::Null) => None,
+            Some(serde_json::Value::Number(number)) => Some(format_number(number_f64(number)?)?),
+            Some(serde_json::Value::String(text)) => Some(text.clone()),
+            Some(_) => {
+                return Err(collaboration_error(
+                    "office.collaboration.snapshot_invalid",
+                    "A spreadsheet replica formula cache is not text or a number.",
+                ));
+            }
+        };
+        return Ok(ReplicaCellValue::Formula {
+            formula: formula.to_owned(),
+            cached,
+        });
+    }
+    match object.get("v") {
+        Some(serde_json::Value::Number(number)) => Ok(ReplicaCellValue::Number(format_number(
+            number_f64(number)?,
+        )?)),
+        Some(serde_json::Value::String(text)) => {
+            if let Some(display) = object.get("m").and_then(|value| value.as_str()) {
+                if display != text {
+                    return Err(collaboration_error(
+                        "office.collaboration.snapshot_invalid",
+                        "A spreadsheet replica text cell has disagreeing values.",
+                    ));
+                }
+            }
+            Ok(ReplicaCellValue::Text(text.clone()))
+        }
+        None | Some(serde_json::Value::Null) => {
+            let Some(text) = object.get("m").and_then(|value| value.as_str()) else {
+                return Err(collaboration_error(
+                    "office.collaboration.snapshot_invalid",
+                    "A spreadsheet replica cell has no exportable value.",
+                ));
+            };
+            Ok(ReplicaCellValue::Text(text.to_owned()))
+        }
+        Some(_) => Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "A spreadsheet replica cell value cannot be exported.",
+        )),
+    }
+}
+
+fn number_f64(number: &serde_json::Number) -> UseResult<f64> {
+    number.as_f64().ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "A spreadsheet replica number is not a finite decimal.",
+        )
+    })
+}
+
+fn format_number(value: f64) -> UseResult<String> {
+    if !value.is_finite() {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "A spreadsheet replica number is not a finite decimal.",
+        ));
+    }
+    let text = if value.fract() == 0.0
+        && (-9_007_199_254_740_992.0..=9_007_199_254_740_992.0).contains(&value)
+    {
+        format!("{}", value as i64)
+    } else {
+        format!("{value}")
+    };
+    if !is_number_literal(&text) {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "A spreadsheet replica number is not a finite decimal.",
+        ));
+    }
+    Ok(text)
+}
+
+fn package_cell_kind(xml: &str, row: u32, column: u32) -> UseResult<PackageCellKind> {
+    let (start, end, reference) = worksheet_cell(xml, row, column)?;
+    let cell = &xml[start..end];
+    if cell.contains("<f") {
+        return Ok(PackageCellKind::Formula);
+    }
+    if cell.contains("t=\"s\"") {
+        return Ok(PackageCellKind::SharedString);
+    }
+    if cell.contains("t=\"inlineStr\"") || cell.contains("t=\"str\"") {
+        return Ok(PackageCellKind::Inline);
+    }
+    if cell.contains("<v") && (cell.contains("t=\"n\"") || !cell.contains(" t=\"")) {
+        return Ok(PackageCellKind::Number);
+    }
+    Err(collaboration_error(
+        "office.collaboration.snapshot_invalid",
+        format!("Cell '{reference}' cannot be exported."),
+    ))
+}
+
+fn cell_reference(row: u32, column: u32) -> String {
+    format!("{}{}", column_name(column), row + 1)
+}
+
+fn column_name(mut column: u32) -> String {
+    let mut name = String::new();
+    loop {
+        name.insert(0, char::from(b'A' + (column % 26) as u8));
+        if column < 26 {
+            break;
+        }
+        column = column / 26 - 1;
+    }
+    name
+}
+
+const SHARED_STRINGS_PART: &str = "xl/sharedStrings.xml";
 
 /// Write one shape's text into a slide part.
 ///
@@ -196,6 +686,152 @@ pub fn write_presentation_snapshot(
         parts.insert(part, xml.into_bytes());
     }
     Ok(parts)
+}
+
+/// Write every shape text run from the live replica into its slide part.
+///
+/// The package shape id is the replica element id. A container that has text
+/// and no slide part, a missing shape, or a shape that is not a single `a:t`
+/// run fails the export and returns no package. Other parts stay
+/// byte-identical.
+pub fn export_presentation_replica(
+    store: &NativeOfficeCollaborationStore,
+    parts: BTreeMap<String, Vec<u8>>,
+    container_parts: &[(&str, &str)],
+) -> UseResult<BTreeMap<String, Vec<u8>>> {
+    let projection = store.project()?;
+    let super::NativeOfficeCollaborationProjectedContent::Presentation { containers } =
+        projection.content
+    else {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "Presentation export requires a presentation replica.",
+        ));
+    };
+    let mut part_by_container = BTreeMap::<&str, &str>::new();
+    for (container_id, part) in container_parts {
+        if part_by_container.insert(*container_id, *part).is_some() {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Presentation container '{container_id}' is mapped twice."),
+            ));
+        }
+    }
+    let known = containers
+        .iter()
+        .map(|container| container.container_id.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    for container_id in part_by_container.keys() {
+        if !known.contains(container_id) {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Presentation container '{container_id}' is not in the replica."),
+            ));
+        }
+    }
+
+    let mut shapes = Vec::new();
+    for container in containers {
+        let mut texts = Vec::new();
+        for element in &container.elements {
+            match element.element.get("text") {
+                None | Some(serde_json::Value::Null) => {}
+                Some(serde_json::Value::String(text)) => {
+                    texts.push((element.element_id.as_str(), text.as_str()));
+                }
+                Some(_) => {
+                    return Err(collaboration_error(
+                        "office.collaboration.snapshot_invalid",
+                        format!(
+                            "Presentation element '{}' has text that is not a string.",
+                            element.element_id
+                        ),
+                    ));
+                }
+            }
+        }
+        if texts.is_empty() {
+            continue;
+        }
+        let Some(part) = part_by_container
+            .get(container.container_id.as_str())
+            .copied()
+        else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!(
+                    "Presentation container '{}' has shape text and no slide part.",
+                    container.container_id
+                ),
+            ));
+        };
+        for (element_id, text) in texts {
+            shapes.push((part.to_owned(), element_id.to_owned(), text.to_owned()));
+        }
+    }
+    let refs = shapes
+        .iter()
+        .map(|(part, element_id, text)| (part.as_str(), element_id.as_str(), text.as_str()))
+        .collect::<Vec<_>>();
+    write_presentation_snapshot(parts, &refs)
+}
+
+const PDF_FREETEXT_ANNOTATION_TYPE: u32 = 3;
+
+/// Write every form field and FreeText literal from the live replica.
+///
+/// A field or FreeText annotation missing from the uncompressed PDF, a value
+/// that cannot be represented as a PDF literal, or bytes that are not UTF-8
+/// fails the export and returns no bytes. Non-FreeText annotations stay out
+/// of the write. Other literals in the file stay byte-identical. Compressed
+/// PDF bytes fail closed.
+pub fn export_pdf_replica(
+    store: &NativeOfficeCollaborationStore,
+    pdf: &[u8],
+) -> UseResult<Vec<u8>> {
+    let projection = store.project()?;
+    let super::NativeOfficeCollaborationProjectedContent::Pdf {
+        form_fields,
+        annotations,
+        ..
+    } = projection.content
+    else {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "PDF export requires a PDF replica.",
+        ));
+    };
+
+    let mut fields = Vec::with_capacity(form_fields.len());
+    for field in &form_fields {
+        fields.push((field.field_id.clone(), field.value.clone()));
+    }
+    let mut notes = Vec::new();
+    for annotation in &annotations {
+        if annotation.annotation_type != PDF_FREETEXT_ANNOTATION_TYPE {
+            continue;
+        }
+        let Some(serde_json::Value::String(contents)) = annotation.annotation.get("contents")
+        else {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!(
+                    "PDF FreeText annotation '{}' has contents that cannot be written as a literal.",
+                    annotation.annotation_id
+                ),
+            ));
+        };
+        notes.push((annotation.annotation_id.clone(), contents.clone()));
+    }
+    let field_refs = fields
+        .iter()
+        .map(|(id, value)| (id.as_str(), value.as_str()))
+        .collect::<Vec<_>>();
+    let note_refs = notes
+        .iter()
+        .map(|(id, value)| (id.as_str(), value.as_str()))
+        .collect::<Vec<_>>();
+    write_pdf_snapshot(pdf, &field_refs, &note_refs)
 }
 
 /// Write form-field and FreeText annotation literals into an uncompressed PDF.
@@ -547,6 +1183,204 @@ fn paths_match(stored: &str, requested: &Path) -> bool {
     }
 }
 
+fn replace_formula_cell(
+    xml: &str,
+    row: u32,
+    column: u32,
+    formula: &str,
+    cached: Option<&str>,
+) -> UseResult<String> {
+    let (start, end, reference) = worksheet_cell(xml, row, column)?;
+    let cell = &xml[start..end];
+    if !cell.contains("<f") {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' has no formula."),
+        ));
+    }
+    let rewritten = replace_single_run(xml, start, end, "<f", "</f>", formula, &reference)?;
+    let Some(cached) = cached else {
+        return Ok(rewritten);
+    };
+    let (start, end, reference) = worksheet_cell(&rewritten, row, column)?;
+    let cell = &rewritten[start..end];
+    if !cell.contains("<v") {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' has no cached formula value."),
+        ));
+    }
+    replace_single_run(&rewritten, start, end, "<v", "</v>", cached, &reference)
+}
+
+fn shared_string_index(xml: &str, row: u32, column: u32) -> UseResult<usize> {
+    let (start, end, reference) = worksheet_cell(xml, row, column)?;
+    let cell = &xml[start..end];
+    if !cell.contains("t=\"s\"") {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' is not a shared string."),
+        ));
+    }
+    let open = cell.find("<v").ok_or_else(|| text_run_error(&reference))?;
+    let open_end = cell[open..]
+        .find('>')
+        .ok_or_else(|| text_run_error(&reference))?
+        + open;
+    let close = cell[open_end..]
+        .find("</v>")
+        .ok_or_else(|| text_run_error(&reference))?
+        + open_end;
+    let index = cell[open_end + 1..close].trim();
+    index.parse::<usize>().map_err(|_| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' has no single shared-string index."),
+        )
+    })
+}
+
+fn shared_string_uses(
+    updated: &BTreeMap<String, String>,
+    parts: &BTreeMap<String, Vec<u8>>,
+    index: usize,
+) -> usize {
+    let mut total = 0;
+    let mut seen = std::collections::BTreeSet::new();
+    for (part, xml) in updated {
+        if worksheet_part(part) {
+            total += count_shared_index(xml, index);
+            seen.insert(part.clone());
+        }
+    }
+    for (part, bytes) in parts {
+        if seen.contains(part) || !worksheet_part(part) {
+            continue;
+        }
+        if let Ok(xml) = String::from_utf8(bytes.clone()) {
+            total += count_shared_index(&xml, index);
+        }
+    }
+    total
+}
+
+fn worksheet_part(part: &str) -> bool {
+    part.starts_with("xl/worksheets/") && part.ends_with(".xml")
+}
+
+fn count_shared_index(xml: &str, index: usize) -> usize {
+    let needle = format!("<v>{index}</v>");
+    let mut total = 0;
+    let mut rest = xml;
+    while let Some(at) = rest.find("t=\"s\"") {
+        let after = &rest[at..];
+        let Some(end) = after.find("</c>") else {
+            break;
+        };
+        if after[..end].contains(&needle) {
+            total += 1;
+        }
+        rest = &after[end + "</c>".len()..];
+    }
+    total
+}
+
+fn replace_shared_string_item(xml: &str, index: usize, text: &str) -> UseResult<String> {
+    let mut cursor = 0;
+    let mut seen = 0;
+    while let Some(at) = xml[cursor..].find("<si") {
+        let start = cursor + at;
+        let Some(end_rel) = xml[start..].find("</si>") else {
+            break;
+        };
+        let end = start + end_rel + "</si>".len();
+        if seen == index {
+            return replace_single_run(xml, start, end, "<t", "</t>", text, "shared string");
+        }
+        seen += 1;
+        cursor = end;
+    }
+    Err(collaboration_error(
+        "office.collaboration.snapshot_invalid",
+        format!("Shared string index {index} is outside xl/sharedStrings.xml."),
+    ))
+}
+
+/// One worksheet cell read back from an exported spreadsheet part.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReopenedWorksheetCell {
+    /// Formula text when the cell has an `<f>` element.
+    pub formula: Option<String>,
+    /// Cached or numeric `<v>` text.
+    pub cached: Option<String>,
+    /// Inline `<t>` text.
+    pub inline: Option<String>,
+}
+
+/// Read one cell from worksheet XML produced by [`export_spreadsheet_replica`].
+pub fn reopen_exported_worksheet_cell(
+    xml: &str,
+    row: u32,
+    column: u32,
+) -> UseResult<ReopenedWorksheetCell> {
+    let (start, end, reference) = worksheet_cell(xml, row, column)?;
+    let cell = &xml[start..end];
+    Ok(ReopenedWorksheetCell {
+        formula: worksheet_element_text(cell, "f", &reference)?,
+        cached: worksheet_element_text(cell, "v", &reference)?,
+        inline: worksheet_element_text(cell, "t", &reference)?,
+    })
+}
+
+fn worksheet_element_text(cell: &str, tag: &str, reference: &str) -> UseResult<Option<String>> {
+    let open = format!("<{tag}>");
+    let close = format!("</{tag}>");
+    let Some(start) = cell.find(&open) else {
+        return Ok(None);
+    };
+    if cell[start + 1..].contains(&open) {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' has more than one <{tag}> element."),
+        ));
+    }
+    let rest = &cell[start + open.len()..];
+    let Some(end) = rest.find(&close) else {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' is missing </{tag}>."),
+        ));
+    };
+    Ok(Some(rest[..end].to_owned()))
+}
+
+fn worksheet_cell(xml: &str, row: u32, column: u32) -> UseResult<(usize, usize, String)> {
+    let reference = a1_reference(column, row);
+    let marker = format!("r=\"{reference}\"");
+    let marker_at = unique_marker(xml, &marker).ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("The worksheet has no single cell '{reference}'."),
+        )
+    })?;
+    let start = xml[..marker_at]
+        .rfind("<c ")
+        .or_else(|| xml[..marker_at].rfind("<c>"))
+        .ok_or_else(|| {
+            collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Cell '{reference}' is not a worksheet cell."),
+            )
+        })?;
+    let end_rel = xml[start..].find("</c>").ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' is missing its end tag."),
+        )
+    })?;
+    Ok((start, start + end_rel + "</c>".len(), reference))
+}
+
 fn replace_inline_cell(xml: &str, row: u32, column: u32, text: &str) -> UseResult<String> {
     let reference = a1_reference(column, row);
     let marker = format!("r=\"{reference}\"");
@@ -590,6 +1424,105 @@ fn replace_inline_cell(xml: &str, row: u32, column: u32, text: &str) -> UseResul
         ));
     };
     replace_single_run(xml, start, end, open_tag, close_tag, text, &reference)
+}
+
+fn replace_number_cell(xml: &str, row: u32, column: u32, text: &str) -> UseResult<String> {
+    if !is_number_literal(text) {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "A spreadsheet number snapshot requires a finite decimal literal.",
+        ));
+    }
+    let (start, end, reference) = worksheet_cell(xml, row, column)?;
+    let cell = &xml[start..end];
+    if cell.contains("<f")
+        || cell.contains(" t=\"s\"")
+        || cell.contains("t=\"inlineStr\"")
+        || cell.contains("t=\"str\"")
+    {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' is not a numeric value and is not rewritten."),
+        ));
+    }
+    let open_end = cell.find('>').ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Cell '{reference}' is missing its start tag."),
+        )
+    })?;
+    if let Some(kind) = cell[..=open_end]
+        .split(" t=\"")
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+    {
+        if kind != "n" {
+            return Err(collaboration_error(
+                "office.collaboration.snapshot_invalid",
+                format!("Cell '{reference}' is not a numeric value and is not rewritten."),
+            ));
+        }
+    }
+    replace_single_run(xml, start, end, "<v", "</v>", text, &reference)
+}
+
+fn is_number_literal(text: &str) -> bool {
+    if text.is_empty() || text.len() > 64 {
+        return false;
+    }
+    if !text
+        .bytes()
+        .all(|byte| matches!(byte, b'0'..=b'9' | b'+' | b'-' | b'.' | b'e' | b'E'))
+    {
+        return false;
+    }
+    text.parse::<f64>().is_ok_and(|value| value.is_finite())
+}
+
+/// Read one shape's `<a:t>` text from slide XML produced by [`export_presentation_replica`].
+pub fn reopen_exported_shape_text(xml: &str, shape_id: &str) -> UseResult<String> {
+    if shape_id.is_empty() || shape_id.contains('"') {
+        return Err(collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            "A presentation snapshot shape id is invalid.",
+        ));
+    }
+    let marker = format!("id=\"{shape_id}\"");
+    let marker_at = unique_marker(xml, &marker).ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("The slide has no single shape '{shape_id}'."),
+        )
+    })?;
+    let start = xml[..marker_at].rfind("<p:sp").ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Shape '{shape_id}' is not inside a p:sp element."),
+        )
+    })?;
+    let end_rel = xml[start..].find("</p:sp>").ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.snapshot_invalid",
+            format!("Shape '{shape_id}' is missing its end tag."),
+        )
+    })?;
+    let end = start + end_rel + "</p:sp>".len();
+    let element = &xml[start..end];
+    let open = element
+        .find("<a:t")
+        .ok_or_else(|| text_run_error(shape_id))?;
+    let open_end = element[open..]
+        .find('>')
+        .ok_or_else(|| text_run_error(shape_id))?
+        + open;
+    let close = element[open_end..]
+        .find("</a:t>")
+        .ok_or_else(|| text_run_error(shape_id))?
+        + open_end;
+    if element[close + "</a:t>".len()..].contains("<a:t") {
+        return Err(text_run_error(shape_id));
+    }
+    Ok(element[open_end + 1..close].to_owned())
 }
 
 fn replace_shape_text(xml: &str, shape_id: &str, text: &str) -> UseResult<String> {
@@ -854,6 +1787,107 @@ mod tests {
         assert!(text.contains("/Contents (Updated)"));
         assert!(text.ends_with("trailer"));
         assert!(write_pdf_snapshot(&pdf, &[("Missing", "x")], &[]).is_err());
+    }
+
+    #[test]
+    fn spreadsheet_snapshot_writes_a_formula_and_a_unique_shared_string() {
+        let worksheet = "<worksheet><sheetData><row r=\"1\"><c r=\"A1\"><f>=A2+B2</f><v>1</v></c><c r=\"B1\"><v>42</v></c><c r=\"C1\" t=\"s\"><v>0</v></c></row></sheetData></worksheet>";
+        let shared = "<sst><si><t>Hello</t></si><si><t>Other</t></si></sst>";
+        let mut parts = BTreeMap::new();
+        parts.insert(
+            "xl/worksheets/sheet1.xml".to_owned(),
+            worksheet.as_bytes().to_vec(),
+        );
+        parts.insert(SHARED_STRINGS_PART.to_owned(), shared.as_bytes().to_vec());
+        parts.insert("xl/styles.xml".to_owned(), b"<styles/>".to_vec());
+
+        let written = write_spreadsheet_formula_snapshot(
+            parts.clone(),
+            &[("xl/worksheets/sheet1.xml", 0, 0, "=A3+C2", Some("2"))],
+        )
+        .unwrap();
+        let xml = String::from_utf8(written["xl/worksheets/sheet1.xml"].clone()).unwrap();
+        assert!(xml.contains("<f>=A3+C2</f>"));
+        assert!(xml.contains("<v>2</v>"));
+        assert!(xml.contains("<v>42</v>"));
+        assert_eq!(written["xl/styles.xml"], parts["xl/styles.xml"]);
+        assert!(write_spreadsheet_formula_snapshot(
+            parts.clone(),
+            &[("xl/worksheets/sheet1.xml", 0, 1, "=A1", None)],
+        )
+        .is_err());
+
+        let written = write_spreadsheet_shared_string_snapshot(
+            parts.clone(),
+            &[("xl/worksheets/sheet1.xml", 0, 2, "Hello 中")],
+        )
+        .unwrap();
+        let shared_xml = String::from_utf8(written[SHARED_STRINGS_PART].clone()).unwrap();
+        assert!(shared_xml.contains("<t>Hello 中</t>"));
+        assert!(shared_xml.contains("<t>Other</t>"));
+        assert_eq!(
+            String::from_utf8(written["xl/worksheets/sheet1.xml"].clone()).unwrap(),
+            worksheet
+        );
+
+        let shared_twice = "<worksheet><sheetData><row r=\"1\"><c r=\"C1\" t=\"s\"><v>0</v></c><c r=\"D1\" t=\"s\"><v>0</v></c></row></sheetData></worksheet>";
+        let mut shared_parts = parts.clone();
+        shared_parts.insert(
+            "xl/worksheets/sheet1.xml".to_owned(),
+            shared_twice.as_bytes().to_vec(),
+        );
+        assert!(write_spreadsheet_shared_string_snapshot(
+            shared_parts,
+            &[("xl/worksheets/sheet1.xml", 0, 2, "nope")],
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn spreadsheet_snapshot_writes_a_numeric_cell() {
+        let worksheet = "<worksheet><sheetData><row r=\"1\"><c r=\"A1\"><f>=A2</f><v>1</v></c><c r=\"B1\"><v>42</v></c><c r=\"C1\" t=\"s\"><v>0</v></c><c r=\"D1\" t=\"n\"><v>1</v></c></row></sheetData></worksheet>";
+        let mut parts = BTreeMap::new();
+        parts.insert(
+            "xl/worksheets/sheet1.xml".to_owned(),
+            worksheet.as_bytes().to_vec(),
+        );
+        parts.insert("xl/styles.xml".to_owned(), b"<styles/>".to_vec());
+
+        assert!(write_spreadsheet_snapshot(
+            parts.clone(),
+            &[("xl/worksheets/sheet1.xml", 0, 1, "7")],
+        )
+        .is_err());
+        assert!(write_spreadsheet_number_snapshot(
+            parts.clone(),
+            &[("xl/worksheets/sheet1.xml", 0, 0, "7")],
+        )
+        .is_err());
+        assert!(write_spreadsheet_number_snapshot(
+            parts.clone(),
+            &[("xl/worksheets/sheet1.xml", 0, 2, "7")],
+        )
+        .is_err());
+        assert!(write_spreadsheet_number_snapshot(
+            parts.clone(),
+            &[("xl/worksheets/sheet1.xml", 0, 1, "hello")],
+        )
+        .is_err());
+
+        let written = write_spreadsheet_number_snapshot(
+            parts.clone(),
+            &[
+                ("xl/worksheets/sheet1.xml", 0, 1, "7"),
+                ("xl/worksheets/sheet1.xml", 0, 3, "3.5"),
+            ],
+        )
+        .unwrap();
+        let xml = String::from_utf8(written["xl/worksheets/sheet1.xml"].clone()).unwrap();
+        assert!(xml.contains("<c r=\"A1\"><f>=A2</f><v>1</v></c>"));
+        assert!(xml.contains("<c r=\"B1\"><v>7</v></c>"));
+        assert!(xml.contains("<c r=\"C1\" t=\"s\"><v>0</v></c>"));
+        assert!(xml.contains("<c r=\"D1\" t=\"n\"><v>3.5</v></c>"));
+        assert_eq!(written["xl/styles.xml"], parts["xl/styles.xml"]);
     }
 
     #[test]

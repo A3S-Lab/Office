@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import type { SpreadsheetAutoSumFunction } from './spreadsheet-auto-sum';
 import type { SpreadsheetCellClearMode } from './spreadsheet-cell-clear';
 import type { SpreadsheetCellFillDirection } from './spreadsheet-cell-fill';
@@ -40,8 +42,9 @@ export function SpreadsheetEditingRibbonGroup({
   commands: SpreadsheetEditorCommands;
   findOpen: boolean;
 }) {
+  const messages = useOfficeMessages();
   return (
-    <WorkOfficeRibbonGroup label="编辑" priority="low">
+    <WorkOfficeRibbonGroup label={officeMessage(messages, 'spreadsheet.ribbon.editing')} priority="low">
       <SpreadsheetAutoSumMenu can={can} commands={commands} />
       <SpreadsheetFillMenu can={can} commands={commands} />
       <SpreadsheetClearMenu can={can} commands={commands} />
@@ -63,12 +66,13 @@ function SpreadsheetFindAndSelectMenu({
   commands: SpreadsheetEditorCommands;
   findOpen: boolean;
 }) {
+  const messages = useOfficeMessages();
   const findDisabled = !can.openFind();
   const goToDisabled = !can.openGoTo();
   return (
     <Popover
       label={spreadsheetCommandCatalog.findAndSelect.label}
-      panelLabel="查找和选择选项"
+      panelLabel={officeMessage(messages, 'spreadsheet.ribbon.findSelectPanel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-menu-root"
@@ -82,7 +86,7 @@ function SpreadsheetFindAndSelectMenu({
           className={`with-label work-spreadsheet-ribbon-menu-trigger${findOpen || open ? ' active' : ''}`}
           title={
             findOpen
-              ? `${spreadsheetCommandCatalog.findAndSelect.label}（查找已打开）`
+              ? officeMessage(messages, 'spreadsheet.ribbon.findOpenTitle', { label: spreadsheetCommandCatalog.findAndSelect.label })
               : spreadsheetCommandCatalog.findAndSelect.label
           }
         >
@@ -142,6 +146,7 @@ function SpreadsheetClearMenu({
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
 }) {
+  const messages = useOfficeMessages();
   const items: readonly {
     mode: SpreadsheetCellClearMode;
     id: string;
@@ -183,8 +188,8 @@ function SpreadsheetClearMenu({
 
   return (
     <Popover
-      label="清除"
-      panelLabel="清除选项"
+      label={officeMessage(messages, 'spreadsheet.ribbon.clear')}
+      panelLabel={officeMessage(messages, 'spreadsheet.ribbon.clearPanel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-menu-root"
@@ -196,10 +201,10 @@ function SpreadsheetClearMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger${open ? ' active' : ''}`}
-          title="清除"
+          title={officeMessage(messages, 'spreadsheet.ribbon.clear')}
         >
           <Eraser size={19} />
-          <span>清除</span>
+          <span>{officeMessage(messages, 'spreadsheet.ribbon.clear')}</span>
         </button>
       )}
     >
@@ -239,6 +244,7 @@ function SpreadsheetAutoSumMenu({
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
 }) {
+  const messages = useOfficeMessages();
   const items: readonly {
     functionName: SpreadsheetAutoSumFunction;
     id: string;
@@ -282,8 +288,8 @@ function SpreadsheetAutoSumMenu({
 
   return (
     <Popover
-      label="更多自动计算方式"
-      panelLabel="自动计算选项"
+      label={officeMessage(messages, 'spreadsheet.ribbon.moreAutoCalc')}
+      panelLabel={officeMessage(messages, 'spreadsheet.ribbon.autoCalcPanel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-split-root"
@@ -308,7 +314,7 @@ function SpreadsheetAutoSumMenu({
           <button
             {...triggerProps}
             className={`work-spreadsheet-ribbon-split-disclosure${open ? ' active' : ''}`}
-            title="更多自动计算方式"
+            title={officeMessage(messages, 'spreadsheet.ribbon.moreAutoCalc')}
           >
             <ChevronDown size={13} aria-hidden="true" />
           </button>
@@ -347,6 +353,7 @@ function SpreadsheetFillMenu({
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
 }) {
+  const messages = useOfficeMessages();
   const items: readonly {
     direction: SpreadsheetCellFillDirection;
     id: string;
@@ -387,8 +394,8 @@ function SpreadsheetFillMenu({
 
   return (
     <Popover
-      label="填充"
-      panelLabel="填充选项"
+      label={officeMessage(messages, 'spreadsheet.ribbon.fill')}
+      panelLabel={officeMessage(messages, 'spreadsheet.ribbon.fillPanel')}
       panelRole="menu"
       portal
       className="work-spreadsheet-ribbon-menu-root"
@@ -400,10 +407,10 @@ function SpreadsheetFillMenu({
         <button
           {...triggerProps}
           className={`with-label work-spreadsheet-ribbon-menu-trigger${open ? ' active' : ''}`}
-          title="填充"
+          title={officeMessage(messages, 'spreadsheet.ribbon.fill')}
         >
           <ArrowDownToLine size={19} />
-          <span>填充</span>
+          <span>{officeMessage(messages, 'spreadsheet.ribbon.fill')}</span>
         </button>
       )}
     >

@@ -1,4 +1,8 @@
 import type { Cell, CellMatrix } from '@fortune-sheet/core';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import { cloneSparseMatrix } from '../spreadsheet-sparse';
 import {
   parseSpreadsheetConditionalColor,
@@ -202,15 +206,20 @@ export function parseSpreadsheetSortAppearanceTargetValue(
 export function spreadsheetSortAppearanceTargetLabel(
   target: SpreadsheetSortAppearanceTarget,
 ): string {
+  const catalog = resolveOfficeMessages();
   if (target.kind === 'cell-color') {
     return target.color
-      ? `单元格颜色 ${target.color.toUpperCase()}`
-      : '无单元格颜色';
+      ? officeMessage(catalog, 'spreadsheet.sort.appearance.cellColor', {
+          color: target.color.toUpperCase(),
+        })
+      : officeMessage(catalog, 'spreadsheet.sort.appearance.noCellColor');
   }
   if (target.kind === 'font-color') {
     return target.color
-      ? `字体颜色 ${target.color.toUpperCase()}`
-      : '自动字体颜色';
+      ? officeMessage(catalog, 'spreadsheet.sort.appearance.fontColor', {
+          color: target.color.toUpperCase(),
+        })
+      : officeMessage(catalog, 'spreadsheet.sort.appearance.autoFontColor');
   }
   const count = spreadsheetConditionalIconSetCount(target.icon.iconSet);
   const appearance = spreadsheetConditionalIconAppearance({

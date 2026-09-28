@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { officeMessage } from '../../../i18n/office-locale';
+import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
 import { documentBorderPresentation } from '../work-document-paragraph-borders';
 import type { DocumentRunBorderStyle } from '../work-document-run-border';
 import {
@@ -13,48 +15,71 @@ import {
   OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeMessages } from './office-messages-context';
 
-const runBorderModes: ReadonlyArray<{
+function runBorderModes(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentFontDialogRunBorderMode;
   label: string;
   disabled?: boolean;
-}> = [
-  { value: 'mixed', label: '混合（保持不变）', disabled: true },
-  { value: 'inherit', label: '跟随样式' },
-  { value: 'none', label: '无（显式重置）' },
-  { value: 'value', label: '边框' },
-];
+}> {
+  return [
+    {
+      value: 'mixed',
+      label: officeMessage(messages, 'document.font.mode.mixed'),
+      disabled: true,
+    },
+    {
+      value: 'inherit',
+      label: officeMessage(messages, 'document.font.mode.inherit'),
+    },
+    {
+      value: 'none',
+      label: officeMessage(messages, 'document.font.mode.noneExplicit'),
+    },
+    {
+      value: 'value',
+      label: officeMessage(messages, 'document.font.border.modeValue'),
+    },
+  ];
+}
 
-const runBorderStyles: ReadonlyArray<{
+const RUN_BORDER_STYLE_KEYS = [
+  'single',
+  'thick',
+  'double',
+  'dotted',
+  'dashed',
+  'dotDash',
+  'dotDotDash',
+  'triple',
+  'thinThickSmallGap',
+  'thickThinSmallGap',
+  'thinThickThinSmallGap',
+  'thinThickMediumGap',
+  'thickThinMediumGap',
+  'thinThickThinMediumGap',
+  'thinThickLargeGap',
+  'thickThinLargeGap',
+  'thinThickThinLargeGap',
+  'wave',
+  'doubleWave',
+  'dashSmallGap',
+  'dashDotStroked',
+  'threeDEmboss',
+  'threeDEngrave',
+  'outset',
+  'inset',
+] as const satisfies ReadonlyArray<DocumentRunBorderStyle>;
+
+function runBorderStyles(messages: OfficeMessageCatalog): ReadonlyArray<{
   value: DocumentRunBorderStyle;
   label: string;
-}> = [
-  { value: 'single', label: '单实线' },
-  { value: 'thick', label: '粗实线' },
-  { value: 'double', label: '双线' },
-  { value: 'dotted', label: '点线' },
-  { value: 'dashed', label: '虚线' },
-  { value: 'dotDash', label: '点划线' },
-  { value: 'dotDotDash', label: '双点划线' },
-  { value: 'triple', label: '三线' },
-  { value: 'thinThickSmallGap', label: '细粗线（小间距）' },
-  { value: 'thickThinSmallGap', label: '粗细线（小间距）' },
-  { value: 'thinThickThinSmallGap', label: '细粗细线（小间距）' },
-  { value: 'thinThickMediumGap', label: '细粗线（中间距）' },
-  { value: 'thickThinMediumGap', label: '粗细线（中间距）' },
-  { value: 'thinThickThinMediumGap', label: '细粗细线（中间距）' },
-  { value: 'thinThickLargeGap', label: '细粗线（大间距）' },
-  { value: 'thickThinLargeGap', label: '粗细线（大间距）' },
-  { value: 'thinThickThinLargeGap', label: '细粗细线（大间距）' },
-  { value: 'wave', label: '波浪线' },
-  { value: 'doubleWave', label: '双波浪线' },
-  { value: 'dashSmallGap', label: '短划线' },
-  { value: 'dashDotStroked', label: '粗点划线' },
-  { value: 'threeDEmboss', label: '三维浮雕' },
-  { value: 'threeDEngrave', label: '三维凹刻' },
-  { value: 'outset', label: '外凸' },
-  { value: 'inset', label: '内凹' },
-];
+}> {
+  return RUN_BORDER_STYLE_KEYS.map((value) => ({
+    value,
+    label: officeMessage(messages, `document.font.border.style.${value}`),
+  }));
+}
 
 export function DocumentFontDialogRunBorderSection({
   source,
@@ -69,6 +94,7 @@ export function DocumentFontDialogRunBorderSection({
   onDraftChange: (patch: Partial<DocumentFontDialogRunBorderDraft>) => void;
   onTouched: () => void;
 }) {
+  const messages = useOfficeMessages();
   const enabled = draft.runBorderMode === 'value';
   const update = (patch: Partial<DocumentFontDialogRunBorderDraft>) => {
     onDraftChange(patch);
@@ -77,24 +103,26 @@ export function DocumentFontDialogRunBorderSection({
   return (
     <fieldset
       className="work-document-font-dialog-run-border"
-      aria-label="字符边框设置"
+      aria-label={officeMessage(messages, 'document.font.border.sectionAria')}
     >
-      <legend>字符边框</legend>
+      <legend>
+        {officeMessage(messages, 'document.font.border.legend')}
+      </legend>
       <div className="work-document-font-dialog-field">
-        <span>应用方式</span>
+        <span>{officeMessage(messages, 'document.font.border.apply')}</span>
         <OfficeSelect
-          ariaLabel="字符边框"
+          ariaLabel={officeMessage(messages, 'document.font.border.applyAria')}
           value={draft.runBorderMode}
-          options={runBorderModes}
+          options={runBorderModes(messages)}
           onValueChange={(runBorderMode) => update({ runBorderMode })}
         />
       </div>
       <div className="work-document-font-dialog-field">
-        <span>线型</span>
+        <span>{officeMessage(messages, 'document.font.border.style')}</span>
         <OfficeSelect
-          ariaLabel="字符边框线型"
+          ariaLabel={officeMessage(messages, 'document.font.border.styleAria')}
           value={draft.runBorderStyle}
-          options={runBorderStyles}
+          options={runBorderStyles(messages)}
           disabled={!enabled}
           onValueChange={(runBorderStyle) =>
             update({ runBorderMode: 'value', runBorderStyle })
@@ -102,16 +130,16 @@ export function DocumentFontDialogRunBorderSection({
         />
       </div>
       <div className="work-document-font-dialog-field">
-        <span>颜色</span>
+        <span>{officeMessage(messages, 'document.font.border.color')}</span>
         <OfficeColorPicker
-          ariaLabel="字符边框颜色"
+          ariaLabel={officeMessage(messages, 'document.font.border.colorAria')}
           value={
             draft.runBorderColor === 'auto' ? '#000000' : draft.runBorderColor
           }
           disabled={!enabled}
           resetAction={{
             kind: 'automatic',
-            label: '自动颜色',
+            label: officeMessage(messages, 'document.color.automatic'),
             onSelect: () =>
               update({ runBorderMode: 'value', runBorderColor: 'auto' }),
           }}
@@ -124,10 +152,10 @@ export function DocumentFontDialogRunBorderSection({
         />
       </div>
       <div className="work-document-font-dialog-field">
-        <span>宽度</span>
+        <span>{officeMessage(messages, 'document.font.border.width')}</span>
         <span className="work-document-font-dialog-measure">
           <OfficeNumberField
-            ariaLabel="字符边框宽度（磅）"
+            ariaLabel={officeMessage(messages, 'document.font.border.widthAria')}
             value={draft.runBorderWidthPoints}
             min={0.25}
             max={12}
@@ -137,14 +165,19 @@ export function DocumentFontDialogRunBorderSection({
               update({ runBorderMode: 'value', runBorderWidthPoints })
             }
           />
-          <span aria-hidden="true">磅</span>
+          <span aria-hidden="true">
+            {officeMessage(messages, 'document.font.unit.points')}
+          </span>
         </span>
       </div>
       <div className="work-document-font-dialog-field">
-        <span>文字间距</span>
+        <span>{officeMessage(messages, 'document.font.border.spacing')}</span>
         <span className="work-document-font-dialog-measure">
           <OfficeNumberField
-            ariaLabel="字符边框间距（磅）"
+            ariaLabel={officeMessage(
+              messages,
+              'document.font.border.spacingAria',
+            )}
             value={draft.runBorderSpacingPoints}
             min={0}
             max={31}
@@ -154,34 +187,36 @@ export function DocumentFontDialogRunBorderSection({
               update({ runBorderMode: 'value', runBorderSpacingPoints })
             }
           />
-          <span aria-hidden="true">磅</span>
+          <span aria-hidden="true">
+            {officeMessage(messages, 'document.font.unit.points')}
+          </span>
         </span>
       </div>
       <div className="work-document-font-dialog-run-border-effects">
         <OfficeCheckbox
-          ariaLabel="字符边框阴影"
+          ariaLabel={officeMessage(messages, 'document.font.border.shadowAria')}
           checked={draft.runBorderShadow}
           disabled={!enabled}
           onCheckedChange={(runBorderShadow) =>
             update({ runBorderMode: 'value', runBorderShadow })
           }
         >
-          阴影
+          {officeMessage(messages, 'document.font.border.shadow')}
         </OfficeCheckbox>
         <OfficeCheckbox
-          ariaLabel="字符边框框架"
+          ariaLabel={officeMessage(messages, 'document.font.border.frameAria')}
           checked={draft.runBorderFrame}
           disabled={!enabled}
           onCheckedChange={(runBorderFrame) =>
             update({ runBorderMode: 'value', runBorderFrame })
           }
         >
-          框架
+          {officeMessage(messages, 'document.font.border.frame')}
         </OfficeCheckbox>
       </div>
       {source.mixed && !touched ? (
         <p className="work-document-font-dialog-mixed" role="status">
-          当前选区包含不同的字符边框。选择一种应用方式后才会统一修改。
+          {officeMessage(messages, 'document.font.border.mixed')}
         </p>
       ) : null}
     </fieldset>

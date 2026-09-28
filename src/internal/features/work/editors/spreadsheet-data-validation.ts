@@ -5,6 +5,7 @@ import type {
   WorkSpreadsheetDataValidationRange,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import { officeMessage, resolveOfficeMessages } from '../../../i18n/office-locale';
 import {
   boundedSpreadsheetDataValidationText,
   normalizeSpreadsheetDataValidationErrorStyle,
@@ -934,27 +935,34 @@ function cloneSpreadsheetCellRange(
 function spreadsheetDataValidationError(
   code: SpreadsheetDataValidationErrorCode,
 ): Extract<SpreadsheetDataValidationResult, { ok: false }> {
-  const messages: Record<SpreadsheetDataValidationErrorCode, string> = {
-    'invalid-custom-formula':
-      '自定义公式必须是 255 个字符以内的本地公式，且不能包含控制字符。',
-    'invalid-date': '请输入有效的日期、Excel 日期序号或 DATE(...) 表达式。',
-    'invalid-list-formula':
-      '动态下拉公式必须是本地 =INDIRECT(单元格或文本拼接)，并解析为当前工作簿内的一行或一列区域。',
-    'invalid-list-source':
-      '请输入不超过 255 个字符的逗号分隔列表，或有效的单行/单列区域。',
-    'invalid-number': '请输入有效的数字；整数验证不能使用小数边界。',
-    'invalid-operator': '请选择与当前验证类型匹配的数据条件。',
-    'invalid-range': '请选择一个或多个有效的连续单元格区域。',
-    'invalid-text-length': '文本长度边界必须是大于或等于 0 的整数。',
-    'missing-value': '请填写验证条件所需的值。',
-    'multiple-list-columns': '下拉列表来源只能是一行或一列连续单元格。',
-    'out-of-bounds': '所选区域超出了工作表的有效边界。',
-    'protected-range': '不能修改受保护、只读、合并或透视表区域的数据验证。',
-    'range-too-large': `一次最多可设置 ${MAX_SPREADSHEET_DATA_VALIDATION_CELLS.toLocaleString('en-US')} 个单元格的数据验证。`,
-    'sheet-not-found': '找不到要设置数据验证的工作表。',
-    'value-order': '结束值不能小于开始值。',
-  };
-  return { ok: false, code, message: messages[code] };
+  const catalog = resolveOfficeMessages();
+  const keyByCode = {
+    'invalid-custom-formula': 'spreadsheet.dv.error.invalidCustomFormula',
+    'invalid-date': 'spreadsheet.dv.error.invalidDate',
+    'invalid-list-formula': 'spreadsheet.dv.error.invalidListFormula',
+    'invalid-list-source': 'spreadsheet.dv.error.invalidListSource',
+    'invalid-number': 'spreadsheet.dv.error.invalidNumber',
+    'invalid-operator': 'spreadsheet.dv.error.invalidOperator',
+    'invalid-range': 'spreadsheet.dv.error.invalidRange',
+    'invalid-text-length': 'spreadsheet.dv.error.invalidTextLength',
+    'missing-value': 'spreadsheet.dv.error.missingValue',
+    'multiple-list-columns': 'spreadsheet.dv.error.multipleListColumns',
+    'out-of-bounds': 'spreadsheet.dv.error.outOfBounds',
+    'protected-range': 'spreadsheet.dv.error.protectedRange',
+    'range-too-large': 'spreadsheet.dv.error.rangeTooLarge',
+    'sheet-not-found': 'spreadsheet.dv.error.sheetNotFound',
+    'value-order': 'spreadsheet.dv.error.valueOrder',
+  } as const satisfies Record<
+    SpreadsheetDataValidationErrorCode,
+    Parameters<typeof officeMessage>[1]
+  >;
+  const message =
+    code === 'range-too-large'
+      ? officeMessage(catalog, keyByCode[code], {
+          n: MAX_SPREADSHEET_DATA_VALIDATION_CELLS.toLocaleString('en-US'),
+        })
+      : officeMessage(catalog, keyByCode[code]);
+  return { ok: false, code, message };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

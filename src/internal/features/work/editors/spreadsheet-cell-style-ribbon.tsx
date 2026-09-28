@@ -1,25 +1,22 @@
 import type { Cell } from '@fortune-sheet/core';
 import { SwatchBook } from 'lucide-react';
 import { Popover } from '../../../design-system/primitives';
+import { officeMessage } from '../../../i18n/office-locale';
+import { OfficeMenuGroup } from './office-menu-group';
+import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import type { SpreadsheetResolvedCellBorders } from './spreadsheet-cell-border';
 import {
   spreadsheetCellStyleDefinitions,
+  spreadsheetCellStyleGroupLabel,
+  spreadsheetCellStyleGroups,
   spreadsheetCellStylePreset,
-  type SpreadsheetCellStyleDefinition,
 } from './spreadsheet-cell-style';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
-import { OfficeMenuGroup } from './office-menu-group';
-import { moveOfficeGridMenuFocus } from './office-menu-keyboard';
-
-const spreadsheetCellStyleGroups = [
-  '常用',
-  '数据和模型',
-  '标题和汇总',
-] as const satisfies readonly SpreadsheetCellStyleDefinition['group'][];
 
 export function SpreadsheetCellStyleRibbon({
   can,
@@ -32,24 +29,20 @@ export function SpreadsheetCellStyleRibbon({
   toolbarCell: Cell | null | undefined;
   toolbarCellBorders?: SpreadsheetResolvedCellBorders;
 }) {
+  const messages = useOfficeMessages();
+  const definitions = spreadsheetCellStyleDefinitions(messages);
   const current = spreadsheetCellStylePreset(toolbarCell, toolbarCellBorders);
-  const currentDefinition = spreadsheetCellStyleDefinitions.find(
-    ({ id }) => id === current,
-  );
-  const enabled = spreadsheetCellStyleDefinitions.map(({ id }) =>
-    can.applyCellStyle(id),
-  );
+  const currentDefinition = definitions.find(({ id }) => id === current);
+  const enabled = definitions.map(({ id }) => can.applyCellStyle(id));
   const firstEnabledIndex = enabled.findIndex(Boolean);
-  const currentIndex = spreadsheetCellStyleDefinitions.findIndex(
-    ({ id }) => id === current,
-  );
+  const currentIndex = definitions.findIndex(({ id }) => id === current);
   const focusIndex = enabled[currentIndex] ? currentIndex : firstEnabledIndex;
   const definition = spreadsheetCommandCatalog.cellStyles;
 
   return (
     <Popover
       label={definition.label}
-      panelLabel="单元格样式库"
+      panelLabel={officeMessage(messages, 'spreadsheet.cellStyle.panel')}
       panelRole="menu"
       portal
       placement="bottom-end"
@@ -69,7 +62,10 @@ export function SpreadsheetCellStyleRibbon({
           className={`with-label work-spreadsheet-ribbon-menu-trigger work-spreadsheet-cell-style-trigger${open ? ' active' : ''}`}
           title={
             currentDefinition
-              ? `${definition.label}（当前：${currentDefinition.label}）`
+              ? officeMessage(messages, 'spreadsheet.cellStyle.currentTitle', {
+                  label: definition.label,
+                  current: currentDefinition.label,
+                })
               : definition.label
           }
         >
@@ -79,52 +75,59 @@ export function SpreadsheetCellStyleRibbon({
       )}
     >
       {(close) =>
-        spreadsheetCellStyleGroups.map((group) => (
-          <OfficeMenuGroup
-            key={group}
-            className="work-spreadsheet-cell-style-group"
-            ariaLabel={group}
-            data-office-menu-grid
-          >
-            <span className="work-spreadsheet-cell-style-group-label">
-              {group}
-            </span>
-            <div
-              className="work-spreadsheet-cell-style-grid"
-              role="presentation"
+        spreadsheetCellStyleGroups.map((group) => {
+          const groupLabel = spreadsheetCellStyleGroupLabel(group, messages);
+          return (
+            <OfficeMenuGroup
+              key={group}
+              className="work-spreadsheet-cell-style-group"
+              ariaLabel={groupLabel}
+              data-office-menu-grid
             >
-              {spreadsheetCellStyleDefinitions.map((style, index) =>
-                style.group === group ? (
-                  <button
-                    key={style.id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-label={`应用单元格样式：${style.label}`}
-                    aria-checked={style.id === current}
-                    tabIndex={index === focusIndex ? 0 : -1}
-                    disabled={!enabled[index]}
-                    title={style.description}
-                    onClick={() => {
-                      close();
-                      commands.applyCellStyle(style.id);
-                    }}
-                  >
-                    <span
-                      className="work-spreadsheet-cell-style-preview"
-                      style={style.preview}
-                      aria-hidden="true"
+              <span className="work-spreadsheet-cell-style-group-label">
+                {groupLabel}
+              </span>
+              <div
+                className="work-spreadsheet-cell-style-grid"
+                role="presentation"
+              >
+                {definitions.map((style, index) =>
+                  style.group === group ? (
+                    <button
+                      key={style.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-label={officeMessage(
+                        messages,
+                        'spreadsheet.cellStyle.applyAria',
+                        { label: style.label },
+                      )}
+                      aria-checked={style.id === current}
+                      tabIndex={index === focusIndex ? 0 : -1}
+                      disabled={!enabled[index]}
+                      title={style.description}
+                      onClick={() => {
+                        close();
+                        commands.applyCellStyle(style.id);
+                      }}
                     >
-                      {style.label}
-                    </span>
-                    <span className="work-spreadsheet-cell-style-description">
-                      {style.description}
-                    </span>
-                  </button>
-                ) : null,
-              )}
-            </div>
-          </OfficeMenuGroup>
-        ))
+                      <span
+                        className="work-spreadsheet-cell-style-preview"
+                        style={style.preview}
+                        aria-hidden="true"
+                      >
+                        {style.label}
+                      </span>
+                      <span className="work-spreadsheet-cell-style-description">
+                        {style.description}
+                      </span>
+                    </button>
+                  ) : null,
+                )}
+              </div>
+            </OfficeMenuGroup>
+          );
+        })
       }
     </Popover>
   );

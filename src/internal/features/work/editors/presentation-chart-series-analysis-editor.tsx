@@ -1,3 +1,5 @@
+import { officeMessage } from '../../../i18n/office-locale';
+import { useOfficeMessages } from './office-messages-context';
 import { withPresentationChartSeriesAnalysis } from '../work-presentation-charts';
 import { workSpreadsheetChartSupportsSeriesAnalysis } from '../work-spreadsheet-chart-layout';
 import {
@@ -23,16 +25,25 @@ export function PresentationChartSeriesAnalysisEditor({
   const supportsErrorBars = workSpreadsheetChartSupportsErrorBars(chart.type);
   const supportsTrendlines = workSpreadsheetChartSupportsTrendlines(chart.type);
   if (!supportsErrorBars && !supportsTrendlines) return null;
+  const messages = useOfficeMessages();
   const seriesNumber = seriesIndex + 1;
 
   return (
     <section
       className="work-presentation-chart-series-analysis"
-      aria-label={`演示图表系列 ${seriesNumber} 高级分析`}
+      aria-label={officeMessage(
+        messages,
+        'presentation.chart.seriesAnalysisAria',
+        { number: String(seriesNumber) },
+      )}
     >
       <header>
-        <strong>高级分析</strong>
-        <span>趋势预测与误差范围会同步到画布、播放、PDF 和 PPTX。</span>
+        <strong>
+          {officeMessage(messages, 'presentation.chart.seriesAnalysisTitle')}
+        </strong>
+        <span>
+          {officeMessage(messages, 'presentation.chart.seriesAnalysisHint')}
+        </span>
       </header>
       {supportsTrendlines && (
         <SpreadsheetTrendlineEditor
