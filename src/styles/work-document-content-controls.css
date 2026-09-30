@@ -63,10 +63,23 @@
   );
 }
 
-.work-document-content-control:empty::after {
-  content: "输入内容";
+.work-document-content-control-value {
+  display: inline-block;
+  min-width: 1.25em;
+  min-height: 1.1em;
+}
+
+.work-document-content-control-placeholder {
+  position: absolute;
+  inset-inline-start: 0.18em;
+  top: 0;
   color: color-mix(in srgb, currentColor 48%, transparent);
   pointer-events: none;
+  user-select: none;
+}
+
+.work-document-content-control-placeholder[hidden] {
+  display: none;
 }
 
 .work-document-content-control[contenteditable="false"] {
@@ -79,7 +92,8 @@
     background: transparent;
   }
 
-  .work-document-content-control[data-content-control-appearance="tags"]::before {
+  .work-document-content-control[data-content-control-appearance="tags"]::before,
+  .work-document-content-control-placeholder {
     display: none;
   }
 }

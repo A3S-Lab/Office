@@ -5,6 +5,17 @@ const COMPOSITION_SETTLE_RETRY_MS = 20;
 const MAX_COMPOSITION_SETTLE_RETRIES = 4;
 const COMPOSITION_SETTLE_QUIET_MS = 24;
 const COMPOSITION_SETTLE_MAX_MS = 240;
+const LATIN_PREEDIT_CONTINUATION_MS = 800;
+
+interface LatinPreedit {
+  at: number;
+  range: ControlledCompositionRange;
+  text: string;
+}
+
+function isLatinPreedit(value: string): boolean {
+  return /^[A-Za-z]+(?:[ '][A-Za-z]+)*$/.test(value);
+}
 
 export interface ControlledCompositionRange {
   from: number;
@@ -54,6 +65,8 @@ export class ControlledEditorComposition {
   private deadline = 0;
   private generation = 0;
   private awaitingCommittedTransaction = false;
+  private preeditBase: string | null = null;
+  private previousLatinPreedit: LatinPreedit | null = null;
   private range: ControlledCompositionRange | null = null;
   private rangeFrozen = false;
   private settling = false;
@@ -74,6 +87,12 @@ export class ControlledEditorComposition {
       return;
     }
 
+    // Some pinyin IMEs end the composition on every key and insert the next
+    // spelling after the previous one. Keep that latin span inside the new
+    // composition so "y" + "ya" + "yan" is replaced instead of becoming "yyayan".
+    const continued = this.latinPreeditContinuation(editor);
+    if (!continued) this.previousLatinPreedit = null;
+
     this.generation += 1;
     this.cancelTimer();
     this.active = true;
@@ -83,7 +102,12 @@ export class ControlledEditorComposition {
     this.compositionData = null;
     this.deadline = 0;
     this.range =
-      editor && !editor.isDestroyed ? this.selectionRange(editor) : null;
+      continued ??
+      (editor && !editor.isDestroyed ? this.selectionRange(editor) : null);
+    this.preeditBase =
+      continued && editor && !editor.isDestroyed
+        ? this.textBetween(editor, continued)
+        : null;
     this.rangeFrozen = false;
     this.settling = false;
     this.settleAt = 0;
@@ -123,6 +147,10 @@ export class ControlledEditorComposition {
   noteInput(event: Event): void {
     const data = inputDataOf(event);
     const committed = isCommittedInput(event);
+
+    if (!this.active && !this.settling && !committed && data) {
+      this.previousLatinPreedit = null;
+    }
 
     if (this.active) {
       // A few WebKit versions send insertFromComposition before
@@ -191,6 +219,9 @@ export class ControlledEditorComposition {
         // range mappable until the quiet settlement so a duplicate append is
         // folded into the same correction instead of surviving beside it.
       }
+      this.rememberLatinPreedit(data);
+    } else if (!legacySettlement) {
+      this.rememberCompositionWithoutData(editor);
     }
 
     const generation = ++this.generation;
@@ -230,11 +261,90 @@ export class ControlledEditorComposition {
     this.committedText = null;
     this.compositionData = null;
     this.deadline = 0;
+    this.preeditBase = null;
+    this.previousLatinPreedit = null;
     this.range = null;
     this.rangeFrozen = false;
     this.settleAt = 0;
     this.settleEditor = null;
     this.settleHandler = null;
+  }
+
+  private rememberCompositionWithoutData(editor: Editor): void {
+    const rangeText = this.currentRangeText(editor);
+    const suffix = this.compositionSuffix(rangeText);
+    if (suffix) {
+      this.compositionData = suffix;
+      if (!this.committedText) this.committedText = suffix;
+      this.rememberLatinPreedit(suffix);
+      return;
+    }
+    if (rangeText && isLatinPreedit(rangeText)) {
+      this.compositionData = rangeText;
+      this.rememberLatinPreedit(rangeText);
+      return;
+    }
+    this.previousLatinPreedit = null;
+  }
+
+  private compositionSuffix(rangeText: string | null): string | null {
+    if (!this.preeditBase || !rangeText || !rangeText.startsWith(this.preeditBase)) {
+      return null;
+    }
+    const suffix = rangeText.slice(this.preeditBase.length);
+    return suffix.length > 0 ? suffix : null;
+  }
+
+  private rememberLatinPreedit(data: string): void {
+    if (!isLatinPreedit(data) || !this.range) {
+      this.previousLatinPreedit = null;
+      return;
+    }
+    this.previousLatinPreedit = {
+      at: Date.now(),
+      range: { ...this.range },
+      text: data,
+    };
+  }
+
+  private latinPreeditContinuation(
+    editor?: Editor | null,
+  ): ControlledCompositionRange | null {
+    if (!editor || editor.isDestroyed) return null;
+    const selection = editor.state.selection;
+    if (!selection.empty) return null;
+    // A key that arrives before the previous spelling is normalized still owns
+    // the accumulated range. Equality would fail until that replacement lands.
+    if (
+      this.settling &&
+      this.range &&
+      this.compositionData &&
+      isLatinPreedit(this.compositionData) &&
+      selection.from === this.range.to
+    ) {
+      return { from: this.range.from, to: this.range.to };
+    }
+    const previous = this.previousLatinPreedit;
+    if (
+      !previous ||
+      Date.now() - previous.at > LATIN_PREEDIT_CONTINUATION_MS ||
+      selection.from !== previous.range.to
+    ) {
+      return null;
+    }
+    if (this.textBetween(editor, previous.range) !== previous.text) return null;
+    return { from: previous.range.from, to: previous.range.to };
+  }
+
+  private textBetween(
+    editor: Editor,
+    range: ControlledCompositionRange,
+  ): string | null {
+    const maximum = editor.state.doc.content.size;
+    if (range.from < 0 || range.to < range.from || range.to > maximum) {
+      return null;
+    }
+    return editor.state.doc.textBetween(range.from, range.to, '\n', '\n');
   }
 
   private selectionRange(editor: Editor): ControlledCompositionRange {
@@ -331,6 +441,21 @@ export class ControlledEditorComposition {
   }
 
   private clearSettlement(): void {
+    const editor = this.settleEditor;
+    if (
+      this.previousLatinPreedit &&
+      this.range &&
+      editor &&
+      !editor.isDestroyed
+    ) {
+      const live = this.textBetween(editor, this.range);
+      if (live === this.previousLatinPreedit.text) {
+        this.previousLatinPreedit = {
+          ...this.previousLatinPreedit,
+          range: { ...this.range },
+        };
+      }
+    }
     this.active = false;
     this.awaitingCommittedTransaction = false;
     this.settling = false;
@@ -338,6 +463,7 @@ export class ControlledEditorComposition {
     this.committedText = null;
     this.compositionData = null;
     this.deadline = 0;
+    this.preeditBase = null;
     this.range = null;
     this.rangeFrozen = false;
     this.settleAt = 0;

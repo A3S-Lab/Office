@@ -30,6 +30,7 @@ export type PptxExportObjectRole =
 interface PptxExportBinding {
   displayName: string;
   groupPath: string[];
+  groupRotation?: number;
   groupScope: string;
   marker: string;
 }
@@ -44,6 +45,7 @@ interface PptxGroupBucket {
   children: Map<string, PptxGroupBucket>;
   directNodes: PptxSceneNode[];
   order: number;
+  rotation?: number;
 }
 
 interface PptxBounds {
@@ -89,6 +91,7 @@ export class PptxGroupExportRegistry {
     const binding: PptxExportBinding = {
       displayName: `${pptxRoleName(role)} ${roleCount}`,
       groupPath,
+      groupRotation: element.groupRotation || undefined,
       groupScope: scope,
       marker,
     };
@@ -185,7 +188,7 @@ function patchPptxShapeTree(
     if (!item.binding?.groupPath.length) continue;
     let siblings = roots;
     let bucket: PptxGroupBucket | undefined;
-    for (const groupId of item.binding.groupPath) {
+    for (const [depth, groupId] of item.binding.groupPath.entries()) {
       const key = groupBucketKey(item.binding.groupScope, groupId);
       bucket = siblings.get(key);
       if (!bucket) {
@@ -197,6 +200,13 @@ function patchPptxShapeTree(
         siblings.set(key, bucket);
       }
       bucket.order = Math.max(bucket.order, item.order);
+      if (
+        depth === 0 &&
+        item.binding.groupRotation &&
+        bucket.rotation === undefined
+      ) {
+        bucket.rotation = item.binding.groupRotation;
+      }
       siblings = bucket.children;
     }
     bucket?.directNodes.push(item);
@@ -260,7 +270,9 @@ function renderPptxGroup(
     PRESENTATIONML_NAMESPACE,
     'p:grpSpPr',
   );
-  groupProperties.append(pptxIdentityGroupTransform(document, bounds));
+  groupProperties.append(
+    pptxIdentityGroupTransform(document, bounds, bucket.rotation),
+  );
   group.append(nonVisual, groupProperties, ...children);
   return group;
 }
@@ -268,12 +280,16 @@ function renderPptxGroup(
 function pptxIdentityGroupTransform(
   document: Document,
   bounds: PptxBounds,
+  rotation?: number,
 ): Element {
   const transform = document.createElementNS(DRAWINGML_NAMESPACE, 'a:xfrm');
   const x = Math.round(bounds.left);
   const y = Math.round(bounds.top);
   const width = Math.max(1, Math.round(bounds.right - bounds.left));
   const height = Math.max(1, Math.round(bounds.bottom - bounds.top));
+  if (rotation) {
+    transform.setAttribute('rot', String(Math.round(rotation * 60_000)));
+  }
   transform.append(
     pptxPositionNode(document, 'a:off', x, y),
     pptxExtentNode(document, 'a:ext', width, height),

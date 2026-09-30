@@ -34,6 +34,10 @@ import {
   inferInlineMovePairsAcrossScopes,
   MAX_INFERRED_MOVE_TEXT,
 } from './work-document-compare-moves';
+import {
+  comparedPageChromeAttributes,
+  sectionLayoutSignature,
+} from './work-document-compare-section';
 import { boundedMetadata, stableJson } from './work-document-compare-stability';
 import {
   isDocumentCharacterFormatMark,
@@ -229,7 +233,20 @@ function planDocumentCompare(
     if (!blocks) continue;
     comparedSections.push(
       currentSection.type.create(
-        currentSection.attrs,
+        {
+          ...currentSection.attrs,
+          ...comparedPageChromeAttributes(
+            currentSection,
+            revisedSection,
+            (currentText, revisedText) =>
+              pageChromeTextRevisionHtml(
+                currentSection,
+                currentText,
+                revisedText,
+                factory,
+              ),
+          ),
+        },
         Fragment.fromArray(blocks),
       ),
     );
@@ -1382,8 +1399,84 @@ function paragraphFormattingAttributes(
   );
 }
 
-function sectionLayoutSignature(section: ProseMirrorNode): string {
-  return stableJson(filteredAttributes(section.attrs, new Set(['id'])));
+function pageChromeTextRevisionHtml(
+  section: ProseMirrorNode,
+  currentText: string,
+  revisedText: string,
+  factory: ComparisonIdentityFactory,
+): string | null {
+  if (currentText === revisedText) return null;
+  const paragraph = section.type.schema.nodes.paragraph;
+  if (!paragraph) return null;
+  const current = paragraph.create(
+    null,
+    currentText ? section.type.schema.text(currentText) : null,
+  );
+  const revised = paragraph.create(
+    null,
+    revisedText ? section.type.schema.text(revisedText) : null,
+  );
+  const prepared = preparePairedBlock(current, revised, 'page-chrome');
+  if (!prepared) return null;
+  const rendered = renderPairedBlock(
+    prepared,
+    factory,
+    undefined,
+    prepared.inline.variant,
+  );
+  if (!rendered) return null;
+  return pageChromeRevisionHtml(rendered);
+}
+
+function pageChromeRevisionHtml(block: ProseMirrorNode): string {
+  const parts: string[] = [];
+  block.forEach((child) => {
+    if (child.type.name === 'hardBreak') {
+      parts.push('<br>');
+      return;
+    }
+    const text = escapePageChromeText(child.text ?? '');
+    if (!text) return;
+    const change = child.marks.find(
+      (mark) => mark.type.name === 'documentChange',
+    );
+    if (!change) {
+      parts.push(text);
+      return;
+    }
+    const kind = stringMarkAttribute(change.attrs.kind);
+    const tag = kind === 'deletion' ? 'del' : kind === 'insertion' ? 'ins' : '';
+    if (!tag) {
+      parts.push(text);
+      return;
+    }
+    const id = escapePageChromeAttribute(stringMarkAttribute(change.attrs.id));
+    const author = escapePageChromeAttribute(
+      stringMarkAttribute(change.attrs.author),
+    );
+    const date = escapePageChromeAttribute(
+      stringMarkAttribute(change.attrs.date),
+    );
+    parts.push(
+      `<${tag} data-document-change="true" data-change-kind="${kind}" data-change-id="${id}" data-change-author="${author}" data-change-date="${date}">${text}</${tag}>`,
+    );
+  });
+  return `<p>${parts.join('')}</p>`;
+}
+
+function stringMarkAttribute(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function escapePageChromeText(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function escapePageChromeAttribute(value: string): string {
+  return escapePageChromeText(value).replaceAll('"', '&quot;');
 }
 
 function comparisonSemanticSignature(node: ProseMirrorNode): string {

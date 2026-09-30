@@ -11,6 +11,7 @@ import {
   ArrowUpToLine,
   BarChart3,
   Bold,
+  Captions,
   ChevronDown,
   ClipboardPaste,
   Copy,
@@ -27,6 +28,7 @@ import {
   Play,
   Plus,
   Redo2,
+  RotateCw,
   Scissors,
   Square,
   SquarePlay,
@@ -38,6 +40,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
+import {
+  type OfficeMessageCatalog,
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
 import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
@@ -63,6 +70,7 @@ import {
   officeFontFamilyLocalizedLabel,
 } from './office-font-families';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
+import { useOfficeMessages } from './office-messages-context';
 import { OfficeTableInsertPopover } from './office-table-insert-popover';
 import { PresentationAnimationPanel } from './presentation-animation-panel';
 import type {
@@ -76,18 +84,21 @@ import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
-import {
-  officeMessage,
-  resolveOfficeMessages,
-  type OfficeMessageCatalog,
-} from '../../../i18n/office-locale';
-import { useOfficeMessages } from './office-messages-context';
 
 function presentationRibbonTabs(catalog: OfficeMessageCatalog) {
   return [
-    { id: 'home' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.home') },
-    { id: 'insert' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.insert') },
-    { id: 'design' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.design') },
+    {
+      id: 'home' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.home'),
+    },
+    {
+      id: 'insert' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.insert'),
+    },
+    {
+      id: 'design' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.design'),
+    },
     {
       id: 'transitions' as const,
       label: officeMessage(catalog, 'presentation.ribbon.tab.transitions'),
@@ -104,8 +115,14 @@ function presentationRibbonTabs(catalog: OfficeMessageCatalog) {
         'presentation.ribbon.tab.slideshowCompact',
       ),
     },
-    { id: 'review' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.review') },
-    { id: 'view' as const, label: officeMessage(catalog, 'presentation.ribbon.tab.view') },
+    {
+      id: 'review' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.review'),
+    },
+    {
+      id: 'view' as const,
+      label: officeMessage(catalog, 'presentation.ribbon.tab.view'),
+    },
   ];
 }
 
@@ -256,10 +273,15 @@ export function PresentationToolbar({
         panels={{
           home: (
             <>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.undo')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.undo')}
+              >
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.undo')}
-                  title={officeMessage(messages, 'presentation.action.undoTitle')}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.undoTitle',
+                  )}
                   aria-keyshortcuts="Control+Z Meta+Z"
                   disabled={!can.undo()}
                   onClick={commands.undo}
@@ -268,7 +290,10 @@ export function PresentationToolbar({
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.redo')}
-                  title={officeMessage(messages, 'presentation.action.redoTitle')}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.redoTitle',
+                  )}
                   aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
                   disabled={!can.redo()}
                   onClick={commands.redo}
@@ -276,10 +301,18 @@ export function PresentationToolbar({
                   <Redo2 size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.slides')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.slides')}
+              >
                 <WorkOfficeRibbonButton
-                  label={officeMessage(messages, 'presentation.action.newSlide')}
-                  title={officeMessage(messages, 'presentation.action.newSlideTitle')}
+                  label={officeMessage(
+                    messages,
+                    'presentation.action.newSlide',
+                  )}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.newSlideTitle',
+                  )}
                   aria-keyshortcuts="Control+M Meta+Shift+N"
                   disabled={!can.addSlide()}
                   onClick={commands.addSlide}
@@ -287,8 +320,14 @@ export function PresentationToolbar({
                   <Plus size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label={officeMessage(messages, 'presentation.action.duplicateSlide')}
-                  title={officeMessage(messages, 'presentation.action.duplicateSlideTitle')}
+                  label={officeMessage(
+                    messages,
+                    'presentation.action.duplicateSlide',
+                  )}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.duplicateSlideTitle',
+                  )}
                   aria-keyshortcuts="Control+D Meta+D"
                   disabled={!can.duplicateSlide()}
                   onClick={commands.duplicateSlide}
@@ -296,8 +335,14 @@ export function PresentationToolbar({
                   <Copy size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label={officeMessage(messages, 'presentation.action.deleteSlide')}
-                  title={officeMessage(messages, 'presentation.action.deleteSlideTitle')}
+                  label={officeMessage(
+                    messages,
+                    'presentation.action.deleteSlide',
+                  )}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.deleteSlideTitle',
+                  )}
                   aria-keyshortcuts="Delete Backspace"
                   disabled={!can.deleteSlide()}
                   onClick={commands.deleteSlide}
@@ -305,10 +350,15 @@ export function PresentationToolbar({
                   <Trash2 size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.clipboard')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.clipboard')}
+              >
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.copy')}
-                  title={officeMessage(messages, 'presentation.action.copyTitle')}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.copyTitle',
+                  )}
                   aria-keyshortcuts="Control+C Meta+C"
                   disabled={!can.copySelection()}
                   onClick={commands.copySelection}
@@ -317,7 +367,10 @@ export function PresentationToolbar({
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.cut')}
-                  title={officeMessage(messages, 'presentation.action.cutTitle')}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.cutTitle',
+                  )}
                   aria-keyshortcuts="Control+X Meta+X"
                   disabled={!can.cutSelection()}
                   onClick={commands.cutSelection}
@@ -326,7 +379,10 @@ export function PresentationToolbar({
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.paste')}
-                  title={officeMessage(messages, 'presentation.action.pasteTitle')}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.pasteTitle',
+                  )}
                   aria-keyshortcuts="Control+V Meta+V"
                   disabled={!can.pasteSelection()}
                   onClick={commands.pasteSelection}
@@ -337,9 +393,14 @@ export function PresentationToolbar({
               {selectedElement && (
                 <>
                   {textFormattingAvailable && (
-                    <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.font')}>
+                    <WorkOfficeRibbonGroup
+                      label={officeMessage(messages, 'presentation.group.font')}
+                    >
                       <OfficeSelect
-                        ariaLabel={officeMessage(messages, 'presentation.font.familyAria')}
+                        ariaLabel={officeMessage(
+                          messages,
+                          'presentation.font.familyAria',
+                        )}
                         className="presentation-font-family-select"
                         value={fontFamilyValue}
                         options={presentationFontFamilyOptions(fontFamilyValue)}
@@ -351,7 +412,10 @@ export function PresentationToolbar({
                         }
                       />
                       <OfficeNumberField
-                        ariaLabel={officeMessage(messages, 'presentation.font.sizeAria')}
+                        ariaLabel={officeMessage(
+                          messages,
+                          'presentation.font.sizeAria',
+                        )}
                         className="presentation-font-size-field"
                         min={8}
                         max={96}
@@ -367,8 +431,14 @@ export function PresentationToolbar({
                         }
                       />
                       <WorkOfficeRibbonButton
-                        label={officeMessage(messages, 'presentation.action.bold')}
-                        title={officeMessage(messages, 'presentation.action.boldTitle')}
+                        label={officeMessage(
+                          messages,
+                          'presentation.action.bold',
+                        )}
+                        title={officeMessage(
+                          messages,
+                          'presentation.action.boldTitle',
+                        )}
                         aria-keyshortcuts="Control+B Meta+B"
                         displayLabel={false}
                         active={Boolean(selectedElement.bold)}
@@ -378,8 +448,14 @@ export function PresentationToolbar({
                         <Bold size={15} />
                       </WorkOfficeRibbonButton>
                       <WorkOfficeRibbonButton
-                        label={officeMessage(messages, 'presentation.action.italic')}
-                        title={officeMessage(messages, 'presentation.action.italicTitle')}
+                        label={officeMessage(
+                          messages,
+                          'presentation.action.italic',
+                        )}
+                        title={officeMessage(
+                          messages,
+                          'presentation.action.italicTitle',
+                        )}
                         aria-keyshortcuts="Control+I Meta+I"
                         displayLabel={false}
                         active={Boolean(selectedElement.italic)}
@@ -389,8 +465,14 @@ export function PresentationToolbar({
                         <Italic size={15} />
                       </WorkOfficeRibbonButton>
                       <WorkOfficeRibbonButton
-                        label={officeMessage(messages, 'presentation.action.underline')}
-                        title={officeMessage(messages, 'presentation.action.underlineTitle')}
+                        label={officeMessage(
+                          messages,
+                          'presentation.action.underline',
+                        )}
+                        title={officeMessage(
+                          messages,
+                          'presentation.action.underlineTitle',
+                        )}
                         aria-keyshortcuts="Control+U Meta+U"
                         displayLabel={false}
                         active={Boolean(selectedElement.underline)}
@@ -437,7 +519,10 @@ export function PresentationToolbar({
                         compact
                         className="work-color-tool"
                         value={selectedElement.color}
-                        ariaLabel={officeMessage(messages, 'presentation.font.colorAria')}
+                        ariaLabel={officeMessage(
+                          messages,
+                          'presentation.font.colorAria',
+                        )}
                         onValueChange={(color) =>
                           commands.updateElement(
                             { color },
@@ -447,7 +532,12 @@ export function PresentationToolbar({
                       />
                     </WorkOfficeRibbonGroup>
                   )}
-                  <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.arrange')}>
+                  <WorkOfficeRibbonGroup
+                    label={officeMessage(
+                      messages,
+                      'presentation.group.arrange',
+                    )}
+                  >
                     <PresentationAlignMenu
                       selectedUnitCount={selectedUnitCount}
                       can={can}
@@ -456,7 +546,10 @@ export function PresentationToolbar({
                     {selectedUnitCount >= 3 && (
                       <>
                         <WorkOfficeRibbonButton
-                          label={officeMessage(messages, 'presentation.action.distributeH')}
+                          label={officeMessage(
+                            messages,
+                            'presentation.action.distributeH',
+                          )}
                           displayLabel={false}
                           disabled={!can.distributeElements('horizontal')}
                           onClick={() =>
@@ -466,7 +559,10 @@ export function PresentationToolbar({
                           <AlignHorizontalSpaceBetween size={17} />
                         </WorkOfficeRibbonButton>
                         <WorkOfficeRibbonButton
-                          label={officeMessage(messages, 'presentation.action.distributeV')}
+                          label={officeMessage(
+                            messages,
+                            'presentation.action.distributeV',
+                          )}
                           displayLabel={false}
                           disabled={!can.distributeElements('vertical')}
                           onClick={() =>
@@ -478,8 +574,14 @@ export function PresentationToolbar({
                       </>
                     )}
                     <WorkOfficeRibbonButton
-                      label={officeMessage(messages, 'presentation.action.group')}
-                      title={officeMessage(messages, 'presentation.action.groupTitle')}
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.group',
+                      )}
+                      title={officeMessage(
+                        messages,
+                        'presentation.action.groupTitle',
+                      )}
                       aria-keyshortcuts="Control+G Meta+G"
                       displayLabel={false}
                       disabled={!can.groupElements()}
@@ -488,8 +590,14 @@ export function PresentationToolbar({
                       <Group size={19} />
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
-                      label={officeMessage(messages, 'presentation.action.ungroup')}
-                      title={officeMessage(messages, 'presentation.action.ungroupTitle')}
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.ungroup',
+                      )}
+                      title={officeMessage(
+                        messages,
+                        'presentation.action.ungroupTitle',
+                      )}
                       aria-keyshortcuts="Control+Shift+G Meta+Shift+G"
                       displayLabel={false}
                       disabled={!can.ungroupElements()}
@@ -498,7 +606,25 @@ export function PresentationToolbar({
                       <Ungroup size={19} />
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
-                      label={officeMessage(messages, 'presentation.action.sendBackward')}
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.rotate',
+                      )}
+                      title={officeMessage(
+                        messages,
+                        'presentation.action.rotateTitle',
+                      )}
+                      displayLabel={false}
+                      disabled={!can.rotateSelection()}
+                      onClick={() => commands.rotateSelection(15)}
+                    >
+                      <RotateCw size={19} />
+                    </WorkOfficeRibbonButton>
+                    <WorkOfficeRibbonButton
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.sendBackward',
+                      )}
                       displayLabel={false}
                       disabled={!can.reorderElement(-1)}
                       onClick={() => commands.reorderElement(-1)}
@@ -506,7 +632,10 @@ export function PresentationToolbar({
                       <ArrowDownToLine size={19} />
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
-                      label={officeMessage(messages, 'presentation.action.bringForward')}
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.bringForward',
+                      )}
                       displayLabel={false}
                       disabled={!can.reorderElement(1)}
                       onClick={() => commands.reorderElement(1)}
@@ -520,7 +649,9 @@ export function PresentationToolbar({
           ),
           insert: (
             <>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.textShapes')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.textShapes')}
+              >
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.textBox')}
                   disabled={!can.addElement('text')}
@@ -535,8 +666,22 @@ export function PresentationToolbar({
                 >
                   <Square size={19} />
                 </WorkOfficeRibbonButton>
+                <WorkOfficeRibbonButton
+                  label={officeMessage(messages, 'presentation.action.rotate')}
+                  title={officeMessage(
+                    messages,
+                    'presentation.action.rotateTitle',
+                  )}
+                  displayLabel={false}
+                  disabled={!can.rotateSelection()}
+                  onClick={() => commands.rotateSelection(15)}
+                >
+                  <RotateCw size={19} />
+                </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.content')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.content')}
+              >
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.picture')}
                   disabled={!can.requestImage()}
@@ -544,15 +689,61 @@ export function PresentationToolbar({
                 >
                   <Image size={19} />
                 </WorkOfficeRibbonButton>
+                {selectedUnitCount === 1 && selectedElement && (
+                  <WorkOfficeRibbonButton
+                    label={officeMessage(
+                      messages,
+                      'presentation.action.altText',
+                    )}
+                    active={Boolean(selectedElement.altText?.trim())}
+                    onClick={() =>
+                      void officeDialog
+                        .prompt({
+                          title: officeMessage(
+                            messages,
+                            'presentation.altText.title',
+                          ),
+                          description: officeMessage(
+                            messages,
+                            'presentation.altText.description',
+                          ),
+                          fieldLabel: officeMessage(
+                            messages,
+                            'presentation.altText.field',
+                          ),
+                          initialValue: selectedElement.altText ?? '',
+                          confirmLabel: officeMessage(
+                            messages,
+                            'presentation.altText.confirm',
+                          ),
+                        })
+                        .then((altText) => {
+                          if (altText !== null) {
+                            commands.updateElement({
+                              altText: altText.trim() || undefined,
+                            });
+                          }
+                        })
+                    }
+                  >
+                    <Captions size={19} />
+                  </WorkOfficeRibbonButton>
+                )}
                 {!editingDesign && (
                   <>
                     <OfficeTableInsertPopover
-                      label={officeMessage(messages, 'presentation.action.table')}
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.table',
+                      )}
                       disabled={!can.addTable({ rows: 1, columns: 1 })}
                       onInsert={commands.addTable}
                     />
                     <WorkOfficeRibbonButton
-                      label={officeMessage(messages, 'presentation.action.chart')}
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.chart',
+                      )}
                       disabled={!can.addChart()}
                       onClick={commands.addChart}
                     >
@@ -564,14 +755,22 @@ export function PresentationToolbar({
               {selectedElement &&
                 (selectedElement.type === 'text' ||
                   selectedElement.type === 'shape') && (
-                  <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.link')}>
+                  <WorkOfficeRibbonGroup
+                    label={officeMessage(messages, 'presentation.group.link')}
+                  >
                     <WorkOfficeRibbonButton
-                      label={officeMessage(messages, 'presentation.action.link')}
+                      label={officeMessage(
+                        messages,
+                        'presentation.action.link',
+                      )}
                       active={Boolean(selectedElement.href)}
                       onClick={() =>
                         void officeDialog
                           .prompt({
-                            title: officeMessage(messages, 'presentation.link.title'),
+                            title: officeMessage(
+                              messages,
+                              'presentation.link.title',
+                            ),
                             description: officeMessage(
                               messages,
                               'presentation.link.description',
@@ -612,21 +811,38 @@ export function PresentationToolbar({
           ),
           design: (
             <>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.master')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.master')}
+              >
                 <WorkOfficeRibbonButton
-                  label={officeMessage(messages, 'presentation.action.masterLayouts')}
+                  label={officeMessage(
+                    messages,
+                    'presentation.action.masterLayouts',
+                  )}
                   active={designOpen}
                   onClick={commands.toggleDesign}
                 >
                   <LayoutTemplate size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.background')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.background')}
+              >
                 <OfficeColorPicker
                   compact
                   className="work-color-tool slide-background-tool"
                   value={background ?? selectedSlide.background}
-                  ariaLabel={editingDesign ? officeMessage(messages, 'presentation.background.designAria') : officeMessage(messages, 'presentation.background.slideAria')}
+                  ariaLabel={
+                    editingDesign
+                      ? officeMessage(
+                          messages,
+                          'presentation.background.designAria',
+                        )
+                      : officeMessage(
+                          messages,
+                          'presentation.background.slideAria',
+                        )
+                  }
                   onValueChange={commands.setBackground}
                 />
               </WorkOfficeRibbonGroup>
@@ -663,10 +879,18 @@ export function PresentationToolbar({
             />
           ),
           slideshow: (
-            <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.startShow')}>
+            <WorkOfficeRibbonGroup
+              label={officeMessage(messages, 'presentation.group.startShow')}
+            >
               <WorkOfficeRibbonButton
-                label={officeMessage(messages, 'presentation.action.showFromStart')}
-                title={officeMessage(messages, 'presentation.action.showFromStartTitle')}
+                label={officeMessage(
+                  messages,
+                  'presentation.action.showFromStart',
+                )}
+                title={officeMessage(
+                  messages,
+                  'presentation.action.showFromStartTitle',
+                )}
                 aria-keyshortcuts="F5"
                 data-presentation-slideshow-source="beginning"
                 disabled={!can.startSlideshow('beginning')}
@@ -675,8 +899,14 @@ export function PresentationToolbar({
                 <Play size={19} />
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
-                label={officeMessage(messages, 'presentation.action.showFromCurrent')}
-                title={officeMessage(messages, 'presentation.action.showFromCurrentTitle')}
+                label={officeMessage(
+                  messages,
+                  'presentation.action.showFromCurrent',
+                )}
+                title={officeMessage(
+                  messages,
+                  'presentation.action.showFromCurrentTitle',
+                )}
                 aria-keyshortcuts="Shift+F5"
                 data-presentation-slideshow-source="current"
                 disabled={!can.startSlideshow('current')}
@@ -687,9 +917,14 @@ export function PresentationToolbar({
             </WorkOfficeRibbonGroup>
           ),
           review: (
-            <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.comments')}>
+            <WorkOfficeRibbonGroup
+              label={officeMessage(messages, 'presentation.group.comments')}
+            >
               <WorkOfficeRibbonButton
-                label={officeMessage(messages, 'presentation.action.newComment')}
+                label={officeMessage(
+                  messages,
+                  'presentation.action.newComment',
+                )}
                 disabled={editingDesign || !can.addComment()}
                 onClick={commands.addComment}
               >
@@ -703,7 +938,10 @@ export function PresentationToolbar({
                         'presentation.action.viewCommentsWithCount',
                         { count: String(commentCount) },
                       )
-                    : officeMessage(messages, 'presentation.action.viewComments')
+                    : officeMessage(
+                        messages,
+                        'presentation.action.viewComments',
+                      )
                 }
                 disabled={editingDesign}
                 active={commentsOpen}
@@ -715,23 +953,36 @@ export function PresentationToolbar({
           ),
           view: (
             <>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.presentationViews')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(
+                  messages,
+                  'presentation.group.presentationViews',
+                )}
+              >
                 <WorkOfficeRibbonButton
-                  label={officeMessage(messages, 'presentation.action.normalView')}
+                  label={officeMessage(
+                    messages,
+                    'presentation.action.normalView',
+                  )}
                   active={viewMode === 'normal'}
                   onClick={() => commands.setViewMode('normal')}
                 >
                   <PanelsTopLeft size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
-                  label={officeMessage(messages, 'presentation.action.slideSorter')}
+                  label={officeMessage(
+                    messages,
+                    'presentation.action.slideSorter',
+                  )}
                   active={viewMode === 'sorter'}
                   onClick={() => commands.setViewMode('sorter')}
                 >
                   <Grid2X2 size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.show')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.show')}
+              >
                 <WorkOfficeRibbonButton
                   label={officeMessage(messages, 'presentation.action.notes')}
                   active={notesVisible}
@@ -739,18 +990,32 @@ export function PresentationToolbar({
                   title={
                     viewMode === 'normal'
                       ? notesVisible
-                        ? officeMessage(messages, 'presentation.action.hideNotes')
-                        : officeMessage(messages, 'presentation.action.showNotes')
-                      : officeMessage(messages, 'presentation.action.notesNormalOnly')
+                        ? officeMessage(
+                            messages,
+                            'presentation.action.hideNotes',
+                          )
+                        : officeMessage(
+                            messages,
+                            'presentation.action.showNotes',
+                          )
+                      : officeMessage(
+                          messages,
+                          'presentation.action.notesNormalOnly',
+                        )
                   }
                   onClick={() => onToggleNotes?.()}
                 >
                   <NotebookPen size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
-              <WorkOfficeRibbonGroup label={officeMessage(messages, 'presentation.group.master')}>
+              <WorkOfficeRibbonGroup
+                label={officeMessage(messages, 'presentation.group.master')}
+              >
                 <WorkOfficeRibbonButton
-                  label={officeMessage(messages, 'presentation.action.masterView')}
+                  label={officeMessage(
+                    messages,
+                    'presentation.action.masterView',
+                  )}
                   active={designOpen}
                   onClick={commands.toggleDesign}
                 >
@@ -808,24 +1073,22 @@ function PresentationAlignMenu({
       )}
     >
       {(close) =>
-        alignmentActions.map(
-          ({ value, label: itemLabel, Icon }) => (
-            <button
-              key={value}
-              type="button"
-              role="menuitem"
-              tabIndex={-1}
-              disabled={!can.alignElement(value)}
-              onClick={() => {
-                close();
-                commands.alignElement(value);
-              }}
-            >
-              <Icon size={15} aria-hidden="true" />
-              <span>{itemLabel}</span>
-            </button>
-          ),
-        )
+        alignmentActions.map(({ value, label: itemLabel, Icon }) => (
+          <button
+            key={value}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            disabled={!can.alignElement(value)}
+            onClick={() => {
+              close();
+              commands.alignElement(value);
+            }}
+          >
+            <Icon size={15} aria-hidden="true" />
+            <span>{itemLabel}</span>
+          </button>
+        ))
       }
     </Popover>
   );
@@ -861,7 +1124,10 @@ function presentationFontFamilyOptions(current: string) {
     ...basePresentationFontFamilyOptions,
     {
       value: current,
-      group: officeMessage(resolveOfficeMessages(), 'presentation.font.documentGroup'),
+      group: officeMessage(
+        resolveOfficeMessages(),
+        'presentation.font.documentGroup',
+      ),
       label: officeFontFamilyLabel(current),
       previewStyle: { fontFamily: current },
       searchText: current,

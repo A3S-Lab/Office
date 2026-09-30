@@ -33,6 +33,7 @@ import {
   DocumentCommentComposer,
   type DocumentCommentDraft,
 } from './document-comment-composer';
+import { DocumentCommentDecisionActions } from './document-comment-decision-actions';
 import {
   DOCUMENT_COMMENT_WINDOW_LIMIT,
   documentCommentKeyboardDestination,
@@ -83,6 +84,10 @@ export function DocumentCommentsPanel({
   surfaceRef,
   onReply,
   onToggleResolved,
+  onAcceptComment,
+  onProcessComment,
+  onWithdrawComment,
+  onActiveCommentChange,
   onDelete,
   onCancelDraft,
   onSubmitDraft,
@@ -97,6 +102,10 @@ export function DocumentCommentsPanel({
   surfaceRef: RefObject<HTMLDivElement | null>;
   onReply: (id: string, text: string) => void;
   onToggleResolved: (id: string) => void;
+  onAcceptComment?: (id: string) => void;
+  onProcessComment?: (id: string) => void;
+  onWithdrawComment?: (id: string) => void;
+  onActiveCommentChange?: (id: string | null) => void;
   onDelete: (id: string) => void;
   onCancelDraft: () => void;
   onSubmitDraft: (text: string) => string | null;
@@ -159,6 +168,9 @@ export function DocumentCommentsPanel({
       : (comments.find((comment) => !comment.resolved)?.id ??
         comments[0]?.id ??
         null);
+  useEffect(() => {
+    onActiveCommentChange?.(effectiveActiveCommentId);
+  }, [effectiveActiveCommentId, onActiveCommentChange]);
   const dirtyReplyKeys = useMemo(
     () =>
       Object.entries(drafts)
@@ -957,6 +969,14 @@ export function DocumentCommentsPanel({
                   </Button>
                 </div>
                 <footer>
+                  <DocumentCommentDecisionActions
+                    comment={comment}
+                    indexLabel={n}
+                    messages={messages}
+                    onAccept={onAcceptComment}
+                    onProcess={onProcessComment}
+                    onWithdraw={onWithdrawComment}
+                  />
                   <Button
                     size="compact"
                     tone="quiet"

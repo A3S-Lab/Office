@@ -1,3 +1,4 @@
+import JSZip from 'jszip';
 import { patchPptxChartAxes } from './work-pptx-chart-axes';
 import { patchPptxChartDataLabels } from './work-pptx-chart-data-labels';
 import { patchPptxChartLayoutAndSeriesStyles } from './work-pptx-chart-layout-style';
@@ -10,6 +11,7 @@ import {
   PptxGroupExportRegistry,
 } from './work-pptx-groups';
 import { definePptxSlideLayouts } from './work-pptx-layout-export';
+import { presentationPictureAltText } from './work-pptx-picture-alt';
 import { patchPptxTransitions } from './work-pptx-transition';
 import { presentationGroupPath } from './work-presentation-groups';
 import { presentationChartAxes } from './work-presentation-chart-axes';
@@ -24,11 +26,13 @@ import {
   presentationChartUsesNumericXAxis,
   presentationChartXValues,
 } from './work-presentation-charts';
+import { attribute, directChildren, parseXml } from './work-ooxml-package';
 import type {
   WorkArtifact,
   WorkSlideChart,
   WorkSlideChartLegendPosition,
   WorkSlideElement,
+  WorkSlideTextRun,
 } from './work-types';
 
 type PptxConstructor = typeof import('pptxgenjs').default;
@@ -146,7 +150,10 @@ export async function createPptxBlob(
     groups,
   );
   const patched = await patchPptxNativeGroups(withAnimations, groups);
-  return new Blob([patched], {
+  // pptxgenjs writes one slideMaster content-type override per slide, but only
+  // slideMaster1.xml. Drop overrides whose parts were never written.
+  const repaired = await removeDanglingContentTypeOverrides(patched);
+  return new Blob([repaired], {
     type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   });
 }
@@ -184,6 +191,10 @@ function addPresentationElement(
   }
   if (element.type === 'image' && element.image) {
     const objectName = groups.objectName(groupScope, element, 'image');
+    const altText = presentationPictureAltText(
+      element.altText,
+      element.image.name,
+    );
     slide.addImage({
       data: element.image.dataUrl,
       x,
@@ -192,6 +203,7 @@ function addPresentationElement(
       h: height,
       rotate: rotation,
       placeholder: resolvedPlaceholder,
+      ...(altText ? { altText } : {}),
       ...(objectName ? { objectName } : {}),
     });
     return;
@@ -410,6 +422,7 @@ function addShape(
       width: element.borderWidth ?? 0,
       transparency: element.borderWidth ? 0 : 100,
     },
+    ...(element.href ? { hyperlink: { url: element.href } } : {}),
   };
   slide.addShape(shapeType, options);
 }
@@ -425,20 +438,8 @@ function addText(
   objectName?: string,
   shape?: NonNullable<Parameters<PptxSlide['addText']>[1]>['shape'],
 ) {
-  const text = element.textRuns?.length
-    ? element.textRuns.map((run) => ({
-        text: run.text,
-        options: {
-          fontFace: run.fontFamily ?? element.fontFamily ?? 'Aptos',
-          fontSize: Math.max(7, (run.fontSize ?? element.fontSize) * 0.75),
-          color: (run.color ?? element.color).replace('#', ''),
-          bold: run.bold,
-          italic: run.italic,
-          underline: run.underline ? { style: 'sng' as const } : undefined,
-          hyperlink: run.href ? { url: run.href } : undefined,
-        },
-      }))
-    : element.text;
+  const shapeHyperlink = element.href ? { url: element.href } : undefined;
+  const text = presentationTextContent(element, shapeHyperlink);
   slide.addText(text, {
     x,
     y,
@@ -467,10 +468,58 @@ function addText(
             width: element.borderWidth,
           }
         : undefined,
-    hyperlink: element.href ? { url: element.href } : undefined,
+    hyperlink: shapeHyperlink,
     placeholder,
     ...(objectName ? { objectName } : {}),
   });
+}
+
+function presentationTextContent(
+  element: WorkSlideElement,
+  shapeHyperlink: { url: string } | undefined,
+):
+  | string
+  | Array<{
+      text: string;
+      options: {
+        fontFace?: string;
+        fontSize?: number;
+        color?: string;
+        bold?: boolean;
+        italic?: boolean;
+        underline?: { style: 'sng' };
+        hyperlink?: { url: string };
+      };
+    }> {
+  if (element.textRuns?.length) {
+    const runs = element.textRuns.map((run: WorkSlideTextRun) => ({
+      text: run.text,
+      options: {
+        fontFace: run.fontFamily ?? element.fontFamily ?? 'Aptos',
+        fontSize: Math.max(7, (run.fontSize ?? element.fontSize) * 0.75),
+        color: (run.color ?? element.color).replace('#', ''),
+        bold: run.bold,
+        italic: run.italic,
+        underline: run.underline ? ({ style: 'sng' } as const) : undefined,
+        hyperlink: run.href ? { url: run.href } : shapeHyperlink,
+      },
+    }));
+    // pptxgenjs only assigns a relationship id to hyperlinks that live on a
+    // text run. Share the shape link object so the shape hlinkClick is valid.
+    if (
+      shapeHyperlink &&
+      !runs.some((run) => run.options.hyperlink === shapeHyperlink)
+    ) {
+      runs.push({ text: '', options: { hyperlink: shapeHyperlink } });
+    }
+    return runs;
+  }
+  if (shapeHyperlink) {
+    return [
+      { text: element.text ?? '', options: { hyperlink: shapeHyperlink } },
+    ];
+  }
+  return element.text;
 }
 
 function pptxShapeType(
@@ -483,6 +532,32 @@ function pptxShapeType(
   if (element.shapeType === 'roundRect')
     return presentation.ShapeType.roundRect;
   return presentation.ShapeType.rect;
+}
+
+async function removeDanglingContentTypeOverrides(
+  buffer: ArrayBuffer,
+): Promise<ArrayBuffer> {
+  const archive = await JSZip.loadAsync(buffer);
+  const entry = archive.file('[Content_Types].xml');
+  if (!entry) return buffer;
+  const document = parseXml(await entry.async('text'), '[Content_Types].xml');
+  let changed = false;
+  for (const override of [
+    ...directChildren(document.documentElement, 'Override'),
+  ]) {
+    const partName = attribute(override, 'PartName');
+    if (!partName?.startsWith('/')) continue;
+    const path = decodeURIComponent(partName.slice(1));
+    if (archive.file(path)) continue;
+    override.parentNode?.removeChild(override);
+    changed = true;
+  }
+  if (!changed) return buffer;
+  archive.file(
+    '[Content_Types].xml',
+    new XMLSerializer().serializeToString(document),
+  );
+  return archive.generateAsync({ type: 'arraybuffer' });
 }
 
 async function presentationArrayBuffer(

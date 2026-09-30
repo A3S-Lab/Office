@@ -137,8 +137,10 @@ export const documentUiMessagesZhCN = {
   'document.font.dialog.title': '字体高级设置',
   'document.font.dialog.cancel': '取消',
   'document.font.dialog.apply': '应用',
-  'document.font.dialog.description.selection': '分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版（{count} 个字符）。',
-  'document.font.dialog.description.caret': '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版。',
+  'document.font.dialog.description.selection':
+    '分别设置当前选中内容的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版（{count} 个字符）。',
+  'document.font.dialog.description.caret':
+    '分别设置当前位置后续输入文字的拉丁、东亚和复杂文字字体，以及原生字符缩放、间距、字距调整阈值、位置、文字效果和 OpenType 排版。',
   'document.font.script.legend': '按文字系统设置字体',
   'document.font.script.latin': '拉丁文字',
   'document.font.script.latinAria': '拉丁文字字体',
@@ -146,9 +148,12 @@ export const documentUiMessagesZhCN = {
   'document.font.script.eastAsiaAria': '东亚文字字体',
   'document.font.script.complex': '复杂文字',
   'document.font.script.complexAria': '复杂文字字体',
-  'document.font.script.mixedLatin': '当前选区包含不同的拉丁文字字体。选择字体后才会统一修改。',
-  'document.font.script.mixedEastAsia': '当前选区包含不同的东亚文字字体。选择字体后才会统一修改。',
-  'document.font.script.mixedComplex': '当前选区包含不同的复杂文字字体。选择字体后才会统一修改。',
+  'document.font.script.mixedLatin':
+    '当前选区包含不同的拉丁文字字体。选择字体后才会统一修改。',
+  'document.font.script.mixedEastAsia':
+    '当前选区包含不同的东亚文字字体。选择字体后才会统一修改。',
+  'document.font.script.mixedComplex':
+    '当前选区包含不同的复杂文字字体。选择字体后才会统一修改。',
   'document.font.spacing.legend': '字符缩放、间距、字距调整、位置与文字效果',
   'document.font.spacing.scale': '缩放',
   'document.font.spacing.scaleAria': '字符缩放比例（%）',
@@ -184,14 +189,22 @@ export const documentUiMessagesZhCN = {
   'document.font.openType.stylisticSetN': '样式集 {n}',
   'document.font.openType.contextualAlternates': '上下文替代',
   'document.font.openType.contextualAlternatesAria': 'OpenType 上下文替代',
-  'document.font.openType.mixed': '当前选区包含不同的 OpenType 排版设置。仅修改所选项目，其他原生设置保持不变。',
-  'document.font.mixed.scale': '当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。',
-  'document.font.mixed.spacing': '当前选区包含多种字符间距。选择一种间距后才会统一修改。',
-  'document.font.mixed.position': '当前选区包含多种字符位置。选择一种位置后才会统一修改。',
-  'document.font.mixed.kerning': '当前选区包含不同的字距调整设置。勾选或取消后才会统一修改。',
-  'document.font.mixed.emphasis': '当前选区包含不同的着重号。选择一种设置后才会统一修改。',
-  'document.font.mixed.hiddenText': '当前选区同时包含隐藏和可见文字。勾选或取消后才会统一修改。',
-  'document.font.mixed.legacyEffects': '当前选区包含不同的空心、阴影、阳文或阴文设置。勾选或取消对应选项后才会统一修改。',
+  'document.font.openType.mixed':
+    '当前选区包含不同的 OpenType 排版设置。仅修改所选项目，其他原生设置保持不变。',
+  'document.font.mixed.scale':
+    '当前选区包含多种字符缩放比例。输入缩放比例后才会统一修改。',
+  'document.font.mixed.spacing':
+    '当前选区包含多种字符间距。选择一种间距后才会统一修改。',
+  'document.font.mixed.position':
+    '当前选区包含多种字符位置。选择一种位置后才会统一修改。',
+  'document.font.mixed.kerning':
+    '当前选区包含不同的字距调整设置。勾选或取消后才会统一修改。',
+  'document.font.mixed.emphasis':
+    '当前选区包含不同的着重号。选择一种设置后才会统一修改。',
+  'document.font.mixed.hiddenText':
+    '当前选区同时包含隐藏和可见文字。勾选或取消后才会统一修改。',
+  'document.font.mixed.legacyEffects':
+    '当前选区包含不同的空心、阴影、阳文或阴文设置。勾选或取消对应选项后才会统一修改。',
   'document.font.preview.aria': '字符高级格式预览',
   'document.font.preview.label': '预览',
   'document.font.mode.mixed': '混合（保持不变）',
@@ -219,9 +232,11 @@ export const documentUiMessagesZhCN = {
   'document.font.ligatures.contextualDiscretional': '上下文和任意',
   'document.font.ligatures.historicalDiscretional': '历史和任意',
   'document.font.ligatures.standardContextualHistorical': '标准、上下文和历史',
-  'document.font.ligatures.standardContextualDiscretional': '标准、上下文和任意',
+  'document.font.ligatures.standardContextualDiscretional':
+    '标准、上下文和任意',
   'document.font.ligatures.standardHistoricalDiscretional': '标准、历史和任意',
-  'document.font.ligatures.contextualHistoricalDiscretional': '上下文、历史和任意',
+  'document.font.ligatures.contextualHistoricalDiscretional':
+    '上下文、历史和任意',
   'document.font.ligatures.all': '全部',
   'document.font.numberForm.lining': '等高数字',
   'document.font.numberForm.oldStyle': '旧式数字',
@@ -246,7 +261,8 @@ export const documentUiMessagesZhCN = {
   'document.font.border.shadowAria': '字符边框阴影',
   'document.font.border.frame': '框架',
   'document.font.border.frameAria': '字符边框框架',
-  'document.font.border.mixed': '当前选区包含不同的字符边框。选择一种应用方式后才会统一修改。',
+  'document.font.border.mixed':
+    '当前选区包含不同的字符边框。选择一种应用方式后才会统一修改。',
   'document.font.border.style.single': '单实线',
   'document.font.border.style.thick': '粗实线',
   'document.font.border.style.double': '双线',
@@ -285,7 +301,8 @@ export const documentUiMessagesZhCN = {
   'document.font.shading.background': '背景色',
   'document.font.shading.backgroundAria': '字符底纹背景色',
   'document.font.shading.backgroundAuto': '自动背景色',
-  'document.font.shading.mixed': '当前选区包含不同的字符底纹。选择一种应用方式后才会统一修改。',
+  'document.font.shading.mixed':
+    '当前选区包含不同的字符底纹。选择一种应用方式后才会统一修改。',
   'document.font.shading.group.basic': '基本',
   'document.font.shading.group.stripes': '条纹',
   'document.font.shading.group.cross': '交叉',
@@ -307,11 +324,14 @@ export const documentUiMessagesZhCN = {
   'document.font.shading.pattern.thinDiagCross': '细对角交叉',
   'document.font.error.scale': '请输入 {min} 至 {max} 的整数缩放比例。',
   'document.font.error.spacing': '请输入 0.05 至 {max} 磅的间距。',
-  'document.font.error.position': '请输入 0.5 至 {max} 磅、以 0.5 磅递增的位置值。',
-  'document.font.error.kerning': '请输入 0 至 {max} 磅、以 0.5 磅递增的字距调整阈值。',
+  'document.font.error.position':
+    '请输入 0.5 至 {max} 磅、以 0.5 磅递增的位置值。',
+  'document.font.error.kerning':
+    '请输入 0 至 {max} 磅、以 0.5 磅递增的字距调整阈值。',
   'document.font.error.borderStyle': '请选择有效的字符边框线型。',
   'document.font.error.borderColor': '请选择有效的字符边框颜色。',
-  'document.font.error.borderWidth': '请输入 0.25 至 12 磅、以 0.125 磅递增的字符边框宽度。',
+  'document.font.error.borderWidth':
+    '请输入 0.25 至 12 磅、以 0.125 磅递增的字符边框宽度。',
   'document.font.error.borderSpacing': '请输入 0 至 31 磅的整数字符边框间距。',
   'document.font.error.shadingForeground': '请选择有效的字符底纹前景色。',
   'document.font.error.shadingBackground': '请选择有效的字符底纹背景色。',
@@ -389,7 +409,8 @@ export const documentUiMessagesZhCN = {
   'document.picture.transform.flipHAria': '水平翻转图片',
   'document.picture.transform.flipV': '垂直翻转',
   'document.picture.transform.flipVAria': '垂直翻转图片',
-  'document.picture.transform.help': '旋转以 90° 为单位；每次确认作为一次可撤销操作保存。',
+  'document.picture.transform.help':
+    '旋转以 90° 为单位；每次确认作为一次可撤销操作保存。',
   'document.picture.error.wrapDistance': '请输入 0 到 25 之间的毫米数。',
   'document.picture.error.offset': '请输入 -558.7 到 558.7 之间的毫米数。',
   'document.picture.error.relativeHeight': '请输入 0 到 {max} 之间的整数。',
@@ -398,7 +419,8 @@ export const documentUiMessagesZhCN = {
   'document.picture.error.cropSum': '相对两边的裁剪量之和必须小于 100%。',
   'document.field.title.insert': '插入字段',
   'document.field.title.edit': '编辑字段',
-  'document.field.description': '设置页码、日期、统计、合并域和书签引用；插入后可使用 F9 更新结果。',
+  'document.field.description':
+    '设置页码、日期、统计、合并域和书签引用；插入后可使用 F9 更新结果。',
   'document.field.cancel': '取消',
   'document.field.submit.insert': '插入字段',
   'document.field.submit.apply': '应用字段',
@@ -411,7 +433,8 @@ export const documentUiMessagesZhCN = {
   'document.field.mergeName': '合并域名',
   'document.field.mergeNameAria': '合并域名',
   'document.field.mergeNamePlaceholder': '例如：CustomerName',
-  'document.field.mergeNameHelp': '使用字母或下划线开头的标识符；空格与特殊开关保持失败关闭。',
+  'document.field.mergeNameHelp':
+    '使用字母或下划线开头的标识符；空格与特殊开关保持失败关闭。',
   'document.field.target': '引用目标',
   'document.field.targetAria': '引用目标',
   'document.field.targetMissing': '请选择一个书签作为引用目标。',
@@ -420,9 +443,12 @@ export const documentUiMessagesZhCN = {
   'document.field.mergeFormat': '更新时保留格式',
   'document.field.preview': '结果预览',
   'document.field.previewAria': '结果预览',
-  'document.field.note.merge.mergeFormat': '合并域由宿主提供当前记录；将写入 MERGEFORMAT，F9 更新时保留结果格式。',
-  'document.field.note.merge.plain': '合并域由宿主提供当前记录；未提供时显示 «域名»。F9 可刷新结果。',
-  'document.field.note.mergeFormat': '将写入 WPS 的 MERGEFORMAT 开关，F9 更新时保留结果格式。',
+  'document.field.note.merge.mergeFormat':
+    '合并域由宿主提供当前记录；将写入 MERGEFORMAT，F9 更新时保留结果格式。',
+  'document.field.note.merge.plain':
+    '合并域由宿主提供当前记录；未提供时显示 «域名»。F9 可刷新结果。',
+  'document.field.note.mergeFormat':
+    '将写入 WPS 的 MERGEFORMAT 开关，F9 更新时保留结果格式。',
   'document.field.note.plain': '应用后仍可使用 F9 更新分页、日期和统计结果。',
   'document.field.kind.page': '页码',
   'document.field.kind.numPages': '总页数',
@@ -457,7 +483,9 @@ export const documentUiMessagesZhCN = {
   'document.field.preserveFormat': '保留现有格式（{source}）',
   'document.contentControl.title.insert': '插入内容控件',
   'document.contentControl.title.edit': '编辑内容控件',
-  'document.contentControl.description': '支持内联纯文本、富文本、有界复选框、下拉列表、组合框和日期；绑定与重复区域不会被伪装成普通文本。',
+  'document.contentControl.description':
+    '支持内联纯文本、富文本、有界复选框、下拉列表、组合框和日期；绑定与重复区域不会被伪装成普通文本。',
+  'document.contentControl.placeholder': '输入内容',
   'document.contentControl.cancel': '取消',
   'document.contentControl.submit.insert': '插入控件',
   'document.contentControl.submit.apply': '应用',
@@ -524,12 +552,14 @@ export const documentUiMessagesZhCN = {
   'document.insert.picture': '插入图片',
   'document.link.add': '添加链接',
   'document.link.remove': '取消链接',
-  'document.link.prompt.description': '输入网页、邮箱地址，或使用 #书签名称 跳转到文档内位置。',
+  'document.link.prompt.description':
+    '输入网页、邮箱地址，或使用 #书签名称 跳转到文档内位置。',
   'document.link.prompt.field': '链接地址',
   'document.link.prompt.required': '请输入链接地址。',
   'document.bookmark.add': '添加书签',
   'document.bookmark.remove': '删除书签',
-  'document.bookmark.prompt.description': '为当前光标位置或选中内容创建文档内链接目标。',
+  'document.bookmark.prompt.description':
+    '为当前光标位置或选中内容创建文档内链接目标。',
   'document.bookmark.prompt.field': '书签名称',
   'document.bookmark.prompt.placeholder': '例如 Architecture_2',
   'document.bookmark.prompt.required': '请输入书签名称。',
@@ -540,6 +570,8 @@ export const documentUiMessagesZhCN = {
   'document.field.settingsTitle': '插入或编辑字段格式',
   'document.mailMerge.filterRecipients': '筛选收件人',
   'document.mailMerge.filterRecipientsTitle': '按条件筛选邮件合并收件人',
+  'document.mailMerge.importRecipients': '导入收件人',
+  'document.mailMerge.importRecipientsTitle': '粘贴表头和数据行，预览合并域',
   'document.proofing.language': '设置校对语言',
   'document.comment.selectFirst': '请先选择未批注的文字',
   'document.comment.view': '查看批注',
@@ -563,7 +595,8 @@ export const documentUiMessagesZhCN = {
   'document.view.ruler': '标尺',
   'document.view.rulerTitle': '显示或隐藏标尺',
   'document.view.rulerDisabled': '标尺仅用于页面视图',
-  'document.view.toggleFieldCodesTitle': '在域结果和域代码之间切换（Alt+F9；选中域 Shift+F9）',
+  'document.view.toggleFieldCodesTitle':
+    '在域结果和域代码之间切换（Alt+F9；选中域 Shift+F9）',
   'document.view.showHiddenTitle': '显示或隐藏以隐藏文字格式标记的内容',
   'document.zoom.out': '缩小文档',
   'document.zoom.100': '缩放至 100%',
@@ -829,7 +862,8 @@ export const documentUiMessagesZhCN = {
   'document.citation.form.corporateAuthorPlaceholder': '与个人作者二选一',
   'document.citation.form.authors': '个人作者',
   'document.citation.form.authorsAria': '个人作者',
-  'document.citation.form.authorsPlaceholder': '每行一位，例如：\nSmith, Jane\nLi, Ming',
+  'document.citation.form.authorsPlaceholder':
+    '每行一位，例如：\nSmith, Jane\nLi, Ming',
   'document.citation.form.more': '更多出版信息',
   'document.citation.form.publisher': '出版者',
   'document.citation.form.publisherAria': '出版者',
@@ -921,16 +955,20 @@ export const documentUiMessagesZhCN = {
   'document.table.properties.unit.cm': '厘米',
   'document.changes.title': '修订审阅',
   'document.changes.close': '关闭修订审阅',
-  'document.changes.description.pending': '{pending} 项待处理 · {decided} 项已决定',
-  'document.changes.description.decidedOnly': '没有待处理的修订 · {decided} 项已决定',
+  'document.changes.description.pending':
+    '{pending} 项待处理 · {decided} 项已决定',
+  'document.changes.description.decidedOnly':
+    '没有待处理的修订 · {decided} 项已决定',
   'document.changes.description.empty': '没有待处理的修订',
   'document.changes.acceptAll': '全部接受',
   'document.changes.rejectAll': '全部拒绝',
   'document.changes.acceptAllConfirm.title': '接受全部修订？',
-  'document.changes.acceptAllConfirm.description': '将确认当前 {count} 项修订。',
+  'document.changes.acceptAllConfirm.description':
+    '将确认当前 {count} 项修订。',
   'document.changes.acceptAllConfirm.confirm': '全部接受',
   'document.changes.rejectAllConfirm.title': '拒绝全部修订？',
-  'document.changes.rejectAllConfirm.description': '将撤销当前 {count} 项修订。',
+  'document.changes.rejectAllConfirm.description':
+    '将撤销当前 {count} 项修订。',
   'document.changes.rejectAllConfirm.confirm': '全部拒绝',
   'document.changes.listAria': '待处理修订',
   'document.changes.locateAria': '定位修订 {n}',
@@ -961,7 +999,8 @@ export const documentUiMessagesZhCN = {
   'document.changes.kind.numbering': '编号格式',
   'document.changes.kind.move': '移动',
   'document.compare.title': '比较与合并文档',
-  'document.compare.description': '把另一版本转换为可逐项接受或拒绝的 Writer 修订。',
+  'document.compare.description':
+    '把另一版本转换为可逐项接受或拒绝的 Writer 修订。',
   'document.compare.cancel': '取消',
   'document.compare.busy': '正在处理…',
   'document.compare.submit.compare': '生成比较结果',
@@ -970,37 +1009,56 @@ export const documentUiMessagesZhCN = {
   'document.compare.mode.compare': '比较',
   'document.compare.mode.compareHint': '当前文档作为原稿，导入文件作为修订稿。',
   'document.compare.mode.combine': '合并',
-  'document.compare.mode.combineHint': '导入带修订的审阅副本，并核验其原始基线。',
+  'document.compare.mode.combineHint':
+    '导入带修订的审阅副本，并核验其原始基线。',
   'document.compare.file.aria.compare': '选择修订版本文件',
   'document.compare.file.aria.combine': '选择审阅副本文件',
   'document.compare.file.pick.compare': '选择修订版本',
   'document.compare.file.pick.combine': '选择带修订的审阅副本',
-  'document.compare.file.hint': '支持 DOCX、HTML 和 TXT；当前文档不会在预检失败时改变。',
+  'document.compare.file.hint':
+    '支持 DOCX、HTML 和 TXT；当前文档不会在预检失败时改变。',
   'document.compare.file.fallbackType': '文件',
   'document.compare.author.default': '审阅者',
   'document.compare.author.label': '修订者名称',
   'document.compare.author.aria': '比较结果修订者名称',
-  'document.compare.author.hint': '该名称会显示在生成的插入、删除、移动与格式修订中。',
-  'document.compare.unchanged': '两份文档在支持的比较范围内完全一致，没有生成修订。',
+  'document.compare.author.hint':
+    '该名称会显示在生成的插入、删除、移动与格式修订中。',
+  'document.compare.unchanged':
+    '两份文档在支持的比较范围内完全一致，没有生成修订。',
   'document.compare.unsupported.title': '无法安全处理这份文档',
   'document.compare.boundary.compareTitle': '确定性比较边界',
   'document.compare.boundary.combineTitle': '安全合并边界',
-  'document.compare.boundary.compareBody': '支持同一分节布局中的段落、标题、文字、格式差异，以及同一段内可安全识别的文本移动；复杂对象或节布局变化会明确停止。',
-  'document.compare.boundary.combineBody': '审阅副本必须包含修订，且拒绝全部修订后与当前文档一致；现有修订须先处理。',
+  'document.compare.boundary.compareBody':
+    '支持同一分节布局中的段落、标题、文字、格式差异，以及同一段内可安全识别的文本移动；复杂对象或节布局变化会明确停止。',
+  'document.compare.boundary.combineBody':
+    '审阅副本必须包含修订，且拒绝全部修订后与当前文档一致；现有修订须先处理。',
   'document.compare.diagnostic.location.section': '（第 {section} 节）',
-  'document.compare.diagnostic.location.sectionBlock': '（第 {section} 节，差异块 {block}）',
-  'document.compare.diagnostic.changed-complex-structure': '检测到表格、图片、列表或其他复杂结构变化，未降级为纯文字。',
-  'document.compare.diagnostic.combine-baseline-mismatch': '审阅副本的原始基线与当前文档不一致。',
-  'document.compare.diagnostic.combine-resolution-invalid': '审阅副本包含损坏或无法拒绝的格式修订。',
-  'document.compare.diagnostic.combine-structural-revisions': '审阅副本改变了段落树；当前合并路径只接受行内和格式修订。',
-  'document.compare.diagnostic.combine-without-revisions': '审阅副本中没有可合并的修订。',
-  'document.compare.diagnostic.comparison-limit-exceeded': '文档超过本地有界比较限制。',
-  'document.compare.diagnostic.current-revisions-present': '当前文档仍有未处理修订，请先接受或拒绝。',
-  'document.compare.diagnostic.empty-structural-change': '空段落的结构变化无法承载可审阅文字修订。',
-  'document.compare.diagnostic.invalid-revised-content': '文件无法转换为当前 Writer 文档模型。',
-  'document.compare.diagnostic.revised-revisions-present': '修订稿已经包含修订，请改用“合并”。',
-  'document.compare.diagnostic.section-layout-mismatch': '分节数量或页面布局不一致。',
-  'document.compare.diagnostic.unsupported-inline-review-state': '导入内容包含无法安全迁移的批注或审阅状态。',
+  'document.compare.diagnostic.location.sectionBlock':
+    '（第 {section} 节，差异块 {block}）',
+  'document.compare.diagnostic.changed-complex-structure':
+    '检测到表格、图片、列表或其他复杂结构变化，未降级为纯文字。',
+  'document.compare.diagnostic.combine-baseline-mismatch':
+    '审阅副本的原始基线与当前文档不一致。',
+  'document.compare.diagnostic.combine-resolution-invalid':
+    '审阅副本包含损坏或无法拒绝的格式修订。',
+  'document.compare.diagnostic.combine-structural-revisions':
+    '审阅副本改变了段落树；当前合并路径只接受行内和格式修订。',
+  'document.compare.diagnostic.combine-without-revisions':
+    '审阅副本中没有可合并的修订。',
+  'document.compare.diagnostic.comparison-limit-exceeded':
+    '文档超过本地有界比较限制。',
+  'document.compare.diagnostic.current-revisions-present':
+    '当前文档仍有未处理修订，请先接受或拒绝。',
+  'document.compare.diagnostic.empty-structural-change':
+    '空段落的结构变化无法承载可审阅文字修订。',
+  'document.compare.diagnostic.invalid-revised-content':
+    '文件无法转换为当前 Writer 文档模型。',
+  'document.compare.diagnostic.revised-revisions-present':
+    '修订稿已经包含修订，请改用“合并”。',
+  'document.compare.diagnostic.section-layout-mismatch':
+    '分节数量或页面布局不一致。',
+  'document.compare.diagnostic.unsupported-inline-review-state':
+    '导入内容包含无法安全迁移的批注或审阅状态。',
   'document.pageChrome.link.title': '添加链接',
   'document.pageChrome.link.field': '链接地址',
   'document.pageChrome.link.confirm': '添加链接',
@@ -1104,7 +1162,8 @@ export const documentUiMessagesZhCN = {
   'document.picture.ribbon.distance.none': '无间距',
   'document.picture.ribbon.distance.mm': '{value} 毫米',
   'document.proofing.title': '设置校对语言',
-  'document.proofing.description.selection': '为选中的 {count} 个字符分别设置拉丁、东亚和双向文字校对语言。',
+  'document.proofing.description.selection':
+    '为选中的 {count} 个字符分别设置拉丁、东亚和双向文字校对语言。',
   'document.proofing.description.caret': '设置当前位置后续输入文字的校对语言。',
   'document.proofing.cancel': '取消',
   'document.proofing.apply': '应用',
@@ -1118,16 +1177,21 @@ export const documentUiMessagesZhCN = {
   'document.proofing.behavior.inherit': '跟随样式',
   'document.proofing.behavior.check': '检查拼写和语法',
   'document.proofing.behavior.skip': '不检查拼写或语法',
-  'document.proofing.behavior.mixedStatus': '当前选区包含不同的校对行为，保持不变。',
-  'document.proofing.help': '使用 BCP 47 语言标记，例如 en-US、zh-CN 或 ar-SA。留空或选择“跟随样式”会移除直接格式。',
+  'document.proofing.behavior.mixedStatus':
+    '当前选区包含不同的校对行为，保持不变。',
+  'document.proofing.help':
+    '使用 BCP 47 语言标记，例如 en-US、zh-CN 或 ar-SA。留空或选择“跟随样式”会移除直接格式。',
   'document.proofing.langAria': '{label}校对语言',
   'document.proofing.inheritAria': '{label}跟随样式',
   'document.proofing.inherit': '跟随样式',
-  'document.proofing.mixedHint': '当前选区包含不同的{label}校对语言，输入后才会统一修改。',
-  'document.proofing.error.bcp47': '请输入有效的 BCP 47 语言标记；不能包含空格、下划线或控制字符。',
+  'document.proofing.mixedHint':
+    '当前选区包含不同的{label}校对语言，输入后才会统一修改。',
+  'document.proofing.error.bcp47':
+    '请输入有效的 BCP 47 语言标记；不能包含空格、下划线或控制字符。',
   'document.toc.title.insert': '插入目录',
   'document.toc.title.edit': '自定义目录',
-  'document.toc.description': '从文档标题生成可更新目录，并保留原生 DOCX 目录域。',
+  'document.toc.description':
+    '从文档标题生成可更新目录，并保留原生 DOCX 目录域。',
   'document.toc.cancel': '取消',
   'document.toc.apply': '应用',
   'document.toc.insert': '插入目录',
@@ -1173,7 +1237,8 @@ export const documentUiMessagesZhCN = {
   'document.status.saveAria': '文档保存状态',
   'document.index.title.insert': '插入索引',
   'document.index.title.edit': '自定义索引',
-  'document.index.description': '从已标记的索引项生成可更新索引，并保留原生 DOCX INDEX 域。',
+  'document.index.description':
+    '从已标记的索引项生成可更新索引，并保留原生 DOCX INDEX 域。',
   'document.index.cancel': '取消',
   'document.index.apply': '应用',
   'document.index.insert': '插入索引',
@@ -1189,12 +1254,23 @@ export const documentUiMessagesZhCN = {
   'document.index.leaderAria': '索引前导符',
   'document.index.previewAria': '索引预览',
   'document.index.preview.legend': '索引',
+  'document.mailMerge.import.title': '导入收件人',
+  'document.mailMerge.import.description':
+    '第一行是字段名，例如「姓名」。后面每一行是一位收件人。列用制表符或逗号分开。',
+  'document.mailMerge.import.field': '收件人表',
+  'document.mailMerge.import.placeholder': '姓名\n甲\n乙',
+  'document.mailMerge.import.invalid':
+    '需要一行字段名和至少一行收件人。字段名以字母或下划线开头。',
+  'document.mailMerge.import.confirm': '导入并预览',
+  'document.mailMerge.import.cancel': '取消',
   'document.mailMerge.filter.title': '筛选收件人',
-  'document.mailMerge.filter.description': '按字段条件筛选邮件合并收件人。多条规则为并且关系。',
+  'document.mailMerge.filter.description':
+    '按字段条件筛选邮件合并收件人。多条规则为并且关系。',
   'document.mailMerge.filter.cancel': '取消',
   'document.mailMerge.filter.clear': '清除筛选',
   'document.mailMerge.filter.confirm': '确定',
-  'document.mailMerge.filter.summary': '当前可见 {visible} / {total} 位收件人（最多 {max} 条规则）。',
+  'document.mailMerge.filter.summary':
+    '当前可见 {visible} / {total} 位收件人（最多 {max} 条规则）。',
   'document.mailMerge.filter.noFields': '当前数据源没有可用字段。',
   'document.mailMerge.filter.field': '字段',
   'document.mailMerge.filter.fieldAria': '筛选字段 {n}',
@@ -1233,6 +1309,18 @@ export const documentUiMessagesZhCN = {
   'document.comment.reopen': '重新打开',
   'document.comment.resolveAria': '解决批注 {n}',
   'document.comment.reopenAria': '重新打开批注 {n}',
+  'document.comment.accept': '接受',
+  'document.comment.process': '处理',
+  'document.comment.withdraw': '撤回',
+  'document.comment.acceptAria': '接受批注 {n}',
+  'document.comment.processAria': '处理批注 {n}',
+  'document.comment.withdrawAria': '撤回批注 {n}',
+  'document.comment.acceptTitle': '接受这条待处理批注，待处理数量会减少',
+  'document.comment.processTitle': '处理这条待处理批注，待处理数量会减少',
+  'document.comment.withdrawTitle': '撤回接受或处理，这条批注回到待处理',
+  'document.comment.withdrawBlocked': '还没有已接受或已处理的批注，不能撤回',
+  'document.comment.decision.accepted': '已接受',
+  'document.comment.decision.processed': '已处理',
   'document.comment.delete': '删除',
   'document.comment.deleteAria': '删除批注 {n}',
   'document.comment.deleteTitle': '删除批注',
@@ -1254,12 +1342,10 @@ export const documentUiMessagesZhCN = {
   'document.comment.composer.placeholder': '输入批注…',
   'document.comment.composer.cancel': '取消',
   'document.comment.composer.submit': '添加批注',
-  'document.comment.error.selectionChanged':
-    '所选文字已变化，请重新选择。',
+  'document.comment.error.selectionChanged': '所选文字已变化，请重新选择。',
   'document.comment.error.alreadyCommented':
     '所选文字已经包含批注，请重新选择。',
-  'document.comment.error.draftClosed':
-    '批注草稿已经关闭，请重新选择文字。',
+  'document.comment.error.draftClosed': '批注草稿已经关闭，请重新选择文字。',
   'document.indexEntry.title.insert': '标记索引项',
   'document.indexEntry.title.edit': '编辑索引项',
   'document.indexEntry.description':
@@ -1280,8 +1366,7 @@ export const documentUiMessagesZhCN = {
   'document.indexEntry.pageItalic': '页码倾斜',
   'document.agent.copy': '复制',
   'document.agent.ask': '询问 AI 助手',
-  'document.agent.askInstruction':
-    '请围绕这段选中文本回答我的问题：\n\n问题：',
+  'document.agent.askInstruction': '请围绕这段选中文本回答我的问题：\n\n问题：',
   'document.agent.summarize': '总结选中内容',
   'document.agent.summarizeInstruction':
     '请用简洁、准确的语言总结这段选中文本，保留关键事实和结论。',
@@ -1295,11 +1380,9 @@ export const documentUiMessagesZhCN = {
     '请翻译这段选中文本。请先判断原语言，并询问或根据上下文确定目标语言；先提供译文，不要直接修改文档。',
   'document.agent.translateProposalTitle': '审阅翻译建议',
   'document.agent.copySuccess': '选中文本已复制',
-  'document.agent.copyUnavailable':
-    '无法访问剪贴板，请使用系统复制快捷键。',
+  'document.agent.copyUnavailable': '无法访问剪贴板，请使用系统复制快捷键。',
   'document.agent.selectionTarget': '选中文本',
-  'document.agent.selectionChangedConflict':
-    '选中文本在建议生成后已发生变化。',
+  'document.agent.selectionChangedConflict': '选中文本在建议生成后已发生变化。',
   'document.agent.replaceFailed': '编辑器无法替换当前选区。',
   'document.agent.menu.custom': '选中文本操作',
   'document.agent.menu.ai': '选中文本 AI 操作',
@@ -1397,8 +1480,7 @@ export const documentUiMessagesZhCN = {
   'document.home.ltr': '从左向右',
   'document.home.rtl': '从右向左',
   'document.format.clipboardGroup': '剪贴板',
-  'document.format.painterTitle':
-    '格式刷（选择源格式后应用到下一处选择）',
+  'document.format.painterTitle': '格式刷（选择源格式后应用到下一处选择）',
   'document.pageChrome.editor.placeholder': '输入{label}',
   'document.pageChrome.editor.placeholderDefault': '输入页眉或页脚',
   'document.pageChrome.editor.formatAria': '{label}格式',
@@ -1445,8 +1527,7 @@ export const documentUiMessagesZhCN = {
   'document.pageChrome.panel.headerLabel': '{variant}页眉',
   'document.pageChrome.panel.footerLabel': '{variant}页脚',
   'document.pageChrome.panel.showPageNumberAria': '{variant}显示页码',
-  'document.pageChrome.panel.showPageNumber':
-    '在本页面类型的页脚中显示页码',
+  'document.pageChrome.panel.showPageNumber': '在本页面类型的页脚中显示页码',
   'document.pageChrome.inline.header': '页内页眉',
   'document.pageChrome.inline.footer': '页内页脚',
   'document.tableMargins.label': '单元格边距',
@@ -1580,7 +1661,8 @@ export const documentUiMessagesZhCN = {
   'document.ruler.tab.addTitle': '单击添加制表位',
   'document.ruler.tab.stopLabel': '{alignment}制表位 {n}',
   'document.ruler.tab.valueText': '{position} 厘米，{leader}',
-  'document.ruler.tab.title': '{label}：{value}；按 Enter 切换对齐，按 Delete 删除',
+  'document.ruler.tab.title':
+    '{label}：{value}；按 Enter 切换对齐，按 Delete 删除',
   'document.ruler.tab.align.left': '左对齐',
   'document.ruler.tab.align.center': '居中',
   'document.ruler.tab.align.right': '右对齐',
@@ -1609,15 +1691,18 @@ export const documentUiMessagesZhCN = {
   'document.font.family.hiraginoSansGb': '冬青黑体',
   'document.font.family.sourceHanSans': '思源黑体',
   'document.insert.imageUnsupportedTitle': '无法插入图片',
-  'document.insert.imageUnsupportedDesc': '请选择 PNG、JPEG、GIF、WebP 或 BMP 图片。',
+  'document.insert.imageUnsupportedDesc':
+    '请选择 PNG、JPEG、GIF、WebP 或 BMP 图片。',
   'document.insert.imageTooLargeTitle': '图片过大',
   'document.insert.imageTooLargeDesc': '单张图片不能超过 8 MiB。',
   'document.insert.imageReadFailedTitle': '无法读取图片',
   'document.insert.imageReadFailedDesc': '文件可能已经移动或损坏，请重新选择。',
   'document.insert.noReferenceTargetsTitle': '还没有可引用目标',
-  'document.insert.noReferenceTargetsDesc': '请先插入图片或表格题注，或在正文中添加书签。',
+  'document.insert.noReferenceTargetsDesc':
+    '请先插入图片或表格题注，或在正文中添加书签。',
   'document.insert.selectIndexTextTitle': '请选择索引文字',
-  'document.insert.selectIndexTextDesc': '请先选择要标记的正文文字，或选中一个已有索引项。',
+  'document.insert.selectIndexTextDesc':
+    '请先选择要标记的正文文字，或选中一个已有索引项。',
   'document.insert.captionFigureTitle': '插入图片题注',
   'document.insert.captionTableTitle': '插入表格题注',
   'document.insert.captionDesc': '题注编号会自动生成，并可用于交叉引用。',
@@ -1625,7 +1710,8 @@ export const documentUiMessagesZhCN = {
   'document.insert.captionLabel': '题注文字',
   'document.insert.captionPlaceholder': '例如：系统架构',
   'document.insert.crossRefTitle': '插入交叉引用',
-  'document.insert.crossRefDesc': '选择正文中已有的图片、表格题注或书签；书签还可以插入实时目标页码。',
+  'document.insert.crossRefDesc':
+    '选择正文中已有的图片、表格题注或书签；书签还可以插入实时目标页码。',
   'document.insert.crossRefInsertPage': '插入目标页码',
   'document.insert.crossRefInsert': '插入引用',
   'document.insert.crossRefTargetsAria': '可引用目标',
@@ -1637,8 +1723,9 @@ export const documentUiMessagesZhCN = {
   'document.review.conflictTitle': '审阅内容与外部更新冲突',
   'document.review.conflictCloseAria': '关闭审阅冲突提示',
   'document.review.conflictClose': '关闭',
-  'document.review.conflictBody': '外部版本已应用，其中 {count} 个批注或修订范围发生变化。请检查后再继续审阅。',
-  'document.compare.revisionsGenerated': '已生成 {count} 项可审阅修订'
+  'document.review.conflictBody':
+    '外部版本已应用，其中 {count} 个批注或修订范围发生变化。请检查后再继续审阅。',
+  'document.compare.revisionsGenerated': '已生成 {count} 项可审阅修订',
 } as const;
 
 export type DocumentUiMessageKey = keyof typeof documentUiMessagesZhCN;

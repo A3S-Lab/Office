@@ -221,6 +221,14 @@
   background: color-mix(in srgb, #db663b 6%, var(--a3s-panel));
 }
 
+[data-slide-thumbnail][data-slide-drop-position="before"] {
+  box-shadow: inset 0 3px 0 #db663b;
+}
+
+[data-slide-thumbnail][data-slide-drop-position="after"] {
+  box-shadow: inset 0 -3px 0 #db663b;
+}
+
 .work-slide-thumbnail-list > button > span:first-child {
   width: 18px;
   flex: 0 0 18px;
@@ -345,7 +353,7 @@
   outline: none;
 }
 
-.work-presentation-object-list-item[aria-selected='true'] {
+.work-presentation-object-list-item[aria-selected="true"] {
   background: color-mix(in srgb, #db663b 16%, var(--a3s-panel));
 }
 
@@ -592,6 +600,26 @@
   box-shadow: 0 1px 3px rgb(23 32 51 / 18%);
   cursor: nwse-resize;
   pointer-events: auto;
+}
+
+.work-slide-selection-rotate-handle {
+  position: absolute;
+  top: -28px;
+  left: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid #3478f6;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(23 32 51 / 18%);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.work-slide-selection-rotate-handle:focus-visible {
+  outline: 2px solid color-mix(in srgb, #3478f6 55%, #ffffff);
+  outline-offset: 2px;
 }
 
 .work-slide-selection-resize-handle:focus-visible {

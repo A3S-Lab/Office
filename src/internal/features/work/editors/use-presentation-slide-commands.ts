@@ -7,6 +7,7 @@ import type {
   WorkSlideTransition,
 } from '../work-types';
 import {
+  movePresentationSlide,
   newSlide,
   structuredCopy,
   updateSlide,
@@ -23,6 +24,7 @@ export interface PresentationSlideCommands {
   deleteSlide: () => boolean;
   deleteSlideById: (slideId: string) => boolean;
   duplicateSlide: () => void;
+  moveSlide: (fromIndex: number, insertionIndex: number) => boolean;
   setTransition: (transition: WorkSlideTransition | undefined) => boolean;
   updateNotes: (notes: string) => void;
 }
@@ -79,6 +81,26 @@ export function usePresentationSlideCommands({
   const deleteSlide = useCallback(
     () => deleteSlideById(selectedSlide.id),
     [deleteSlideById, selectedSlide.id],
+  );
+
+  const moveSlide = useCallback(
+    (fromIndex: number, insertionIndex: number): boolean => {
+      const slides = movePresentationSlide(
+        content.slides,
+        fromIndex,
+        insertionIndex,
+      );
+      const changed = slides.some(
+        (slide, index) => slide !== content.slides[index],
+      );
+      const moved = content.slides[fromIndex];
+      if (!changed || !moved) return false;
+      onChange({ ...content, slides });
+      onSelectSlide(moved.id);
+      onClearSelection();
+      return true;
+    },
+    [content, onChange, onClearSelection, onSelectSlide],
   );
 
   const canApplyTransitionToAll = useCallback(
@@ -139,6 +161,7 @@ export function usePresentationSlideCommands({
     deleteSlide,
     deleteSlideById,
     duplicateSlide,
+    moveSlide,
     setTransition,
     updateNotes,
   };

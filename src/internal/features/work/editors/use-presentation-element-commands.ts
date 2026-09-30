@@ -1,4 +1,4 @@
-import { useCallback, type MutableRefObject } from 'react';
+import { type MutableRefObject, useCallback } from 'react';
 import { createPresentationChartElement } from '../work-presentation-charts';
 import {
   canGroupPresentationElements,
@@ -12,7 +12,6 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import type { PresentationDesignMode } from './presentation-editor-types';
 import type { OfficeTableDimensions } from './office-table-dimensions';
 import {
   newPresentationElement,
@@ -21,6 +20,8 @@ import {
   structuredCopy,
   updatePresentationElements,
 } from './presentation-editor-operations';
+import type { PresentationDesignMode } from './presentation-editor-types';
+import { rotatePresentationSelection } from './presentation-selection';
 import type { PresentationTextValue } from './presentation-text-editor';
 import { applyPresentationElementFormattingPatch } from './presentation-text-formatting';
 
@@ -31,6 +32,7 @@ export interface PresentationElementCommands {
   addTable: (dimensions: OfficeTableDimensions) => void;
   groupSelection: () => boolean;
   instantiatePlaceholder: (definition: WorkSlideElement) => void;
+  rotateSelection: (degrees: number) => boolean;
   ungroupSelection: () => boolean;
   updateElement: (patch: Partial<WorkSlideElement>) => void;
   updateTextElement: (elementId: string, value: PresentationTextValue) => void;
@@ -92,6 +94,34 @@ export function usePresentationElementCommands({
     onChange,
     selectedElementIds,
   ]);
+
+  const rotateSelection = useCallback(
+    (degrees: number): boolean => {
+      if (!activeTargetId || !selectedElementIds.length) return false;
+      if (!Number.isFinite(degrees) || Math.abs(degrees) < 0.01) return false;
+      let changed = false;
+      updatePresentationElements(
+        contentRef.current,
+        designMode,
+        activeTargetId,
+        (elements) => {
+          const next = rotatePresentationSelection(
+            elements,
+            selectedElementIds,
+            degrees,
+          );
+          changed = next.some((element, index) => element !== elements[index]);
+          return next;
+        },
+        (next) => {
+          contentRef.current = next;
+          onChange(next);
+        },
+      );
+      return changed;
+    },
+    [activeTargetId, contentRef, designMode, onChange, selectedElementIds],
+  );
 
   const ungroupSelection = useCallback((): boolean => {
     if (
@@ -270,6 +300,7 @@ export function usePresentationElementCommands({
     addTable,
     groupSelection,
     instantiatePlaceholder,
+    rotateSelection,
     ungroupSelection,
     updateElement,
     updateTextElement,

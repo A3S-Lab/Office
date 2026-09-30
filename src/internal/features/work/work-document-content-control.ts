@@ -12,6 +12,7 @@ import {
   TextSelection,
   type Transaction,
 } from '@tiptap/pm/state';
+import { createDocumentContentControlNodeView } from './work-document-content-control-view';
 import { createWorkId } from './work-templates';
 
 /**
@@ -167,8 +168,7 @@ const CONTENT_CONTROL_STRING_MAX_LENGTH = 255;
 const CONTENT_CONTROL_BINDING_PATH_MAX_LENGTH = 1024;
 const CONTENT_CONTROL_BINDING_STORE_ITEM_PATTERN =
   /^\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}$/i;
-const CONTENT_CONTROL_BINDING_XPATH_PATTERN =
-  /^\/[A-Za-z0-9_.:\[\]@='"\/\-]+$/u;
+const CONTENT_CONTROL_BINDING_XPATH_PATTERN = /^\/[A-Za-z0-9_.:[\]@='"/-]+$/u;
 const CONTENT_CONTROL_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 const CONTENT_CONTROL_MARKER_ATTRIBUTES = [
   'id',
@@ -275,6 +275,10 @@ export const DocumentContentControl = Node.create({
 
   renderText({ node }) {
     return node.textContent;
+  },
+
+  addNodeView() {
+    return (props) => createDocumentContentControlNodeView(props);
   },
 
   addCommands() {

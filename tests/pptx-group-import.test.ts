@@ -1,11 +1,11 @@
 import { expect, test } from '@rstest/core';
 import JSZip from 'jszip';
-import { importPptxPresentation } from '../src/internal/features/work/work-pptx-import';
 import {
   attribute,
   descendants,
   OoxmlPackage,
 } from '../src/internal/features/work/work-ooxml-package';
+import { importPptxPresentation } from '../src/internal/features/work/work-pptx-import';
 
 test('retains nested PPTX group selection paths without a blanket compatibility warning', async () => {
   const file = await groupedPresentationFile();
@@ -58,6 +58,24 @@ test('scales grouped typography and borders by the smaller cumulative axis', asy
   expect(element?.textRuns?.[0]?.fontSize).toBe(30);
   expect(element?.textRuns?.[1]?.fontSize).toBeUndefined();
   expect(element?.groupIds).toHaveLength(2);
+});
+
+test('keeps an outer group rotation without a compatibility warning', async () => {
+  const file = await presentationFile(
+    groupShape(transform(0, 0, 2_000_000, 1_000_000, { rotation: 60_000 }), [
+      shape('Rotated member', 0, 0, 1_000_000, 500_000),
+    ]),
+    'rotated-group.pptx',
+  );
+
+  const result = await importPptxPresentation(file);
+  const element = result.content.slides[0]?.elements[0];
+
+  expect(element?.groupIds).toHaveLength(1);
+  expect(element?.groupRotation).toBe(1);
+  expect(result.compatibility.issues).not.toContainEqual(
+    expect.objectContaining({ code: 'pptx.group.transform' }),
+  );
 });
 
 test('reports only unsupported rotated or reflected group transforms', async () => {

@@ -1,4 +1,5 @@
 import type { Editor, Extensions } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { officeMessage } from '../../../i18n/office-locale';
 import { useEditor } from '@tiptap/react';
 import {
@@ -23,6 +24,7 @@ import {
   workspaceTextControlSelectionBounds,
 } from '../../workspace/components/workspace-context-menu';
 import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
+import { setMarkdownTaskChecked } from '../work-markdown-task';
 import {
   createWorkMarkdownExtensions,
   markdownTaskCheckboxLabel,
@@ -88,6 +90,27 @@ export interface MarkdownEditorProps {
 const MARKDOWN_PREVIEW_SYNC_DELAY = 160;
 const EMPTY_MARKDOWN_EXTENSIONS: Extensions = [];
 
+/** Real ProseMirror root. An unmounted editor reports itself destroyed and throws on `view.dom`. */
+function markdownEditorRoot(editor: Editor): HTMLElement | null {
+  if (editor.isDestroyed) return null;
+  return editor.view.dom;
+}
+
+function markdownTaskIndex(
+  doc: ProseMirrorNode,
+  target: ProseMirrorNode,
+): number {
+  let index = 0;
+  let found = -1;
+  doc.descendants((node) => {
+    if (node.type.name !== 'taskItem') return true;
+    if (found < 0 && (node === target || node.eq(target))) found = index;
+    index += 1;
+    return true;
+  });
+  return found;
+}
+
 export function MarkdownEditor({
   autoFocus = true,
   collaboration,
@@ -124,6 +147,12 @@ export function MarkdownEditor({
   const publishVisualMarkdownRef = useRef<(editor: Editor) => void>(
     () => undefined,
   );
+  const updateSourceRef = useRef<
+    (markdown: string, options?: { immediatePreview?: boolean }) => void
+  >(() => undefined);
+  const onReadOnlyCheckedRef = useRef<
+    (node: ProseMirrorNode, checked: boolean) => boolean
+  >(() => false);
   const receivedContentRef = useRef(content);
   const appliedMarkdownRef = useRef(initialContent.markdown);
   const emittedMarkdownRef = useRef<string | null>(null);
@@ -179,7 +208,11 @@ export function MarkdownEditor({
     () =>
       mergeOfficeTiptapExtensions(
         'MarkdownEditor',
-        createWorkMarkdownExtensions({ collaborative }),
+        createWorkMarkdownExtensions({
+          collaborative,
+          onReadOnlyChecked: (node, checked) =>
+            onReadOnlyCheckedRef.current(node, checked),
+        }),
         additionalExtensions,
       ),
     [additionalExtensions, collaborative],
@@ -371,11 +404,13 @@ export function MarkdownEditor({
     const visualEditorReadOnly = readOnly || viewMode !== 'visual';
     let checkboxFrame: number | null = null;
     const applyTaskCheckboxState = () => {
-      for (const checkbox of editor.view.dom.querySelectorAll<HTMLInputElement>(
+      const dom = markdownEditorRoot(editor);
+      if (!dom) return;
+      for (const checkbox of dom.querySelectorAll<HTMLInputElement>(
         'li[data-type="taskItem"] > label input[type="checkbox"]',
       )) {
-        checkbox.disabled = visualEditorReadOnly;
-        checkbox.setAttribute('aria-disabled', String(visualEditorReadOnly));
+        checkbox.disabled = readOnly;
+        checkbox.setAttribute('aria-disabled', String(readOnly));
       }
     };
     const scheduleTaskCheckboxState = () => {
@@ -386,32 +421,32 @@ export function MarkdownEditor({
       });
     };
     const applyViewState = () => {
-      if (editor.isDestroyed) return;
+      const dom = markdownEditorRoot(editor);
+      if (!dom) return;
       editor.setEditable(!visualEditorReadOnly, false);
-      editor.view.dom.setAttribute(
+      dom.setAttribute(
         'aria-label',
-        visualEditorReadOnly ? officeMessage(messages, 'markdown.editor.previewAria') : officeMessage(messages, 'markdown.editor.areaAria'),
+        visualEditorReadOnly
+          ? officeMessage(messages, 'markdown.editor.previewAria')
+          : officeMessage(messages, 'markdown.editor.areaAria'),
       );
-      editor.view.dom.setAttribute(
-        'role',
-        visualEditorReadOnly ? 'document' : 'textbox',
-      );
+      dom.setAttribute('role', visualEditorReadOnly ? 'document' : 'textbox');
       if (visualEditorReadOnly) {
-        editor.view.dom.removeAttribute('aria-readonly');
-        editor.view.dom.removeAttribute('aria-multiline');
-        editor.view.dom.tabIndex = 0;
+        dom.setAttribute('aria-readonly', 'true');
+        dom.removeAttribute('aria-multiline');
+        dom.tabIndex = 0;
       } else {
-        editor.view.dom.setAttribute('aria-readonly', 'false');
-        editor.view.dom.setAttribute('aria-multiline', 'true');
-        editor.view.dom.removeAttribute('tabindex');
+        dom.setAttribute('aria-readonly', 'false');
+        dom.setAttribute('aria-multiline', 'true');
+        dom.removeAttribute('tabindex');
       }
       applyTaskCheckboxState();
       scheduleTaskCheckboxState();
     };
-    applyViewState();
     editor.on('mount', applyViewState);
     editor.on('update', applyTaskCheckboxState);
     editor.on('transaction', scheduleTaskCheckboxState);
+    applyViewState();
     return () => {
       if (checkboxFrame !== null) cancelAnimationFrame(checkboxFrame);
       editor.off('mount', applyViewState);
@@ -460,7 +495,7 @@ export function MarkdownEditor({
   ]);
 
   const updateSource = useCallback(
-    (markdown: string) => {
+    (markdown: string, options?: { immediatePreview?: boolean }) => {
       if (markdown === sourceMarkdownRef.current) return;
       if (collaborative) {
         collaborationBindingRef.current?.replace(markdown);
@@ -473,11 +508,24 @@ export function MarkdownEditor({
       emittedMarkdownRef.current = markdown;
       onChangeRef.current(next);
       if (viewMode !== 'source') {
-        queueMarkdownPreview(markdown);
+        queueMarkdownPreview(markdown, options?.immediatePreview === true);
       }
     },
     [collaborative, queueMarkdownPreview, viewMode],
   );
+  updateSourceRef.current = updateSource;
+  onReadOnlyCheckedRef.current = (node, checked) => {
+    if (readOnly || viewMode === 'visual') return false;
+    const current = editorRef.current;
+    if (!current) return false;
+    const index = markdownTaskIndex(current.state.doc, node);
+    if (index < 0) return false;
+    updateSourceRef.current(
+      setMarkdownTaskChecked(sourceMarkdownRef.current, index, checked),
+      { immediatePreview: true },
+    );
+    return true;
+  };
 
   const getSourceSelection =
     useCallback((): MarkdownSourceSelectionState | null => {
@@ -808,7 +856,11 @@ export function MarkdownEditor({
   });
 
   if (!editor || !collaborationReady) {
-    return <WorkEditorLoadingState title={officeMessage(messages, 'markdown.editor.loading')} />;
+    return (
+      <WorkEditorLoadingState
+        title={officeMessage(messages, 'markdown.editor.loading')}
+      />
+    );
   }
 
   if (readOnly) {
@@ -819,9 +871,14 @@ export function MarkdownEditor({
         style={editorStyle}
       >
         <WorkOfficePreviewBar
-          ariaLabel={officeMessage(messages, 'markdown.editor.previewToolsAria')}
+          ariaLabel={officeMessage(
+            messages,
+            'markdown.editor.previewToolsAria',
+          )}
           label={officeMessage(messages, 'markdown.editor.previewLabel')}
-          detail={officeMessage(messages, 'markdown.editor.previewDetail', { count: String(metrics.lineCount) })}
+          detail={officeMessage(messages, 'markdown.editor.previewDetail', {
+            count: String(metrics.lineCount),
+          })}
           fileActions={fileActions}
           className="work-markdown-ribbon"
         />

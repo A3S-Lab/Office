@@ -28,11 +28,7 @@ export async function imageToDocx(
     element.getAttribute('alt') || element.getAttribute('title') || 'Image';
   if (!source) return new docx.TextRun(`[${alt}]`);
   try {
-    const blob = await fetch(source).then((response) => {
-      if (!response.ok)
-        throw new Error(`Image request failed with HTTP ${response.status}`);
-      return response.blob();
-    });
+    const blob = await imageSourceBlob(source);
     const type = docxImageType(blob.type, source);
     if (!type) return new docx.TextRun(`[${alt}]`);
     const dimensions =
@@ -165,6 +161,37 @@ function verticalPositionReference(
 
 function millimetersToEmus(value: number): number {
   return Math.round(value * 36_000);
+}
+
+async function imageSourceBlob(source: string): Promise<Blob> {
+  if (source.startsWith('data:')) return dataUrlToBlob(source);
+  const response = await fetch(source);
+  if (!response.ok) {
+    throw new Error(`Image request failed with HTTP ${response.status}`);
+  }
+  return response.blob();
+}
+
+function dataUrlToBlob(source: string): Blob {
+  const comma = source.indexOf(',');
+  if (comma < 0) throw new Error('Image data URL is missing its payload.');
+  const header = source.slice(0, comma);
+  const payload = source.slice(comma + 1);
+  const contentType =
+    /^data:([^;,]+)/i.exec(header)?.[1] ?? 'application/octet-stream';
+  const bytes = header.toLowerCase().includes(';base64')
+    ? bytesFromBase64(payload)
+    : new TextEncoder().encode(decodeURIComponent(payload));
+  return new Blob([bytes], { type: contentType });
+}
+
+function bytesFromBase64(payload: string): Uint8Array {
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
 }
 
 function docxImageType(

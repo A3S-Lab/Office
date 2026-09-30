@@ -1,7 +1,9 @@
 import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
 import {
   expandPresentationGroupSelection,
+  normalizePresentationDegrees,
   presentationSelectionUnits,
+  topPresentationGroupId,
 } from '../work-presentation-groups';
 import type { WorkSlideElement } from '../work-types';
 
@@ -56,6 +58,85 @@ export function selectedPresentationElements(
     expandPresentationGroupSelection(elements, selectedIds),
   );
   return elements.filter((element) => selected.has(element.id));
+}
+
+export const PRESENTATION_ROTATE_STEP_DEGREES = 15;
+
+export function presentationElementDisplayBox(
+  element: WorkSlideElement,
+  elements: readonly WorkSlideElement[],
+): { rotation: number; x: number; y: number } {
+  const groupId = topPresentationGroupId(element);
+  const groupRotation = element.groupRotation ?? 0;
+  if (!groupId || !groupRotation) {
+    return {
+      rotation: element.rotation ?? 0,
+      x: element.x,
+      y: element.y,
+    };
+  }
+  const members = elements.filter(
+    (item) => topPresentationGroupId(item) === groupId,
+  );
+  const bounds = presentationSelectionBounds(members);
+  if (!bounds) {
+    return {
+      rotation: (element.rotation ?? 0) + groupRotation,
+      x: element.x,
+      y: element.y,
+    };
+  }
+  const centerX = bounds.left + bounds.width / 2;
+  const centerY = bounds.top + bounds.height / 2;
+  const elementCenterX = element.x + element.width / 2;
+  const elementCenterY = element.y + element.height / 2;
+  const radians = (groupRotation * Math.PI) / 180;
+  const offsetX = elementCenterX - centerX;
+  const offsetY = elementCenterY - centerY;
+  const rotatedX =
+    centerX + offsetX * Math.cos(radians) - offsetY * Math.sin(radians);
+  const rotatedY =
+    centerY + offsetX * Math.sin(radians) + offsetY * Math.cos(radians);
+  return {
+    rotation: (element.rotation ?? 0) + groupRotation,
+    x: rotatedX - element.width / 2,
+    y: rotatedY - element.height / 2,
+  };
+}
+
+export function rotatePresentationSelection(
+  elements: readonly WorkSlideElement[],
+  selectedIds: readonly string[],
+  degrees: number,
+): WorkSlideElement[] {
+  if (!Number.isFinite(degrees) || Math.abs(degrees) < 0.01) {
+    return [...elements];
+  }
+  const selected = new Set(
+    expandPresentationGroupSelection(elements, selectedIds),
+  );
+  if (!selected.size) return [...elements];
+  const units = presentationSelectionUnits(elements, selectedIds);
+  const singleGroup = units.length === 1 && Boolean(units[0]?.groupId);
+  return elements.map((element) => {
+    if (!selected.has(element.id)) return element;
+    if (singleGroup) {
+      const groupRotation = normalizePresentationDegrees(
+        (element.groupRotation ?? 0) + degrees,
+      );
+      return {
+        ...element,
+        groupRotation: groupRotation || undefined,
+      };
+    }
+    const rotation = normalizePresentationDegrees(
+      (element.rotation ?? 0) + degrees,
+    );
+    return {
+      ...element,
+      rotation: rotation || undefined,
+    };
+  });
 }
 
 export function presentationSelectionBounds(

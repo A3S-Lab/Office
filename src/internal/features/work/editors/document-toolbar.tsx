@@ -33,6 +33,7 @@ import {
   TextCursorInput,
   TextSelect,
   Undo2,
+  Users,
   XCircle,
   ZoomIn,
   ZoomOut,
@@ -176,6 +177,7 @@ interface DocumentToolbarProps {
   onInsertTextBox?: () => void;
   onInsertConnector?: () => void;
   onInsertContentControl?: () => void;
+  onImportMailMergeRecipients?: () => void;
   onOpenMailMergeRecipientFilter?: () => void;
   onPageChromeEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
   onClosePageChrome: () => void;
@@ -217,6 +219,12 @@ interface DocumentToolbarProps {
   commentsOpen: boolean;
   commentCount: number;
   onToggleComments: () => void;
+  canAcceptComment?: boolean;
+  canProcessComment?: boolean;
+  canWithdrawComment?: boolean;
+  onAcceptComment?: () => void;
+  onProcessComment?: () => void;
+  onWithdrawComment?: () => void;
   trackChanges: boolean;
   changesOpen: boolean;
   changeCount: number;
@@ -261,6 +269,7 @@ export function DocumentToolbar({
   onInsertTextBox,
   onInsertConnector,
   onInsertContentControl,
+  onImportMailMergeRecipients,
   onOpenMailMergeRecipientFilter,
   onPageChromeEditingPartChange,
   onClosePageChrome,
@@ -302,6 +311,12 @@ export function DocumentToolbar({
   commentsOpen,
   commentCount,
   onToggleComments,
+  canAcceptComment = false,
+  canProcessComment = false,
+  canWithdrawComment = false,
+  onAcceptComment,
+  onProcessComment,
+  onWithdrawComment,
   trackChanges,
   changesOpen,
   changeCount,
@@ -791,7 +806,10 @@ export function DocumentToolbar({
           ),
           insert: reviewOnly ? null : (
             <>
-              <RibbonGroup label={officeMessage(messages, 'document.group.page')} priority="high">
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.page')}
+                priority="high"
+              >
                 <ToolbarButton
                   label={documentCommandLabel('insertPageBreak', messages)}
                   shortcut="Cmd/Ctrl+Enter"
@@ -807,10 +825,15 @@ export function DocumentToolbar({
                   <FilePlus2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label={officeMessage(messages, 'document.group.table')} priority="high">
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.table')}
+                priority="high"
+              >
                 <DocumentTableInsertPopover editor={editor} />
               </RibbonGroup>
-              <RibbonGroup label={officeMessage(messages, 'document.group.illustrations')}>
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.illustrations')}
+              >
                 <ToolbarButton
                   label={officeMessage(messages, 'document.insert.picture')}
                   displayLabel
@@ -819,11 +842,16 @@ export function DocumentToolbar({
                   <ImageIcon size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label={officeMessage(messages, 'document.group.links')} priority="low">
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.links')}
+                priority="low"
+              >
                 <ToolbarButton
-                  label={editor.isActive('link')
-                    ? officeMessage(messages, 'document.link.remove')
-                    : officeMessage(messages, 'document.link.add')}
+                  label={
+                    editor.isActive('link')
+                      ? officeMessage(messages, 'document.link.remove')
+                      : officeMessage(messages, 'document.link.add')
+                  }
                   shortcut="Cmd/Ctrl+K"
                   ariaKeyShortcuts="Control+K Meta+K"
                   displayLabel
@@ -834,9 +862,11 @@ export function DocumentToolbar({
                   <Link2 size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label={activeBookmark
-                    ? officeMessage(messages, 'document.bookmark.remove')
-                    : officeMessage(messages, 'document.bookmark.add')}
+                  label={
+                    activeBookmark
+                      ? officeMessage(messages, 'document.bookmark.remove')
+                      : officeMessage(messages, 'document.bookmark.add')
+                  }
                   displayLabel
                   active={Boolean(activeBookmark)}
                   onMouseDown={(event) => event.preventDefault()}
@@ -845,7 +875,9 @@ export function DocumentToolbar({
                   <BookmarkIcon size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label={officeMessage(messages, 'document.group.headerFooter')}>
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.headerFooter')}
+              >
                 <ToolbarButton
                   label={officeMessage(messages, 'document.pageChrome.header')}
                   displayLabel
@@ -861,7 +893,10 @@ export function DocumentToolbar({
                   <PanelBottomOpen size={19} />
                 </ToolbarButton>
                 <ToolbarButton
-                  label={officeMessage(messages, 'document.pageChrome.pageNumber')}
+                  label={officeMessage(
+                    messages,
+                    'document.pageChrome.pageNumber',
+                  )}
                   displayLabel
                   active={showPageNumbers}
                   onClick={onTogglePageNumbers}
@@ -869,7 +904,10 @@ export function DocumentToolbar({
                   <Hash size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label={officeMessage(messages, 'document.group.text')} priority="low">
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.text')}
+                priority="low"
+              >
                 <ToolbarButton
                   label={documentCommandLabel('insertTextBox', messages)}
                   displayLabel
@@ -894,16 +932,39 @@ export function DocumentToolbar({
                 <DocumentFieldInsertMenu onInsertField={onInsertField} />
                 <ToolbarButton
                   label={officeMessage(messages, 'document.field.settings')}
-                  title={officeMessage(messages, 'document.field.settingsTitle')}
+                  title={officeMessage(
+                    messages,
+                    'document.field.settingsTitle',
+                  )}
                   displayLabel
                   onClick={onOpenField}
                 >
                   <SlidersHorizontal size={19} />
                 </ToolbarButton>
+                <ToolbarButton
+                  label={officeMessage(
+                    messages,
+                    'document.mailMerge.importRecipients',
+                  )}
+                  title={officeMessage(
+                    messages,
+                    'document.mailMerge.importRecipientsTitle',
+                  )}
+                  displayLabel
+                  onClick={() => onImportMailMergeRecipients?.()}
+                >
+                  <Users size={19} />
+                </ToolbarButton>
                 {onOpenMailMergeRecipientFilter ? (
                   <ToolbarButton
-                    label={officeMessage(messages, 'document.mailMerge.filterRecipients')}
-                    title={officeMessage(messages, 'document.mailMerge.filterRecipientsTitle')}
+                    label={officeMessage(
+                      messages,
+                      'document.mailMerge.filterRecipients',
+                    )}
+                    title={officeMessage(
+                      messages,
+                      'document.mailMerge.filterRecipientsTitle',
+                    )}
                     displayLabel
                     onClick={onOpenMailMergeRecipientFilter}
                   >
@@ -955,7 +1016,10 @@ export function DocumentToolbar({
           review: (
             <>
               {!reviewOnly && (
-                <RibbonGroup label={officeMessage(messages, 'document.group.proofing')} priority="high">
+                <RibbonGroup
+                  label={officeMessage(messages, 'document.group.proofing')}
+                  priority="high"
+                >
                   <ToolbarButton
                     label={documentCommandLabel('spelling', messages)}
                     displayLabel
@@ -967,7 +1031,10 @@ export function DocumentToolbar({
                     <CheckCheck size={19} />
                   </ToolbarButton>
                   <ToolbarButton
-                    label={officeMessage(messages, 'document.proofing.language')}
+                    label={officeMessage(
+                      messages,
+                      'document.proofing.language',
+                    )}
                     displayLabel
                     onClick={() => openProofingDialog(editor)}
                   >
@@ -976,7 +1043,10 @@ export function DocumentToolbar({
                 </RibbonGroup>
               )}
               {!suggestionOnly && (
-                <RibbonGroup label={officeMessage(messages, 'document.group.comments')} priority="high">
+                <RibbonGroup
+                  label={officeMessage(messages, 'document.group.comments')}
+                  priority="high"
+                >
                   <ToolbarButton
                     label={documentCommandLabel('insertComment', messages)}
                     displayLabel
@@ -993,33 +1063,86 @@ export function DocumentToolbar({
                                 insertCommentCommand.shortcut?.label ?? '',
                             },
                           )
-                        : officeMessage(messages, 'document.comment.selectFirst')
+                        : officeMessage(
+                            messages,
+                            'document.comment.selectFirst',
+                          )
                     }
                     onClick={onInsertComment}
                   >
                     <MessageSquarePlus size={19} />
                   </ToolbarButton>
                   <ToolbarButton
-                    label={commentCount
-                      ? officeMessage(messages, 'document.comment.viewWithCount', {
-                          count: String(commentCount),
-                        })
-                      : officeMessage(messages, 'document.comment.view')}
+                    label={
+                      commentCount
+                        ? officeMessage(
+                            messages,
+                            'document.comment.viewWithCount',
+                            {
+                              count: String(commentCount),
+                            },
+                          )
+                        : officeMessage(messages, 'document.comment.view')
+                    }
                     displayLabel
                     active={commentsOpen}
                     onClick={onToggleComments}
                   >
                     <MessagesSquare size={19} />
                   </ToolbarButton>
+                  <ToolbarButton
+                    label={officeMessage(messages, 'document.comment.accept')}
+                    displayLabel
+                    disabled={!canAcceptComment}
+                    title={officeMessage(
+                      messages,
+                      'document.comment.acceptTitle',
+                    )}
+                    onClick={() => onAcceptComment?.()}
+                  >
+                    <Check size={19} />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label={officeMessage(messages, 'document.comment.process')}
+                    displayLabel
+                    disabled={!canProcessComment}
+                    title={officeMessage(
+                      messages,
+                      'document.comment.processTitle',
+                    )}
+                    onClick={() => onProcessComment?.()}
+                  >
+                    <ListChecks size={19} />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label={officeMessage(messages, 'document.comment.withdraw')}
+                    displayLabel
+                    disabled={!canWithdrawComment}
+                    title={officeMessage(
+                      messages,
+                      canWithdrawComment
+                        ? 'document.comment.withdrawTitle'
+                        : 'document.comment.withdrawBlocked',
+                    )}
+                    onClick={() => onWithdrawComment?.()}
+                  >
+                    <Undo2 size={19} />
+                  </ToolbarButton>
                 </RibbonGroup>
               )}
               {(!reviewOnly || suggestionOnly) && (
                 <>
-                  <RibbonGroup label={officeMessage(messages, 'document.group.revisions')} priority="high">
+                  <RibbonGroup
+                    label={officeMessage(messages, 'document.group.revisions')}
+                    priority="high"
+                  >
                     <ToolbarButton
                       label={
                         suggestionOnly
-                          ? officeMessage(messages, 'document.track.suggestionMode')
+                          ? officeMessage(
+                              messages,
+                              'document.track.suggestionMode',
+                            )
                           : documentCommandLabel('trackChanges', messages)
                       }
                       displayLabel
@@ -1029,7 +1152,10 @@ export function DocumentToolbar({
                       disabled={suggestionOnly}
                       title={
                         suggestionOnly
-                          ? officeMessage(messages, 'document.track.suggestionModeHint')
+                          ? officeMessage(
+                              messages,
+                              'document.track.suggestionModeHint',
+                            )
                           : undefined
                       }
                       onClick={onToggleTrackChanges}
@@ -1037,11 +1163,17 @@ export function DocumentToolbar({
                       <FileDiff size={19} />
                     </ToolbarButton>
                     <ToolbarButton
-                      label={changeCount
-                        ? officeMessage(messages, 'document.changes.viewWithCount', {
-                            count: String(changeCount),
-                          })
-                        : officeMessage(messages, 'document.changes.view')}
+                      label={
+                        changeCount
+                          ? officeMessage(
+                              messages,
+                              'document.changes.viewWithCount',
+                              {
+                                count: String(changeCount),
+                              },
+                            )
+                          : officeMessage(messages, 'document.changes.view')
+                      }
                       displayLabel
                       active={changesOpen}
                       onClick={onToggleChanges}
@@ -1050,27 +1182,45 @@ export function DocumentToolbar({
                     </ToolbarButton>
                   </RibbonGroup>
                   {!suggestionOnly && (
-                    <RibbonGroup label={officeMessage(messages, 'document.group.changes')} priority="high">
+                    <RibbonGroup
+                      label={officeMessage(messages, 'document.group.changes')}
+                      priority="high"
+                    >
                       <ToolbarButton
-                        label={officeMessage(messages, 'document.changes.accept')}
+                        label={officeMessage(
+                          messages,
+                          'document.changes.accept',
+                        )}
                         displayLabel
                         disabled={actionableChangeIndex === null}
-                        title={officeMessage(messages, 'document.changes.acceptTitle')}
+                        title={officeMessage(
+                          messages,
+                          'document.changes.acceptTitle',
+                        )}
                         onClick={() => decideDocumentChange('accept')}
                       >
                         <Check size={19} />
                       </ToolbarButton>
                       <ToolbarButton
-                        label={officeMessage(messages, 'document.changes.reject')}
+                        label={officeMessage(
+                          messages,
+                          'document.changes.reject',
+                        )}
                         displayLabel
                         disabled={actionableChangeIndex === null}
-                        title={officeMessage(messages, 'document.changes.rejectTitle')}
+                        title={officeMessage(
+                          messages,
+                          'document.changes.rejectTitle',
+                        )}
                         onClick={() => decideDocumentChange('reject')}
                       >
                         <XCircle size={19} />
                       </ToolbarButton>
                       <ToolbarButton
-                        label={officeMessage(messages, 'document.changes.previous')}
+                        label={officeMessage(
+                          messages,
+                          'document.changes.previous',
+                        )}
                         displayLabel
                         disabled={previousChangeIndex === null}
                         onClick={() => navigateDocumentChange(-1)}
@@ -1090,11 +1240,20 @@ export function DocumentToolbar({
                 </>
               )}
               {!reviewOnly && !suggestionOnly && (
-                <RibbonGroup label={officeMessage(messages, 'document.group.compare')} priority="high">
+                <RibbonGroup
+                  label={officeMessage(messages, 'document.group.compare')}
+                  priority="high"
+                >
                   <ToolbarButton
-                    label={officeMessage(messages, 'document.compare.documents')}
+                    label={officeMessage(
+                      messages,
+                      'document.compare.documents',
+                    )}
                     displayLabel
-                    title={officeMessage(messages, 'document.compare.documentsTitle')}
+                    title={officeMessage(
+                      messages,
+                      'document.compare.documentsTitle',
+                    )}
                     onClick={() => onOpenComparison('compare')}
                   >
                     <GitCompareArrows size={19} />
@@ -1102,7 +1261,10 @@ export function DocumentToolbar({
                   <ToolbarButton
                     label={officeMessage(messages, 'document.compare.merge')}
                     displayLabel
-                    title={officeMessage(messages, 'document.compare.mergeTitle')}
+                    title={officeMessage(
+                      messages,
+                      'document.compare.mergeTitle',
+                    )}
                     onClick={() => onOpenComparison('combine')}
                   >
                     <FileStack size={19} />
@@ -1113,7 +1275,10 @@ export function DocumentToolbar({
           ),
           view: (
             <>
-              <RibbonGroup label={officeMessage(messages, 'document.group.documentViews')} priority="high">
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.documentViews')}
+                priority="high"
+              >
                 <ToolbarButton
                   label={officeMessage(messages, 'document.view.page')}
                   displayLabel
@@ -1131,7 +1296,10 @@ export function DocumentToolbar({
                   <Globe2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label={officeMessage(messages, 'document.group.show')} priority="high">
+              <RibbonGroup
+                label={officeMessage(messages, 'document.group.show')}
+                priority="high"
+              >
                 <ToolbarButton
                   label={officeMessage(messages, 'document.view.ruler')}
                   displayLabel
@@ -1166,7 +1334,10 @@ export function DocumentToolbar({
                     getDocumentCommandDefinition('toggleFieldCodes').shortcut
                       ?.aria
                   }
-                  title={officeMessage(messages, 'document.view.toggleFieldCodesTitle')}
+                  title={officeMessage(
+                    messages,
+                    'document.view.toggleFieldCodesTitle',
+                  )}
                   onClick={onToggleFieldCodes}
                 >
                   <Braces size={19} />
@@ -1175,7 +1346,10 @@ export function DocumentToolbar({
                   label={documentCommandLabel('showHiddenText', messages)}
                   displayLabel
                   active={showHiddenText}
-                  title={officeMessage(messages, 'document.view.showHiddenTitle')}
+                  title={officeMessage(
+                    messages,
+                    'document.view.showHiddenTitle',
+                  )}
                   onClick={onToggleHiddenText}
                 >
                   <Eye size={19} />

@@ -79,6 +79,56 @@ export function emptyMailMergeSource(): WorkDocumentMailMergeSource {
   return { records: [], activeIndex: 0, filter: null };
 }
 
+/**
+ * Parses a pasted recipient table.
+ *
+ * The first non-empty line is the header. A tab in that line selects
+ * tab-separated columns; otherwise columns are comma-separated. Each later
+ * non-empty line is one recipient. Returns null when the header is missing,
+ * a header cell is not a field name, or there is no recipient row.
+ */
+export function parseMailMergeTable(
+  text: string,
+): WorkDocumentMailMergeSource | null {
+  const lines = text
+    .replace(/^\uFEFF/u, '')
+    .split(/\r\n|\n|\r/u)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  if (lines.length < 2) return null;
+  const headerLine = lines[0] ?? '';
+  const delimiter: '\t' | ',' = headerLine.includes('\t') ? '\t' : ',';
+  const headerCells = splitMailMergeRow(headerLine, delimiter);
+  if (
+    !headerCells.length ||
+    headerCells.length > DOCUMENT_MAIL_MERGE_MAX_FIELDS
+  ) {
+    return null;
+  }
+  const headers: string[] = [];
+  const seen = new Set<string>();
+  for (const cell of headerCells) {
+    const name = normalizeMailMergeFieldName(cell);
+    if (!name || seen.has(name)) return null;
+    seen.add(name);
+    headers.push(name);
+  }
+  const records: WorkDocumentMailMergeRecord[] = [];
+  for (const line of lines.slice(1)) {
+    if (records.length >= DOCUMENT_MAIL_MERGE_MAX_RECORDS) break;
+    const cells = splitMailMergeRow(line, delimiter);
+    const record: Record<string, string> = {};
+    for (let index = 0; index < headers.length; index += 1) {
+      const name = headers[index];
+      if (!name) continue;
+      record[name] = normalizeMailMergeFieldValue(cells[index] ?? '');
+    }
+    if (Object.keys(record).length) records.push(record);
+  }
+  if (!records.length) return null;
+  return normalizeMailMergeSource({ records, activeIndex: 0, filter: null });
+}
+
 export function normalizeMailMergeRecipientFilter(
   value: Partial<WorkDocumentMailMergeRecipientFilter> | null | undefined,
 ): WorkDocumentMailMergeRecipientFilter | null {
@@ -126,7 +176,7 @@ export function normalizeMailMergeRecord(
   )) {
     if (Object.keys(record).length >= DOCUMENT_MAIL_MERGE_MAX_FIELDS) break;
     const name = normalizeMailMergeFieldName(rawName);
-    if (!name || Object.prototype.hasOwnProperty.call(record, name)) continue;
+    if (!name || Object.hasOwn(record, name)) continue;
     if (typeof rawValue !== 'string') continue;
     record[name] = normalizeMailMergeFieldValue(rawValue);
   }
@@ -472,6 +522,32 @@ function normalizeMailMergeFieldValue(value: string): string {
   return value
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/gu, '')
     .slice(0, DOCUMENT_MAIL_MERGE_MAX_FIELD_VALUE);
+}
+
+function splitMailMergeRow(line: string, delimiter: '\t' | ','): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index] ?? '';
+    if (char === '"') {
+      if (quoted && line[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+      continue;
+    }
+    if (!quoted && char === delimiter) {
+      cells.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  cells.push(current.trim());
+  return cells;
 }
 
 function uniqueMailMergeFieldNames(names: readonly string[]): string[] {

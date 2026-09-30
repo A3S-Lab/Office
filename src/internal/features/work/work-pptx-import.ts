@@ -10,16 +10,24 @@ import {
   OoxmlPackage,
   type OoxmlRelationship,
 } from './work-ooxml-package';
+import { readPptxAnimations } from './work-pptx-animation';
+import { readPptxChart } from './work-pptx-chart-import';
+import {
+  loadPptxCommentAuthors,
+  type PptxCommentAuthor,
+  readPptxSlideComments,
+} from './work-pptx-comments';
 import {
   loadPptxDesignPart,
   loadPptxSlideInheritance,
   type PptxDesignPart,
+  type PptxRawBox,
   pptxPlaceholder,
   pptxPlaceholderBox,
-  type PptxRawBox,
   pptxRawElementBox,
   pptxShowsMasterElements,
 } from './work-pptx-layout-import';
+import { presentationPictureAltText } from './work-pptx-picture-alt';
 import {
   loadPptxTheme,
   type PptxThemeColors,
@@ -29,13 +37,6 @@ import {
   readPptxFill,
   supportedPptxShapeType,
 } from './work-pptx-style';
-import {
-  loadPptxCommentAuthors,
-  type PptxCommentAuthor,
-  readPptxSlideComments,
-} from './work-pptx-comments';
-import { readPptxChart } from './work-pptx-chart-import';
-import { readPptxAnimations } from './work-pptx-animation';
 import { readPptxTransition } from './work-pptx-transition';
 import { scaledPresentationVisuals } from './work-presentation-visual-scale';
 import { createWorkId } from './work-templates';
@@ -81,6 +82,7 @@ interface PptxDesignRegistry {
 interface GroupTransform {
   groupIds: string[];
   map: (box: PptxRawBox) => PptxRawBox;
+  rotation: number;
   visualScale: number;
 }
 
@@ -711,7 +713,7 @@ function parseShape(
     underline: text.underline,
     verticalAlign: text.verticalAlign,
     textRuns: text.runs.length ? text.runs : undefined,
-    href: text.href,
+    href: shapeHyperlink(node, context) ?? text.href,
     altText,
     placeholder: placeholder
       ? {
@@ -737,9 +739,8 @@ async function parsePicture(
   const relationship = relationshipId
     ? context.relationships.get(relationshipId)
     : undefined;
-  const name =
-    attribute(firstDescendant(node, 'cNvPr') ?? node, 'name') ??
-    'Imported picture';
+  const nonVisual = firstDescendant(node, 'cNvPr') ?? node;
+  const name = attribute(nonVisual, 'name') ?? 'Imported picture';
   const placeholder = pptxPlaceholder(node);
   const base = {
     id: createWorkId('element'),
@@ -751,7 +752,11 @@ async function parsePicture(
     fill: '#eef1f6',
     bold: false,
     align: 'center' as const,
-    altText: readAlternativeText(node) || name,
+    altText: presentationPictureAltText(
+      attribute(nonVisual, 'descr'),
+      attribute(nonVisual, 'title'),
+      attribute(nonVisual, 'name'),
+    ),
     placeholder,
   };
   if (
@@ -945,16 +950,17 @@ async function parseGroup(
   parentTransform?: GroupTransform,
 ): Promise<WorkSlideElement[]> {
   const xfrm = childPath(node, 'grpSpPr', 'xfrm');
-  if (
-    numberAttribute(xfrm, 'rot', 0) !== 0 ||
-    booleanAttribute(xfrm, 'flipH') ||
-    booleanAttribute(xfrm, 'flipV')
-  ) {
+  const localRotation = numberAttribute(xfrm, 'rot', 0) / 60_000;
+  const flip =
+    booleanAttribute(xfrm, 'flipH') || booleanAttribute(xfrm, 'flipV');
+  if (flip || (parentTransform && localRotation !== 0)) {
     addIssue(
       context,
       'pptx.group.transform',
       'Group transform',
-      'Group rotation or reflection is retained in the original PPTX but is not applied to browser editing geometry.',
+      flip
+        ? 'Group reflection is retained in the original PPTX but is not applied to browser editing geometry.'
+        : 'Nested group rotation is retained in the original PPTX but is not applied as its own transform.',
     );
   }
   const offset = directChild(xfrm ?? node, 'off');
@@ -979,6 +985,7 @@ async function parseGroup(
       ...(parentTransform?.groupIds ?? []),
       createWorkId('element-group'),
     ],
+    rotation: parentTransform?.rotation ?? localRotation,
     visualScale: (parentTransform?.visualScale ?? 1) * localVisualScale,
     map: (box) => {
       const mapped = {
@@ -1011,6 +1018,7 @@ function withImportedGroupTransform(
     ...element,
     ...scaledPresentationVisuals(element, transform.visualScale),
     groupIds: [...transform.groupIds],
+    ...(transform.rotation ? { groupRotation: transform.rotation } : {}),
   };
 }
 
@@ -1231,6 +1239,32 @@ function readSlideName(document: Document, slideNumber: number): string {
         .trim()
     : '';
   return title || `幻灯片 ${slideNumber}`;
+}
+
+function shapeHyperlink(
+  node: Element,
+  context: PptxImportContext,
+): string | undefined {
+  const properties = firstDescendant(node, 'cNvPr');
+  const hyperlink = properties
+    ? (directChild(properties, 'hlinkClick') ??
+      firstDescendant(properties, 'hlinkClick'))
+    : undefined;
+  return externalHyperlink(hyperlink, context);
+}
+
+function externalHyperlink(
+  node: Element | undefined,
+  context: PptxImportContext,
+): string | undefined {
+  if (!node) return undefined;
+  const relationshipId = attribute(node, 'r:id') ?? attribute(node, 'id');
+  const relationship = relationshipId
+    ? context.relationships.get(relationshipId)
+    : undefined;
+  return relationship?.targetMode === 'External'
+    ? relationship.target
+    : undefined;
 }
 
 function readAlternativeText(node: Element): string | undefined {

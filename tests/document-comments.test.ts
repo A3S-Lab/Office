@@ -1,6 +1,5 @@
-import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import { Editor } from '@tiptap/core';
 import {
   appendDocumentCommentReply,
   canInsertDocumentComment,
@@ -8,8 +7,10 @@ import {
   documentCommentViews,
   removeDocumentCommentRecord,
   retainAnchoredDocumentComments,
+  setDocumentCommentDecision,
   toggleDocumentCommentResolved,
 } from '../src/internal/features/work/work-document-comments';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import type { WorkDocumentComment } from '../src/internal/features/work/work-types';
 
 const comment: WorkDocumentComment = {
@@ -57,6 +58,27 @@ test('leaves unrelated document comments unchanged', () => {
   ).toEqual(source);
   expect(toggleDocumentCommentResolved(source, 'missing')).toEqual(source);
   expect(removeDocumentCommentRecord(source, 'missing')).toEqual(source);
+});
+
+test('accepts or processes one comment and withdraws that decision', () => {
+  const source = [comment, { ...comment, id: 'comment-2', text: 'Second' }];
+  const accepted = setDocumentCommentDecision(source, 'comment-1', 'accepted');
+  const processed = setDocumentCommentDecision(
+    accepted,
+    'comment-2',
+    'processed',
+  );
+  const withdrawn = setDocumentCommentDecision(processed, 'comment-1', null);
+
+  expect(source[0]?.resolved).toBe(false);
+  expect(accepted[0]).toMatchObject({ resolved: true, decision: 'accepted' });
+  expect(processed[1]).toMatchObject({
+    resolved: true,
+    decision: 'processed',
+  });
+  expect(withdrawn[0]).toMatchObject({ resolved: false });
+  expect(withdrawn[0]?.decision).toBeUndefined();
+  expect(withdrawn[1]?.decision).toBe('processed');
 });
 
 test('retains an explicitly conflicted comment whose anchor is temporarily missing', () => {

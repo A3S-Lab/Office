@@ -64,6 +64,29 @@ export function updateSlide(
   });
 }
 
+/** `insertionIndex` is the gap before that slide, counted before the source is removed. */
+export function movePresentationSlide<T>(
+  slides: readonly T[],
+  fromIndex: number,
+  insertionIndex: number,
+): T[] {
+  if (
+    fromIndex < 0 ||
+    insertionIndex < 0 ||
+    fromIndex >= slides.length ||
+    insertionIndex > slides.length
+  ) {
+    return slides.slice();
+  }
+  const next = slides.slice();
+  const [moved] = next.splice(fromIndex, 1);
+  if (moved === undefined) return slides.slice();
+  const insertAt =
+    insertionIndex > fromIndex ? insertionIndex - 1 : insertionIndex;
+  next.splice(insertAt, 0, moved);
+  return next;
+}
+
 export function newSlide(number: number): WorkSlide {
   return {
     id: createWorkId('slide'),
@@ -88,7 +111,10 @@ export function newSlide(number: number): WorkSlide {
         placeholder: {
           key: 'title',
           type: 'title',
-          prompt: officeMessage(resolveOfficeMessages(), 'presentation.ops.titlePrompt'),
+          prompt: officeMessage(
+            resolveOfficeMessages(),
+            'presentation.ops.titlePrompt',
+          ),
         },
       },
     ],
@@ -141,10 +167,17 @@ export function newPresentationTableElement(
       rows: Array.from({ length: rows }, (_, rowIndex) =>
         Array.from({ length: columns }, (_, columnIndex) =>
           rowIndex === 0
-            ? officeMessage(resolveOfficeMessages(), 'presentation.ops.tableHeader', {
-                column: String(columnIndex + 1),
-              })
-            : officeMessage(resolveOfficeMessages(), 'presentation.ops.tableBody'),
+            ? officeMessage(
+                resolveOfficeMessages(),
+                'presentation.ops.tableHeader',
+                {
+                  column: String(columnIndex + 1),
+                },
+              )
+            : officeMessage(
+                resolveOfficeMessages(),
+                'presentation.ops.tableBody',
+              ),
         ),
       ),
     },

@@ -794,6 +794,69 @@ describe('document content controls', () => {
       reopenedControls[1]?.dataset.contentControlId,
     );
   });
+
+  test('commits plain text left in an empty content control and writes it into word/document.xml', async () => {
+    editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: '<section data-document-section="true"><p>Ready</p></section>',
+    });
+    editor.commands.setTextSelection({ from: 2, to: 2 });
+    expect(
+      editor.commands.insertDocumentContentControl({
+        id: 'plain-s15b',
+        type: 'text',
+      }),
+    ).toBe(true);
+
+    const value = editor.view.dom.querySelector(
+      '.work-document-content-control-value',
+    );
+    const placeholder = editor.view.dom.querySelector(
+      '[data-content-control-placeholder]',
+    );
+    if (
+      !(value instanceof HTMLElement) ||
+      !(placeholder instanceof HTMLElement)
+    ) {
+      throw new Error(
+        'Plain-text content control did not mount an editable value.',
+      );
+    }
+    expect(placeholder.textContent).toBe('输入内容');
+    expect(placeholder.hidden).toBe(false);
+    expect(editor.getText()).not.toContain('输入内容');
+    expect(editor.getHTML()).not.toContain('输入内容');
+
+    const observer = (
+      editor.view as {
+        domObserver?: { stop: () => void };
+      }
+    ).domObserver;
+    observer?.stop();
+    value.textContent = 'S15B';
+    value.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    await new Promise((resolve) => {
+      queueMicrotask(() => resolve(undefined));
+    });
+
+    expect(editor.getText()).toContain('S15B');
+    expect(editor.getText()).not.toContain('输入内容');
+    expect(editor.getHTML()).toContain('>S15B<');
+    expect(editor.getHTML()).not.toContain('输入内容');
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = editor.getHTML();
+    const blob = await createDocxBlob(artifact.content);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    const control = xml.match(/<w:sdt>[\s\S]*?<\/w:sdt>/)?.[0] ?? '';
+    expect(control).toContain('<w:t xml:space="preserve">S15B</w:t>');
+    expect(control).not.toContain('<w:t xml:space="preserve"/>');
+    expect(control).not.toContain('<w:t xml:space="preserve" />');
+  });
 });
 
 function contentControlPosition(currentEditor: Editor, id: string): number {

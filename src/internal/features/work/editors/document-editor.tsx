@@ -22,6 +22,7 @@ import {
   type WorkOfficeDocumentCollaborationBinding,
 } from '../../../collaboration/office-document-collaboration';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
+import { officeMessage } from '../../../i18n/office-locale';
 import {
   isWorkspaceContextMenuKeyboardEvent,
   type WorkspaceContextMenuEvent,
@@ -122,6 +123,7 @@ import {
   DocumentLayoutPanel,
   type DocumentLayoutPanelTab,
 } from './document-layout-panel';
+import { DocumentMailMergeImportDialog } from './document-mail-merge-import-dialog';
 import { DocumentMailMergeRecipientFilterDialog } from './document-mail-merge-recipient-filter-dialog';
 import { DocumentNavigationPanel } from './document-navigation-panel';
 import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
@@ -155,7 +157,6 @@ import {
 } from './office-task-pane';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useDocumentComments } from './use-document-comments';
-import { officeMessage } from '../../../i18n/office-locale';
 import { useDocumentComparison } from './use-document-comparison';
 import { useDocumentInsertCommands } from './use-document-insert-commands';
 import { useDocumentLayoutFonts } from './use-document-layout-fonts';
@@ -188,13 +189,13 @@ export interface DocumentEditorProps {
   /**
    * Host-owned mail-merge data source for MERGEFIELD preview. Typed object
    * (not a raw backend name) so hosts can swap CSV/DB providers without
-   * changing the editor contract.
+   * changing the editor contract. When omitted, the editor keeps a source
+   * created by Import recipients.
    */
   mailMergeSource?: WorkDocumentMailMergeSource | null;
   /**
    * Notifies the host when the editor updates mail-merge source state
-   * (recipient filter). Required to enable the recipient-filter ribbon
-   * control.
+   * (imported recipients or the recipient filter).
    */
   onMailMergeSourceChange?: (source: WorkDocumentMailMergeSource) => void;
   /** Opens the comment task pane on first mount. Hosts use this for review. */
@@ -409,6 +410,7 @@ function DocumentEditorSurface({
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const statisticsInvokerRef = useRef<HTMLElement | null>(null);
   const mailMergeFilterInvokerRef = useRef<HTMLElement | null>(null);
+  const mailMergeImportInvokerRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef(effectiveContent);
   const editorMountStartedAtRef = useRef(documentEditorNow());
   const editorBeforeCreateAtRef = useRef<number | null>(null);
@@ -482,6 +484,10 @@ function DocumentEditorSurface({
   const [mailMergeFilterOpen, setMailMergeFilterOpen] = useState(false);
   const [mailMergeFilterDraft, setMailMergeFilterDraft] =
     useState<WorkDocumentMailMergeSource | null>(null);
+  const [localMailMergeSource, setLocalMailMergeSource] =
+    useState<WorkDocumentMailMergeSource | null>(null);
+  const [mailMergeImportOpen, setMailMergeImportOpen] = useState(false);
+  const effectiveMailMergeSource = mailMergeSource ?? localMailMergeSource;
   const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
   if (!collaboration) contentRef.current = content;
   onChangeRef.current = onChange;
@@ -902,6 +908,7 @@ function DocumentEditorSurface({
     publishedDocumentRef,
     reconcileControlledUpdates: !collaboration,
   });
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const documentComments = useDocumentComments({
     actor: collaboration?.actor,
     contentRef,
@@ -914,14 +921,11 @@ function DocumentEditorSurface({
   const [collaborationVersion, setCollaborationVersion] = useState(0);
   const [frameCaretHead, setFrameCaretHead] = useState<number | null>(null);
   const [frameCaretRevision, setFrameCaretRevision] = useState(0);
-  const pendingFrameCaretRef = useRef<
-    | {
-        paragraphId: string;
-        textId: string;
-        indexUtf16: number;
-      }
-    | null
-  >(null);
+  const pendingFrameCaretRef = useRef<{
+    paragraphId: string;
+    textId: string;
+    indexUtf16: number;
+  } | null>(null);
   const handledCollaborationVersionRef = useRef(0);
   const pendingCollaborationContentRef = useRef<
     WorkDocumentContent | undefined
@@ -1361,9 +1365,9 @@ function DocumentEditorSurface({
     () =>
       createMailMergeFieldContextResolver(
         pagination.resolveFieldContext,
-        mailMergeSource,
+        effectiveMailMergeSource,
       ),
-    [pagination.resolveFieldContext, mailMergeSource],
+    [pagination.resolveFieldContext, effectiveMailMergeSource],
   );
   const documentInsert = useDocumentInsertCommands({
     contentRef,
@@ -1492,14 +1496,27 @@ function DocumentEditorSurface({
         : editor.view.dom;
     setStatisticsOpen(true);
   };
+  const commitMailMergeSource = (next: WorkDocumentMailMergeSource) => {
+    const normalized = normalizeMailMergeSource(next);
+    if (!mailMergeSource) setLocalMailMergeSource(normalized);
+    onMailMergeSourceChange?.(normalized);
+  };
+  const openMailMergeImport = () => {
+    const activeElement = document.activeElement;
+    mailMergeImportInvokerRef.current =
+      activeElement instanceof HTMLElement && activeElement.isConnected
+        ? activeElement
+        : editor.view.dom;
+    setMailMergeImportOpen(true);
+  };
   const openMailMergeRecipientFilter = () => {
-    if (!mailMergeSource || !onMailMergeSourceChange) return;
+    if (!effectiveMailMergeSource) return;
     const activeElement = document.activeElement;
     mailMergeFilterInvokerRef.current =
       activeElement instanceof HTMLElement && activeElement.isConnected
         ? activeElement
         : editor.view.dom;
-    setMailMergeFilterDraft(mailMergeSource);
+    setMailMergeFilterDraft(effectiveMailMergeSource);
     setMailMergeFilterOpen(true);
   };
   const closeMailMergeRecipientFilter = () => {
@@ -1507,9 +1524,7 @@ function DocumentEditorSurface({
     setMailMergeFilterDraft(null);
   };
   const submitMailMergeRecipientFilter = () => {
-    if (mailMergeFilterDraft && onMailMergeSourceChange) {
-      onMailMergeSourceChange(mailMergeFilterDraft);
-    }
+    if (mailMergeFilterDraft) commitMailMergeSource(mailMergeFilterDraft);
     closeMailMergeRecipientFilter();
     restoreDocumentBodyFocus();
   };
@@ -1644,7 +1659,10 @@ function DocumentEditorSurface({
         <OfficeFileInput
           ref={imageInputRef}
           accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
-          aria-label={officeMessage(messages, 'document.editor.insertImageAria')}
+          aria-label={officeMessage(
+            messages,
+            'document.editor.insertImageAria',
+          )}
           onFileSelect={documentInsert.insertImage}
         />
       )}
@@ -1697,10 +1715,9 @@ function DocumentEditorSurface({
           onInsertTextBox={documentInsert.insertTextBox}
           onInsertConnector={documentInsert.insertConnector}
           onInsertContentControl={documentInsert.openContentControl}
+          onImportMailMergeRecipients={openMailMergeImport}
           onOpenMailMergeRecipientFilter={
-            mailMergeSource && onMailMergeSourceChange
-              ? openMailMergeRecipientFilter
-              : undefined
+            effectiveMailMergeSource ? openMailMergeRecipientFilter : undefined
           }
           onPageChromeEditingPartChange={editPageChrome}
           onClosePageChrome={closePageChrome}
@@ -1782,6 +1799,24 @@ function DocumentEditorSurface({
           onInsertComment={() => void startCommentDraft()}
           commentsOpen={documentComments.open}
           commentCount={documentComments.comments.length}
+          canAcceptComment={documentComments.comments.some(
+            (comment) => !comment.resolved,
+          )}
+          canProcessComment={documentComments.comments.some(
+            (comment) => !comment.resolved,
+          )}
+          canWithdrawComment={documentComments.comments.some(
+            (comment) => comment.resolved,
+          )}
+          onAcceptComment={() => {
+            documentComments.acceptComment(activeCommentId);
+          }}
+          onProcessComment={() => {
+            documentComments.processComment(activeCommentId);
+          }}
+          onWithdrawComment={() => {
+            documentComments.withdrawComment(activeCommentId);
+          }}
           onToggleComments={() => void toggleCommentsPanel()}
           trackChanges={suggestionOnly || Boolean(currentContent.trackChanges)}
           changesOpen={changesOpen}
@@ -2108,7 +2143,9 @@ function DocumentEditorSurface({
                       editor={editor}
                       frameCaretHead={frameCaretHead}
                       kind="document"
-                      layoutSettled={viewMode !== 'page' || Boolean(pagination.pageCount)}
+                      layoutSettled={
+                        viewMode !== 'page' || Boolean(pagination.pageCount)
+                      }
                     />
                     {!preview && (canEditDocument || canCommentDocument) && (
                       <DocumentSelectionToolbar
@@ -2208,6 +2245,16 @@ function DocumentEditorSurface({
                 surfaceRef={reviewSurfaceRef}
                 onReply={documentComments.reply}
                 onToggleResolved={documentComments.toggleResolved}
+                onAcceptComment={(id) => {
+                  documentComments.acceptComment(id);
+                }}
+                onProcessComment={(id) => {
+                  documentComments.processComment(id);
+                }}
+                onWithdrawComment={(id) => {
+                  documentComments.withdrawComment(id);
+                }}
+                onActiveCommentChange={setActiveCommentId}
                 onDelete={documentComments.deleteComment}
                 onCancelDraft={documentComments.closeDraft}
                 onSubmitDraft={documentComments.submitDraft}
@@ -2333,20 +2380,31 @@ function DocumentEditorSurface({
           onClose={() => setStatisticsOpen(false)}
         />
       )}
-      {!preview &&
-        mailMergeFilterOpen &&
-        mailMergeFilterDraft &&
-        onMailMergeSourceChange && (
-          <DocumentMailMergeRecipientFilterDialog
-            source={mailMergeFilterDraft}
-            restoreFocusTarget={() => mailMergeFilterInvokerRef.current}
-            onCancel={closeMailMergeRecipientFilter}
-            onChange={(next) =>
-              setMailMergeFilterDraft(normalizeMailMergeSource(next))
-            }
-            onSubmit={submitMailMergeRecipientFilter}
-          />
-        )}
+      {!preview && mailMergeFilterOpen && mailMergeFilterDraft && (
+        <DocumentMailMergeRecipientFilterDialog
+          source={mailMergeFilterDraft}
+          restoreFocusTarget={() => mailMergeFilterInvokerRef.current}
+          onCancel={closeMailMergeRecipientFilter}
+          onChange={(next) =>
+            setMailMergeFilterDraft(normalizeMailMergeSource(next))
+          }
+          onSubmit={submitMailMergeRecipientFilter}
+        />
+      )}
+      {!preview && mailMergeImportOpen && (
+        <DocumentMailMergeImportDialog
+          restoreFocusTarget={() => mailMergeImportInvokerRef.current}
+          onCancel={() => {
+            setMailMergeImportOpen(false);
+            restoreDocumentBodyFocus();
+          }}
+          onImport={(source) => {
+            commitMailMergeSource(source);
+            setMailMergeImportOpen(false);
+            restoreDocumentBodyFocus();
+          }}
+        />
+      )}
     </section>
   );
 }

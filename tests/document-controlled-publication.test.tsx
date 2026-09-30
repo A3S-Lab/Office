@@ -252,6 +252,75 @@ test('folds a duplicate WebKit commit when the range already contains Chinese', 
   expect(publications[0]?.html).not.toContain('你好你好');
 });
 
+test('replaces interim pinyin when each IME key ends the composition', async () => {
+  let editor: Editor | null = null;
+  const publications: DocumentContent[] = [];
+  const captureEditor = Extension.create({
+    name: 'captureIncrementalPinyinCompositionEditor',
+    onCreate() {
+      editor = this.editor;
+    },
+  });
+  const initial: DocumentContent = {
+    type: 'document',
+    html: '<p></p>',
+    pageSize: 'a4',
+  };
+
+  function ControlledDocumentEditor() {
+    const [content, setContent] = useState(initial);
+    return (
+      <DocumentEditor
+        content={content}
+        extensions={[captureEditor]}
+        onChange={(next) => {
+          publications.push(next);
+          setContent(next);
+        }}
+        theme="light"
+      />
+    );
+  }
+
+  render(<ControlledDocumentEditor />);
+  const surface = await screen.findByRole('textbox', { name: '文档正文' });
+  await waitFor(() => expect(editor).not.toBeNull());
+  const current = editor as Editor;
+
+  const preedit = (value: string) => {
+    fireEvent.compositionStart(surface, { data: value });
+    act(() => {
+      current.commands.insertContent(value);
+    });
+    fireEvent.compositionEnd(surface, { data: value });
+  };
+
+  preedit('y');
+  preedit('ya');
+  preedit('yan');
+
+  await waitFor(
+    () => expect(current.getText().replaceAll('\n', '')).toBe('yan'),
+    { timeout: 1_000 },
+  );
+  expect(current.getText()).not.toContain('yyayan');
+
+  fireEvent.compositionStart(surface, { data: '验收' });
+  act(() => {
+    current.commands.insertContent('验收');
+  });
+  fireEvent.compositionEnd(surface, { data: '验收' });
+
+  await waitFor(
+    () => expect(current.getText().replaceAll('\n', '')).toBe('验收'),
+    { timeout: 1_000 },
+  );
+  expect(current.getText()).not.toContain('yan');
+  expect(publications.at(-1)?.html).toContain('验收');
+  expect(publications.at(-1)?.html).not.toContain('yan');
+  expect(publications.at(-1)?.html).not.toContain('yyayan');
+});
+
 test('keeps a local formatting publication until the controlled host acknowledges it', async () => {
   let editor: Editor | null = null;
   let published: DocumentContent | null = null;

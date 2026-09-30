@@ -52,6 +52,8 @@ export const presentationUiMessagesZhCN = {
   'presentation.group.arrange': '排列',
   'presentation.action.distributeH': '横向均匀分布',
   'presentation.action.distributeV': '纵向均匀分布',
+  'presentation.action.rotate': '旋转',
+  'presentation.action.rotateTitle': '将所选对象顺时针旋转 15 度',
   'presentation.action.group': '组合',
   'presentation.action.groupTitle': '组合（⌘/Ctrl+G）',
   'presentation.action.ungroup': '取消组合',
@@ -71,6 +73,12 @@ export const presentationUiMessagesZhCN = {
   'presentation.link.description': '为所选对象设置网页、邮箱或文档内链接。',
   'presentation.link.field': '链接地址',
   'presentation.link.confirm': '应用链接',
+  'presentation.action.altText': '替代文本',
+  'presentation.altText.title': '替代文本',
+  'presentation.altText.description':
+    '为所选对象设置替代文本。保存后重新打开仍会显示这段说明。',
+  'presentation.altText.field': '替代文本',
+  'presentation.altText.confirm': '应用替代文本',
   'presentation.group.master': '母版',
   'presentation.action.masterLayouts': '母版和版式',
   'presentation.group.background': '背景',
@@ -258,7 +266,8 @@ export const presentationUiMessagesZhCN = {
   'presentation.chart.seriesFallback': '系列 {index}',
   'presentation.chart.seriesAnalysisAria': '演示图表系列 {number} 高级分析',
   'presentation.chart.seriesAnalysisTitle': '高级分析',
-  'presentation.chart.seriesAnalysisHint': '趋势预测与误差范围会同步到画布、播放、PDF 和 PPTX。',
+  'presentation.chart.seriesAnalysisHint':
+    '趋势预测与误差范围会同步到画布、播放、PDF 和 PPTX。',
   'presentation.chart.panelAria': '演示图表数据',
   'presentation.chart.panelTitle': '图表数据',
   'presentation.chart.panelHint': '配置数据、布局与系列',
@@ -333,7 +342,8 @@ export const presentationUiMessagesZhCN = {
   'presentation.chart.dataLabel.show': '数据标签',
   'presentation.chart.dataLabel.showValueAria': '演示图表数据标签显示数值',
   'presentation.chart.dataLabel.showValue': '数值',
-  'presentation.chart.dataLabel.showCategoryAria': '演示图表数据标签显示分类名称',
+  'presentation.chart.dataLabel.showCategoryAria':
+    '演示图表数据标签显示分类名称',
   'presentation.chart.dataLabel.showCategory': '分类',
   'presentation.chart.dataLabel.showSeriesAria': '演示图表数据标签显示系列名称',
   'presentation.chart.dataLabel.showSeries': '系列',
@@ -369,7 +379,8 @@ export const presentationUiMessagesZhCN = {
   'presentation.chart.layout.line': '折线',
   'presentation.chart.layout.smoothAria': '演示图表使用平滑线',
   'presentation.chart.layout.smooth': '使用平滑线',
-  'presentation.chart.layout.stackNote': '正值与负值会分别累计；切换到堆积布局时会移除不适用的趋势线和误差线。',
+  'presentation.chart.layout.stackNote':
+    '正值与负值会分别累计；切换到堆积布局时会移除不适用的趋势线和误差线。',
   'presentation.chart.axis.bottom': '横轴',
   'presentation.chart.axis.left': '纵轴',
   'presentation.chart.axis.settingsAria': '演示图表坐标轴设置',
@@ -433,7 +444,8 @@ export const presentationUiMessagesZhCN = {
   'presentation.comments.itemLabel': '批注 {index}',
   'presentation.comments.deleteAria': '删除演示批注 {index}',
   'presentation.comments.delete': '删除',
-  'presentation.comments.hint': '在当前幻灯片或选中元素上添加批注后，可以在这里定位、编辑或删除。',
+  'presentation.comments.hint':
+    '在当前幻灯片或选中元素上添加批注后，可以在这里定位、编辑或删除。',
   'presentation.comments.unknownAuthor': '未知审阅者',
   'presentation.player.clickNextAria': '单击换到下一张幻灯片',
   'presentation.player.prevAria': '上一张',
@@ -445,6 +457,7 @@ export const presentationUiMessagesZhCN = {
   'presentation.player.presenter': '演讲者视图',
   'presentation.player.fullscreen': '全屏放映',
   'presentation.player.exit': '退出放映',
+  'presentation.workspace.rotateHandle': '旋转手柄',
   'presentation.workspace.zoomGroup': '缩放所选组合',
   'presentation.workspace.zoomObject': '缩放所选对象',
   'presentation.workspace.openNav': '打开幻灯片导航',
@@ -464,7 +477,8 @@ export const presentationUiMessagesZhCN = {
   'presentation.workspace.notesPlaceholder': '添加演讲者备注',
   'presentation.workspace.selectedOneGroup': '已选择 1 组，共 {count} 个对象',
   'presentation.workspace.selectedObjects': '已选择 {count} 个对象',
-  'presentation.workspace.selectedMixed': '已选择 {units} 项，共 {count} 个对象',
+  'presentation.workspace.selectedMixed':
+    '已选择 {units} 项，共 {count} 个对象',
   'presentation.editor.previewAria': '演示预览工具',
   'presentation.editor.previewLabel': '只读预览',
   'presentation.editor.previewDetail': '{count} 张幻灯片',
@@ -495,10 +509,12 @@ export const presentationUiMessagesZhCN = {
   'presentation.clipboard.keepOneSlide': '演示文稿至少需要保留一张幻灯片。',
   'presentation.clipboard.cutSlide': '已剪切幻灯片',
   'presentation.clipboard.empty': '没有可粘贴的演示内容。',
-  'presentation.clipboard.animationLimit': '对象动画数量已达到每张幻灯片 256 条的上限。',
+  'presentation.clipboard.animationLimit':
+    '对象动画数量已达到每张幻灯片 256 条的上限。',
   'presentation.clipboard.pastedObjects': '已粘贴 {count} 个对象',
   'presentation.clipboard.pastedElement': '已粘贴演示元素',
-  'presentation.clipboard.pasteSlideNeedsSlideMode': '请返回幻灯片编辑后粘贴整张幻灯片。',
+  'presentation.clipboard.pasteSlideNeedsSlideMode':
+    '请返回幻灯片编辑后粘贴整张幻灯片。',
   'presentation.clipboard.pastedSlide': '已粘贴幻灯片',
   'presentation.comments.promptTitle': '批注内容',
   'presentation.comments.promptConfirm': '添加批注',
@@ -507,7 +523,7 @@ export const presentationUiMessagesZhCN = {
   'presentation.design.layoutCopySuffix': '{name} 副本',
   'presentation.design.customLayoutName': '自定义布局 {n}',
   'presentation.design.placeholderTitle': '单击添加标题',
-  'presentation.design.placeholderContent': '单击添加内容'
+  'presentation.design.placeholderContent': '单击添加内容',
 } as const;
 
 export type PresentationUiMessageKey = keyof typeof presentationUiMessagesZhCN;

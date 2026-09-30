@@ -9,6 +9,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type {
   WorkDocumentComment,
+  WorkDocumentCommentDecision,
   WorkDocumentCommentReply,
   WorkDocumentContent,
 } from './work-types';
@@ -60,6 +61,10 @@ declare module '@tiptap/core' {
         range?: WorkDocumentCommentRange,
       ) => ReturnType;
       removeDocumentComment: (id: string) => ReturnType;
+      setDocumentCommentDecision: (
+        id: string,
+        decision: WorkDocumentCommentDecision | null,
+      ) => ReturnType;
       toggleDocumentCommentResolved: (id: string) => ReturnType;
     };
   }
@@ -260,6 +265,30 @@ export const DocumentComment = Mark.create<DocumentCommentOptions>({
           dispatch?.(transaction);
           return true;
         },
+      setDocumentCommentDecision:
+        (id, decision) =>
+        ({ dispatch }) => {
+          const content = this.options.getContent();
+          const comments = content?.comments ?? [];
+          const current = comments.find((comment) => comment.id === id);
+          if (!content || !current) return false;
+          const next = setDocumentCommentDecision(comments, id, decision);
+          const updated = next.find((comment) => comment.id === id);
+          if (
+            !updated ||
+            (current.resolved === updated.resolved &&
+              current.decision === updated.decision)
+          ) {
+            return false;
+          }
+          if (dispatch) {
+            this.options.onContentChange({
+              ...content,
+              comments: next,
+            });
+          }
+          return true;
+        },
       toggleDocumentCommentResolved:
         (id) =>
         ({ dispatch }) => {
@@ -449,13 +478,39 @@ export function appendDocumentCommentReply(
   );
 }
 
+export function setDocumentCommentDecision(
+  comments: readonly WorkDocumentComment[],
+  id: string,
+  decision: WorkDocumentCommentDecision | null,
+): WorkDocumentComment[] {
+  return comments.map((comment) => {
+    if (comment.id !== id) return comment;
+    if (decision === null) {
+      const next = { ...comment, resolved: false };
+      delete next.decision;
+      return next;
+    }
+    return { ...comment, resolved: true, decision };
+  });
+}
+
 export function toggleDocumentCommentResolved(
   comments: readonly WorkDocumentComment[],
   id: string,
 ): WorkDocumentComment[] {
-  return comments.map((comment) =>
-    comment.id === id ? { ...comment, resolved: !comment.resolved } : comment,
-  );
+  return comments.map((comment) => {
+    if (comment.id !== id) return comment;
+    if (comment.resolved) {
+      const next = { ...comment, resolved: false };
+      delete next.decision;
+      return next;
+    }
+    return {
+      ...comment,
+      resolved: true,
+      decision: comment.decision ?? 'accepted',
+    };
+  });
 }
 
 export function removeDocumentCommentRecord(
@@ -562,6 +617,12 @@ function normalizeDocumentComment(
     text: comment.text || '（空批注）',
     resolved: Boolean(comment.resolved),
   };
+  if (
+    normalized.resolved &&
+    (comment.decision === 'accepted' || comment.decision === 'processed')
+  ) {
+    normalized.decision = comment.decision;
+  }
   if (comment.actorId !== undefined) normalized.actorId = comment.actorId;
   if (comment.replies !== undefined) {
     normalized.replies = comment.replies.map((reply) => {

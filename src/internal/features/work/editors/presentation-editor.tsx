@@ -1,9 +1,5 @@
 import type { Editor } from '@tiptap/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  officeMessage,
-  resolveOfficeMessages,
-} from '../../../i18n/office-locale';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
 import type { WorkOfficeCollaborationFrameCaret } from '../../../collaboration/office-collaboration-frame-caret';
 import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
@@ -12,7 +8,10 @@ import {
   readWorkOfficePresentationCollaboration,
   type WorkOfficePresentationCollaborationBinding,
 } from '../../../collaboration/office-presentation-collaboration';
-import { PresentationFrameCaretProvider } from './presentation-collaboration-presence';
+import {
+  officeMessage,
+  resolveOfficeMessages,
+} from '../../../i18n/office-locale';
 import {
   WorkspaceContextMenu,
   type WorkspaceContextMenuEvent,
@@ -40,13 +39,14 @@ import type {
   WorkSlideElement,
 } from '../work-types';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
-import { useOfficeMessages } from './office-messages-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { OfficeFileInput } from './office-controls';
 import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
+import { useOfficeMessages } from './office-messages-context';
 import { useOfficeTaskPaneEscape } from './office-task-pane';
 import { createPresentationArrangementController } from './presentation-arrangement-controller';
 import { PresentationChartPanel } from './presentation-chart-panel';
+import { PresentationFrameCaretProvider } from './presentation-collaboration-presence';
 import { createPresentationEditorExtensions } from './presentation-command-controller';
 import type { PresentationEditorCommands } from './presentation-command-types';
 import {
@@ -154,8 +154,7 @@ function CollaborativePresentationEditor(
       createWorkOfficePresentationCollaborationBinding(collaboration);
     bindingRef.current = binding;
     const unsubscribeContent = binding.subscribe((change) => {
-      const caret =
-        change.caret?.kind === 'presentation' ? change.caret : null;
+      const caret = change.caret?.kind === 'presentation' ? change.caret : null;
       setFrameCaret(caret?.indexUtf16 === undefined ? null : caret);
       contentRef.current = change.content;
       setSharedContent(change.content);
@@ -462,14 +461,20 @@ function PresentationEditingSurface({
   const canvasName =
     designMode === 'layout'
       ? officeMessage(messages, 'presentation.editor.layoutCanvas', {
-          name: selectedLayout?.name ?? officeMessage(messages, 'presentation.editor.layoutFallback'),
+          name:
+            selectedLayout?.name ??
+            officeMessage(messages, 'presentation.editor.layoutFallback'),
         })
       : designMode === 'master'
         ? officeMessage(messages, 'presentation.editor.masterCanvas', {
-            name: selectedMaster?.name ?? officeMessage(messages, 'presentation.editor.masterFallback'),
+            name:
+              selectedMaster?.name ??
+              officeMessage(messages, 'presentation.editor.masterFallback'),
           })
         : officeMessage(messages, 'presentation.editor.slideCanvas', {
-            name: selectedSlide?.name ?? officeMessage(messages, 'presentation.editor.slideFallback'),
+            name:
+              selectedSlide?.name ??
+              officeMessage(messages, 'presentation.editor.slideFallback'),
           });
   const activeTargetId =
     designMode === 'layout'
@@ -841,12 +846,15 @@ function PresentationEditingSurface({
         canDistributeElements: selectionUnits.length >= 3,
         canGroupElements: canGroupSelection,
         canReorderElement: selectedElements.length > 0,
+        canRotateSelection:
+          designMode === 'slide' && selectedElements.length > 0,
         canUngroupElements: canUngroupSelection,
         canUpdateElement: selectedElements.length > 0,
         alignElement: arrangement.align,
         distributeElements: arrangement.distribute,
         groupElements: presentationElements.groupSelection,
         reorderElement: arrangement.reorder,
+        rotateSelection: presentationElements.rotateSelection,
         ungroupElements: presentationElements.ungroupSelection,
         updateElement: (patch, options) => {
           if (
@@ -918,12 +926,14 @@ function PresentationEditingSurface({
           presentationSlides.canApplyTransitionToAll(transition),
         canDeleteSlide: designMode === 'slide' && content.slides.length > 1,
         canDuplicateSlide: designMode === 'slide' && Boolean(selectedSlide),
+        canMoveSlide: designMode === 'slide' && content.slides.length > 1,
         canSetTransition: designMode === 'slide',
         addSlide: presentationSlides.addSlide,
         applyTransitionToAll: presentationSlides.applyTransitionToAll,
         deleteSlide: presentationSlides.deleteSlide,
         deleteSlideById: presentationSlides.deleteSlideById,
         duplicateSlide: presentationSlides.duplicateSlide,
+        moveSlide: presentationSlides.moveSlide,
         selectSlide: (slideId, returnToSlideMode) => {
           setSelectedSlideId(slideId);
           selection.clear();
@@ -977,7 +987,10 @@ function PresentationEditingSurface({
       <OfficeFileInput
         ref={imageInputRef}
         accept="image/*"
-        aria-label={officeMessage(messages, 'presentation.editor.insertImageAria')}
+        aria-label={officeMessage(
+          messages,
+          'presentation.editor.insertImageAria',
+        )}
         onFileSelect={(file) => presentationToolbarCommands.addImage(file)}
       />
       <PresentationToolbar
@@ -1085,7 +1098,12 @@ function PresentationEditingSurface({
             onChange={(chart) =>
               presentationCommands.updateElement({
                 chart,
-                altText: chart.title || officeMessage(messages, 'presentation.editor.chartAltFallback'),
+                altText:
+                  chart.title ||
+                  officeMessage(
+                    messages,
+                    'presentation.editor.chartAltFallback',
+                  ),
               })
             }
             onDelete={presentationCommands.deleteSelection}
@@ -1109,7 +1127,11 @@ function PresentationEditingSurface({
       />
       {designMode === 'slide' && agentMenu && (
         <WorkspaceContextMenu
-          label={agentMenu.target === 'element' ? officeMessage(messages, 'presentation.editor.agentElement') : officeMessage(messages, 'presentation.editor.agentSlide')}
+          label={
+            agentMenu.target === 'element'
+              ? officeMessage(messages, 'presentation.editor.agentElement')
+              : officeMessage(messages, 'presentation.editor.agentSlide')
+          }
           x={agentMenu.x}
           y={agentMenu.y}
           items={[
@@ -1158,7 +1180,10 @@ function PresentationEditingSurface({
         <div
           className="work-presentation-slideshow-layer"
           role="dialog"
-          aria-label={officeMessage(messages, 'presentation.editor.slideshowAria')}
+          aria-label={officeMessage(
+            messages,
+            'presentation.editor.slideshowAria',
+          )}
           aria-modal="true"
         >
           <PresentationPlayer

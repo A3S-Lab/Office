@@ -1,5 +1,6 @@
 import { Extension, type Extensions } from '@tiptap/core';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
@@ -42,6 +43,8 @@ export const WorkMarkdown = Extension.create({
 
 export interface WorkMarkdownExtensionOptions {
   collaborative?: boolean;
+  /** Preview task toggle. Visual editing updates the node through TipTap instead. */
+  onReadOnlyChecked?: (node: ProseMirrorNode, checked: boolean) => boolean;
 }
 
 export function createWorkMarkdownExtensions(
@@ -66,6 +69,7 @@ export function createWorkMarkdownExtensions(
       a11y: {
         checkboxLabel: markdownTaskCheckboxLabel,
       },
+      onReadOnlyChecked: options.onReadOnlyChecked,
     }),
     Image.configure({
       allowBase64: false,

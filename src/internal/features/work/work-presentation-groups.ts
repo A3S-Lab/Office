@@ -142,9 +142,14 @@ export function ungroupPresentationElements(
     const path = presentationGroupPath(element);
     if (!path.length || !selectedGroups.has(path[0])) return element;
     const remaining = path.slice(1);
+    const rotation = normalizePresentationDegrees(
+      (element.rotation ?? 0) + (element.groupRotation ?? 0),
+    );
     return {
       ...element,
       groupIds: remaining.length ? remaining : undefined,
+      groupRotation: undefined,
+      rotation: rotation || undefined,
     };
   });
 }
@@ -166,6 +171,12 @@ export function remapPresentationGroupPaths(
       }),
     };
   });
+}
+
+export function normalizePresentationDegrees(degrees: number): number {
+  if (!Number.isFinite(degrees)) return 0;
+  const wrapped = ((degrees % 360) + 360) % 360;
+  return Math.round(wrapped * 100) / 100;
 }
 
 export function topPresentationGroupId(

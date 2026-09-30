@@ -395,12 +395,14 @@ function presentationContext(calls: string[]): PresentationCommandContext {
       canDistributeElements: true,
       canGroupElements: true,
       canReorderElement: true,
+      canRotateSelection: true,
       canUngroupElements: true,
       canUpdateElement: true,
       alignElement: (alignment) => calls.push(`element.align:${alignment}`),
       distributeElements: (direction) =>
         calls.push(`element.distribute:${direction}`),
       groupElements: () => record(calls, 'element.group'),
+      rotateSelection: (degrees) => record(calls, `element.rotate:${degrees}`),
       reorderElement: (direction) => calls.push(`element.reorder:${direction}`),
       ungroupElements: () => record(calls, 'element.ungroup'),
       updateElement: (patch, options) =>
@@ -474,6 +476,7 @@ function presentationContext(calls: string[]): PresentationCommandContext {
       canApplyTransitionToAll: () => true,
       canDeleteSlide: true,
       canDuplicateSlide: true,
+      canMoveSlide: true,
       canSetTransition: true,
       addSlide: () => calls.push('slide.add'),
       applyTransitionToAll: (transition) => {
@@ -483,6 +486,8 @@ function presentationContext(calls: string[]): PresentationCommandContext {
       deleteSlide: () => calls.push('slide.delete'),
       deleteSlideById: (slideId) => record(calls, `slide.delete:${slideId}`),
       duplicateSlide: () => calls.push('slide.duplicate'),
+      moveSlide: (fromIndex, insertionIndex) =>
+        record(calls, `slide.move:${fromIndex}:${insertionIndex}`),
       selectSlide: (slideId, returnToSlideMode) =>
         calls.push(`slide.select:${slideId}:${returnToSlideMode}`),
       setBackground: (color) => calls.push(`background.set:${color}`),

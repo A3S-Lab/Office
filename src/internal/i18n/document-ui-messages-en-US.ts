@@ -139,8 +139,10 @@ export const documentUiMessagesEnUS = {
   'document.font.dialog.title': 'Font',
   'document.font.dialog.cancel': 'Cancel',
   'document.font.dialog.apply': 'Apply',
-  'document.font.dialog.description.selection': 'Set Latin, East Asian, and complex-script fonts for the selection, plus character scale, spacing, kerning threshold, position, text effects, and OpenType features ({count} characters).',
-  'document.font.dialog.description.caret': 'Set Latin, East Asian, and complex-script fonts for subsequent typing, plus character scale, spacing, kerning threshold, position, text effects, and OpenType features.',
+  'document.font.dialog.description.selection':
+    'Set Latin, East Asian, and complex-script fonts for the selection, plus character scale, spacing, kerning threshold, position, text effects, and OpenType features ({count} characters).',
+  'document.font.dialog.description.caret':
+    'Set Latin, East Asian, and complex-script fonts for subsequent typing, plus character scale, spacing, kerning threshold, position, text effects, and OpenType features.',
   'document.font.script.legend': 'Fonts by script',
   'document.font.script.latin': 'Latin',
   'document.font.script.latinAria': 'Latin font',
@@ -148,10 +150,14 @@ export const documentUiMessagesEnUS = {
   'document.font.script.eastAsiaAria': 'East Asian font',
   'document.font.script.complex': 'Complex script',
   'document.font.script.complexAria': 'Complex script font',
-  'document.font.script.mixedLatin': 'The selection contains different Latin fonts. Choose a font to apply one value.',
-  'document.font.script.mixedEastAsia': 'The selection contains different East Asian fonts. Choose a font to apply one value.',
-  'document.font.script.mixedComplex': 'The selection contains different complex-script fonts. Choose a font to apply one value.',
-  'document.font.spacing.legend': 'Character scale, spacing, kerning, position, and text effects',
+  'document.font.script.mixedLatin':
+    'The selection contains different Latin fonts. Choose a font to apply one value.',
+  'document.font.script.mixedEastAsia':
+    'The selection contains different East Asian fonts. Choose a font to apply one value.',
+  'document.font.script.mixedComplex':
+    'The selection contains different complex-script fonts. Choose a font to apply one value.',
+  'document.font.spacing.legend':
+    'Character scale, spacing, kerning, position, and text effects',
   'document.font.spacing.scale': 'Scale',
   'document.font.spacing.scaleAria': 'Character scale (%)',
   'document.font.spacing.mixedPlaceholder': 'Mixed',
@@ -185,15 +191,24 @@ export const documentUiMessagesEnUS = {
   'document.font.openType.stylisticSetsAria': 'OpenType stylistic sets',
   'document.font.openType.stylisticSetN': 'Stylistic set {n}',
   'document.font.openType.contextualAlternates': 'Contextual alternates',
-  'document.font.openType.contextualAlternatesAria': 'OpenType contextual alternates',
-  'document.font.openType.mixed': 'The selection has different OpenType settings. Only the options you change are updated.',
-  'document.font.mixed.scale': 'The selection has multiple character scales. Enter a scale to apply one value.',
-  'document.font.mixed.spacing': 'The selection has multiple character spacings. Choose a spacing to apply one value.',
-  'document.font.mixed.position': 'The selection has multiple character positions. Choose a position to apply one value.',
-  'document.font.mixed.kerning': 'The selection has different kerning settings. Check or clear the option to apply one value.',
-  'document.font.mixed.emphasis': 'The selection has different emphasis marks. Choose a setting to apply one value.',
-  'document.font.mixed.hiddenText': 'The selection contains both hidden and visible text. Check or clear the option to apply one value.',
-  'document.font.mixed.legacyEffects': 'The selection has different outline, shadow, emboss, or engrave settings. Check or clear options to apply one value.',
+  'document.font.openType.contextualAlternatesAria':
+    'OpenType contextual alternates',
+  'document.font.openType.mixed':
+    'The selection has different OpenType settings. Only the options you change are updated.',
+  'document.font.mixed.scale':
+    'The selection has multiple character scales. Enter a scale to apply one value.',
+  'document.font.mixed.spacing':
+    'The selection has multiple character spacings. Choose a spacing to apply one value.',
+  'document.font.mixed.position':
+    'The selection has multiple character positions. Choose a position to apply one value.',
+  'document.font.mixed.kerning':
+    'The selection has different kerning settings. Check or clear the option to apply one value.',
+  'document.font.mixed.emphasis':
+    'The selection has different emphasis marks. Choose a setting to apply one value.',
+  'document.font.mixed.hiddenText':
+    'The selection contains both hidden and visible text. Check or clear the option to apply one value.',
+  'document.font.mixed.legacyEffects':
+    'The selection has different outline, shadow, emboss, or engrave settings. Check or clear options to apply one value.',
   'document.font.preview.aria': 'Advanced character formatting preview',
   'document.font.preview.label': 'Preview',
   'document.font.mode.mixed': 'Mixed (keep as-is)',
@@ -218,18 +233,25 @@ export const documentUiMessagesEnUS = {
   'document.font.ligatures.standardHistorical': 'Standard and historical',
   'document.font.ligatures.contextualHistorical': 'Contextual and historical',
   'document.font.ligatures.standardDiscretional': 'Standard and discretionary',
-  'document.font.ligatures.contextualDiscretional': 'Contextual and discretionary',
-  'document.font.ligatures.historicalDiscretional': 'Historical and discretionary',
-  'document.font.ligatures.standardContextualHistorical': 'Standard, contextual, and historical',
-  'document.font.ligatures.standardContextualDiscretional': 'Standard, contextual, and discretionary',
-  'document.font.ligatures.standardHistoricalDiscretional': 'Standard, historical, and discretionary',
-  'document.font.ligatures.contextualHistoricalDiscretional': 'Contextual, historical, and discretionary',
+  'document.font.ligatures.contextualDiscretional':
+    'Contextual and discretionary',
+  'document.font.ligatures.historicalDiscretional':
+    'Historical and discretionary',
+  'document.font.ligatures.standardContextualHistorical':
+    'Standard, contextual, and historical',
+  'document.font.ligatures.standardContextualDiscretional':
+    'Standard, contextual, and discretionary',
+  'document.font.ligatures.standardHistoricalDiscretional':
+    'Standard, historical, and discretionary',
+  'document.font.ligatures.contextualHistoricalDiscretional':
+    'Contextual, historical, and discretionary',
   'document.font.ligatures.all': 'All',
   'document.font.numberForm.lining': 'Lining',
   'document.font.numberForm.oldStyle': 'Old-style',
   'document.font.numberSpacing.proportional': 'Proportional',
   'document.font.numberSpacing.tabular': 'Tabular',
-  'document.font.stylisticSets.multiple': 'Multiple stylistic sets (keep as-is)',
+  'document.font.stylisticSets.multiple':
+    'Multiple stylistic sets (keep as-is)',
   'document.font.mode.noneExplicit': 'None (explicit reset)',
   'document.font.border.modeValue': 'Border',
   'document.font.border.sectionAria': 'Character border settings',
@@ -248,7 +270,8 @@ export const documentUiMessagesEnUS = {
   'document.font.border.shadowAria': 'Character border shadow',
   'document.font.border.frame': 'Frame',
   'document.font.border.frameAria': 'Character border frame',
-  'document.font.border.mixed': 'The selection has different character borders. Choose an apply mode to set one value.',
+  'document.font.border.mixed':
+    'The selection has different character borders. Choose an apply mode to set one value.',
   'document.font.border.style.single': 'Single',
   'document.font.border.style.thick': 'Thick',
   'document.font.border.style.double': 'Double',
@@ -259,13 +282,16 @@ export const documentUiMessagesEnUS = {
   'document.font.border.style.triple': 'Triple',
   'document.font.border.style.thinThickSmallGap': 'Thin-thick (small gap)',
   'document.font.border.style.thickThinSmallGap': 'Thick-thin (small gap)',
-  'document.font.border.style.thinThickThinSmallGap': 'Thin-thick-thin (small gap)',
+  'document.font.border.style.thinThickThinSmallGap':
+    'Thin-thick-thin (small gap)',
   'document.font.border.style.thinThickMediumGap': 'Thin-thick (medium gap)',
   'document.font.border.style.thickThinMediumGap': 'Thick-thin (medium gap)',
-  'document.font.border.style.thinThickThinMediumGap': 'Thin-thick-thin (medium gap)',
+  'document.font.border.style.thinThickThinMediumGap':
+    'Thin-thick-thin (medium gap)',
   'document.font.border.style.thinThickLargeGap': 'Thin-thick (large gap)',
   'document.font.border.style.thickThinLargeGap': 'Thick-thin (large gap)',
-  'document.font.border.style.thinThickThinLargeGap': 'Thin-thick-thin (large gap)',
+  'document.font.border.style.thinThickThinLargeGap':
+    'Thin-thick-thin (large gap)',
   'document.font.border.style.wave': 'Wave',
   'document.font.border.style.doubleWave': 'Double wave',
   'document.font.border.style.dashSmallGap': 'Dash (small gap)',
@@ -287,7 +313,8 @@ export const documentUiMessagesEnUS = {
   'document.font.shading.background': 'Background',
   'document.font.shading.backgroundAria': 'Character shading background',
   'document.font.shading.backgroundAuto': 'Automatic background',
-  'document.font.shading.mixed': 'The selection has different character shading. Choose an apply mode to set one value.',
+  'document.font.shading.mixed':
+    'The selection has different character shading. Choose an apply mode to set one value.',
   'document.font.shading.group.basic': 'Basic',
   'document.font.shading.group.stripes': 'Stripes',
   'document.font.shading.group.cross': 'Cross',
@@ -303,29 +330,39 @@ export const documentUiMessagesEnUS = {
   'document.font.shading.pattern.diagCross': 'Diagonal cross',
   'document.font.shading.pattern.thinHorzStripe': 'Thin horizontal stripe',
   'document.font.shading.pattern.thinVertStripe': 'Thin vertical stripe',
-  'document.font.shading.pattern.thinReverseDiagStripe': 'Thin reverse diagonal stripe',
+  'document.font.shading.pattern.thinReverseDiagStripe':
+    'Thin reverse diagonal stripe',
   'document.font.shading.pattern.thinDiagStripe': 'Thin diagonal stripe',
   'document.font.shading.pattern.thinHorzCross': 'Thin horizontal cross',
   'document.font.shading.pattern.thinDiagCross': 'Thin diagonal cross',
   'document.font.error.scale': 'Enter an integer scale from {min} to {max}.',
   'document.font.error.spacing': 'Enter a spacing from 0.05 to {max} pt.',
-  'document.font.error.position': 'Enter a position from 0.5 to {max} pt in 0.5 pt steps.',
-  'document.font.error.kerning': 'Enter a kerning threshold from 0 to {max} pt in 0.5 pt steps.',
+  'document.font.error.position':
+    'Enter a position from 0.5 to {max} pt in 0.5 pt steps.',
+  'document.font.error.kerning':
+    'Enter a kerning threshold from 0 to {max} pt in 0.5 pt steps.',
   'document.font.error.borderStyle': 'Choose a valid character border style.',
   'document.font.error.borderColor': 'Choose a valid character border color.',
-  'document.font.error.borderWidth': 'Enter a border width from 0.25 to 12 pt in 0.125 pt steps.',
-  'document.font.error.borderSpacing': 'Enter an integer border spacing from 0 to 31 pt.',
-  'document.font.error.shadingForeground': 'Choose a valid character shading foreground color.',
-  'document.font.error.shadingBackground': 'Choose a valid character shading background color.',
+  'document.font.error.borderWidth':
+    'Enter a border width from 0.25 to 12 pt in 0.125 pt steps.',
+  'document.font.error.borderSpacing':
+    'Enter an integer border spacing from 0 to 31 pt.',
+  'document.font.error.shadingForeground':
+    'Choose a valid character shading foreground color.',
+  'document.font.error.shadingBackground':
+    'Choose a valid character shading background color.',
   'document.font.preview.sample': 'A3S Office character formatting',
   'document.picture.title': 'Picture',
-  'document.picture.description': 'Adjust size, wrap, position, and alternative text for the selected picture.',
+  'document.picture.description':
+    'Adjust size, wrap, position, and alternative text for the selected picture.',
   'document.picture.cancel': 'Cancel',
   'document.picture.confirm': 'OK',
   'document.picture.alt.label': 'Alt text',
   'document.picture.alt.aria': 'Picture alternative text',
-  'document.picture.alt.placeholder': 'Describe the important information in the picture; leave blank for decorative images',
-  'document.picture.alt.help': 'Used by screen readers; not shown in the document body.',
+  'document.picture.alt.placeholder':
+    'Describe the important information in the picture; leave blank for decorative images',
+  'document.picture.alt.help':
+    'Used by screen readers; not shown in the document body.',
   'document.picture.size.legend': 'Size',
   'document.picture.size.width': 'Width',
   'document.picture.size.widthAria': 'Picture width (cm)',
@@ -391,16 +428,20 @@ export const documentUiMessagesEnUS = {
   'document.picture.transform.flipHAria': 'Flip picture horizontally',
   'document.picture.transform.flipV': 'Flip vertical',
   'document.picture.transform.flipVAria': 'Flip picture vertically',
-  'document.picture.transform.help': 'Rotation uses 90° steps; each confirmation is one undoable action.',
+  'document.picture.transform.help':
+    'Rotation uses 90° steps; each confirmation is one undoable action.',
   'document.picture.error.wrapDistance': 'Enter a value from 0 to 25 mm.',
   'document.picture.error.offset': 'Enter a value from -558.7 to 558.7 mm.',
   'document.picture.error.relativeHeight': 'Enter an integer from 0 to {max}.',
   'document.picture.error.dimension': 'Enter a value from 0.01 to 55.87 cm.',
-  'document.picture.error.cropPercent': 'Enter a crop percentage from 0 to 99.99.',
-  'document.picture.error.cropSum': 'Opposite crop percentages must sum to less than 100%.',
+  'document.picture.error.cropPercent':
+    'Enter a crop percentage from 0 to 99.99.',
+  'document.picture.error.cropSum':
+    'Opposite crop percentages must sum to less than 100%.',
   'document.field.title.insert': 'Insert field',
   'document.field.title.edit': 'Edit field',
-  'document.field.description': 'Configure page numbers, dates, statistics, merge fields, and bookmark references. Press F9 to update results after insert.',
+  'document.field.description':
+    'Configure page numbers, dates, statistics, merge fields, and bookmark references. Press F9 to update results after insert.',
   'document.field.cancel': 'Cancel',
   'document.field.submit.insert': 'Insert field',
   'document.field.submit.apply': 'Apply field',
@@ -413,19 +454,25 @@ export const documentUiMessagesEnUS = {
   'document.field.mergeName': 'Merge field name',
   'document.field.mergeNameAria': 'Merge field name',
   'document.field.mergeNamePlaceholder': 'e.g. CustomerName',
-  'document.field.mergeNameHelp': 'Use an identifier that starts with a letter or underscore; spaces and special switches stay fail-closed.',
+  'document.field.mergeNameHelp':
+    'Use an identifier that starts with a letter or underscore; spaces and special switches stay fail-closed.',
   'document.field.target': 'Reference target',
   'document.field.targetAria': 'Reference target',
   'document.field.targetMissing': 'Choose a bookmark as the reference target.',
-  'document.field.targetEmpty': 'Insert a bookmark first, then insert a page reference field.',
+  'document.field.targetEmpty':
+    'Insert a bookmark first, then insert a page reference field.',
   'document.field.hyperlink': 'Use hyperlink',
   'document.field.mergeFormat': 'Preserve formatting on update',
   'document.field.preview': 'Result preview',
   'document.field.previewAria': 'Result preview',
-  'document.field.note.merge.mergeFormat': 'Merge fields use the current host record and write MERGEFORMAT so F9 keeps result formatting.',
-  'document.field.note.merge.plain': 'Merge fields use the current host record; missing values show «name». Press F9 to refresh.',
-  'document.field.note.mergeFormat': 'Writes the WPS MERGEFORMAT switch so F9 keeps result formatting.',
-  'document.field.note.plain': 'After apply, press F9 to update page, date, and statistic results.',
+  'document.field.note.merge.mergeFormat':
+    'Merge fields use the current host record and write MERGEFORMAT so F9 keeps result formatting.',
+  'document.field.note.merge.plain':
+    'Merge fields use the current host record; missing values show «name». Press F9 to refresh.',
+  'document.field.note.mergeFormat':
+    'Writes the WPS MERGEFORMAT switch so F9 keeps result formatting.',
+  'document.field.note.plain':
+    'After apply, press F9 to update page, date, and statistic results.',
   'document.field.kind.page': 'Page number',
   'document.field.kind.numPages': 'Total pages',
   'document.field.kind.section': 'Section number',
@@ -459,7 +506,9 @@ export const documentUiMessagesEnUS = {
   'document.field.preserveFormat': 'Keep existing format ({source})',
   'document.contentControl.title.insert': 'Insert content control',
   'document.contentControl.title.edit': 'Edit content control',
-  'document.contentControl.description': 'Supports inline plain text, rich text, bounded checkboxes, drop-down lists, combo boxes, and dates. Bound and repeating regions are not disguised as ordinary text.',
+  'document.contentControl.description':
+    'Supports inline plain text, rich text, bounded checkboxes, drop-down lists, combo boxes, and dates. Bound and repeating regions are not disguised as ordinary text.',
+  'document.contentControl.placeholder': 'Enter text',
   'document.contentControl.cancel': 'Cancel',
   'document.contentControl.submit.insert': 'Insert control',
   'document.contentControl.submit.apply': 'Apply',
@@ -468,7 +517,8 @@ export const documentUiMessagesEnUS = {
   'document.contentControl.aliasPlaceholder': 'e.g. Customer name',
   'document.contentControl.tag': 'Tag',
   'document.contentControl.tagAria': 'Content control tag',
-  'document.contentControl.tagPlaceholder': 'Optional; used by document automation',
+  'document.contentControl.tagPlaceholder':
+    'Optional; used by document automation',
   'document.contentControl.type': 'Type',
   'document.contentControl.typeAria': 'Content control type',
   'document.contentControl.lock': 'Locking',
@@ -482,7 +532,8 @@ export const documentUiMessagesEnUS = {
     'Option 1\nOption 2\nDisplay text|value',
   'document.contentControl.selected.dropDown': 'Current option',
   'document.contentControl.selected.comboBox': 'Suggested option',
-  'document.contentControl.selectedAria.dropDown': 'Drop-down list current option',
+  'document.contentControl.selectedAria.dropDown':
+    'Drop-down list current option',
   'document.contentControl.selectedAria.comboBox': 'Combo box suggested option',
   'document.contentControl.date': 'Date',
   'document.contentControl.dateAria': 'Content control date',
@@ -527,12 +578,14 @@ export const documentUiMessagesEnUS = {
   'document.insert.picture': 'Insert picture',
   'document.link.add': 'Add link',
   'document.link.remove': 'Remove link',
-  'document.link.prompt.description': 'Enter a web or email address, or use #bookmark to jump within the document.',
+  'document.link.prompt.description':
+    'Enter a web or email address, or use #bookmark to jump within the document.',
   'document.link.prompt.field': 'Address',
   'document.link.prompt.required': 'Enter a link address.',
   'document.bookmark.add': 'Add bookmark',
   'document.bookmark.remove': 'Delete bookmark',
-  'document.bookmark.prompt.description': 'Create an in-document link target at the cursor or selection.',
+  'document.bookmark.prompt.description':
+    'Create an in-document link target at the cursor or selection.',
   'document.bookmark.prompt.field': 'Bookmark name',
   'document.bookmark.prompt.placeholder': 'e.g. Architecture_2',
   'document.bookmark.prompt.required': 'Enter a bookmark name.',
@@ -542,31 +595,41 @@ export const documentUiMessagesEnUS = {
   'document.field.settings': 'Field',
   'document.field.settingsTitle': 'Insert or edit field formatting',
   'document.mailMerge.filterRecipients': 'Filter recipients',
-  'document.mailMerge.filterRecipientsTitle': 'Filter mail-merge recipients by condition',
+  'document.mailMerge.filterRecipientsTitle':
+    'Filter mail-merge recipients by condition',
+  'document.mailMerge.importRecipients': 'Import recipients',
+  'document.mailMerge.importRecipientsTitle':
+    'Paste a header and data rows to preview merge fields',
   'document.proofing.language': 'Set proofing language',
   'document.comment.selectFirst': 'Select uncommented text first',
   'document.comment.view': 'Review comments',
   'document.comment.viewWithCount': 'Review comments ({count})',
   'document.track.suggestionMode': 'Suggestion mode',
-  'document.track.suggestionModeHint': 'Suggestion mode always records attributed text revisions',
+  'document.track.suggestionModeHint':
+    'Suggestion mode always records attributed text revisions',
   'document.changes.view': 'Review revisions',
   'document.changes.viewWithCount': 'Review revisions ({count})',
   'document.changes.accept': 'Accept revision',
-  'document.changes.acceptTitle': 'Accept the current revision and move to the next',
+  'document.changes.acceptTitle':
+    'Accept the current revision and move to the next',
   'document.changes.reject': 'Reject revision',
-  'document.changes.rejectTitle': 'Reject the current revision and move to the next',
+  'document.changes.rejectTitle':
+    'Reject the current revision and move to the next',
   'document.changes.previous': 'Previous revision',
   'document.changes.next': 'Next revision',
   'document.compare.documents': 'Compare documents',
-  'document.compare.documentsTitle': 'Turn another version into accept/reject revisions',
+  'document.compare.documentsTitle':
+    'Turn another version into accept/reject revisions',
   'document.compare.merge': 'Merge documents',
-  'document.compare.mergeTitle': 'Merge a reviewed copy with revisions into the current baseline',
+  'document.compare.mergeTitle':
+    'Merge a reviewed copy with revisions into the current baseline',
   'document.view.page': 'Print Layout',
   'document.view.web': 'Web Layout',
   'document.view.ruler': 'Ruler',
   'document.view.rulerTitle': 'Show or hide the ruler',
   'document.view.rulerDisabled': 'Ruler is available in Print Layout only',
-  'document.view.toggleFieldCodesTitle': 'Toggle field results and field codes (Alt+F9; Shift+F9 for selection)',
+  'document.view.toggleFieldCodesTitle':
+    'Toggle field results and field codes (Alt+F9; Shift+F9 for selection)',
   'document.view.showHiddenTitle': 'Show or hide content marked as hidden text',
   'document.zoom.out': 'Zoom out',
   'document.zoom.100': 'Zoom to 100%',
@@ -762,13 +825,17 @@ export const documentUiMessagesEnUS = {
   'document.connector.endpoint.endY': 'End Y (%)',
   'document.connector.endpoint.endYAria': 'Connector end Y (percent)',
   'document.connector.position.horizontalRelative': 'Horizontal relative to',
-  'document.connector.position.horizontalRelativeAria': 'Connector horizontal relative to',
+  'document.connector.position.horizontalRelativeAria':
+    'Connector horizontal relative to',
   'document.connector.position.verticalRelative': 'Vertical relative to',
-  'document.connector.position.verticalRelativeAria': 'Connector vertical relative to',
+  'document.connector.position.verticalRelativeAria':
+    'Connector vertical relative to',
   'document.connector.position.horizontalOffset': 'Horizontal offset (mm)',
-  'document.connector.position.horizontalOffsetAria': 'Connector horizontal offset (mm)',
+  'document.connector.position.horizontalOffsetAria':
+    'Connector horizontal offset (mm)',
   'document.connector.position.verticalOffset': 'Vertical offset (mm)',
-  'document.connector.position.verticalOffsetAria': 'Connector vertical offset (mm)',
+  'document.connector.position.verticalOffsetAria':
+    'Connector vertical offset (mm)',
   'document.connector.delete': 'Delete connector',
   'document.connector.resetStyle': 'Reset to default style',
   'document.textBox.group.shape': 'Shape',
@@ -798,13 +865,17 @@ export const documentUiMessagesEnUS = {
   'document.textBox.size.height': 'Height (mm)',
   'document.textBox.size.heightAria': 'Text box height (mm)',
   'document.textBox.position.horizontalRelative': 'Horizontal relative to',
-  'document.textBox.position.horizontalRelativeAria': 'Text box horizontal relative to',
+  'document.textBox.position.horizontalRelativeAria':
+    'Text box horizontal relative to',
   'document.textBox.position.verticalRelative': 'Vertical relative to',
-  'document.textBox.position.verticalRelativeAria': 'Text box vertical relative to',
+  'document.textBox.position.verticalRelativeAria':
+    'Text box vertical relative to',
   'document.textBox.position.horizontalOffset': 'Horizontal offset (mm)',
-  'document.textBox.position.horizontalOffsetAria': 'Text box horizontal offset (mm)',
+  'document.textBox.position.horizontalOffsetAria':
+    'Text box horizontal offset (mm)',
   'document.textBox.position.verticalOffset': 'Vertical offset (mm)',
-  'document.textBox.position.verticalOffsetAria': 'Text box vertical offset (mm)',
+  'document.textBox.position.verticalOffsetAria':
+    'Text box vertical offset (mm)',
   'document.textBox.fillAria': 'Text box fill color',
   'document.textBox.fillTrigger': 'Fill',
   'document.textBox.fillNone': 'No fill',
@@ -829,10 +900,12 @@ export const documentUiMessagesEnUS = {
   'document.citation.form.yearAria': 'Source year',
   'document.citation.form.corporateAuthor': 'Corporate author',
   'document.citation.form.corporateAuthorAria': 'Corporate author',
-  'document.citation.form.corporateAuthorPlaceholder': 'Use instead of personal authors',
+  'document.citation.form.corporateAuthorPlaceholder':
+    'Use instead of personal authors',
   'document.citation.form.authors': 'Authors',
   'document.citation.form.authorsAria': 'Personal authors',
-  'document.citation.form.authorsPlaceholder': 'One per line, e.g.:\nSmith, Jane\nLi, Ming',
+  'document.citation.form.authorsPlaceholder':
+    'One per line, e.g.:\nSmith, Jane\nLi, Ming',
   'document.citation.form.more': 'More publishing details',
   'document.citation.form.publisher': 'Publisher',
   'document.citation.form.publisherAria': 'Publisher',
@@ -900,11 +973,14 @@ export const documentUiMessagesEnUS = {
   'document.table.properties.pagination': 'Options',
   'document.table.properties.allowSplit': 'Allow row to break across pages',
   'document.table.properties.allowSplitAria': 'Allow row to break across pages',
-  'document.table.properties.repeatHeader': 'Repeat as header row at the top of each page',
-  'document.table.properties.repeatHeaderAria': 'Repeat as header row at the top of each page',
+  'document.table.properties.repeatHeader':
+    'Repeat as header row at the top of each page',
+  'document.table.properties.repeatHeaderAria':
+    'Repeat as header row at the top of each page',
   'document.table.properties.columnSize': 'Column size',
   'document.table.properties.columnWidth': 'Column width',
-  'document.table.properties.columnWidthPercentAria': 'Current column width (percent)',
+  'document.table.properties.columnWidthPercentAria':
+    'Current column width (percent)',
   'document.table.properties.columnWidthCmAria': 'Current column width (cm)',
   'document.table.properties.verticalAlign': 'Vertical alignment',
   'document.table.properties.align.top': 'Top',
@@ -918,22 +994,28 @@ export const documentUiMessagesEnUS = {
   'document.table.properties.margin.left': 'Left',
   'document.table.properties.margin.right': 'Right',
   'document.table.properties.margin.topAria': 'Current cell top margin (cm)',
-  'document.table.properties.margin.bottomAria': 'Current cell bottom margin (cm)',
+  'document.table.properties.margin.bottomAria':
+    'Current cell bottom margin (cm)',
   'document.table.properties.margin.leftAria': 'Current cell left margin (cm)',
-  'document.table.properties.margin.rightAria': 'Current cell right margin (cm)',
+  'document.table.properties.margin.rightAria':
+    'Current cell right margin (cm)',
   'document.table.properties.unit.cm': 'cm',
   'document.changes.title': 'Review revisions',
   'document.changes.close': 'Close revision review',
-  'document.changes.description.pending': '{pending} pending · {decided} decided',
-  'document.changes.description.decidedOnly': 'No pending revisions · {decided} decided',
+  'document.changes.description.pending':
+    '{pending} pending · {decided} decided',
+  'document.changes.description.decidedOnly':
+    'No pending revisions · {decided} decided',
   'document.changes.description.empty': 'No pending revisions',
   'document.changes.acceptAll': 'Accept all',
   'document.changes.rejectAll': 'Reject all',
   'document.changes.acceptAllConfirm.title': 'Accept all revisions?',
-  'document.changes.acceptAllConfirm.description': 'This confirms the current {count} revisions.',
+  'document.changes.acceptAllConfirm.description':
+    'This confirms the current {count} revisions.',
   'document.changes.acceptAllConfirm.confirm': 'Accept all',
   'document.changes.rejectAllConfirm.title': 'Reject all revisions?',
-  'document.changes.rejectAllConfirm.description': 'This discards the current {count} revisions.',
+  'document.changes.rejectAllConfirm.description':
+    'This discards the current {count} revisions.',
   'document.changes.rejectAllConfirm.confirm': 'Reject all',
   'document.changes.listAria': 'Pending revisions',
   'document.changes.locateAria': 'Locate revision {n}',
@@ -944,7 +1026,8 @@ export const documentUiMessagesEnUS = {
   'document.changes.blankText': '(whitespace)',
   'document.changes.track.start': 'Track changes',
   'document.changes.track.stop': 'Stop tracking',
-  'document.changes.empty.suggestion': 'Suggestion mode automatically records new identity-aware edits.',
+  'document.changes.empty.suggestion':
+    'Suggestion mode automatically records new identity-aware edits.',
   'document.changes.empty.recording': 'New edits are being tracked.',
   'document.changes.empty.idle': 'New edits are not being tracked.',
   'document.changes.history.aria': 'Revision decision history',
@@ -964,46 +1047,68 @@ export const documentUiMessagesEnUS = {
   'document.changes.kind.numbering': 'Numbering',
   'document.changes.kind.move': 'Move',
   'document.compare.title': 'Compare and combine documents',
-  'document.compare.description': 'Turn another version into Writer revisions you can accept or reject one by one.',
+  'document.compare.description':
+    'Turn another version into Writer revisions you can accept or reject one by one.',
   'document.compare.cancel': 'Cancel',
   'document.compare.busy': 'Working…',
   'document.compare.submit.compare': 'Compare',
   'document.compare.submit.combine': 'Combine revisions',
   'document.compare.mode.legend': 'Action',
   'document.compare.mode.compare': 'Compare',
-  'document.compare.mode.compareHint': 'Use the current document as the original and the imported file as the revised draft.',
+  'document.compare.mode.compareHint':
+    'Use the current document as the original and the imported file as the revised draft.',
   'document.compare.mode.combine': 'Combine',
-  'document.compare.mode.combineHint': 'Import a reviewed copy that already contains revisions and verify its original baseline.',
+  'document.compare.mode.combineHint':
+    'Import a reviewed copy that already contains revisions and verify its original baseline.',
   'document.compare.file.aria.compare': 'Choose revised version file',
   'document.compare.file.aria.combine': 'Choose reviewed copy file',
   'document.compare.file.pick.compare': 'Choose revised version',
   'document.compare.file.pick.combine': 'Choose reviewed copy with revisions',
-  'document.compare.file.hint': 'Supports DOCX, HTML, and TXT. The current document does not change if preflight fails.',
+  'document.compare.file.hint':
+    'Supports DOCX, HTML, and TXT. The current document does not change if preflight fails.',
   'document.compare.file.fallbackType': 'File',
   'document.compare.author.default': 'Reviewer',
   'document.compare.author.label': 'Author name',
   'document.compare.author.aria': 'Author name for generated revisions',
-  'document.compare.author.hint': 'This name appears on generated insertions, deletions, moves, and formatting revisions.',
-  'document.compare.unchanged': 'The documents match within the supported comparison scope; no revisions were generated.',
-  'document.compare.unsupported.title': 'This document cannot be processed safely',
+  'document.compare.author.hint':
+    'This name appears on generated insertions, deletions, moves, and formatting revisions.',
+  'document.compare.unchanged':
+    'The documents match within the supported comparison scope; no revisions were generated.',
+  'document.compare.unsupported.title':
+    'This document cannot be processed safely',
   'document.compare.boundary.compareTitle': 'Deterministic comparison boundary',
   'document.compare.boundary.combineTitle': 'Safe combine boundary',
-  'document.compare.boundary.compareBody': 'Supports paragraph, heading, text, and formatting differences within the same section layout, plus safely recognized in-paragraph moves. Complex objects or section-layout changes stop the comparison.',
-  'document.compare.boundary.combineBody': 'The reviewed copy must contain revisions and match the current document after rejecting all revisions. Existing revisions must be resolved first.',
+  'document.compare.boundary.compareBody':
+    'Supports paragraph, heading, text, and formatting differences within the same section layout, plus safely recognized in-paragraph moves. Complex objects or section-layout changes stop the comparison.',
+  'document.compare.boundary.combineBody':
+    'The reviewed copy must contain revisions and match the current document after rejecting all revisions. Existing revisions must be resolved first.',
   'document.compare.diagnostic.location.section': ' (section {section})',
-  'document.compare.diagnostic.location.sectionBlock': ' (section {section}, difference block {block})',
-  'document.compare.diagnostic.changed-complex-structure': 'Detected table, picture, list, or other complex structural changes; did not degrade to plain text.',
-  'document.compare.diagnostic.combine-baseline-mismatch': 'The reviewed copy baseline does not match the current document.',
-  'document.compare.diagnostic.combine-resolution-invalid': 'The reviewed copy contains damaged or non-rejectable formatting revisions.',
-  'document.compare.diagnostic.combine-structural-revisions': 'The reviewed copy changed the paragraph tree; this combine path only accepts inline and formatting revisions.',
-  'document.compare.diagnostic.combine-without-revisions': 'The reviewed copy has no revisions to combine.',
-  'document.compare.diagnostic.comparison-limit-exceeded': 'The document exceeds the local bounded comparison limit.',
-  'document.compare.diagnostic.current-revisions-present': 'The current document still has unresolved revisions; accept or reject them first.',
-  'document.compare.diagnostic.empty-structural-change': 'Empty-paragraph structural changes cannot carry reviewable text revisions.',
-  'document.compare.diagnostic.invalid-revised-content': 'The file could not be converted to the current Writer document model.',
-  'document.compare.diagnostic.revised-revisions-present': 'The revised draft already contains revisions; use Combine instead.',
-  'document.compare.diagnostic.section-layout-mismatch': 'Section count or page layout does not match.',
-  'document.compare.diagnostic.unsupported-inline-review-state': 'Imported content includes comments or review state that cannot be migrated safely.',
+  'document.compare.diagnostic.location.sectionBlock':
+    ' (section {section}, difference block {block})',
+  'document.compare.diagnostic.changed-complex-structure':
+    'Detected table, picture, list, or other complex structural changes; did not degrade to plain text.',
+  'document.compare.diagnostic.combine-baseline-mismatch':
+    'The reviewed copy baseline does not match the current document.',
+  'document.compare.diagnostic.combine-resolution-invalid':
+    'The reviewed copy contains damaged or non-rejectable formatting revisions.',
+  'document.compare.diagnostic.combine-structural-revisions':
+    'The reviewed copy changed the paragraph tree; this combine path only accepts inline and formatting revisions.',
+  'document.compare.diagnostic.combine-without-revisions':
+    'The reviewed copy has no revisions to combine.',
+  'document.compare.diagnostic.comparison-limit-exceeded':
+    'The document exceeds the local bounded comparison limit.',
+  'document.compare.diagnostic.current-revisions-present':
+    'The current document still has unresolved revisions; accept or reject them first.',
+  'document.compare.diagnostic.empty-structural-change':
+    'Empty-paragraph structural changes cannot carry reviewable text revisions.',
+  'document.compare.diagnostic.invalid-revised-content':
+    'The file could not be converted to the current Writer document model.',
+  'document.compare.diagnostic.revised-revisions-present':
+    'The revised draft already contains revisions; use Combine instead.',
+  'document.compare.diagnostic.section-layout-mismatch':
+    'Section count or page layout does not match.',
+  'document.compare.diagnostic.unsupported-inline-review-state':
+    'Imported content includes comments or review state that cannot be migrated safely.',
   'document.pageChrome.link.title': 'Add link',
   'document.pageChrome.link.field': 'Address',
   'document.pageChrome.link.confirm': 'Add link',
@@ -1053,9 +1158,11 @@ export const documentUiMessagesEnUS = {
   'document.pageLayout.margin.narrow': 'Narrow',
   'document.pageLayout.margin.narrowMeta': '1.27 cm on all sides',
   'document.pageLayout.margin.moderate': 'Moderate',
-  'document.pageLayout.margin.moderateMeta': '2.54 cm top/bottom · 1.91 cm left/right',
+  'document.pageLayout.margin.moderateMeta':
+    '2.54 cm top/bottom · 1.91 cm left/right',
   'document.pageLayout.margin.wide': 'Wide',
-  'document.pageLayout.margin.wideMeta': '2.54 cm top/bottom · 5.08 cm left/right',
+  'document.pageLayout.margin.wideMeta':
+    '2.54 cm top/bottom · 5.08 cm left/right',
   'document.pageLayout.margin.custom': 'Custom margins',
   'document.pageLayout.margin.customMeta': 'Page setup',
   'document.pageLayout.columns': 'Columns',
@@ -1107,8 +1214,10 @@ export const documentUiMessagesEnUS = {
   'document.picture.ribbon.distance.none': 'No spacing',
   'document.picture.ribbon.distance.mm': '{value} mm',
   'document.proofing.title': 'Set proofing language',
-  'document.proofing.description.selection': 'Set Latin, East Asian, and bidirectional proofing languages for the selected {count} characters.',
-  'document.proofing.description.caret': 'Set proofing languages for text typed at the insertion point.',
+  'document.proofing.description.selection':
+    'Set Latin, East Asian, and bidirectional proofing languages for the selected {count} characters.',
+  'document.proofing.description.caret':
+    'Set proofing languages for text typed at the insertion point.',
   'document.proofing.cancel': 'Cancel',
   'document.proofing.apply': 'Apply',
   'document.proofing.legend': 'Languages by script',
@@ -1121,16 +1230,21 @@ export const documentUiMessagesEnUS = {
   'document.proofing.behavior.inherit': 'Follow style',
   'document.proofing.behavior.check': 'Check spelling and grammar',
   'document.proofing.behavior.skip': 'Do not check spelling or grammar',
-  'document.proofing.behavior.mixedStatus': 'The selection has mixed proofing behavior; leaving it unchanged.',
-  'document.proofing.help': 'Use BCP 47 language tags such as en-US, zh-CN, or ar-SA. Leave blank or choose Follow style to remove direct formatting.',
+  'document.proofing.behavior.mixedStatus':
+    'The selection has mixed proofing behavior; leaving it unchanged.',
+  'document.proofing.help':
+    'Use BCP 47 language tags such as en-US, zh-CN, or ar-SA. Leave blank or choose Follow style to remove direct formatting.',
   'document.proofing.langAria': '{label} proofing language',
   'document.proofing.inheritAria': '{label} follow style',
   'document.proofing.inherit': 'Follow style',
-  'document.proofing.mixedHint': 'The selection has mixed {label} proofing languages; typing a value applies one language.',
-  'document.proofing.error.bcp47': 'Enter a valid BCP 47 language tag without spaces, underscores, or control characters.',
+  'document.proofing.mixedHint':
+    'The selection has mixed {label} proofing languages; typing a value applies one language.',
+  'document.proofing.error.bcp47':
+    'Enter a valid BCP 47 language tag without spaces, underscores, or control characters.',
   'document.toc.title.insert': 'Insert table of contents',
   'document.toc.title.edit': 'Custom table of contents',
-  'document.toc.description': 'Build an updatable table of contents from headings and keep the native DOCX TOC field.',
+  'document.toc.description':
+    'Build an updatable table of contents from headings and keep the native DOCX TOC field.',
   'document.toc.cancel': 'Cancel',
   'document.toc.apply': 'Apply',
   'document.toc.insert': 'Insert table of contents',
@@ -1176,7 +1290,8 @@ export const documentUiMessagesEnUS = {
   'document.status.saveAria': 'Document save status',
   'document.index.title.insert': 'Insert index',
   'document.index.title.edit': 'Custom index',
-  'document.index.description': 'Build an updatable index from marked entries and keep the native DOCX INDEX field.',
+  'document.index.description':
+    'Build an updatable index from marked entries and keep the native DOCX INDEX field.',
   'document.index.cancel': 'Cancel',
   'document.index.apply': 'Apply',
   'document.index.insert': 'Insert index',
@@ -1192,13 +1307,25 @@ export const documentUiMessagesEnUS = {
   'document.index.leaderAria': 'Index tab leader',
   'document.index.previewAria': 'Index preview',
   'document.index.preview.legend': 'Index',
+  'document.mailMerge.import.title': 'Import recipients',
+  'document.mailMerge.import.description':
+    'The first row is field names, for example Name. Each following row is one recipient. Separate columns with a tab or a comma.',
+  'document.mailMerge.import.field': 'Recipient table',
+  'document.mailMerge.import.placeholder': 'Name\nAda\nGrace',
+  'document.mailMerge.import.invalid':
+    'A field-name row and at least one recipient row are required. Field names start with a letter or underscore.',
+  'document.mailMerge.import.confirm': 'Import and preview',
+  'document.mailMerge.import.cancel': 'Cancel',
   'document.mailMerge.filter.title': 'Filter recipients',
-  'document.mailMerge.filter.description': 'Filter mail-merge recipients by field conditions. Multiple rules use AND logic.',
+  'document.mailMerge.filter.description':
+    'Filter mail-merge recipients by field conditions. Multiple rules use AND logic.',
   'document.mailMerge.filter.cancel': 'Cancel',
   'document.mailMerge.filter.clear': 'Clear filters',
   'document.mailMerge.filter.confirm': 'OK',
-  'document.mailMerge.filter.summary': 'Showing {visible} of {total} recipients (up to {max} rules).',
-  'document.mailMerge.filter.noFields': 'The current data source has no available fields.',
+  'document.mailMerge.filter.summary':
+    'Showing {visible} of {total} recipients (up to {max} rules).',
+  'document.mailMerge.filter.noFields':
+    'The current data source has no available fields.',
   'document.mailMerge.filter.field': 'Field',
   'document.mailMerge.filter.fieldAria': 'Filter field {n}',
   'document.mailMerge.filter.condition': 'Comparison',
@@ -1236,6 +1363,22 @@ export const documentUiMessagesEnUS = {
   'document.comment.reopen': 'Reopen',
   'document.comment.resolveAria': 'Resolve comment {n}',
   'document.comment.reopenAria': 'Reopen comment {n}',
+  'document.comment.accept': 'Accept',
+  'document.comment.process': 'Process',
+  'document.comment.withdraw': 'Withdraw',
+  'document.comment.acceptAria': 'Accept comment {n}',
+  'document.comment.processAria': 'Process comment {n}',
+  'document.comment.withdrawAria': 'Withdraw comment {n}',
+  'document.comment.acceptTitle':
+    'Accept this open comment and reduce the open count',
+  'document.comment.processTitle':
+    'Process this open comment and reduce the open count',
+  'document.comment.withdrawTitle':
+    'Withdraw the accept or process action and return this comment to the queue',
+  'document.comment.withdrawBlocked':
+    'No comment has been accepted or processed, so there is nothing to withdraw',
+  'document.comment.decision.accepted': 'Accepted',
+  'document.comment.decision.processed': 'Processed',
   'document.comment.delete': 'Delete',
   'document.comment.deleteAria': 'Delete comment {n}',
   'document.comment.deleteTitle': 'Delete comment',
@@ -1296,8 +1439,7 @@ export const documentUiMessagesEnUS = {
   'document.agent.rewriteInstruction':
     'Rewrite this selected text so it is clearer, more natural, and more professional, and explain the main changes. Provide a draft first; do not edit the document directly.',
   'document.agent.rewriteProposalTitle': 'Review rewrite',
-  'document.agent.selectionDescription':
-    'Selected text · {count} characters',
+  'document.agent.selectionDescription': 'Selected text · {count} characters',
   'document.agent.translate': 'Translate selection',
   'document.agent.translateInstruction':
     'Translate this selected text. Detect the source language and ask for or infer the target language from context. Provide the translation first; do not edit the document directly.',
@@ -1386,7 +1528,8 @@ export const documentUiMessagesEnUS = {
   'document.citation.discard.description':
     'The current source has not been saved.',
   'document.citation.discard.confirm': 'Discard',
-  'document.citation.discardPane.title': 'Discard unsaved bibliography changes?',
+  'document.citation.discardPane.title':
+    'Discard unsaved bibliography changes?',
   'document.citation.discardPane.description':
     'Unsaved bibliography changes will not be kept.',
   'document.citation.delete.title': 'Delete source?',
@@ -1399,7 +1542,8 @@ export const documentUiMessagesEnUS = {
   'document.citation.error.titleRequired': 'Enter a source title.',
   'document.citation.error.tagDuplicate': 'That tag already exists.',
   'document.statistics.title': 'Word count',
-  'document.statistics.description': 'Text statistics for the current document.',
+  'document.statistics.description':
+    'Text statistics for the current document.',
   'document.statistics.confirm': 'OK',
   'document.statistics.detailsAria': 'Word count details',
   'document.statistics.pages': 'Pages',
@@ -1573,13 +1717,18 @@ export const documentUiMessagesEnUS = {
   'document.tableInsert.label': 'Insert table',
   'document.tableProps.label': 'Table properties',
   'document.tableProps.title': 'Table properties',
-  'document.tableProps.description': 'Configure the current table, rows, columns, and cells.',
+  'document.tableProps.description':
+    'Configure the current table, rows, columns, and cells.',
   'document.tableProps.cancel': 'Cancel',
   'document.tableProps.ok': 'OK',
-  'document.tableProps.error.cm0to5': 'Enter a centimeter value between 0 and 5.',
-  'document.tableProps.error.percent1to100': 'Enter a percentage between 1 and 100.',
-  'document.tableProps.error.cm05to30': 'Enter a centimeter value between 0.5 and 30.',
-  'document.tableProps.error.cm0to30': 'Enter a centimeter value between 0 and 30.',
+  'document.tableProps.error.cm0to5':
+    'Enter a centimeter value between 0 and 5.',
+  'document.tableProps.error.percent1to100':
+    'Enter a percentage between 1 and 100.',
+  'document.tableProps.error.cm05to30':
+    'Enter a centimeter value between 0.5 and 30.',
+  'document.tableProps.error.cm0to30':
+    'Enter a centimeter value between 0 and 30.',
   'document.ruler.horizontalLegend': 'Horizontal ruler',
   'document.ruler.leftMargin': 'Left page margin',
   'document.ruler.rightMargin': 'Right page margin',
@@ -1600,7 +1749,8 @@ export const documentUiMessagesEnUS = {
   'document.ruler.tab.addTitle': 'Click to add a tab stop',
   'document.ruler.tab.stopLabel': '{alignment} tab stop {n}',
   'document.ruler.tab.valueText': '{position} cm, {leader}',
-  'document.ruler.tab.title': '{label}: {value}; press Enter to change alignment, Delete to remove',
+  'document.ruler.tab.title':
+    '{label}: {value}; press Enter to change alignment, Delete to remove',
   'document.ruler.tab.align.left': 'Left',
   'document.ruler.tab.align.center': 'Center',
   'document.ruler.tab.align.right': 'Right',
@@ -1629,23 +1779,29 @@ export const documentUiMessagesEnUS = {
   'document.font.family.hiraginoSansGb': 'Hiragino Sans GB',
   'document.font.family.sourceHanSans': 'Source Han Sans',
   'document.insert.imageUnsupportedTitle': 'Cannot insert image',
-  'document.insert.imageUnsupportedDesc': 'Choose a PNG, JPEG, GIF, WebP, or BMP image.',
+  'document.insert.imageUnsupportedDesc':
+    'Choose a PNG, JPEG, GIF, WebP, or BMP image.',
   'document.insert.imageTooLargeTitle': 'Image too large',
   'document.insert.imageTooLargeDesc': 'Each image must be 8 MiB or smaller.',
   'document.insert.imageReadFailedTitle': 'Cannot read image',
-  'document.insert.imageReadFailedDesc': 'The file may have been moved or corrupted. Choose it again.',
+  'document.insert.imageReadFailedDesc':
+    'The file may have been moved or corrupted. Choose it again.',
   'document.insert.noReferenceTargetsTitle': 'No reference targets yet',
-  'document.insert.noReferenceTargetsDesc': 'Insert a figure or table caption first, or add a bookmark in the body.',
+  'document.insert.noReferenceTargetsDesc':
+    'Insert a figure or table caption first, or add a bookmark in the body.',
   'document.insert.selectIndexTextTitle': 'Select index text',
-  'document.insert.selectIndexTextDesc': 'Select body text to mark, or select an existing index entry.',
+  'document.insert.selectIndexTextDesc':
+    'Select body text to mark, or select an existing index entry.',
   'document.insert.captionFigureTitle': 'Insert Figure Caption',
   'document.insert.captionTableTitle': 'Insert Table Caption',
-  'document.insert.captionDesc': 'Caption numbers are generated automatically and can be cross-referenced.',
+  'document.insert.captionDesc':
+    'Caption numbers are generated automatically and can be cross-referenced.',
   'document.insert.captionSubmit': 'Insert Caption',
   'document.insert.captionLabel': 'Caption text',
   'document.insert.captionPlaceholder': 'e.g. System architecture',
   'document.insert.crossRefTitle': 'Insert Cross-Reference',
-  'document.insert.crossRefDesc': 'Choose an existing figure or table caption or bookmark; bookmarks can also insert a live target page number.',
+  'document.insert.crossRefDesc':
+    'Choose an existing figure or table caption or bookmark; bookmarks can also insert a live target page number.',
   'document.insert.crossRefInsertPage': 'Insert Target Page',
   'document.insert.crossRefInsert': 'Insert Reference',
   'document.insert.crossRefTargetsAria': 'Reference targets',
@@ -1654,11 +1810,14 @@ export const documentUiMessagesEnUS = {
   'document.insert.emptyCaption': '(No caption text)',
   'document.insert.fieldSelectTarget': 'Select a reference target',
   'document.insert.fieldEnterMergeName': 'Enter a merge field name',
-  'document.review.conflictTitle': 'Review content conflicts with an external update',
+  'document.review.conflictTitle':
+    'Review content conflicts with an external update',
   'document.review.conflictCloseAria': 'Dismiss review conflict notice',
   'document.review.conflictClose': 'Close',
-  'document.review.conflictBody': 'An external version was applied; {count} comment or revision ranges changed. Review them before continuing.',
-  'document.compare.revisionsGenerated': 'Generated {count} reviewable revisions'
+  'document.review.conflictBody':
+    'An external version was applied; {count} comment or revision ranges changed. Review them before continuing.',
+  'document.compare.revisionsGenerated':
+    'Generated {count} reviewable revisions',
 } as const;
 
 export type DocumentUiMessageKey = keyof typeof documentUiMessagesEnUS;

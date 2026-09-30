@@ -405,6 +405,8 @@ function workspaceCommands(
   return {
     addSlide: () => undefined,
     deleteSlideById: () => false,
+    moveSlide: () => false,
+    rotateSelection: () => false,
     editElement: () => undefined,
     exitEditing: () => undefined,
     instantiatePlaceholder: () => undefined,

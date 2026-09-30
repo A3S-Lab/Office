@@ -107,7 +107,7 @@ test('keeps the default split view to one editor and one read-only preview', asy
   expect(preview).toHaveAttribute('role', 'document');
   expect(
     screen.getByRole('checkbox', { name: '未完成：Review the plan' }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   expect(
     within(screen.getByRole('region', { name: 'Markdown 源码窗格' })).getByText(
       '源码',
@@ -162,6 +162,39 @@ test('keeps the default split view to one editor and one read-only preview', asy
       }),
     ).toBeChecked(),
   );
+});
+
+test('checks a preview task and writes the mark back into the markdown source', async () => {
+  const publications: MarkdownContent[] = [];
+  function ControlledMarkdownEditor() {
+    const [content, setContent] = useState<MarkdownContent>({
+      type: 'markdown',
+      markdown: '# 标题\n\n- [ ] 待办',
+    });
+    return (
+      <MarkdownEditor
+        content={content}
+        onChange={(next) => {
+          publications.push(next);
+          setContent(next);
+        }}
+        theme="light"
+      />
+    );
+  }
+
+  render(<ControlledMarkdownEditor />);
+  const checkbox = await screen.findByRole('checkbox', {
+    name: '未完成：待办',
+  });
+  expect(checkbox).toBeEnabled();
+  fireEvent.click(checkbox);
+  await waitFor(() => {
+    expect(publications.at(-1)?.markdown).toContain('- [x] 待办');
+    expect(
+      screen.getByRole('checkbox', { name: '已完成：待办' }),
+    ).toBeChecked();
+  });
 });
 
 test('publishes only committed Chinese text from controlled visual Markdown IME', async () => {

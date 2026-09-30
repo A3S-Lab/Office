@@ -103,6 +103,11 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
           canExecute: ({ slides }) => slides.canDuplicateSlide,
           execute: ({ slides }) => slides.duplicateSlide(),
         },
+        moveSlide: {
+          canExecute: ({ slides }) => slides.canMoveSlide,
+          execute: ({ slides }, fromIndex, insertionIndex) =>
+            slides.moveSlide(fromIndex, insertionIndex),
+        },
         selectSlide: {
           execute: ({ slides }, slideId, returnToSlideMode = false) =>
             slides.selectSlide(slideId, returnToSlideMode),
@@ -167,6 +172,10 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
         groupElements: {
           canExecute: ({ elements }) => elements.canGroupElements,
           execute: ({ elements }) => elements.groupElements(),
+        },
+        rotateSelection: {
+          canExecute: ({ elements }) => elements.canRotateSelection,
+          execute: ({ elements }, degrees) => elements.rotateSelection(degrees),
         },
         reorderElement: {
           canExecute: ({ elements }) => elements.canReorderElement,

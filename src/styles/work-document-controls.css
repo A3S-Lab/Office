@@ -2588,6 +2588,12 @@
   gap: 5px;
 }
 
+.work-document-comment-decision {
+  margin-right: auto;
+  color: var(--a3s-faint);
+  font-size: 9px;
+}
+
 .work-document-comments-empty.ds-collection-state {
   position: absolute;
   top: 12px;

@@ -1,28 +1,13 @@
 import {
-  documentFieldCodeDisplay,
-  documentFieldKind,
-  documentFieldLabel,
-  docxDocumentFieldKind,
-  supportedDocxDocumentFieldInstruction,
-} from './work-document-fields';
-import {
-  createDocumentEquationElement,
-  documentEquationFromElement,
-} from './work-document-equations';
-import {
-  createDocumentEquationOpaqueElement,
-  documentEquationOpaqueFromElement,
-} from './work-document-equation-opaque';
+  DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
+  documentCharacterPositionDomAttributes,
+  documentCharacterPositionHalfPointsFromElement,
+} from './work-document-character-position';
 import {
   DOCUMENT_CHARACTER_SCALE_ATTRIBUTE,
   documentCharacterScaleDomAttributes,
   documentCharacterScalePercentFromElement,
 } from './work-document-character-scale';
-import {
-  DOCUMENT_CHARACTER_POSITION_ATTRIBUTE,
-  documentCharacterPositionDomAttributes,
-  documentCharacterPositionHalfPointsFromElement,
-} from './work-document-character-position';
 import {
   DOCUMENT_CHARACTER_SPACING_ATTRIBUTE,
   documentCharacterSpacingDomAttributes,
@@ -34,19 +19,35 @@ import {
   documentEmphasisMarkFromElement,
 } from './work-document-emphasis';
 import {
-  DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
-  documentKerningDomAttributes,
-  documentKerningThresholdHalfPointsFromElement,
-} from './work-document-kerning';
+  createDocumentEquationOpaqueElement,
+  documentEquationOpaqueFromElement,
+} from './work-document-equation-opaque';
 import {
-  DOCUMENT_OPEN_TYPE_ATTRIBUTE,
-  documentOpenTypeDomAttributes,
-  documentOpenTypeFeaturesFromElement,
-} from './work-document-opentype';
+  createDocumentEquationElement,
+  documentEquationFromElement,
+} from './work-document-equations';
+import {
+  documentFieldCodeDisplay,
+  documentFieldKind,
+  documentFieldLabel,
+  docxDocumentFieldKind,
+  supportedDocxDocumentFieldInstruction,
+} from './work-document-fields';
 import {
   DOCUMENT_HIDDEN_TEXT_ATTRIBUTE,
   documentHiddenTextFromElement,
 } from './work-document-hidden-text';
+import {
+  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
+  documentHighlightDomAttributes,
+  documentHighlightFromElement,
+} from './work-document-highlight';
+import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import {
+  DOCUMENT_KERNING_THRESHOLD_ATTRIBUTE,
+  documentKerningDomAttributes,
+  documentKerningThresholdHalfPointsFromElement,
+} from './work-document-kerning';
 import {
   DOCUMENT_LEGACY_TEXT_EMBOSS_ATTRIBUTE,
   DOCUMENT_LEGACY_TEXT_IMPRINT_ATTRIBUTE,
@@ -55,12 +56,32 @@ import {
   documentLegacyTextEffectsDomAttributes,
   documentLegacyTextEffectsFromElement,
 } from './work-document-legacy-text-effects';
-import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import {
+  DOCUMENT_OPEN_TYPE_ATTRIBUTE,
+  documentOpenTypeDomAttributes,
+  documentOpenTypeFeaturesFromElement,
+} from './work-document-opentype';
 import {
   DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE,
   documentParagraphBordersDomAttributes,
   parseDocumentParagraphBordersElement,
 } from './work-document-paragraph-borders';
+import {
+  DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
+  DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
+  normalizeDocumentParagraphIdentity,
+} from './work-document-paragraph-identity';
+import {
+  documentParagraphShadingDomAttributes,
+  parseDocumentParagraphShadingElement,
+} from './work-document-paragraph-shading';
+import {
+  DOCUMENT_NO_PROOF_ATTRIBUTE,
+  DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
+  documentNoProofFromElement,
+  documentProofingDomAttributes,
+  documentProofingLanguagesFromElement,
+} from './work-document-proofing';
 import {
   DOCUMENT_RUN_BORDER_ATTRIBUTE,
   documentRunBorderDomAttributes,
@@ -72,26 +93,21 @@ import {
   parseDocumentRunShadingElement,
 } from './work-document-run-shading';
 import {
-  DOCUMENT_NO_PROOF_ATTRIBUTE,
-  DOCUMENT_PROOFING_LANGUAGES_ATTRIBUTE,
-  documentNoProofFromElement,
-  documentProofingDomAttributes,
-  documentProofingLanguagesFromElement,
-} from './work-document-proofing';
+  cssDocumentFontFamily,
+  DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
+  DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
+  documentFontNameFromCssFamily,
+  documentScriptFontFamilyForRendering,
+  documentScriptFontSlotFromElement,
+  documentScriptFontSlotFromHint,
+  documentScriptFontsDomAttributes,
+  documentScriptFontsFromElement,
+} from './work-document-script-fonts';
 import {
-  DOCUMENT_HIGHLIGHT_ATTRIBUTE,
-  documentHighlightDomAttributes,
-  documentHighlightFromElement,
-} from './work-document-highlight';
-import {
-  DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
-  DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
-  normalizeDocumentParagraphIdentity,
-} from './work-document-paragraph-identity';
-import {
-  documentParagraphShadingDomAttributes,
-  parseDocumentParagraphShadingElement,
-} from './work-document-paragraph-shading';
+  DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
+  documentStrikeDomAttributes,
+  documentStrikeFormattingFromElement,
+} from './work-document-strike';
 import {
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
@@ -103,28 +119,12 @@ import {
   normalizeDocumentTextCase,
 } from './work-document-text-case';
 import {
-  cssDocumentFontFamily,
-  DOCUMENT_SCRIPT_FONTS_ATTRIBUTE,
-  DOCUMENT_SCRIPT_FONT_SLOT_ATTRIBUTE,
-  documentFontNameFromCssFamily,
-  documentScriptFontFamilyForRendering,
-  documentScriptFontsFromElement,
-  documentScriptFontsDomAttributes,
-  documentScriptFontSlotFromElement,
-  documentScriptFontSlotFromHint,
-} from './work-document-script-fonts';
-import {
   DOCUMENT_UNDERLINE_COLOR_ATTRIBUTE,
   DOCUMENT_UNDERLINE_STYLE_ATTRIBUTE,
   DOCUMENT_UNDERLINE_THEME_COLOR_ATTRIBUTE,
   documentUnderlineDomAttributes,
   documentUnderlineFormattingFromElement,
 } from './work-document-underline';
-import {
-  DOCUMENT_STRIKE_STYLE_ATTRIBUTE,
-  documentStrikeDomAttributes,
-  documentStrikeFormattingFromElement,
-} from './work-document-strike';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -442,6 +442,10 @@ export function sanitizeDocumentPageChromeHtml(
     document.body.querySelectorAll<HTMLElement>('*'),
   )) {
     const tag = element.tagName.toLowerCase();
+    if (tag === 'ins' || tag === 'del') {
+      sanitizePageChromeRevisionElement(element);
+      continue;
+    }
     if (!ALLOWED_TAGS.has(tag)) {
       element.replaceWith(...Array.from(element.childNodes));
       continue;
@@ -526,6 +530,30 @@ function sanitizePageChromeFieldSpan(element: HTMLElement): void {
   element.setAttribute('aria-label', documentFieldLabel(kind));
   element.setAttribute('title', documentFieldLabel(kind));
   element.textContent = display;
+}
+
+function sanitizePageChromeRevisionElement(element: HTMLElement): void {
+  const tag = element.tagName.toLowerCase();
+  const kind = tag === 'del' ? 'deletion' : tag === 'ins' ? 'insertion' : '';
+  if (
+    !kind ||
+    element.getAttribute('data-document-change') !== 'true' ||
+    element.getAttribute('data-change-kind') !== kind
+  ) {
+    element.replaceWith(...Array.from(element.childNodes));
+    return;
+  }
+  const id = element.getAttribute('data-change-id')?.trim() ?? '';
+  const author = element.getAttribute('data-change-author')?.trim() ?? '';
+  const date = element.getAttribute('data-change-date')?.trim() ?? '';
+  for (const attribute of Array.from(element.attributes)) {
+    element.removeAttribute(attribute.name);
+  }
+  element.setAttribute('data-document-change', 'true');
+  element.setAttribute('data-change-kind', kind);
+  if (id) element.setAttribute('data-change-id', id);
+  if (author) element.setAttribute('data-change-author', author);
+  if (date) element.setAttribute('data-change-date', date);
 }
 
 function sanitizeAttributes(element: Element, tag: string) {

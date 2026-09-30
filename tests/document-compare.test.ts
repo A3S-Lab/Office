@@ -798,6 +798,79 @@ describe('document compare and combine', () => {
     editor.destroy();
     reopenedEditor.destroy();
   });
+
+  test('compares a header word as text instead of refusing the first section layout', () => {
+    const editor = createEditor(
+      documentHtml('<p>Body stays.</p>', {
+        'data-section-header-text': 'DESKTOP-EXPERT-OK',
+      }),
+    );
+    const result = applyCompare(
+      editor,
+      documentHtml('<p>Body stays.</p>', {
+        'data-section-header-text': 'DESKTOP-COMPARE-OK',
+      }),
+    );
+
+    expect(result.status).toBe('applied');
+    expect(result.diagnostics).toEqual([]);
+    expect(result.summary.deletions).toBeGreaterThan(0);
+    expect(result.summary.insertions).toBeGreaterThan(0);
+    const html = editor.getHTML();
+    expect(html).toContain('EXPERT');
+    expect(html).toContain('COMPARE');
+    expect(html).toContain('data-document-change');
+    expect(html).toContain('deletion');
+    expect(html).toContain('insertion');
+    editor.destroy();
+  });
+
+  test('still refuses a real first-section page-size change', () => {
+    const editor = createEditor(
+      documentHtml('<p>Body stays.</p>', {
+        'data-section-page-size': 'a4',
+      }),
+    );
+    const result = applyCompare(
+      editor,
+      documentHtml('<p>Body stays.</p>', {
+        'data-section-page-size': 'legal',
+      }),
+    );
+
+    expect(result.status).toBe('unsupported');
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({
+        code: 'section-layout-mismatch',
+        section: 0,
+      }),
+    ]);
+    editor.destroy();
+  });
+
+  test('compares a body word when only section revision metadata differs', () => {
+    const editor = createEditor(
+      documentHtml('<p>DESKTOP-EXPERT-OK</p>', {
+        'data-section-property-revision-omml': 'opaque-before',
+      }),
+    );
+    const result = applyCompare(
+      editor,
+      documentHtml('<p>DESKTOP-COMPARE-OK</p>', {
+        'data-section-property-revision-omml': 'opaque-after',
+      }),
+    );
+
+    expect(result.status).toBe('applied');
+    expect(result.diagnostics).toEqual([]);
+    expect(
+      collectDocumentChanges(editor.state.doc).some(
+        (change) =>
+          change.kind === 'insertion' && change.text.includes('COMPARE'),
+      ),
+    ).toBe(true);
+    editor.destroy();
+  });
 });
 
 function applyCompare(
@@ -817,8 +890,17 @@ function createEditor(content: string): Editor {
   });
 }
 
-function documentHtml(body: string): string {
-  return `<section data-document-section="true">${body}</section>`;
+function documentHtml(
+  body: string,
+  attributes: Record<string, string> = {},
+): string {
+  const encoded = Object.entries(attributes)
+    .map(
+      ([name, value]) =>
+        ` ${name}="${value.replaceAll('&', '&amp;').replaceAll('"', '&quot;')}"`,
+    )
+    .join('');
+  return `<section data-document-section="true"${encoded}>${body}</section>`;
 }
 
 function normalizedText(editor: Editor): string {

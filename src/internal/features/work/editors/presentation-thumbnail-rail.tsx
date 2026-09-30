@@ -1,7 +1,14 @@
 import { Plus, X } from 'lucide-react';
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { officeMessage } from '../../../i18n/office-locale';
-import { useOfficeMessages } from './office-messages-context';
-import { type CSSProperties, type RefObject, useMemo } from 'react';
 import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
 import type { WorkPresentationDesignContent } from '../work-presentation-layouts';
 import type {
@@ -9,7 +16,13 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import { PresentationSlideThumbnail } from './presentation-slide-thumbnail';
+import { useOfficeMessages } from './office-messages-context';
+import {
+  PresentationSlideThumbnail,
+  type PresentationThumbnailDropPosition,
+  presentationThumbnailDragPassedThreshold,
+  presentationThumbnailDropPosition,
+} from './presentation-slide-thumbnail';
 import { usePresentationThumbnailVisibility } from './use-presentation-thumbnail-visibility';
 import { usePresentationThumbnailWindow } from './use-presentation-thumbnail-window';
 
@@ -26,6 +39,7 @@ export function PresentationThumbnailRail({
   onAddSlide,
   onCloseMobileNavigation,
   onDeleteSlide,
+  onMoveSlide,
   onOpenContextMenu,
   onSelectSlide,
   onViewModeChange,
@@ -42,6 +56,7 @@ export function PresentationThumbnailRail({
   onAddSlide: () => void;
   onCloseMobileNavigation?: () => void;
   onDeleteSlide: (slideId: string) => boolean;
+  onMoveSlide: (fromIndex: number, insertionIndex: number) => boolean;
   onOpenContextMenu: (
     event: WorkspaceContextMenuEvent,
     slide: WorkSlide,
@@ -90,6 +105,101 @@ export function PresentationThumbnailRail({
     return true;
   };
 
+  const dragRef = useRef<{
+    pointerId: number;
+    fromIndex: number;
+    startY: number;
+    active: boolean;
+  } | null>(null);
+  const [reorderArmed, setReorderArmed] = useState(false);
+  const [dropIndicator, setDropIndicator] = useState<{
+    index: number;
+    position: PresentationThumbnailDropPosition;
+  } | null>(null);
+  const clearReorder = () => {
+    dragRef.current = null;
+    setDropIndicator(null);
+    setReorderArmed(false);
+  };
+
+  useEffect(() => {
+    if (!reorderArmed) return;
+    const cancelIfReleasedOutside = (event: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const landedOnThumbnail =
+        event.target instanceof Element &&
+        Boolean(event.target.closest('[data-slide-thumbnail]'));
+      if (landedOnThumbnail) return;
+      clearReorder();
+    };
+    window.addEventListener('pointerup', cancelIfReleasedOutside);
+    window.addEventListener('pointercancel', cancelIfReleasedOutside);
+    return () => {
+      window.removeEventListener('pointerup', cancelIfReleasedOutside);
+      window.removeEventListener('pointercancel', cancelIfReleasedOutside);
+    };
+  }, [reorderArmed]);
+
+  const beginReorder = (
+    index: number,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) => {
+    if (event.button !== 0) return;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      fromIndex: index,
+      startY: event.clientY,
+      active: false,
+    };
+    setReorderArmed(true);
+  };
+
+  const hoverReorder = (
+    index: number,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (
+      !drag.active &&
+      !presentationThumbnailDragPassedThreshold(drag.startY, event.clientY)
+    ) {
+      return;
+    }
+    drag.active = true;
+    const position = presentationThumbnailDropPosition(event);
+    setDropIndicator((current) =>
+      current?.index === index && current.position === position
+        ? current
+        : { index, position },
+    );
+  };
+
+  const finishReorder = (
+    index: number,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ): boolean => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return false;
+    const fromIndex = drag.fromIndex;
+    const active =
+      drag.active ||
+      presentationThumbnailDragPassedThreshold(drag.startY, event.clientY);
+    const position = presentationThumbnailDropPosition(event);
+    clearReorder();
+    if (!active) return false;
+    const insertionIndex = position === 'before' ? index : index + 1;
+    onMoveSlide(fromIndex, insertionIndex);
+    return true;
+  };
+
+  const cancelReorder = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    clearReorder();
+  };
+
   const thumbnails = visibleSlides.map((slide, visibleIndex) => {
     const index = thumbnailWindow.start + visibleIndex;
     return (
@@ -110,6 +220,13 @@ export function PresentationThumbnailRail({
           onOpenContextMenu(event, slide, index);
         }}
         onDelete={() => deleteAndRetainFocus(slide, index)}
+        dropPosition={
+          dropIndicator?.index === index ? dropIndicator.position : null
+        }
+        onReorderPointerDown={(event) => beginReorder(index, event)}
+        onReorderPointerMove={(event) => hoverReorder(index, event)}
+        onReorderPointerUp={(event) => finishReorder(index, event)}
+        onReorderPointerCancel={cancelReorder}
         onDoubleClick={
           viewMode === 'sorter' ? () => onViewModeChange('normal') : undefined
         }
@@ -179,7 +296,9 @@ export function PresentationThumbnailRail({
       data-slide-windowed={thumbnailWindow.windowed ? 'true' : 'false'}
     >
       <header className="work-slide-strip-header">
-        <strong>{officeMessage(messages, 'presentation.thumb.railTitle')}</strong>
+        <strong>
+          {officeMessage(messages, 'presentation.thumb.railTitle')}
+        </strong>
         <button
           ref={mobileCloseButtonRef}
           type="button"

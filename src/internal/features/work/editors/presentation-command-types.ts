@@ -5,13 +5,13 @@ import type {
   WorkSlideAnimationClass,
   WorkSlideAnimationEffect,
   WorkSlideElement,
-  WorkSlideTransition,
   WorkSlideTextRun,
+  WorkSlideTransition,
 } from '../work-types';
 import type { OfficeEditorCanCommands } from './office-editor-extension';
+import type { OfficeTableDimensions } from './office-table-dimensions';
 import type { PresentationDesignMode } from './presentation-editor-types';
 import type { PresentationDistribution } from './presentation-selection';
-import type { OfficeTableDimensions } from './office-table-dimensions';
 
 export type PresentationViewMode = 'normal' | 'sorter';
 export type PresentationSlideshowStart = 'beginning' | 'current';
@@ -51,9 +51,11 @@ export interface PresentationEditorCommands {
   duplicateSelection: () => boolean;
   duplicateSlide: () => PresentationCommandResult;
   editDesign: (mode: PresentationDesignMode) => PresentationCommandResult;
+  moveSlide: (fromIndex: number, insertionIndex: number) => boolean;
   editElement: (id: string) => void;
   exitEditing: () => void;
   groupElements: () => boolean;
+  rotateSelection: (degrees: number) => boolean;
   instantiatePlaceholder: (
     definition: WorkSlideElement,
   ) => PresentationCommandResult;
@@ -162,6 +164,7 @@ export interface PresentationSlideCommandPort {
   ) => boolean;
   canDeleteSlide: boolean;
   canDuplicateSlide: boolean;
+  canMoveSlide: boolean;
   canSetTransition: boolean;
   addSlide: () => PresentationCommandResult;
   applyTransitionToAll: (
@@ -170,6 +173,7 @@ export interface PresentationSlideCommandPort {
   deleteSlide: () => PresentationCommandResult;
   deleteSlideById: (slideId: string) => boolean;
   duplicateSlide: () => PresentationCommandResult;
+  moveSlide: (fromIndex: number, insertionIndex: number) => boolean;
   selectSlide: (
     slideId: string,
     returnToSlideMode: boolean,
@@ -239,6 +243,7 @@ export interface PresentationElementCommandPort {
   canDistributeElements: boolean;
   canGroupElements: boolean;
   canReorderElement: boolean;
+  canRotateSelection: boolean;
   canUngroupElements: boolean;
   canUpdateElement: boolean;
   alignElement: (
@@ -249,6 +254,7 @@ export interface PresentationElementCommandPort {
   ) => PresentationCommandResult;
   groupElements: () => boolean;
   reorderElement: (direction: -1 | 1) => PresentationCommandResult;
+  rotateSelection: (degrees: number) => boolean;
   ungroupElements: () => boolean;
   updateElement: (
     patch: Partial<WorkSlideElement>,

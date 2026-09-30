@@ -635,6 +635,106 @@ test('Presentation align menu launches alignment commands without a fake select 
   expect(screen.queryByRole('listbox')).toBeNull();
 });
 
+test('sets alt text for the selected picture from the Insert tab', async () => {
+  const updates: Array<Partial<WorkSlideElement>> = [];
+  const commands = new Proxy(
+    {},
+    {
+      get: (_target, property) =>
+        property === 'updateElement'
+          ? (patch: Partial<WorkSlideElement>) => updates.push(patch)
+          : () => true,
+    },
+  ) as PresentationEditorCommands;
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+  const image: WorkSlideElement = {
+    ...textElement,
+    id: 'picture-1',
+    type: 'image',
+    text: '',
+    altText: 'a3s-pic-large.png',
+    image: {
+      dataUrl:
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZQmcAAAAASUVORK5CYII=',
+      contentType: 'image/png',
+      name: 'a3s-pic-large.png',
+    },
+  };
+
+  render(
+    <PresentationToolbar
+      selectedSlide={{ ...slide, elements: [image] }}
+      selectedElement={image}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      commands={commands}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(screen.getByRole('button', { name: '替代文本' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '替代文本' }), {
+    target: { value: '图' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '应用替代文本' }));
+
+  await waitFor(() => {
+    expect(updates).toEqual([{ altText: '图' }]);
+  });
+});
+
+test('rotates the selection from the home and insert ribbons', () => {
+  const calls: string[] = [];
+  const commands = new Proxy(
+    {},
+    {
+      get:
+        (_target, property) =>
+        (...args: unknown[]) => {
+          calls.push(
+            `${String(property)}${args.length ? `:${args.map(String).join(',')}` : ''}`,
+          );
+          return true;
+        },
+    },
+  ) as PresentationEditorCommands;
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+
+  render(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={2}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      commands={commands}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '旋转' }));
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(screen.getByRole('button', { name: '旋转' }));
+
+  expect(calls).toEqual(['rotateSelection:15', 'rotateSelection:15']);
+});
+
 const textElement: WorkSlideElement = {
   id: 'element-1',
   type: 'text',

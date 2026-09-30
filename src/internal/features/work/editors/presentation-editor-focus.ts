@@ -1,8 +1,8 @@
+import type { WorkSlideElement } from '../work-types';
 import type {
   PresentationCommandResult,
   PresentationEditorCommands,
 } from './presentation-command-types';
-import type { WorkSlideElement } from '../work-types';
 import { presentationElementCanEditContent } from './presentation-selection';
 
 export interface PresentationObjectFocusState {
@@ -173,6 +173,7 @@ export function presentationCommandsWithObjectFocus(
     distributeElements: afterSuccessfulCommand(commands.distributeElements),
     duplicateSlide: afterSuccessfulCommand(commands.duplicateSlide),
     groupElements: afterSuccessfulCommand(commands.groupElements),
+    rotateSelection: afterSuccessfulCommand(commands.rotateSelection),
     moveAnimation: afterSuccessfulCommand(commands.moveAnimation),
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
     redo: afterSuccessfulCommand(commands.redo),

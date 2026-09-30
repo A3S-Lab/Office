@@ -52,6 +52,9 @@ export const presentationUiMessagesEnUS = {
   'presentation.group.arrange': 'Arrange',
   'presentation.action.distributeH': 'Distribute Horizontally',
   'presentation.action.distributeV': 'Distribute Vertically',
+  'presentation.action.rotate': 'Rotate',
+  'presentation.action.rotateTitle':
+    'Rotate the selection clockwise by 15 degrees',
   'presentation.action.group': 'Group',
   'presentation.action.groupTitle': 'Group (⌘/Ctrl+G)',
   'presentation.action.ungroup': 'Ungroup',
@@ -68,9 +71,16 @@ export const presentationUiMessagesEnUS = {
   'presentation.group.link': 'Link',
   'presentation.action.link': 'Link',
   'presentation.link.title': 'Hyperlink',
-  'presentation.link.description': 'Set a web, email, or in-document link for the selection.',
+  'presentation.link.description':
+    'Set a web, email, or in-document link for the selection.',
   'presentation.link.field': 'Address',
   'presentation.link.confirm': 'Apply Link',
+  'presentation.action.altText': 'Alt Text',
+  'presentation.altText.title': 'Alt Text',
+  'presentation.altText.description':
+    'Set alternative text for the selected object. It stays on the object after save and reopen.',
+  'presentation.altText.field': 'Alternative text',
+  'presentation.altText.confirm': 'Apply Alt Text',
   'presentation.group.master': 'Master',
   'presentation.action.masterLayouts': 'Slide Master',
   'presentation.group.background': 'Background',
@@ -92,7 +102,8 @@ export const presentationUiMessagesEnUS = {
   'presentation.action.notes': 'Notes',
   'presentation.action.hideNotes': 'Hide speaker notes',
   'presentation.action.showNotes': 'Show speaker notes',
-  'presentation.action.notesNormalOnly': 'Notes are available in Normal view only',
+  'presentation.action.notesNormalOnly':
+    'Notes are available in Normal view only',
   'presentation.action.masterView': 'Slide Master View',
   'presentation.align.selectedHint': 'Align selected objects',
   'presentation.align.slideHint': 'Align to slide',
@@ -256,9 +267,11 @@ export const presentationUiMessagesEnUS = {
   'presentation.ops.tableBody': 'Content',
   'presentation.chart.categoryFallback': 'Category {index}',
   'presentation.chart.seriesFallback': 'Series {index}',
-  'presentation.chart.seriesAnalysisAria': 'Presentation chart series {number} advanced analysis',
+  'presentation.chart.seriesAnalysisAria':
+    'Presentation chart series {number} advanced analysis',
   'presentation.chart.seriesAnalysisTitle': 'Advanced Analysis',
-  'presentation.chart.seriesAnalysisHint': 'Trend forecasts and error ranges sync to the canvas, playback, PDF, and PPTX.',
+  'presentation.chart.seriesAnalysisHint':
+    'Trend forecasts and error ranges sync to the canvas, playback, PDF, and PPTX.',
   'presentation.chart.panelAria': 'Presentation chart data',
   'presentation.chart.panelTitle': 'Chart Data',
   'presentation.chart.panelHint': 'Configure data, layout, and series',
@@ -286,7 +299,8 @@ export const presentationUiMessagesEnUS = {
   'presentation.chart.bubbleScale': 'Bubble scale',
   'presentation.chart.bubbleScaleAria': 'Presentation bubble scale',
   'presentation.chart.sizeRepresents': 'Size represents',
-  'presentation.chart.sizeRepresentsAria': 'Presentation bubble size represents',
+  'presentation.chart.sizeRepresentsAria':
+    'Presentation bubble size represents',
   'presentation.chart.size.area': 'Area',
   'presentation.chart.size.width': 'Width',
   'presentation.chart.negativeBubbles': 'Negative bubbles',
@@ -299,10 +313,13 @@ export const presentationUiMessagesEnUS = {
   'presentation.chart.categoriesAria': 'Presentation chart categories',
   'presentation.chart.seriesLegend': 'Series {index}',
   'presentation.chart.seriesNameAria': 'Presentation chart series {index} name',
-  'presentation.chart.seriesYAria': 'Presentation chart series {index} Y values',
+  'presentation.chart.seriesYAria':
+    'Presentation chart series {index} Y values',
   'presentation.chart.seriesDataAria': 'Presentation chart series {index} data',
-  'presentation.chart.seriesBubbleAria': 'Presentation bubble series {index} sizes',
-  'presentation.chart.deleteSeriesAria': 'Delete presentation chart series {index}',
+  'presentation.chart.seriesBubbleAria':
+    'Presentation bubble series {index} sizes',
+  'presentation.chart.deleteSeriesAria':
+    'Delete presentation chart series {index}',
   'presentation.chart.addSeriesAria': 'Add chart series',
   'presentation.chart.addSeries': 'Add Series',
   'presentation.chart.typeShort.column': 'Column',
@@ -329,32 +346,44 @@ export const presentationUiMessagesEnUS = {
   'presentation.chart.dataLabel.position.below': 'Below',
   'presentation.chart.dataLabel.position.bestFit': 'Best Fit',
   'presentation.chart.dataLabel.settingsAria': 'Presentation chart data labels',
-  'presentation.chart.dataLabel.showAria': 'Show presentation chart data labels',
+  'presentation.chart.dataLabel.showAria':
+    'Show presentation chart data labels',
   'presentation.chart.dataLabel.show': 'Data Labels',
-  'presentation.chart.dataLabel.showValueAria': 'Show value in presentation chart data labels',
+  'presentation.chart.dataLabel.showValueAria':
+    'Show value in presentation chart data labels',
   'presentation.chart.dataLabel.showValue': 'Value',
-  'presentation.chart.dataLabel.showCategoryAria': 'Show category name in presentation chart data labels',
+  'presentation.chart.dataLabel.showCategoryAria':
+    'Show category name in presentation chart data labels',
   'presentation.chart.dataLabel.showCategory': 'Category',
-  'presentation.chart.dataLabel.showSeriesAria': 'Show series name in presentation chart data labels',
+  'presentation.chart.dataLabel.showSeriesAria':
+    'Show series name in presentation chart data labels',
   'presentation.chart.dataLabel.showSeries': 'Series',
-  'presentation.chart.dataLabel.showPercentAria': 'Show percentage in presentation chart data labels',
+  'presentation.chart.dataLabel.showPercentAria':
+    'Show percentage in presentation chart data labels',
   'presentation.chart.dataLabel.showPercent': 'Percentage',
-  'presentation.chart.dataLabel.showBubbleAria': 'Show bubble size in presentation chart data labels',
+  'presentation.chart.dataLabel.showBubbleAria':
+    'Show bubble size in presentation chart data labels',
   'presentation.chart.dataLabel.showBubble': 'Bubble Size',
   'presentation.chart.dataLabel.position': 'Position',
-  'presentation.chart.dataLabel.positionAria': 'Presentation chart data label position',
+  'presentation.chart.dataLabel.positionAria':
+    'Presentation chart data label position',
   'presentation.chart.dataLabel.separator': 'Separator',
-  'presentation.chart.dataLabel.separatorAria': 'Presentation chart data label separator',
-  'presentation.chart.layout.settingsAria': 'Presentation chart legend and plot area settings',
+  'presentation.chart.dataLabel.separatorAria':
+    'Presentation chart data label separator',
+  'presentation.chart.layout.settingsAria':
+    'Presentation chart legend and plot area settings',
   'presentation.chart.layout.title': 'Legend & Plot Area',
-  'presentation.chart.layout.subtitle': 'Position, stacking, spacing, and line layout',
+  'presentation.chart.layout.subtitle':
+    'Position, stacking, spacing, and line layout',
   'presentation.chart.layout.legend': 'Legend',
   'presentation.chart.layout.showLegendAria': 'Show presentation chart legend',
   'presentation.chart.layout.show': 'Show',
   'presentation.chart.layout.legendPos': 'Legend Position',
-  'presentation.chart.layout.legendPosAria': 'Presentation chart legend position',
+  'presentation.chart.layout.legendPosAria':
+    'Presentation chart legend position',
   'presentation.chart.layout.legendLayout': 'Legend Layout',
-  'presentation.chart.layout.overlayAria': 'Overlay presentation chart legend on plot area',
+  'presentation.chart.layout.overlayAria':
+    'Overlay presentation chart legend on plot area',
   'presentation.chart.layout.overlay': 'Overlay plot area',
   'presentation.chart.layout.grouping': 'Grouping',
   'presentation.chart.layout.groupingAria': 'Presentation chart grouping',
@@ -365,11 +394,14 @@ export const presentationUiMessagesEnUS = {
   'presentation.chart.layout.gapWidth': 'Gap Width (%)',
   'presentation.chart.layout.gapWidthAria': 'Presentation chart gap width (%)',
   'presentation.chart.layout.overlap': 'Series Overlap (%)',
-  'presentation.chart.layout.overlapAria': 'Presentation chart series overlap (%)',
+  'presentation.chart.layout.overlapAria':
+    'Presentation chart series overlap (%)',
   'presentation.chart.layout.line': 'Line',
-  'presentation.chart.layout.smoothAria': 'Use smooth lines in presentation chart',
+  'presentation.chart.layout.smoothAria':
+    'Use smooth lines in presentation chart',
   'presentation.chart.layout.smooth': 'Use Smooth Lines',
-  'presentation.chart.layout.stackNote': 'Positive and negative values accumulate separately; switching to a stacked layout removes incompatible trendlines and error bars.',
+  'presentation.chart.layout.stackNote':
+    'Positive and negative values accumulate separately; switching to a stacked layout removes incompatible trendlines and error bars.',
   'presentation.chart.axis.bottom': 'Horizontal Axis',
   'presentation.chart.axis.left': 'Vertical Axis',
   'presentation.chart.axis.settingsAria': 'Presentation chart axis settings',
@@ -433,7 +465,8 @@ export const presentationUiMessagesEnUS = {
   'presentation.comments.itemLabel': 'Comment {index}',
   'presentation.comments.deleteAria': 'Delete presentation comment {index}',
   'presentation.comments.delete': 'Delete',
-  'presentation.comments.hint': 'Add a comment on the current slide or selected element, then locate, edit, or delete it here.',
+  'presentation.comments.hint':
+    'Add a comment on the current slide or selected element, then locate, edit, or delete it here.',
   'presentation.comments.unknownAuthor': 'Unknown reviewer',
   'presentation.player.clickNextAria': 'Click to advance to the next slide',
   'presentation.player.prevAria': 'Previous',
@@ -445,6 +478,7 @@ export const presentationUiMessagesEnUS = {
   'presentation.player.presenter': 'Presenter View',
   'presentation.player.fullscreen': 'Fullscreen Slideshow',
   'presentation.player.exit': 'Exit Slideshow',
+  'presentation.workspace.rotateHandle': 'Rotate handle',
   'presentation.workspace.zoomGroup': 'Zoom selected group',
   'presentation.workspace.zoomObject': 'Zoom selected object',
   'presentation.workspace.openNav': 'Open slide navigation',
@@ -462,9 +496,11 @@ export const presentationUiMessagesEnUS = {
   'presentation.workspace.notesLabel': 'Speaker Notes',
   'presentation.workspace.notesAria': 'Speaker notes',
   'presentation.workspace.notesPlaceholder': 'Add speaker notes',
-  'presentation.workspace.selectedOneGroup': '1 group selected, {count} objects',
+  'presentation.workspace.selectedOneGroup':
+    '1 group selected, {count} objects',
   'presentation.workspace.selectedObjects': '{count} objects selected',
-  'presentation.workspace.selectedMixed': '{units} items selected, {count} objects',
+  'presentation.workspace.selectedMixed':
+    '{units} items selected, {count} objects',
   'presentation.editor.previewAria': 'Presentation preview tools',
   'presentation.editor.previewLabel': 'Read-only Preview',
   'presentation.editor.previewDetail': '{count} slides',
@@ -492,13 +528,16 @@ export const presentationUiMessagesEnUS = {
   'presentation.clipboard.copiedSlide': 'Copied slide',
   'presentation.clipboard.cutObjects': 'Cut {count} objects',
   'presentation.clipboard.cutElement': 'Cut presentation element',
-  'presentation.clipboard.keepOneSlide': 'A presentation must keep at least one slide.',
+  'presentation.clipboard.keepOneSlide':
+    'A presentation must keep at least one slide.',
   'presentation.clipboard.cutSlide': 'Cut slide',
   'presentation.clipboard.empty': 'No pasteable presentation content.',
-  'presentation.clipboard.animationLimit': 'Object animations reached the 256-per-slide limit.',
+  'presentation.clipboard.animationLimit':
+    'Object animations reached the 256-per-slide limit.',
   'presentation.clipboard.pastedObjects': 'Pasted {count} objects',
   'presentation.clipboard.pastedElement': 'Pasted presentation element',
-  'presentation.clipboard.pasteSlideNeedsSlideMode': 'Return to slide editing to paste a whole slide.',
+  'presentation.clipboard.pasteSlideNeedsSlideMode':
+    'Return to slide editing to paste a whole slide.',
   'presentation.clipboard.pastedSlide': 'Pasted slide',
   'presentation.comments.promptTitle': 'Comment text',
   'presentation.comments.promptConfirm': 'Add Comment',
@@ -507,7 +546,7 @@ export const presentationUiMessagesEnUS = {
   'presentation.design.layoutCopySuffix': '{name} copy',
   'presentation.design.customLayoutName': 'Custom Layout {n}',
   'presentation.design.placeholderTitle': 'Click to add title',
-  'presentation.design.placeholderContent': 'Click to add content'
+  'presentation.design.placeholderContent': 'Click to add content',
 } as const;
 
 export type PresentationUiMessageKey = keyof typeof presentationUiMessagesEnUS;

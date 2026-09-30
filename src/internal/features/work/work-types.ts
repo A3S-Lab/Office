@@ -392,6 +392,8 @@ export interface WorkDocumentCommentReply {
   text: string;
 }
 
+export type WorkDocumentCommentDecision = 'accepted' | 'processed';
+
 export interface WorkDocumentComment {
   id: string;
   actorId?: string;
@@ -399,6 +401,8 @@ export interface WorkDocumentComment {
   date: string;
   text: string;
   resolved: boolean;
+  /** Set when a review finding is accepted or processed. Cleared on withdraw. */
+  decision?: WorkDocumentCommentDecision;
   replies?: WorkDocumentCommentReply[];
 }
 
@@ -979,6 +983,8 @@ export interface WorkSlideElement {
   type: WorkSlideElementType;
   /** Persistent scene-group path ordered from the outermost group inward. */
   groupIds?: string[];
+  /** Clockwise degrees of the outermost group. Child geometry stays in group space. */
+  groupRotation?: number;
   x: number;
   y: number;
   width: number;

@@ -4,7 +4,6 @@ import {
   type UISchema,
 } from '@embedpdf/react-pdf-viewer';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { officeMessage } from '../../../i18n/office-locale';
 import {
   useCallback,
   useEffect,
@@ -22,9 +21,10 @@ import {
 import type { WorkPdfCollaborationContent } from '../../../collaboration/office-pdf-collaboration-types';
 import { Button, StateView } from '../../../design-system/primitives';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
+import { officeMessage } from '../../../i18n/office-locale';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
-import { useOfficeMessages } from './office-messages-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
+import { useOfficeMessages } from './office-messages-context';
 import { usePdfAnnotationController } from './pdf-annotation-controller';
 import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
 import { createWorkPdfCollaborationProjection } from './pdf-collaboration-projection';
@@ -47,6 +47,11 @@ import {
 } from './use-pdf-page-organization';
 
 const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';
+
+type PdfDocumentBytes = {
+  bytes: ArrayBuffer;
+  generation: number;
+};
 // PDFium can take longer on its first WASM startup, especially after a fresh
 // Playground build. Keep the loading state instead of surfacing a false error
 // while the worker is still making progress.
@@ -102,13 +107,15 @@ export function PdfViewer({
   const messages = useOfficeMessages();
   const resolvedSaveLabel =
     saveLabel ?? officeMessage(messages, 'pdf.viewer.save');
-  const [sourceBlob, setSourceBlob] = useState<Blob | null>(null);
-  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [documentBytes, setDocumentBytes] = useState<PdfDocumentBytes | null>(
+    null,
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<PdfSaveState>('idle');
   const [retryCount, setRetryCount] = useState(0);
   const [registry, setRegistry] = useState<PluginRegistry | null>(null);
-  const activeSourceUrlRef = useRef<string | null>(null);
+  const documentGenerationRef = useRef(0);
+  const activeDocumentGenerationRef = useRef<number | null>(null);
   const [, refreshCollaborationHistory] = useState(0);
   const [hostSourceGeneration, setHostSourceGeneration] = useState(0);
   const [pageOrganizerOpen, setPageOrganizerOpen] = useState(false);
@@ -138,17 +145,25 @@ export function PdfViewer({
   const controller = usePdfViewerController(registry, collaborationHistory);
   const replacePageSource = useCallback(
     (source: Blob) => {
-      const next =
-        source.type === 'application/pdf'
-          ? source
-          : new Blob([source], { type: 'application/pdf' });
+      const next = pdfBlob(source);
+      documentGenerationRef.current += 1;
+      const generation = documentGenerationRef.current;
       setRegistry(null);
-      setSourceUrl(null);
-      setSourceBlob(next);
+      setDocumentBytes(null);
       setLoadError(null);
       setSaveState('idle');
       setMobilePageNavigationOpen(false);
       setPageOrganizerOpen(false);
+      void next.arrayBuffer().then(
+        (bytes) => {
+          if (documentGenerationRef.current !== generation) return;
+          setDocumentBytes({ bytes, generation });
+        },
+        (error: unknown) => {
+          if (documentGenerationRef.current !== generation) return;
+          setLoadError(pdfErrorMessage(error));
+        },
+      );
       // Keep the host artifact blob in sync so Download/export reopens the
       // organized PDF rather than the pre-mutation source bytes.
       if (onSave) void onSave(next);
@@ -227,30 +242,31 @@ export function PdfViewer({
 
   useEffect(() => {
     let disposed = false;
+    documentGenerationRef.current += 1;
+    const generation = documentGenerationRef.current;
     setRegistry(null);
     setSaveState('idle');
-    setSourceBlob(null);
-    setSourceUrl(null);
+    setDocumentBytes(null);
     setLoadError(null);
     setMobilePageNavigationOpen(false);
     setPageOrganizerOpen(false);
 
     void loadSource()
       .then(async (source) => {
-        if (disposed) return;
+        if (disposed || documentGenerationRef.current !== generation) return;
         if (collaboration) {
           await assertPdfCollaborationBlob(collaboration, source);
         }
-        if (disposed) return;
-        setSourceBlob(
-          source.type === 'application/pdf'
-            ? source
-            : new Blob([source], { type: 'application/pdf' }),
-        );
+        if (disposed || documentGenerationRef.current !== generation) return;
+        const bytes = await pdfBlob(source).arrayBuffer();
+        if (disposed || documentGenerationRef.current !== generation) return;
+        setDocumentBytes({ bytes, generation });
         setHostSourceGeneration((value) => value + 1);
       })
       .catch((error: unknown) => {
-        if (!disposed) setLoadError(pdfErrorMessage(error));
+        if (!disposed && documentGenerationRef.current === generation) {
+          setLoadError(pdfErrorMessage(error));
+        }
       });
 
     return () => {
@@ -258,25 +274,17 @@ export function PdfViewer({
     };
   }, [collaboration, loadSource, retryCount, sourceKey]);
 
-  useEffect(() => {
-    if (!sourceBlob) {
-      setSourceUrl(null);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(sourceBlob);
-    setSourceUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [sourceBlob]);
-
   // EmbedPDF may finish initializing an unmounted viewer after its source has
   // already been replaced. Ignore that late callback so the controller cannot
   // bind to a previous PDF generation.
-  activeSourceUrlRef.current = sourceUrl;
+  activeDocumentGenerationRef.current = documentBytes?.generation ?? null;
   const handleViewerReady = useCallback(
     (nextRegistry: PluginRegistry) => {
-      if (activeSourceUrlRef.current === sourceUrl) setRegistry(nextRegistry);
+      if (activeDocumentGenerationRef.current === documentBytes?.generation) {
+        setRegistry(nextRegistry);
+      }
     },
-    [sourceUrl],
+    [documentBytes?.generation],
   );
 
   useEffect(() => {
@@ -351,13 +359,13 @@ export function PdfViewer({
   }, [onPageChange, viewerController.state.currentPage]);
 
   useEffect(() => {
-    if (!sourceUrl || viewerReady || loadError) return;
+    if (!documentBytes || viewerReady || loadError) return;
     const timeout = window.setTimeout(() => {
       setRegistry(null);
       setLoadError('PDF viewer initialization timed out.');
     }, PDF_VIEWER_READY_TIMEOUT_MS);
     return () => window.clearTimeout(timeout);
-  }, [loadError, sourceUrl, viewerReady]);
+  }, [documentBytes, loadError, viewerReady]);
 
   const savePdf = useCallback(async () => {
     if (!onSave || saveState === 'saving') return;
@@ -429,11 +437,11 @@ export function PdfViewer({
   useOfficeCollaborationLocationNavigator(navigateToPdfParticipant);
   useOfficeEditorKeyboardShortcuts(pdfEditor, {
     capture: true,
-    enabled: Boolean(sourceUrl),
+    enabled: Boolean(documentBytes),
     scopeRef: pdfRootRef,
   });
   useOfficeEditorWheelZoom({
-    enabled: Boolean(sourceUrl),
+    enabled: Boolean(documentBytes),
     scopeRef: pdfRootRef,
     onZoomIn: pdfCommands.zoomIn,
     onZoomOut: pdfCommands.zoomOut,
@@ -458,7 +466,7 @@ export function PdfViewer({
     );
   }
 
-  if (!sourceUrl) {
+  if (!documentBytes) {
     return (
       <StateView
         className="work-pdf-state"
@@ -559,11 +567,18 @@ export function PdfViewer({
           tabIndex={0}
         >
           <PDFViewer
-            key={sourceUrl}
+            key={documentBytes.generation}
             className="work-pdf-native-viewer"
             style={{ width: '100%', height: '100%' }}
             config={{
-              src: sourceUrl,
+              // The worker fetches `src` itself. WKWebView rejects a blob: URL
+              // from that worker (TypeError: Load failed, error code 1), so
+              // the document bytes are handed over as a buffer.
+              documentManager: {
+                initialDocuments: [
+                  { buffer: documentBytes.bytes, name: fileName },
+                ],
+              },
               worker,
               // EmbedPDF creates a Blob worker, so a root-relative URL has no
               // usable base inside WorkerGlobalScope. Keep this absolute.
@@ -587,7 +602,10 @@ export function PdfViewer({
                 width: 132,
               },
               annotations: {
-                annotationAuthor: officeMessage(messages, 'pdf.viewer.defaultAuthor'),
+                annotationAuthor: officeMessage(
+                  messages,
+                  'pdf.viewer.defaultAuthor',
+                ),
                 autoCommit: true,
               },
               export: { defaultFileName: fileName },
@@ -623,6 +641,12 @@ export function PdfViewer({
       </div>
     </section>
   );
+}
+
+function pdfBlob(source: Blob): Blob {
+  return source.type === 'application/pdf'
+    ? source
+    : new Blob([source], { type: 'application/pdf' });
 }
 
 function pdfErrorMessage(error: unknown): string {

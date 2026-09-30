@@ -1,4 +1,5 @@
 import { withPresentationDesign } from './work-presentation-layouts';
+import { presentationPictureAltText } from './work-pptx-picture-alt';
 import { presentationGroupPath } from './work-presentation-groups';
 import type { PptxGroupExportRegistry } from './work-pptx-groups';
 import type {
@@ -146,7 +147,10 @@ function slideMasterObjects(
           data: element.image.dataUrl,
           ...box,
           rotate: element.rotation,
-          altText: element.altText,
+          altText: presentationPictureAltText(
+            element.altText,
+            element.image.name,
+          ),
           ...(objectName ? { objectName } : {}),
         },
       },

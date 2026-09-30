@@ -1,5 +1,4 @@
 import type { Editor } from '@tiptap/core';
-import { officeMessage } from '../../../i18n/office-locale';
 import { GalleryVerticalEnd } from 'lucide-react';
 import {
   type PointerEvent,
@@ -10,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
+import { officeMessage } from '../../../i18n/office-locale';
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
 import {
   isWorkspaceContextMenuKeyboardEvent,
@@ -31,8 +31,10 @@ import { PresentationCollaborationPresenceLayer } from './presentation-collabora
 import type { PresentationEditorCommands } from './presentation-command-types';
 import type { PresentationDesignMode } from './presentation-editor-types';
 import { PresentationObjectList } from './presentation-object-list-panel';
+import { PresentationRotateHandle } from './presentation-rotate-handle';
 import {
   presentationElementCanEditContent,
+  presentationElementDisplayBox,
   presentationSelectionBounds,
   selectedPresentationElements,
 } from './presentation-selection';
@@ -53,9 +55,11 @@ export type PresentationWorkspaceCommands = Pick<
   | 'addSlide'
   | 'deleteSlideById'
   | 'editElement'
+  | 'moveSlide'
   | 'exitEditing'
   | 'instantiatePlaceholder'
   | 'openComment'
+  | 'rotateSelection'
   | 'selectElement'
   | 'selectSlide'
   | 'setViewMode'
@@ -176,7 +180,12 @@ export function PresentationWorkspace({
     activeElements,
     selectedElementIds,
   );
-  const selectionBounds = presentationSelectionBounds(selectedElements);
+  const selectionBounds = presentationSelectionBounds(
+    selectedElements.map((element) => {
+      const box = presentationElementDisplayBox(element, activeElements);
+      return { ...element, x: box.x, y: box.y };
+    }),
+  );
   const selectionTransformAnchor = selectedElements.at(-1);
   const selectionResizeLabel =
     selectionUnits.length === 1 && selectionUnits[0]?.groupId
@@ -193,6 +202,7 @@ export function PresentationWorkspace({
         zoom={zoom}
         onAddSlide={commands.addSlide}
         onDeleteSlide={commands.deleteSlideById}
+        onMoveSlide={commands.moveSlide}
         onOpenContextMenu={onOpenContextMenu}
         onSelectSlide={commands.selectSlide}
         onViewModeChange={commands.setViewMode}
@@ -229,7 +239,11 @@ export function PresentationWorkspace({
         onClick={() => setMobileSlideNavigationOpen(true)}
       >
         <GalleryVerticalEnd size={15} />
-        <span>{officeMessage(messages, 'presentation.workspace.slideNumber', { index: String(selectedSlideIndex + 1) })}</span>
+        <span>
+          {officeMessage(messages, 'presentation.workspace.slideNumber', {
+            index: String(selectedSlideIndex + 1),
+          })}
+        </span>
       </button>
       <PresentationThumbnailRail
         aspectRatio={aspectRatio}
@@ -244,6 +258,7 @@ export function PresentationWorkspace({
         onAddSlide={commands.addSlide}
         onCloseMobileNavigation={closeMobileSlideNavigation}
         onDeleteSlide={commands.deleteSlideById}
+        onMoveSlide={commands.moveSlide}
         onOpenContextMenu={onOpenContextMenu}
         onSelectSlide={selectSlide}
         onViewModeChange={commands.setViewMode}
@@ -253,7 +268,10 @@ export function PresentationWorkspace({
         <button
           type="button"
           className="work-presentation-slide-navigation-backdrop"
-          aria-label={officeMessage(messages, 'presentation.workspace.closeNav')}
+          aria-label={officeMessage(
+            messages,
+            'presentation.workspace.closeNav',
+          )}
           tabIndex={-1}
           onClick={closeMobileSlideNavigation}
         />
@@ -304,14 +322,20 @@ export function PresentationWorkspace({
                 className="work-slide-placeholder-guide"
                 key={`placeholder:${definition.placeholder?.key ?? definition.id}`}
                 style={slideElementStyle(definition)}
-                aria-label={officeMessage(messages, definition.placeholder?.type === 'title' ? 'presentation.workspace.addTitlePlaceholder' : 'presentation.workspace.addContentPlaceholder')}
+                aria-label={officeMessage(
+                  messages,
+                  definition.placeholder?.type === 'title'
+                    ? 'presentation.workspace.addTitlePlaceholder'
+                    : 'presentation.workspace.addContentPlaceholder',
+                )}
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation();
                   commands.instantiatePlaceholder(definition);
                 }}
               >
-                {definition.placeholder?.prompt ?? officeMessage(messages, 'presentation.workspace.clickToAdd')}
+                {definition.placeholder?.prompt ??
+                  officeMessage(messages, 'presentation.workspace.clickToAdd')}
               </button>
             ))}
             {snapGuides.map((guide) => (
@@ -350,6 +374,13 @@ export function PresentationWorkspace({
                     onBeginDrag(event, selectionTransformAnchor, 'resize');
                   }}
                 />
+                <PresentationRotateHandle
+                  label={officeMessage(
+                    messages,
+                    'presentation.workspace.rotateHandle',
+                  )}
+                  onRotate={commands.rotateSelection}
+                />
               </span>
             )}
             {activeElements.map((element) => {
@@ -378,9 +409,17 @@ export function PresentationWorkspace({
                       ? element.groupIds.join('/')
                       : undefined
                   }
+                  data-slide-element-group-rotation={
+                    element.groupRotation
+                      ? String(element.groupRotation)
+                      : undefined
+                  }
                   data-slide-element-origin={designMode}
                   data-slide-element-selected={selected ? 'true' : 'false'}
-                  style={slideElementStyle(element)}
+                  style={slideElementStyle({
+                    ...element,
+                    ...presentationElementDisplayBox(element, activeElements),
+                  })}
                   onClick={(event) => {
                     if (
                       !editing &&
@@ -476,7 +515,14 @@ export function PresentationWorkspace({
                   ) : element.type === 'chart' && element.chart ? (
                     <SlideChart
                       chart={element.chart}
-                      label={element.altText ?? element.chart.title ?? officeMessage(messages, 'presentation.workspace.chartFallback')}
+                      label={
+                        element.altText ??
+                        element.chart.title ??
+                        officeMessage(
+                          messages,
+                          'presentation.workspace.chartFallback',
+                        )
+                      }
                     />
                   ) : element.textRuns?.length ||
                     element.text ||
@@ -537,7 +583,11 @@ export function PresentationWorkspace({
                   type="button"
                   className={`work-presentation-comment-pin ${comment.id === activeCommentId ? 'active' : ''}`}
                   key={comment.id}
-                  aria-label={officeMessage(messages, 'presentation.workspace.openCommentAria', { index: String(index + 1) })}
+                  aria-label={officeMessage(
+                    messages,
+                    'presentation.workspace.openCommentAria',
+                    { index: String(index + 1) },
+                  )}
                   style={{ left: `${comment.x}%`, top: `${comment.y}%` }}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => {
@@ -584,11 +634,19 @@ export function PresentationWorkspace({
         </footer>
         {designMode === 'slide' && notesVisible && (
           <div className="work-slide-notes">
-            <span>{officeMessage(messages, 'presentation.workspace.notesLabel')}</span>
+            <span>
+              {officeMessage(messages, 'presentation.workspace.notesLabel')}
+            </span>
             <OfficeTextArea
-              aria-label={officeMessage(messages, 'presentation.workspace.notesAria')}
+              aria-label={officeMessage(
+                messages,
+                'presentation.workspace.notesAria',
+              )}
               value={selectedSlide.notes ?? ''}
-              placeholder={officeMessage(messages, 'presentation.workspace.notesPlaceholder')}
+              placeholder={officeMessage(
+                messages,
+                'presentation.workspace.notesPlaceholder',
+              )}
               onChange={(event) => commands.updateNotes(event.target.value)}
             />
           </div>

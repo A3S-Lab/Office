@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WorkOfficeCollaborationActor } from '../../../collaboration/office-collaboration';
 import { officeMessage } from '../../../i18n/office-locale';
 import type { OfficeMessageCatalog } from '../../../i18n/office-messages';
@@ -28,6 +28,9 @@ export interface DocumentCommentsController {
   setOpen: (open: boolean) => void;
   startDraft: () => void;
   submitDraft: (text: string) => string | null;
+  acceptComment: (preferredId?: string | null) => boolean;
+  processComment: (preferredId?: string | null) => boolean;
+  withdrawComment: (preferredId?: string | null) => boolean;
   toggleOpen: () => void;
   toggleResolved: (id: string) => void;
 }
@@ -52,6 +55,7 @@ export function useDocumentComments({
   const messages = useOfficeMessages();
   const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState<DocumentCommentDraft | null>(null);
+  const lastDecidedCommentId = useRef<string | null>(null);
 
   useEffect(() => {
     if (defaultOpen) setOpen(true);
@@ -83,6 +87,20 @@ export function useDocumentComments({
     (id: string) => {
       if (!enabled) return;
       editor?.commands.toggleDocumentCommentResolved(id);
+    },
+    [editor, enabled],
+  );
+
+  const decideComment = useCallback(
+    (id: string, decision: 'accepted' | 'processed' | null) => {
+      if (!enabled || !editor) return false;
+      const applied = editor.commands.setDocumentCommentDecision(id, decision);
+      if (!applied) return false;
+      if (decision) lastDecidedCommentId.current = id;
+      else if (lastDecidedCommentId.current === id) {
+        lastDecidedCommentId.current = null;
+      }
+      return true;
     },
     [editor, enabled],
   );
@@ -201,6 +219,19 @@ export function useDocumentComments({
     else setOpen(true);
   }, [close, open]);
 
+  const pendingCommentId = (preferredId?: string | null) =>
+    comments.find((comment) => comment.id === preferredId && !comment.resolved)
+      ?.id ?? comments.find((comment) => !comment.resolved)?.id;
+
+  const decidedCommentId = (preferredId?: string | null) =>
+    comments.find((comment) => comment.id === preferredId && comment.resolved)
+      ?.id ??
+    comments.find(
+      (comment) =>
+        comment.id === lastDecidedCommentId.current && comment.resolved,
+    )?.id ??
+    [...comments].reverse().find((comment) => comment.resolved)?.id;
+
   return {
     canDeleteComment,
     canInsert,
@@ -214,6 +245,18 @@ export function useDocumentComments({
     setOpen,
     startDraft,
     submitDraft,
+    acceptComment: (preferredId) => {
+      const id = pendingCommentId(preferredId);
+      return id ? decideComment(id, 'accepted') : false;
+    },
+    processComment: (preferredId) => {
+      const id = pendingCommentId(preferredId);
+      return id ? decideComment(id, 'processed') : false;
+    },
+    withdrawComment: (preferredId) => {
+      const id = decidedCommentId(preferredId);
+      return id ? decideComment(id, null) : false;
+    },
     toggleOpen,
     toggleResolved,
   };

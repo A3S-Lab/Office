@@ -12,6 +12,7 @@ import {
   mailMergeRecordMatchesFilter,
   normalizeMailMergeRecipientFilter,
   normalizeMailMergeSource,
+  parseMailMergeTable,
   previewMailMergeSource,
   setMailMergeRecipientFilter,
   stepMailMergeSource,
@@ -34,6 +35,45 @@ function documentContent(current: Editor): WorkDocumentContent {
 }
 
 describe('document mail-merge host runner', () => {
+  test('parses a pasted recipient table and previews the first name', () => {
+    expect(parseMailMergeTable('姓名')).toBeNull();
+    expect(parseMailMergeTable('123bad\n甲')).toBeNull();
+    expect(parseMailMergeTable('姓名\n甲\n乙')).toEqual({
+      records: [{ 姓名: '甲' }, { 姓名: '乙' }],
+      activeIndex: 0,
+      filter: null,
+    });
+    expect(parseMailMergeTable('姓名,城市\n甲,北京\n乙,上海')).toEqual({
+      records: [
+        { 姓名: '甲', 城市: '北京' },
+        { 姓名: '乙', 城市: '上海' },
+      ],
+      activeIndex: 0,
+      filter: null,
+    });
+    expect(parseMailMergeTable('姓名\t城市\n"甲"\t"北京"')).toEqual({
+      records: [{ 姓名: '甲', 城市: '北京' }],
+      activeIndex: 0,
+      filter: null,
+    });
+
+    const html = [
+      '<section data-document-section="true"><p>',
+      '<span data-document-field="true" data-field-id="name" data-field-kind="mergeField" data-field-instruction="MERGEFIELD 姓名" data-field-target-name="姓名" data-field-display="«姓名»">«姓名»</span>',
+      '</p></section>',
+    ].join('');
+    editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: html,
+    });
+    const source = parseMailMergeTable('姓名\n甲\n乙');
+    expect(
+      previewMailMergeSource(editor, documentContent(editor), source),
+    ).toBe(true);
+    expect(editor.getText()).toContain('甲');
+    expect(editor.getText()).not.toContain('乙');
+  });
+
   test('normalizes records, clamps active index, and steps preview rows', () => {
     expect(
       normalizeMailMergeSource({
