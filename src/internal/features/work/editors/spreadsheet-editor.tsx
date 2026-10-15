@@ -1324,10 +1324,13 @@ function SpreadsheetEditorSurface({
     };
   }, [selectionState, toolbarSelection, toolbarSheetId]);
   useOfficePublishPresenceLocation(spreadsheetPresenceLocation);
+  const workbookMountKey = `spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}:fx-${formulaBarVisible ? 1 : 0}:hd-${headingsVisible ? 1 : 0}:sf-${showFormulas ? 1 : 0}`;
   useSpreadsheetCollaborationPresenceProjection({
     content: materializedContent,
     frameCell: collaborationWrittenCell,
+    mountKey: workbookMountKey,
     workbook: workbookInstance,
+    workbookRef,
   });
   const toolbarRow = toolbarSelection.row_focus ?? toolbarSelection.row[0];
   const toolbarColumn =
@@ -2266,7 +2269,7 @@ function SpreadsheetEditorSurface({
           >
             <ControlledWorkbook
               ref={bindWorkbookInstance}
-              key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}:fx-${formulaBarVisible ? 1 : 0}:hd-${headingsVisible ? 1 : 0}:sf-${showFormulas ? 1 : 0}`}
+              key={workbookMountKey}
               data={displayedWorkbookSheets}
               lang="zh"
               allowEdit={!preview && !showFormulas}

@@ -16,7 +16,10 @@ import {
 import { OfficeCollaborationPresenceProvider } from '../src/internal/features/work/editors/office-collaboration-presence-context';
 import { MarkdownSourcePresenceLayer } from '../src/internal/features/work/editors/office-collaboration-presence-ui';
 import { PdfCollaborationPresenceLayer } from '../src/internal/features/work/editors/pdf-collaboration-presence';
-import { PresentationCollaborationPresenceLayer, PresentationFrameCaretProvider } from '../src/internal/features/work/editors/presentation-collaboration-presence';
+import {
+  PresentationCollaborationPresenceLayer,
+  PresentationFrameCaretProvider,
+} from '../src/internal/features/work/editors/presentation-collaboration-presence';
 import {
   spreadsheetCellLayoutBox,
   spreadsheetFrameCaretPaint,
@@ -155,6 +158,33 @@ test('highlights the cell a frame wrote and does not blink when that cell is unc
   expect(adds).toEqual([1]);
   expect(removes).toEqual([]);
   view.unmount();
+
+  // Fortune hands a new API object after every context change; only a remount
+  // (a new mount key) moves the projection to the replacement workbook.
+  const calls: string[] = [];
+  const api = (name: string) => ({
+    addPresences: () => calls.push(`add:${name}`),
+    removePresences: () => calls.push(`remove:${name}`),
+  });
+  const liveRef: { current: unknown } = { current: api('a') };
+  function LiveProbe({ mountKey }: { mountKey: string }) {
+    useSpreadsheetCollaborationPresenceProjection({
+      content,
+      frameCell: cell,
+      mountKey,
+      workbook: liveRef.current as never,
+      workbookRef: liveRef as never,
+    });
+    return null;
+  }
+  const live = render(<LiveProbe mountKey="m1" />);
+  liveRef.current = api('b');
+  live.rerender(<LiveProbe mountKey="m1" />);
+  expect(calls).toEqual(['add:a']);
+  liveRef.current = api('c');
+  live.rerender(<LiveProbe mountKey="m2" />);
+  expect(calls).toEqual(['add:a', 'remove:a', 'add:c']);
+  live.unmount();
 });
 
 test('paints a spreadsheet splice caret inside the plain-text cell and skips field writes', () => {

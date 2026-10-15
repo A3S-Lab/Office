@@ -1,6 +1,6 @@
 import type { Cell, Presence } from '@fortune-sheet/core';
 import type { WorkbookInstance } from '@fortune-sheet/react';
-import { useEffect } from 'react';
+import { type RefObject, useEffect, useRef } from 'react';
 import {
   paintTextCaretInBox,
   type FrameCaretPaint,
@@ -18,6 +18,8 @@ export function useSpreadsheetCollaborationPresenceProjection({
   content,
   frameCell = null,
   workbook,
+  workbookRef,
+  mountKey = '',
   /** Bumped after in-place sheet sync so Fortune re-draws overlays it cleared. */
   refreshKey = 0,
 }: {
@@ -25,6 +27,10 @@ export function useSpreadsheetCollaborationPresenceProjection({
   /** Cell named by the collaboration frame that just wrote it. */
   frameCell?: SpreadsheetFrameCell | null;
   workbook: WorkbookInstance | null;
+  /** Live API, set by the Fortune ref callback before effects run. */
+  workbookRef?: RefObject<WorkbookInstance | null>;
+  /** Changes when the Fortune workbook remounts with a new key. */
+  mountKey?: string;
   refreshKey?: number;
 }): void {
   const participants = useOfficeRemoteParticipants();
@@ -36,25 +42,35 @@ export function useSpreadsheetCollaborationPresenceProjection({
     ...spreadsheetWrittenCellProjection(content, frameCell),
   ]);
 
+  // Fortune rebuilds its imperative API on every context change, and
+  // add/removePresences change that context. Keying these effects on the API
+  // identity re-ran them forever (React 185), so they key on mount instead.
+  const renderedWorkbookRef = useRef(workbook);
+  renderedWorkbookRef.current = workbook;
+  const liveWorkbookRef = workbookRef ?? renderedWorkbookRef;
+  const workbookMounted = workbook !== null;
+
   useEffect(() => {
-    if (!workbook) return;
+    const api = liveWorkbookRef.current;
+    if (!api) return;
     const projected = JSON.parse(projectionKey) as Presence[];
-    if (projected.length) workbook.addPresences(projected);
+    if (projected.length) api.addPresences(projected);
     return () => {
       if (!projected.length) return;
-      workbook.removePresences(
+      api.removePresences(
         projected.map(({ userId, username }) => ({ userId, username })),
       );
     };
-  }, [projectionKey, workbook]);
+  }, [projectionKey, workbookMounted, mountKey]);
 
   // `updateSheet` can wipe presence chrome without changing projectionKey.
   // Re-add the same overlays without a remove cycle so the caret does not blink.
   useEffect(() => {
-    if (!workbook || refreshKey === 0) return;
+    const api = liveWorkbookRef.current;
+    if (!api || refreshKey === 0) return;
     const projected = JSON.parse(projectionKey) as Presence[];
-    if (projected.length) workbook.addPresences(projected);
-  }, [projectionKey, refreshKey, workbook]);
+    if (projected.length) api.addPresences(projected);
+  }, [projectionKey, refreshKey, workbookMounted]);
 }
 
 export interface SpreadsheetFrameCell {
